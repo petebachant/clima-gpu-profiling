@@ -13,6 +13,8 @@ environments:
   clima:
     kind: ssh
     host: clima.gps.caltech.edu
+    user: $CALTECH_USERNAME
+    wdir: ~/calkit/clima-gpu-profiling
     load_modules:
       - TODO
     sync_method: repo
@@ -23,6 +25,8 @@ environments:
   sassy:
     kind: ssh
     host: sassy.caltech.edu
+    user: $CALTECH_USERNAME
+    wdir: ~/calkit/clima-gpu-profiling
     sync_method: repo
   sassy-main:
     kind: composite
@@ -48,8 +52,7 @@ pipeline:
         --config config/default_configs/default_config.yml
         --config config/common_configs/numerics_sphere_he30ze43.yml
         --config config/perf_configs/bm_baroclinic_wave_moist.yml
-      environment: clima-main # or clima.main for automatic composition?
-      machine: clima
+      environment: clima
       inputs:
         - perf/benchmark_step_gpu.jl
         - TODO
