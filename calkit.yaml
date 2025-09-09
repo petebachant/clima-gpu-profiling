@@ -1,5 +1,87 @@
 owner: petebachant
 name: clima-gpu-profiling
 title: CliMA GPU profiling
-description: Profiling GPU performance for CliMA
+description: Profiling GPU performance for CliMA.
 git_repo_url: https://github.com/petebachant/clima-gpu-profiling
+
+machines: {}
+
+environments:
+  main:
+    kind: julia
+    path: Project.toml
+  clima:
+    kind: ssh
+    host: clima.gps.caltech.edu
+    load_modules:
+      - TODO
+    sync_method: repo
+  clima-main:
+    kind: composite
+    env1: clima
+    env2: main
+  sassy:
+    kind: ssh
+    host: sassy.caltech.edu
+    sync_method: repo
+  sassy-main:
+    kind: composite
+    env1: sassy
+    env2: main
+
+env_vars:
+  CLIMACOMMS_DEVICE: CUDA
+
+pipeline:
+  stages:
+    baro-43-clima:
+      kind: slurm-command
+      command: > # TODO: Pkg.instantiate, precompile, etc., stuff here?
+        srun --gpus=1 --time 240
+        nsys profile
+        --start-later=true
+        --capture-range=cudaProfilerApi
+        --kill=none
+        --trace=nvtx,mpi,cuda,osrt
+        --output=nsys-outputs/baroclinic-wave-moist-43
+        julia --project=.buildkite perf/benchmark_step_gpu.jl
+        --config config/default_configs/default_config.yml
+        --config config/common_configs/numerics_sphere_he30ze43.yml
+        --config config/perf_configs/bm_baroclinic_wave_moist.yml
+      environment: clima-main # or clima.main for automatic composition?
+      machine: clima
+      inputs:
+        - perf/benchmark_step_gpu.jl
+        - TODO
+      outputs:
+        - nsys-outputs/baroclinic-wave-moist-43.nsys-rep
+      load_modules:
+        - TODO
+      hostname: clima.gps.caltech.edu
+    baro-63-clima:
+      kind: slurm-command
+      command: >
+        sbatch --gpus=1 --time 240
+        nsys profile
+        --start-later=true
+        --capture-range=cudaProfilerApi
+        --kill=none
+        --trace=nvtx,mpi,cuda,osrt
+        --output=nsys-outputs/baroclinic-wave-moist-63
+        julia --project=.buildkite perf/benchmark_step_gpu.jl
+        --config config/default_configs/default_config.yml
+        --config config/common_configs/numerics_sphere_he30ze63-b.yml
+        --config config/perf_configs/bm_baroclinic_wave_moist.yml
+    amip-clima:
+      command: >
+        sbatch --gpus=1
+        nsys profile
+        --start-later=true
+        --capture-range=cudaProfilerApi
+        --kill=none
+        --trace=nvtx,mpi,cuda,osrt
+        --output=nsys-outputs/amip-target-edonly-63
+        julia --project=.buildkite perf/benchmark_step_gpu.jl
+        --config config/default_configs/default_config.yml
+        --config config/common_configs/numerics_sphere_he30ze63.yml
+        --config config/longrun_configs/amip_target_edonly.yml
