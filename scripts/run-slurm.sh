@@ -17,7 +17,9 @@ if [ "$#" -gt 0 ]; then
   done
 fi
 
-mkdir -p nsys-outputs
+# Ensure the output prefix parent directory exists
+OUTPUT_DIR=$(dirname "$NSYS_OUTPUT_PREFIX")
+mkdir -p "$OUTPUT_DIR"
 
 # Load modules
 module purge
