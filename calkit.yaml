@@ -44,7 +44,7 @@ pipeline:
     - [baro-43-clima, baro-63-clima, amip-clima]
   stages:
     baro-43-clima:
-      kind: slurm-script
+      kind: sbatch-script
       script_path: scripts/run-slurm.sh
       host: clima.gps.caltech.edu
       gpus: 1
@@ -60,32 +60,45 @@ pipeline:
         - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
         - ClimaAtmos.jl/src
         - ClimaCore.jl/src
+        - Project.toml
       outputs:
         - nsys-outputs/baroclinic-wave-moist-43.nsys-rep
     baro-63-clima:
-      kind: slurm-command
-      command: >
-        sbatch --gpus=1 --time 240
-        nsys profile
-        --start-later=true
-        --capture-range=cudaProfilerApi
-        --kill=none
-        --trace=nvtx,mpi,cuda,osrt
-        --output=nsys-outputs/baroclinic-wave-moist-63
-        julia --project=.buildkite perf/benchmark_step_gpu.jl
-        --config config/default_configs/default_config.yml
-        --config config/common_configs/numerics_sphere_he30ze63-b.yml
-        --config config/perf_configs/bm_baroclinic_wave_moist.yml
+      kind: sbatch-script
+      script_path: scripts/run-slurm.sh
+      host: clima.gps.caltech.edu
+      gpus: 1
+      time: 240
+      args:
+        - nsys-outputs/baroclinic-wave-moist-63
+        - config/numerics_sphere_he30ze63.yml
+        - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
+      inputs:
+        - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
+        - ClimaAtmos.jl/config/default_configs/default_config.yml
+        - config/numerics_sphere_he30ze63.yml
+        - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
+        - ClimaAtmos.jl/src
+        - ClimaCore.jl/src
+        - Project.toml
+      outputs:
+        - nsys-outputs/baroclinic-wave-moist-63.nsys-rep
     amip-clima:
-      command: >
-        sbatch --gpus=1
-        nsys profile
-        --start-later=true
-        --capture-range=cudaProfilerApi
-        --kill=none
-        --trace=nvtx,mpi,cuda,osrt
-        --output=nsys-outputs/amip-target-edonly-63
-        julia --project=.buildkite perf/benchmark_step_gpu.jl
-        --config config/default_configs/default_config.yml
-        --config config/common_configs/numerics_sphere_he30ze63.yml
-        --config config/longrun_configs/amip_target_edonly.yml
+      kind: sbatch-script
+      script_path: scripts/run-slurm.sh
+      host: clima.gps.caltech.edu
+      gpus: 1
+      args:
+        - nsys-outputs/amip-target-edonly-63
+        - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
+        - ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml
+      inputs:
+        - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
+        - ClimaAtmos.jl/config/default_configs/default_config.yml
+        - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
+        - ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml
+        - ClimaAtmos.jl/src
+        - ClimaCore.jl/src
+        - Project.toml
+      outputs:
+        - nsys-outputs/amip-target-edonly-63.nsys-rep

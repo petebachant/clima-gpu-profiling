@@ -26,6 +26,10 @@ module load climacommon/2025_05_15
 # Set environment variables for GPU usage
 export CLIMACOMMS_DEVICE=CUDA
 
+# Set environmental variable for julia to not use global packages for
+# reproducibility
+export JULIA_LOAD_PATH=@:@stdlib
+
 # Instantiate julia environment, precompile, and build CUDA
 julia --project=. -e 'using Pkg; Pkg.instantiate(;verbose=true); Pkg.precompile(;strict=true); using CUDA; CUDA.precompile_runtime(); Pkg.status()'
 
