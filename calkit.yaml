@@ -39,6 +39,9 @@ env_vars:
   CLIMACOMMS_DEVICE: CUDA
 
 pipeline:
+  sequence:
+    # Run all in parallel since they don't depend on each other
+    - [baro-43-clima, baro-63-clima, amip-clima]
   stages:
     baro-43-clima:
       kind: slurm-command
@@ -74,6 +77,25 @@ pipeline:
       host: clima.gps.caltech.edu
       pre_run_commands:
         - julia ...
+    baro-43-clima-script:
+      kind: slurm-script
+      script_path: scripts/run-slurm.sh
+      host: clima.gps.caltech.edu
+      gpus: 1
+      time: 240
+      args:
+        - nsys-outputs/baroclinic-wave-moist-43
+        - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
+        - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
+      inputs:
+        - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
+        - ClimaAtmos.jl/config/default_configs/default_config.yml
+        - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
+        - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
+        - ClimaAtmos.jl/src
+        - ClimaCore.jl/src
+      outputs:
+        - nsys-outputs/baroclinic-wave-moist-43.nsys-rep
     baro-63-clima:
       kind: slurm-command
       command: >
