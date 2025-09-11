@@ -44,40 +44,6 @@ pipeline:
     - [baro-43-clima, baro-63-clima, amip-clima]
   stages:
     baro-43-clima:
-      kind: slurm-command
-      gpus: 1
-      time: 240
-      command: > # TODO: Pkg.instantiate, precompile, etc., stuff here?
-        nsys profile
-        --start-later=true
-        --capture-range=cudaProfilerApi
-        --kill=none
-        --trace=nvtx,mpi,cuda,osrt
-        --output=nsys-outputs/baroclinic-wave-moist-43
-        calkit julia -e main --
-        julia --project=ClimaAtmos.jl/.buildkite
-        ClimaAtmos.jl/perf/benchmark_step_gpu.jl
-        --config config/default_configs/default_config.yml
-        --config config/common_configs/numerics_sphere_he30ze43.yml
-        --config config/perf_configs/bm_baroclinic_wave_moist.yml
-      environment: main
-      inputs:
-        - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
-        - ClimaAtmos.jl/config/default_configs/default_config.yml
-        - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
-        - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
-        - ClimaAtmos.jl/src
-        - ClimaCore.jl/src
-      outputs:
-        - nsys-outputs/baroclinic-wave-moist-43.nsys-rep
-      load_modules:
-        - climacommon/2025_05_15
-      env_vars:
-        CLIMACOMMS_DEVICE: CUDA
-      host: clima.gps.caltech.edu
-      pre_run_commands:
-        - julia ...
-    baro-43-clima-script:
       kind: slurm-script
       script_path: scripts/run-slurm.sh
       host: clima.gps.caltech.edu
