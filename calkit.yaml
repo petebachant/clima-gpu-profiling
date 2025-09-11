@@ -4,40 +4,6 @@ title: CliMA GPU profiling
 description: Profiling GPU performance for CliMA.
 git_repo_url: https://github.com/petebachant/clima-gpu-profiling
 
-machines: {}
-
-environments:
-  main:
-    kind: julia
-    path: Project.toml
-  clima-ssh:
-    kind: ssh
-    host: clima.gps.caltech.edu
-    user: $CALTECH_USERNAME
-    wdir: ~/calkit/clima-gpu-profiling
-    load_modules:
-      - TODO
-    sync_method: repo
-  clima-main:
-    kind: composite
-    env1: clima
-    env2: main
-  sassy:
-    kind: ssh
-    host: sassy.caltech.edu
-    user: $CALTECH_USERNAME
-    wdir: ~/calkit/clima-gpu-profiling
-    sync_method: repo
-  sassy-main:
-    kind: composite
-    env1: sassy
-    env2: main
-  clima:
-    kind: slurm
-
-env_vars:
-  CLIMACOMMS_DEVICE: CUDA
-
 pipeline:
   sequence:
     # Run all in parallel since they don't depend on each other
