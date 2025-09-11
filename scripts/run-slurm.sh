@@ -1,4 +1,5 @@
 #!/bin/bash
+#SBATCH --gpus=1
 
 # First command line argument is the nsys output file prefix
 if [ "$#" -lt 1 ]; then
