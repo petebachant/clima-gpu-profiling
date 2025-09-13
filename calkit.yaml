@@ -4,17 +4,23 @@ title: CliMA GPU profiling
 description: Profiling GPU performance for CliMA.
 git_repo_url: https://github.com/petebachant/clima-gpu-profiling
 
+environments:
+  clima:
+    kind: slurm
+    host: clima.gps.caltech.edu
+
 pipeline:
   sequence:
     # Run all in parallel since they don't depend on each other
     - [baro-43-clima, baro-63-clima, amip-clima]
   stages:
-    baro-43-clima:
-      kind: sbatch-script
+    baro-43-clima-nsys:
+      kind: sbatch
       script_path: scripts/run-slurm.sh
-      host: clima.gps.caltech.edu
-      gpus: 1
-      time: 240
+      environment: clima
+      sbatch_options:
+        - --gpus=1
+        - --time=30
       args:
         - nsys
         - nsys-outputs/baroclinic-wave-moist-43
@@ -30,12 +36,13 @@ pipeline:
         - Project.toml
       outputs:
         - nsys-outputs/baroclinic-wave-moist-43.nsys-rep
-    baro-63-clima:
+    baro-63-clima-nsys:
       kind: sbatch-script
       script_path: scripts/run-slurm.sh
       host: clima.gps.caltech.edu
-      gpus: 1
-      time: 240
+      sbatch_options:
+        - --gpus=1
+        - --time=30
       args:
         - nsys
         - nsys-outputs/baroclinic-wave-moist-63
@@ -51,11 +58,13 @@ pipeline:
         - Project.toml
       outputs:
         - nsys-outputs/baroclinic-wave-moist-63.nsys-rep
-    amip-clima:
+    amip-clima-nsys:
       kind: sbatch-script
       script_path: scripts/run-slurm.sh
       host: clima.gps.caltech.edu
-      gpus: 1
+      sbatch_options:
+        - --gpus=1
+        - --time=240
       args:
         - nsys
         - nsys-outputs/amip-target-edonly-63
