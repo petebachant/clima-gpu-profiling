@@ -37,9 +37,9 @@ pipeline:
       outputs:
         - nsys-outputs/baroclinic-wave-moist-43.nsys-rep
     baro-63-clima-nsys:
-      kind: sbatch-script
+      kind: sbatch
       script_path: scripts/run-slurm.sh
-      host: clima.gps.caltech.edu
+      environment: clima
       sbatch_options:
         - --gpus=1
         - --time=30
@@ -59,9 +59,9 @@ pipeline:
       outputs:
         - nsys-outputs/baroclinic-wave-moist-63.nsys-rep
     amip-clima-nsys:
-      kind: sbatch-script
+      kind: sbatch
       script_path: scripts/run-slurm.sh
-      host: clima.gps.caltech.edu
+      environment: clima
       sbatch_options:
         - --gpus=1
         - --time=240
