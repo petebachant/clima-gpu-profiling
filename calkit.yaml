@@ -69,12 +69,13 @@ pipeline:
       args:
         - nsys-outputs/amip-target-edonly-63
         - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-        - ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml
+        - config/amip_target_edonly.yml
       inputs:
         - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
         - ClimaAtmos.jl/config/default_configs/default_config.yml
         - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-        - ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml
+        - config/amip_target_edonly.yml
+        - ClimaAtmos.jl/toml/longrun_aquaplanet.toml
         - ClimaAtmos.jl/src
         - ClimaCore.jl/src
         - Project.toml
@@ -90,7 +91,7 @@ pipeline:
       args:
         - ncu-outputs/amip-target-edonly-63
         - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-        - ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml
+        - config/amip_target_edonly.yml
         - --kernel-name=copyto_stencil_kernel_
         - --launch-skip=0
         - --launch-count=20
@@ -98,7 +99,8 @@ pipeline:
         - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
         - ClimaAtmos.jl/config/default_configs/default_config.yml
         - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-        - ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml
+        - config/amip_target_edonly.yml
+        - ClimaAtmos.jl/toml/longrun_aquaplanet.toml
         - ClimaAtmos.jl/src
         - ClimaCore.jl/src
         - Project.toml

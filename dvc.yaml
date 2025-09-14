@@ -59,20 +59,21 @@ stages:
       --dep ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
       ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      --dep 
-      ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml 
-      --dep ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep 
-      Project.toml --out nsys-outputs/amip-target-edonly-63.nsys-rep 
-      -s --gpus=1 -s --time=240 scripts/run-nsys-clima.sh 
+      --dep config/amip_target_edonly.yml --dep 
+      ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep 
+      ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep Project.toml 
+      --out nsys-outputs/amip-target-edonly-63.nsys-rep -s --gpus=1 -s
+      --time=240 scripts/run-nsys-clima.sh 
       nsys-outputs/amip-target-edonly-63 
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml
+      config/amip_target_edonly.yml
     deps:
       - scripts/run-nsys-clima.sh
       - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
       - ClimaAtmos.jl/config/default_configs/default_config.yml
       - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      - ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml
+      - config/amip_target_edonly.yml
+      - ClimaAtmos.jl/toml/longrun_aquaplanet.toml
       - ClimaAtmos.jl/src
       - ClimaCore.jl/src
       - Project.toml
@@ -86,14 +87,14 @@ stages:
       --dep ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
       ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      --dep 
-      ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml 
-      --dep ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep 
-      Project.toml --out ncu-outputs/amip-target-edonly-63.ncu-rep -s 
-      --gpus=1 -s --time=240 scripts/run-ncu-clima.sh 
+      --dep config/amip_target_edonly.yml --dep 
+      ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep 
+      ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep Project.toml 
+      --out ncu-outputs/amip-target-edonly-63.ncu-rep -s --gpus=1 -s 
+      --time=240 scripts/run-ncu-clima.sh 
       ncu-outputs/amip-target-edonly-63 
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml 
+      config/amip_target_edonly.yml 
       --kernel-name=copyto_stencil_kernel_ --launch-skip=0 
       --launch-count=20
     deps:
@@ -101,7 +102,8 @@ stages:
       - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
       - ClimaAtmos.jl/config/default_configs/default_config.yml
       - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      - ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml
+      - config/amip_target_edonly.yml
+      - ClimaAtmos.jl/toml/longrun_aquaplanet.toml
       - ClimaAtmos.jl/src
       - ClimaCore.jl/src
       - Project.toml

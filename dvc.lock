@@ -26,7 +26,7 @@ stages:
       size: 200
     - path: ClimaAtmos.jl/perf/benchmark_step_gpu.jl
       hash: md5
-      md5: bd1679d4d20813295d1460121baedfd3
+      md5: 40a9c1a4399f8990ec1cc81d43867b73
       size: 1688
     - path: ClimaAtmos.jl/src
       hash: md5
@@ -49,8 +49,8 @@ stages:
     outs:
     - path: nsys-outputs/baroclinic-wave-moist-43.nsys-rep
       hash: md5
-      md5: 9ac8a11ed5222f557a67f9fb9e7f6a60
-      size: 75309086
+      md5: dc39de4a73c1fd481d39df53c5fa9975
+      size: 2279400
   baro-63-clima-nsys:
     cmd: calkit slurm batch --name baro-63-clima-nsys --environment clima --dep 
       ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
@@ -73,7 +73,7 @@ stages:
       size: 200
     - path: ClimaAtmos.jl/perf/benchmark_step_gpu.jl
       hash: md5
-      md5: bd1679d4d20813295d1460121baedfd3
+      md5: 40a9c1a4399f8990ec1cc81d43867b73
       size: 1688
     - path: ClimaAtmos.jl/src
       hash: md5
@@ -100,5 +100,61 @@ stages:
     outs:
     - path: nsys-outputs/baroclinic-wave-moist-63.nsys-rep
       hash: md5
-      md5: f833f96fb1f467f41d1585b78d58dac8
-      size: 75749287
+      md5: 32bfd80cc027259314c09143ee245630
+      size: 2428446
+  amip-clima-nsys:
+    cmd: calkit slurm batch --name amip-clima-nsys --environment clima --dep 
+      ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
+      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
+      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml --dep 
+      config/amip_target_edonly.yml --dep 
+      ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep ClimaAtmos.jl/src --dep 
+      ClimaCore.jl/src --dep Project.toml --out 
+      nsys-outputs/amip-target-edonly-63.nsys-rep -s --gpus=1 -s --time=240 
+      scripts/run-nsys-clima.sh nsys-outputs/amip-target-edonly-63 
+      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml 
+      config/amip_target_edonly.yml
+    deps:
+    - path: ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
+      hash: md5
+      md5: 7e347e86d22cc0c3d1fdc3b9bc12640b
+      size: 260
+    - path: ClimaAtmos.jl/config/default_configs/default_config.yml
+      hash: md5
+      md5: dd13641c442bf75c923926f613f3a809
+      size: 20378
+    - path: ClimaAtmos.jl/perf/benchmark_step_gpu.jl
+      hash: md5
+      md5: 40a9c1a4399f8990ec1cc81d43867b73
+      size: 1688
+    - path: ClimaAtmos.jl/src
+      hash: md5
+      md5: b5c1c179760ce26ff6a6ffbcf72d6a15.dir
+      size: 1223571
+      nfiles: 97
+    - path: ClimaAtmos.jl/toml/longrun_aquaplanet.toml
+      hash: md5
+      md5: fe0afbe3ff59d7ba0c437259798ba7f7
+      size: 99
+    - path: ClimaCore.jl/src
+      hash: md5
+      md5: 3ea59b040e8efc872b0c3c9bfe617f79.dir
+      size: 1141968
+      nfiles: 95
+    - path: Project.toml
+      hash: md5
+      md5: d3a9216cb6e0ce1d494600d8076fcc36
+      size: 2117
+    - path: config/amip_target_edonly.yml
+      hash: md5
+      md5: baca48773722a0848ee32bca9e2775a2
+      size: 569
+    - path: scripts/run-nsys-clima.sh
+      hash: md5
+      md5: 0fa8b0124e0d52d1f63b7af21958a0f9
+      size: 1318
+    outs:
+    - path: nsys-outputs/amip-target-edonly-63.nsys-rep
+      hash: md5
+      md5: 98ee6d20bdd0173898d06edb264965da
+      size: 4213235
