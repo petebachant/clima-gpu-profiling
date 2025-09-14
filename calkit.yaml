@@ -8,6 +8,9 @@ environments:
   clima:
     kind: slurm
     host: clima.gps.caltech.edu
+  sassy:
+    kind: system
+    host: sassy.caltech.edu
 
 pipeline:
   sequence:
@@ -16,13 +19,12 @@ pipeline:
   stages:
     baro-43-clima-nsys:
       kind: sbatch
-      script_path: scripts/run-slurm.sh
       environment: clima
+      script_path: scripts/run-nsys-clima.sh
       sbatch_options:
         - --gpus=1
         - --time=30
       args:
-        - nsys
         - nsys-outputs/baroclinic-wave-moist-43
         - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
         - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
@@ -38,13 +40,12 @@ pipeline:
         - nsys-outputs/baroclinic-wave-moist-43.nsys-rep
     baro-63-clima-nsys:
       kind: sbatch
-      script_path: scripts/run-slurm.sh
       environment: clima
+      script_path: scripts/run-nsys-clima.sh
       sbatch_options:
         - --gpus=1
         - --time=30
       args:
-        - nsys
         - nsys-outputs/baroclinic-wave-moist-63
         - config/numerics_sphere_he30ze63.yml
         - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
@@ -60,13 +61,12 @@ pipeline:
         - nsys-outputs/baroclinic-wave-moist-63.nsys-rep
     amip-clima-nsys:
       kind: sbatch
-      script_path: scripts/run-slurm.sh
       environment: clima
+      script_path: scripts/run-nsys-clima.sh
       sbatch_options:
         - --gpus=1
         - --time=240
       args:
-        - nsys
         - nsys-outputs/amip-target-edonly-63
         - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
         - ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml
@@ -80,3 +80,27 @@ pipeline:
         - Project.toml
       outputs:
         - nsys-outputs/amip-target-edonly-63.nsys-rep
+    amip-clima-ncu:
+      kind: sbatch
+      environment: clima
+      script_path: scripts/run-ncu-clima.sh
+      sbatch_options:
+        - --gpus=1
+        - --time=240
+      args:
+        - ncu-outputs/amip-target-edonly-63
+        - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
+        - ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml
+        - --kernel-name=copyto_stencil_kernel_
+        - --launch-skip=0
+        - --launch-count=20
+      inputs:
+        - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
+        - ClimaAtmos.jl/config/default_configs/default_config.yml
+        - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
+        - ClimaAtmos.jl/config/longrun_configs/amip_target_edonly.yml
+        - ClimaAtmos.jl/src
+        - ClimaCore.jl/src
+        - Project.toml
+      outputs:
+        - ncu-outputs/amip-target-edonly-63.ncu-rep
