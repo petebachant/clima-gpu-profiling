@@ -54,7 +54,7 @@ module load climacommon/2025_05_15
 export JULIA_LOAD_PATH=@:@stdlib
 
 # Instantiate julia environment, precompile, and build CUDA
-julia --project=.buildkite -e 'using Pkg; Pkg.instantiate(;verbose=true); Pkg.precompile(;strict=true); using CUDA; CUDA.precompile_runtime(); Pkg.status()'
+julia --project=. -e 'using Pkg; Pkg.instantiate(;verbose=true); Pkg.precompile(;strict=true); using CUDA; CUDA.precompile_runtime(); Pkg.status()'
 
 ncu --kernel-name $KERNEL_NAME \
     --launch-skip $LAUNCH_SKIP \
@@ -62,7 +62,7 @@ ncu --kernel-name $KERNEL_NAME \
     -o $NCU_OUTPUT_PREFIX \
     --import-source 1 \
     --set full \
-    julia --project=.buildkite \
+    julia --project=. \
     ClimaAtmos.jl/perf/benchmark_step_gpu.jl \
     --config ClimaAtmos.jl/config/default_configs/default_config.yml \
     $EXTRA_CONFIGS
