@@ -1,0 +1,53 @@
+schema: '2.0'
+stages:
+  baro-43-clima-nsys:
+    cmd: calkit slurm batch --name baro-43-clima-nsys --environment clima --dep
+      ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep
+      ClimaAtmos.jl/config/default_configs/default_config.yml --dep
+      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml --dep
+      ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml --dep
+      ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep Project.toml --out
+      nsys-outputs/baroclinic-wave-moist-43.nsys-rep -s --gpus=1 -s --time=30
+      scripts/run-nsys-clima.sh nsys-outputs/baroclinic-wave-moist-43
+      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
+      ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
+    deps:
+    - path: ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
+      hash: md5
+      md5: 76ca6ff32db8dfb1099f5fe9f9638115
+      size: 158
+    - path: ClimaAtmos.jl/config/default_configs/default_config.yml
+      hash: md5
+      md5: dd13641c442bf75c923926f613f3a809
+      size: 20378
+    - path: ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
+      hash: md5
+      md5: 7f7ceeac2a160e76a7264481dc1e4f5c
+      size: 200
+    - path: ClimaAtmos.jl/perf/benchmark_step_gpu.jl
+      hash: md5
+      md5: bd1679d4d20813295d1460121baedfd3
+      size: 1688
+    - path: ClimaAtmos.jl/src
+      hash: md5
+      md5: b5c1c179760ce26ff6a6ffbcf72d6a15.dir
+      size: 1223571
+      nfiles: 97
+    - path: ClimaCore.jl/src
+      hash: md5
+      md5: 3ea59b040e8efc872b0c3c9bfe617f79.dir
+      size: 1141968
+      nfiles: 95
+    - path: Project.toml
+      hash: md5
+      md5: d3a9216cb6e0ce1d494600d8076fcc36
+      size: 2117
+    - path: scripts/run-nsys-clima.sh
+      hash: md5
+      md5: 0fa8b0124e0d52d1f63b7af21958a0f9
+      size: 1318
+    outs:
+    - path: nsys-outputs/baroclinic-wave-moist-43.nsys-rep
+      hash: md5
+      md5: 9ac8a11ed5222f557a67f9fb9e7f6a60
+      size: 75309086
