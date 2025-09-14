@@ -1,43 +1,83 @@
 #!/bin/bash
 #SBATCH --gpus=1
 
-# First command line argument is the ncu output file prefix
-if [ "$#" -lt 1 ]; then
-  echo "Usage: $0 <ncu_output_prefix> [additional_config_files...]"
-  exit 1
-fi
-NCU_OUTPUT_PREFIX=$1
-shift
-
-# Parse additional configs from command line
-if [ "$#" -gt 0 ]; then
-  EXTRA_CONFIGS=""
-  for arg in "$@"; do
-    EXTRA_CONFIGS="$EXTRA_CONFIGS --config $arg"
-  done
-fi
-
-# Parse --kernel-name, --launch-skip, and --launch-count from command line
-# (if provided) and remove them from EXTRA_CONFIGS
+# Default values
+NCU_OUTPUT_PREFIX=""
+EXTRA_CONFIGS=""
 KERNEL_NAME=""
 LAUNCH_SKIP=""
 LAUNCH_COUNT=""
-NEW_EXTRA_CONFIGS=""
-for arg in $EXTRA_CONFIGS; do
-  if [[ $arg == --kernel-name* ]]; then
-    KERNEL_NAME="${arg#*=}"
-  elif [[ $arg == --launch-skip* ]]; then
-    LAUNCH_SKIP="${arg#*=}"
-  elif [[ $arg == --launch-count* ]]; then
-    LAUNCH_COUNT="${arg#*=}"
-  else
-    NEW_EXTRA_CONFIGS="$NEW_EXTRA_CONFIGS $arg"
-  fi
+
+# Function to show usage
+show_usage() {
+  echo "Usage: $0 <ncu_output_prefix> [options]"
+  echo "Options:"
+  echo "  --config <file>        Add additional config file (can be used multiple times)"
+  echo "  --kernel-name <name>   NCU kernel name filter"
+  echo "  --launch-skip <n>      NCU launch skip count"
+  echo "  --launch-count <n>     NCU launch count"
+  echo "  -h, --help            Show this help message"
+}
+
+# Parse command line arguments
+if [ "$#" -lt 1 ]; then
+  show_usage
+  exit 1
+fi
+
+# First argument is always the output prefix
+NCU_OUTPUT_PREFIX=$1
+shift
+
+# Parse remaining arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --config)
+      if [ -z "$2" ]; then
+        echo "Error: --config requires a value"
+        exit 1
+      fi
+      EXTRA_CONFIGS="$EXTRA_CONFIGS --config $2"
+      shift 2
+      ;;
+    --kernel-name)
+      if [ -z "$2" ]; then
+        echo "Error: --kernel-name requires a value"
+        exit 1
+      fi
+      KERNEL_NAME="$2"
+      shift 2
+      ;;
+    --launch-skip)
+      if [ -z "$2" ]; then
+        echo "Error: --launch-skip requires a value"
+        exit 1
+      fi
+      LAUNCH_SKIP="$2"
+      shift 2
+      ;;
+    --launch-count)
+      if [ -z "$2" ]; then
+        echo "Error: --launch-count requires a value"
+        exit 1
+      fi
+      LAUNCH_COUNT="$2"
+      shift 2
+      ;;
+    -h|--help)
+      show_usage
+      exit 0
+      ;;
+    *)
+      echo "Error: Unknown option $1"
+      show_usage
+      exit 1
+      ;;
+  esac
 done
-EXTRA_CONFIGS="$NEW_EXTRA_CONFIGS"
 
 # Ensure the output prefix parent directory exists
-OUTPUT_DIR=$(dirname "$NSYS_OUTPUT_PREFIX")
+OUTPUT_DIR=$(dirname "$NCU_OUTPUT_PREFIX")
 mkdir -p "$OUTPUT_DIR"
 
 export CLIMACOMMS_DEVICE=CUDA
@@ -56,9 +96,19 @@ export JULIA_LOAD_PATH=@:@stdlib
 # Instantiate julia environment, precompile, and build CUDA
 julia --project=. -e 'using Pkg; Pkg.instantiate(;verbose=true); Pkg.precompile(;strict=true); using CUDA; CUDA.precompile_runtime(); Pkg.status()'
 
-ncu --kernel-name $KERNEL_NAME \
-    --launch-skip $LAUNCH_SKIP \
-    --launch-count $LAUNCH_COUNT \
+# Build NCU command with optional arguments
+NCU_CMD="ncu"
+if [ -n "$KERNEL_NAME" ]; then
+  NCU_CMD="$NCU_CMD --kernel-name $KERNEL_NAME"
+fi
+if [ -n "$LAUNCH_SKIP" ]; then
+  NCU_CMD="$NCU_CMD --launch-skip $LAUNCH_SKIP"
+fi
+if [ -n "$LAUNCH_COUNT" ]; then
+  NCU_CMD="$NCU_CMD --launch-count $LAUNCH_COUNT"
+fi
+
+$NCU_CMD \
     -o $NCU_OUTPUT_PREFIX \
     --import-source 1 \
     --set full \

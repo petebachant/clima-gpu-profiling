@@ -110,7 +110,7 @@ stages:
       config/amip_target_edonly.yml --dep 
       ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep ClimaAtmos.jl/src --dep 
       ClimaCore.jl/src --dep Project.toml --out 
-      nsys-outputs/amip-target-edonly-63.nsys-rep -s --gpus=1 -s --time=240 
+      nsys-outputs/amip-target-edonly-63.nsys-rep -s --gpus=1 -s --time=240 -- 
       scripts/run-nsys-clima.sh nsys-outputs/amip-target-edonly-63 
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml 
       config/amip_target_edonly.yml
@@ -156,5 +156,62 @@ stages:
     outs:
     - path: nsys-outputs/amip-target-edonly-63.nsys-rep
       hash: md5
-      md5: 98ee6d20bdd0173898d06edb264965da
-      size: 4213235
+      md5: 2553dfaa8d41fb21933b0ed0b52bc005
+      size: 4199259
+  amip-clima-ncu:
+    cmd: calkit slurm batch --name amip-clima-ncu --environment clima --dep 
+      ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
+      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
+      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml --dep 
+      config/amip_target_edonly.yml --dep 
+      ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep ClimaAtmos.jl/src --dep 
+      ClimaCore.jl/src --dep Project.toml --out 
+      ncu-outputs/amip-target-edonly-63.ncu-rep -s --gpus=1 -s --time=240 -- 
+      scripts/run-ncu-clima.sh ncu-outputs/amip-target-edonly-63 --config 
+      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml --config 
+      config/amip_target_edonly.yml --kernel-name copyto_stencil_kernel_ 
+      --launch-skip 0 --launch-count 20
+    deps:
+    - path: ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
+      hash: md5
+      md5: 7e347e86d22cc0c3d1fdc3b9bc12640b
+      size: 260
+    - path: ClimaAtmos.jl/config/default_configs/default_config.yml
+      hash: md5
+      md5: dd13641c442bf75c923926f613f3a809
+      size: 20378
+    - path: ClimaAtmos.jl/perf/benchmark_step_gpu.jl
+      hash: md5
+      md5: 40a9c1a4399f8990ec1cc81d43867b73
+      size: 1688
+    - path: ClimaAtmos.jl/src
+      hash: md5
+      md5: b5c1c179760ce26ff6a6ffbcf72d6a15.dir
+      size: 1223571
+      nfiles: 97
+    - path: ClimaAtmos.jl/toml/longrun_aquaplanet.toml
+      hash: md5
+      md5: fe0afbe3ff59d7ba0c437259798ba7f7
+      size: 99
+    - path: ClimaCore.jl/src
+      hash: md5
+      md5: 3ea59b040e8efc872b0c3c9bfe617f79.dir
+      size: 1141968
+      nfiles: 95
+    - path: Project.toml
+      hash: md5
+      md5: d3a9216cb6e0ce1d494600d8076fcc36
+      size: 2117
+    - path: config/amip_target_edonly.yml
+      hash: md5
+      md5: baca48773722a0848ee32bca9e2775a2
+      size: 569
+    - path: scripts/run-ncu-clima.sh
+      hash: md5
+      md5: 8200734c6f800a8d0d3cf47b945acdd1
+      size: 2813
+    outs:
+    - path: ncu-outputs/amip-target-edonly-63.ncu-rep
+      hash: md5
+      md5: d448dc77d10217f115825a16f1c780cb
+      size: 23488944

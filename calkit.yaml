@@ -90,11 +90,11 @@ pipeline:
         - --time=240
       args:
         - ncu-outputs/amip-target-edonly-63
-        - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-        - config/amip_target_edonly.yml
-        - --kernel-name=copyto_stencil_kernel_
-        - --launch-skip=0
-        - --launch-count=20
+        - --config ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
+        - --config config/amip_target_edonly.yml
+        - --kernel-name copyto_stencil_kernel_
+        - --launch-skip 0
+        - --launch-count 20
       inputs:
         - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
         - ClimaAtmos.jl/config/default_configs/default_config.yml

@@ -9,7 +9,7 @@ stages:
       --dep ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep 
       Project.toml --out 
       nsys-outputs/baroclinic-wave-moist-43.nsys-rep -s --gpus=1 -s 
-      --time=30 scripts/run-nsys-clima.sh 
+      --time=30 -- scripts/run-nsys-clima.sh 
       nsys-outputs/baroclinic-wave-moist-43 
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
       ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
@@ -36,7 +36,7 @@ stages:
       --dep ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep 
       Project.toml --out 
       nsys-outputs/baroclinic-wave-moist-63.nsys-rep -s --gpus=1 -s 
-      --time=60 scripts/run-nsys-clima.sh 
+      --time=60 -- scripts/run-nsys-clima.sh 
       nsys-outputs/baroclinic-wave-moist-63 
       config/numerics_sphere_he30ze63.yml 
       ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
@@ -63,7 +63,7 @@ stages:
       ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep 
       ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep Project.toml 
       --out nsys-outputs/amip-target-edonly-63.nsys-rep -s --gpus=1 -s
-      --time=240 scripts/run-nsys-clima.sh 
+      --time=240 -- scripts/run-nsys-clima.sh 
       nsys-outputs/amip-target-edonly-63 
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
       config/amip_target_edonly.yml
@@ -91,12 +91,11 @@ stages:
       ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep 
       ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep Project.toml 
       --out ncu-outputs/amip-target-edonly-63.ncu-rep -s --gpus=1 -s 
-      --time=240 scripts/run-ncu-clima.sh 
-      ncu-outputs/amip-target-edonly-63 
+      --time=240 -- scripts/run-ncu-clima.sh 
+      ncu-outputs/amip-target-edonly-63 --config 
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      config/amip_target_edonly.yml 
-      --kernel-name=copyto_stencil_kernel_ --launch-skip=0 
-      --launch-count=20
+      --config config/amip_target_edonly.yml --kernel-name 
+      copyto_stencil_kernel_ --launch-skip 0 --launch-count 20
     deps:
       - scripts/run-ncu-clima.sh
       - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
