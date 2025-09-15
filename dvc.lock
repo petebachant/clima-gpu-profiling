@@ -7,7 +7,7 @@ stages:
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml --dep 
       ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml --dep 
       ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep Project.toml --out 
-      nsys-outputs/baroclinic-wave-moist-43.nsys-rep -s --gpus=1 -s --time=30 
+      nsys-outputs/baroclinic-wave-moist-43.nsys-rep -s --gpus=1 -s --time=30 --
       scripts/run-nsys-clima.sh nsys-outputs/baroclinic-wave-moist-43 
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml 
       ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
@@ -49,8 +49,8 @@ stages:
     outs:
     - path: nsys-outputs/baroclinic-wave-moist-43.nsys-rep
       hash: md5
-      md5: dc39de4a73c1fd481d39df53c5fa9975
-      size: 2279400
+      md5: 3a1100ffeb73df4e6cd415433d2e03c8
+      size: 2436698
   baro-63-clima-nsys:
     cmd: calkit slurm batch --name baro-63-clima-nsys --environment clima --dep 
       ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
@@ -58,7 +58,7 @@ stages:
       config/numerics_sphere_he30ze63.yml --dep 
       ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml --dep 
       ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep Project.toml --out 
-      nsys-outputs/baroclinic-wave-moist-63.nsys-rep -s --gpus=1 -s --time=60 
+      nsys-outputs/baroclinic-wave-moist-63.nsys-rep -s --gpus=1 -s --time=60 --
       scripts/run-nsys-clima.sh nsys-outputs/baroclinic-wave-moist-63 
       config/numerics_sphere_he30ze63.yml 
       ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
@@ -100,8 +100,8 @@ stages:
     outs:
     - path: nsys-outputs/baroclinic-wave-moist-63.nsys-rep
       hash: md5
-      md5: 32bfd80cc027259314c09143ee245630
-      size: 2428446
+      md5: 0fdf79dcb9e8196a5fd69ec4efdb404e
+      size: 2418809
   amip-clima-nsys:
     cmd: calkit slurm batch --name amip-clima-nsys --environment clima --dep 
       ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
