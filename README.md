@@ -30,3 +30,17 @@ Lastly, call:
 ```sh
 calkit run
 ```
+
+This will run all pipeline stages in the order they're defined in
+`calkit.yaml`.
+If you'd like to run a single stage (in a reproducible way),
+you can use its name as the first positional argument to `calkit run`.
+For example:
+
+```sh
+calkit run amip-clima-nsys
+```
+
+However, by default, only stages whose Nsight reports are now invalid
+(since their inputs have changed since the last run)
+will run.
