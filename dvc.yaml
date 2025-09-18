@@ -111,3 +111,32 @@ stages:
           persist: true
     desc: Automatically generated from the 'amip-clima-ncu' stage in 
       calkit.yaml. Changes made here will be overwritten.
+  amip-ncu-update-jacobian:
+    cmd: calkit slurm batch --name amip-ncu-update-jacobian 
+      --environment clima --dep 
+      ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
+      ClimaAtmos.jl/perf/common.jl --dep 
+      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
+      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
+      --dep config/amip_target_edonly.yml --dep 
+      ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep 
+      ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep Project.toml 
+      --out ncu-outputs/amip-update-jacobian-kernel.ncu-rep -s 
+      --gpus=1 -s --time=240 -- 
+      scripts/run-ncu-amip-update-jacobian.sh
+    deps:
+      - scripts/run-ncu-amip-update-jacobian.sh
+      - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
+      - ClimaAtmos.jl/perf/common.jl
+      - ClimaAtmos.jl/config/default_configs/default_config.yml
+      - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
+      - config/amip_target_edonly.yml
+      - ClimaAtmos.jl/toml/longrun_aquaplanet.toml
+      - ClimaAtmos.jl/src
+      - ClimaCore.jl/src
+      - Project.toml
+    outs:
+      - ncu-outputs/amip-update-jacobian-kernel.ncu-rep:
+          persist: true
+    desc: Automatically generated from the 'amip-ncu-update-jacobian' 
+      stage in calkit.yaml. Changes made here will be overwritten.

@@ -215,3 +215,62 @@ stages:
       hash: md5
       md5: d448dc77d10217f115825a16f1c780cb
       size: 23488944
+  amip-ncu-update-jacobian:
+    cmd: calkit slurm batch --name amip-ncu-update-jacobian --environment clima 
+      --dep ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
+      ClimaAtmos.jl/perf/common.jl --dep 
+      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
+      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml --dep 
+      config/amip_target_edonly.yml --dep 
+      ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep ClimaAtmos.jl/src --dep 
+      ClimaCore.jl/src --dep Project.toml --out 
+      ncu-outputs/amip-update-jacobian-kernel.ncu-rep -s --gpus=1 -s --time=240 
+      -- scripts/run-ncu-amip-update-jacobian.sh
+    deps:
+    - path: ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
+      hash: md5
+      md5: 7e347e86d22cc0c3d1fdc3b9bc12640b
+      size: 260
+    - path: ClimaAtmos.jl/config/default_configs/default_config.yml
+      hash: md5
+      md5: dd13641c442bf75c923926f613f3a809
+      size: 20378
+    - path: ClimaAtmos.jl/perf/benchmark_step_gpu.jl
+      hash: md5
+      md5: 5ff6a0167ef258b715491d6af3e6f669
+      size: 1744
+    - path: ClimaAtmos.jl/perf/common.jl
+      hash: md5
+      md5: b30579005da2eb15bdf39fd73262afb4
+      size: 1265
+    - path: ClimaAtmos.jl/src
+      hash: md5
+      md5: b5c1c179760ce26ff6a6ffbcf72d6a15.dir
+      size: 1223571
+      nfiles: 97
+    - path: ClimaAtmos.jl/toml/longrun_aquaplanet.toml
+      hash: md5
+      md5: fe0afbe3ff59d7ba0c437259798ba7f7
+      size: 99
+    - path: ClimaCore.jl/src
+      hash: md5
+      md5: 3ea59b040e8efc872b0c3c9bfe617f79.dir
+      size: 1141968
+      nfiles: 95
+    - path: Project.toml
+      hash: md5
+      md5: b375627b3572bdffc6624d472385ed74
+      size: 2266
+    - path: config/amip_target_edonly.yml
+      hash: md5
+      md5: baca48773722a0848ee32bca9e2775a2
+      size: 569
+    - path: scripts/run-ncu-amip-update-jacobian.sh
+      hash: md5
+      md5: fbf1b3c1f45a97d3e4acbc7f50e44666
+      size: 1089
+    outs:
+    - path: ncu-outputs/amip-update-jacobian-kernel.ncu-rep
+      hash: md5
+      md5: f3e70e423b1cc63e05e7434272fb772a
+      size: 138823613
