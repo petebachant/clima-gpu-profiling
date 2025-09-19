@@ -44,3 +44,16 @@ calkit run amip-clima-nsys
 However, by default, only stages whose Nsight reports are now invalid
 (since their inputs have changed since the last run)
 will run.
+
+## Running a Jupyter server on `clima` with `srun`
+
+```sh
+srun --gpus=1 --pty bash
+```
+
+```sh
+calkit jupyter lab --ip=0.0.0.0 --no-browser
+```
+
+Then, copy the server URL, which starts with `http://127.0.0.1`,
+and in VS Code, use that when selecting a kernel for the notebook.
