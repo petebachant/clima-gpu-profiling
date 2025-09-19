@@ -57,6 +57,7 @@ stages:
   amip-clima-nsys:
     cmd: calkit slurm batch --name amip-clima-nsys --environment clima
       --dep ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
+      ClimaAtmos.jl/perf/common.jl --dep 
       ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
       --dep config/amip_target_edonly.yml --dep 
@@ -70,6 +71,7 @@ stages:
     deps:
       - scripts/run-nsys-clima.sh
       - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
+      - ClimaAtmos.jl/perf/common.jl
       - ClimaAtmos.jl/config/default_configs/default_config.yml
       - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
       - config/amip_target_edonly.yml
