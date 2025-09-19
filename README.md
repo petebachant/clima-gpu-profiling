@@ -48,7 +48,7 @@ will run.
 ## Running a Jupyter server on `clima` with `srun`
 
 ```sh
-srun --gpus=1 --pty bash
+srun --gpus=1 --mpi=none --pty bash
 ```
 
 ```sh
