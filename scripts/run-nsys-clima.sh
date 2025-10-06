@@ -43,6 +43,6 @@ nsys profile \
     --trace=nvtx,mpi,cuda,osrt \
     --output=$NSYS_OUTPUT_PREFIX \
     julia --project=. \
-    ClimaAtmos.jl/perf/benchmark_step_gpu.jl \
+    ClimaAtmos.jl/perf/benchmark_step.jl \
     --config ClimaAtmos.jl/config/default_configs/default_config.yml \
     $EXTRA_CONFIGS
