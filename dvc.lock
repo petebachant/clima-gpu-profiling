@@ -104,9 +104,8 @@ stages:
       size: 2418809
   amip-clima-nsys:
     cmd: calkit slurm batch --name amip-clima-nsys --environment clima --dep 
-      ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
-      ClimaAtmos.jl/perf/common.jl --dep 
-      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
+      ClimaAtmos.jl/perf/benchmark_step.jl --dep ClimaAtmos.jl/perf/common.jl 
+      --dep ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml --dep 
       config/amip_target_edonly.yml --dep 
       ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep ClimaAtmos.jl/src --dep 
@@ -122,20 +121,20 @@ stages:
       size: 260
     - path: ClimaAtmos.jl/config/default_configs/default_config.yml
       hash: md5
-      md5: dd13641c442bf75c923926f613f3a809
-      size: 20378
-    - path: ClimaAtmos.jl/perf/benchmark_step_gpu.jl
+      md5: 5e5e1f769ecb024cadb7a06839f061f8
+      size: 21469
+    - path: ClimaAtmos.jl/perf/benchmark_step.jl
       hash: md5
-      md5: 5ff6a0167ef258b715491d6af3e6f669
-      size: 1744
+      md5: c1d5ed1ad2c7ad4a05af97d3b2889c45
+      size: 1906
     - path: ClimaAtmos.jl/perf/common.jl
       hash: md5
       md5: b30579005da2eb15bdf39fd73262afb4
       size: 1265
     - path: ClimaAtmos.jl/src
       hash: md5
-      md5: b5c1c179760ce26ff6a6ffbcf72d6a15.dir
-      size: 1223571
+      md5: f478e1d5c54df106ec96bf6f1dee7e26.dir
+      size: 1266366
       nfiles: 97
     - path: ClimaAtmos.jl/toml/longrun_aquaplanet.toml
       hash: md5
@@ -143,8 +142,8 @@ stages:
       size: 99
     - path: ClimaCore.jl/src
       hash: md5
-      md5: 3ea59b040e8efc872b0c3c9bfe617f79.dir
-      size: 1141968
+      md5: 0c4a110efaa8b7ceccd183ecbb538051.dir
+      size: 1142258
       nfiles: 95
     - path: Project.toml
       hash: md5
@@ -156,13 +155,13 @@ stages:
       size: 569
     - path: scripts/run-nsys-clima.sh
       hash: md5
-      md5: 0fa8b0124e0d52d1f63b7af21958a0f9
-      size: 1318
+      md5: 28fbf3762b56964c50590bba3485ae1b
+      size: 1466
     outs:
     - path: nsys-outputs/amip-target-edonly-63.nsys-rep
       hash: md5
-      md5: eef9c0ffafdae2ee3ef61be32702e7f0
-      size: 4248956
+      md5: 0863584b85ff9f813d8a3e40ae36e89c
+      size: 3999817
   amip-clima-ncu:
     cmd: calkit slurm batch --name amip-clima-ncu --environment clima --dep 
       ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
