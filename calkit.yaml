@@ -33,12 +33,13 @@ pipeline:
         - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
         - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
       inputs:
-        - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
+        - ClimaAtmos.jl/perf/benchmark_step.jl
         - ClimaAtmos.jl/config/default_configs/default_config.yml
         - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
         - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
         - ClimaAtmos.jl/src
         - ClimaCore.jl/src
+        - ClimaCore.jl/ext
         - Project.toml
       outputs:
         - nsys-outputs/baroclinic-wave-moist-43.nsys-rep
@@ -84,6 +85,7 @@ pipeline:
         - ClimaAtmos.jl/src
         - ClimaCore.jl/src
         - Project.toml
+        - GPUCompiler.jl/src
       outputs:
         - nsys-outputs/amip-target-edonly-63.nsys-rep
     amip-clima-ncu:
