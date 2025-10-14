@@ -8,8 +8,9 @@ stages:
       ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml --dep 
       ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep ClimaCore.jl/ext --dep 
       Project.toml --out nsys-outputs/baroclinic-wave-moist-43.nsys-rep -s 
-      --gpus=1 -s --time=30 -- scripts/run-nsys-clima.sh 
-      nsys-outputs/baroclinic-wave-moist-43 
+      --gpus=1 -s --time=30 -s 
+      --export=CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=1 -- 
+      scripts/run-nsys-clima.sh nsys-outputs/baroclinic-wave-moist-43 
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml 
       ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
     deps:
@@ -27,8 +28,8 @@ stages:
       size: 200
     - path: ClimaAtmos.jl/perf/benchmark_step.jl
       hash: md5
-      md5: e9eadb8f8dbdfbb688dbbcf3486991a1
-      size: 1990
+      md5: 068aab1bd8423af3ff23dc1c2e4f4b91
+      size: 2764
     - path: ClimaAtmos.jl/src
       hash: md5
       md5: f478e1d5c54df106ec96bf6f1dee7e26.dir
@@ -55,8 +56,8 @@ stages:
     outs:
     - path: nsys-outputs/baroclinic-wave-moist-43.nsys-rep
       hash: md5
-      md5: a1ce6db65b2f49c6c8c0ee1f6d0800cd
-      size: 3598326
+      md5: f17c8de162b8e52039ecf23d18db4455
+      size: 3442203
   baro-63-clima-nsys:
     cmd: calkit slurm batch --name baro-63-clima-nsys --environment clima --dep 
       ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
@@ -289,3 +290,61 @@ stages:
       hash: md5
       md5: f3e70e423b1cc63e05e7434272fb772a
       size: 138823613
+  baro-43-clima-nsys-orig:
+    cmd: calkit slurm batch --name baro-43-clima-nsys-orig --environment clima 
+      --dep ClimaAtmos.jl/perf/benchmark_step.jl --dep 
+      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
+      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml --dep 
+      ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml --dep 
+      ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep ClimaCore.jl/ext --dep 
+      Project.toml --out nsys-outputs/baroclinic-wave-moist-43-orig.nsys-rep -s 
+      --gpus=1 -s --time=30 -s 
+      --export=CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=0 -- 
+      scripts/run-nsys-clima.sh nsys-outputs/baroclinic-wave-moist-43-orig 
+      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml 
+      ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
+    deps:
+    - path: ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
+      hash: md5
+      md5: 76ca6ff32db8dfb1099f5fe9f9638115
+      size: 158
+    - path: ClimaAtmos.jl/config/default_configs/default_config.yml
+      hash: md5
+      md5: 5e5e1f769ecb024cadb7a06839f061f8
+      size: 21469
+    - path: ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
+      hash: md5
+      md5: 7f7ceeac2a160e76a7264481dc1e4f5c
+      size: 200
+    - path: ClimaAtmos.jl/perf/benchmark_step.jl
+      hash: md5
+      md5: 068aab1bd8423af3ff23dc1c2e4f4b91
+      size: 2764
+    - path: ClimaAtmos.jl/src
+      hash: md5
+      md5: f478e1d5c54df106ec96bf6f1dee7e26.dir
+      size: 1266366
+      nfiles: 97
+    - path: ClimaCore.jl/ext
+      hash: md5
+      md5: c8cb6da5edf8ccf84371f4db69ba906c.dir
+      size: 174052
+      nfiles: 25
+    - path: ClimaCore.jl/src
+      hash: md5
+      md5: 848ce4416ff81e9c0ec17742fdb354d0.dir
+      size: 1142299
+      nfiles: 95
+    - path: Project.toml
+      hash: md5
+      md5: b375627b3572bdffc6624d472385ed74
+      size: 2266
+    - path: scripts/run-nsys-clima.sh
+      hash: md5
+      md5: 28fbf3762b56964c50590bba3485ae1b
+      size: 1466
+    outs:
+    - path: nsys-outputs/baroclinic-wave-moist-43-orig.nsys-rep
+      hash: md5
+      md5: e6732ab0baab1720f024fc2f019efb00
+      size: 2335573
