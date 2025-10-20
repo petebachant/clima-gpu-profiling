@@ -96,8 +96,8 @@ stages:
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
       --dep config/amip_target_edonly.yml --dep 
       ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep 
-      ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep Project.toml 
-      --dep GPUCompiler.jl/src --out 
+      ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep ClimaCore.jl/ext 
+      --dep Project.toml --dep GPUCompiler.jl/src --out 
       nsys-outputs/amip-target-edonly-63.nsys-rep -s --gpus=1 -s 
       --time=240 -s 
       --export=CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=1 -- 
@@ -114,6 +114,7 @@ stages:
       - ClimaAtmos.jl/toml/longrun_aquaplanet.toml
       - ClimaAtmos.jl/src
       - ClimaCore.jl/src
+      - ClimaCore.jl/ext
       - Project.toml
       - GPUCompiler.jl/src
     outs:
