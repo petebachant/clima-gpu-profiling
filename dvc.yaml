@@ -99,8 +99,9 @@ stages:
       ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep Project.toml 
       --dep GPUCompiler.jl/src --out 
       nsys-outputs/amip-target-edonly-63.nsys-rep -s --gpus=1 -s 
-      --time=240 -- scripts/run-nsys-clima.sh 
-      nsys-outputs/amip-target-edonly-63 
+      --time=240 -s 
+      --export=CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=1 -- 
+      scripts/run-nsys-clima.sh nsys-outputs/amip-target-edonly-63 
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
       config/amip_target_edonly.yml
     deps:

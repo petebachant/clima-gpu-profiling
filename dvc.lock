@@ -117,7 +117,8 @@ stages:
       config/amip_target_edonly.yml --dep 
       ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep ClimaAtmos.jl/src --dep 
       ClimaCore.jl/src --dep Project.toml --dep GPUCompiler.jl/src --out 
-      nsys-outputs/amip-target-edonly-63.nsys-rep -s --gpus=1 -s --time=240 -- 
+      nsys-outputs/amip-target-edonly-63.nsys-rep -s --gpus=1 -s --time=240 -s 
+      --export=CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=1 -- 
       scripts/run-nsys-clima.sh nsys-outputs/amip-target-edonly-63 
       ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml 
       config/amip_target_edonly.yml
@@ -172,8 +173,8 @@ stages:
     outs:
     - path: nsys-outputs/amip-target-edonly-63.nsys-rep
       hash: md5
-      md5: 57ed0b103a2d3d489400557417619370
-      size: 3911582
+      md5: ecd25a63300be37bc715b492c31f8199
+      size: 4059044
   amip-clima-ncu:
     cmd: calkit slurm batch --name amip-clima-ncu --environment clima --dep 
       ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
