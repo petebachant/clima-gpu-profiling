@@ -120,6 +120,40 @@ stages:
           persist: true
     desc: Automatically generated from the 'amip-clima-nsys' stage in 
       calkit.yaml. Changes made here will be overwritten.
+  amip-clima-nsys-orig:
+    cmd: calkit slurm batch --name amip-clima-nsys-orig --environment 
+      clima --dep ClimaAtmos.jl/perf/benchmark_step.jl --dep 
+      ClimaAtmos.jl/perf/common.jl --dep 
+      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
+      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
+      --dep config/amip_target_edonly.yml --dep 
+      ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep 
+      ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep Project.toml 
+      --dep GPUCompiler.jl/src --out 
+      nsys-outputs/amip-target-edonly-63-orig.nsys-rep -s --gpus=1 -s 
+      --time=240 -s 
+      --export=CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=0 -- 
+      scripts/run-nsys-clima.sh 
+      nsys-outputs/amip-target-edonly-63-orig 
+      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
+      config/amip_target_edonly.yml
+    deps:
+      - scripts/run-nsys-clima.sh
+      - ClimaAtmos.jl/perf/benchmark_step.jl
+      - ClimaAtmos.jl/perf/common.jl
+      - ClimaAtmos.jl/config/default_configs/default_config.yml
+      - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
+      - config/amip_target_edonly.yml
+      - ClimaAtmos.jl/toml/longrun_aquaplanet.toml
+      - ClimaAtmos.jl/src
+      - ClimaCore.jl/src
+      - Project.toml
+      - GPUCompiler.jl/src
+    outs:
+      - nsys-outputs/amip-target-edonly-63-orig.nsys-rep:
+          persist: true
+    desc: Automatically generated from the 'amip-clima-nsys-orig' 
+      stage in calkit.yaml. Changes made here will be overwritten.
   amip-clima-ncu:
     cmd: calkit slurm batch --name amip-clima-ncu --environment clima 
       --dep ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
