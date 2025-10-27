@@ -21,6 +21,25 @@ pipeline:
   # sequence:
   #   - [baro-43-clima, baro-63-clima, amip-clima]
   stages:
+    make-sample-device-df:
+      kind: sbatch
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      sbatch_options:
+        - --time=10
+        - --gpus=1
+        - --export=CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=1
+      args:
+        - scripts/make_sample_device_df.jl
+      inputs:
+        - ClimaAtmos.jl/perf/benchmark_step.jl
+        - ClimaAtmos.jl/config/default_configs/default_config.yml
+        - ClimaAtmos.jl/src
+        - ClimaCore.jl/src
+        - ClimaCore.jl/ext
+        - Manifest.toml
+      outputs:
+        - results/sample-device-df.csv
     baro-43-clima-nsys:
       kind: sbatch
       environment: clima
@@ -41,7 +60,7 @@ pipeline:
         - ClimaAtmos.jl/src
         - ClimaCore.jl/src
         - ClimaCore.jl/ext
-        - Project.toml
+        - Manifest.toml
       outputs:
         - nsys-outputs/baroclinic-wave-moist-43.nsys-rep
     baro-43-clima-nsys-orig:
@@ -64,30 +83,9 @@ pipeline:
         - ClimaAtmos.jl/src
         - ClimaCore.jl/src
         - ClimaCore.jl/ext
-        - Project.toml
+        - Manifest.toml
       outputs:
         - nsys-outputs/baroclinic-wave-moist-43-orig.nsys-rep
-    baro-63-clima-nsys:
-      kind: sbatch
-      environment: clima
-      script_path: scripts/run-nsys-clima.sh
-      sbatch_options:
-        - --gpus=1
-        - --time=60
-      args:
-        - nsys-outputs/baroclinic-wave-moist-63
-        - config/numerics_sphere_he30ze63.yml
-        - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
-      inputs:
-        - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
-        - ClimaAtmos.jl/config/default_configs/default_config.yml
-        - config/numerics_sphere_he30ze63.yml
-        - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
-        - ClimaAtmos.jl/src
-        - ClimaCore.jl/src
-        - Project.toml
-      outputs:
-        - nsys-outputs/baroclinic-wave-moist-63.nsys-rep
     amip-clima-nsys:
       kind: sbatch
       environment: clima
@@ -110,7 +108,7 @@ pipeline:
         - ClimaAtmos.jl/src
         - ClimaCore.jl/src
         - ClimaCore.jl/ext
-        - Project.toml
+        - Manifest.toml
         - GPUCompiler.jl/src
       outputs:
         - nsys-outputs/amip-target-edonly-63.nsys-rep

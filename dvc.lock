@@ -422,3 +422,48 @@ stages:
       hash: md5
       md5: 01e790fb062467ec3306b18b010937d4
       size: 3887617
+  make-sample-device-df:
+    cmd: calkit slurm batch --name make-sample-device-df --environment clima 
+      --dep ClimaAtmos.jl/perf/benchmark_step.jl --dep 
+      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
+      ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep ClimaCore.jl/ext --dep 
+      Manifest.toml --out results/sample-device-df.csv -s --time=10 -s --gpus=1 
+      -s --export=CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=1 -- 
+      scripts/run-julia-script.sh scripts/make_sample_device_df.jl
+    deps:
+    - path: ClimaAtmos.jl/config/default_configs/default_config.yml
+      hash: md5
+      md5: 03e3d7a6e07041b7e4814b37bfd4157d
+      size: 21649
+    - path: ClimaAtmos.jl/perf/benchmark_step.jl
+      hash: md5
+      md5: 54cbbac7f28b493da81debedd0d7096b
+      size: 2090
+    - path: ClimaAtmos.jl/src
+      hash: md5
+      md5: d699ef518ca66425601cfa9ea463d51d.dir
+      size: 1288082
+      nfiles: 99
+    - path: ClimaCore.jl/ext
+      hash: md5
+      md5: 860e1aefacb002384c1abdd943c82826.dir
+      size: 176165
+      nfiles: 25
+    - path: ClimaCore.jl/src
+      hash: md5
+      md5: b0de64db952f7e6e952df2c725e4b796.dir
+      size: 1139391
+      nfiles: 95
+    - path: Manifest.toml
+      hash: md5
+      md5: 7e95ea3df8a49cced2ae7bc6037c9005
+      size: 113965
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: c9062f51f59b8584951da91e3007dcbf
+      size: 322
+    outs:
+    - path: results/sample-device-df.csv
+      hash: md5
+      md5: 6b6ee94397b056b56013ce1d66658a5f
+      size: 581378

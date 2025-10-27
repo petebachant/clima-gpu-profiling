@@ -1,5 +1,5 @@
 
-include("ClimaAtmos.jl/perf/benchmark_step.jl");
+include("../ClimaAtmos.jl/perf/benchmark_step.jl");
 import CSV
 
 mkpath("results")
