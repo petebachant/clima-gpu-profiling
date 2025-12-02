@@ -1,1 +1,25 @@
-stages: {}
+stages:
+  baseline-nsys:
+    cmd: calkit slurm batch --name baseline-nsys --environment clima 
+      --dep scripts/run.jl --dep ClimaCoupler.jl/src --dep 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
+      --dep ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl --dep 
+      ClimaCoupler.jl/experiments/ClimaEarth/components --out 
+      results/nsys/baseline.nsys-rep -s --gpus=1 -s --time=120 -- 
+      scripts/run-nsys.sh results/nsys/baseline 
+      ClimaCoupler.jl/experiments/ClimaEarth 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+    deps:
+      - scripts/run-nsys.sh
+      - scripts/run.jl
+      - ClimaCoupler.jl/src
+      - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
+      - ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
+      - ClimaCoupler.jl/experiments/ClimaEarth/components
+    outs:
+      - results/nsys/baseline.nsys-rep:
+          persist: true
+    desc: Automatically generated from the 'baseline-nsys' stage in 
+      calkit.yaml. Changes made here will be overwritten.

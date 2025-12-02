@@ -13,4 +13,24 @@ environments:
     host: sassy.caltech.edu
 
 pipeline:
-  stages: {}
+  stages:
+    baseline-nsys:
+      kind: sbatch
+      environment: clima
+      script_path: scripts/run-nsys.sh
+      sbatch_options:
+        - --gpus=1
+        - --time=120
+      args:
+        - results/nsys/baseline
+        - ClimaCoupler.jl/experiments/ClimaEarth
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      inputs:
+        - scripts/run.jl
+        - ClimaCoupler.jl/src
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
+        - ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
+        - ClimaCoupler.jl/experiments/ClimaEarth/components
+      outputs:
+        - results/nsys/baseline.nsys-rep
