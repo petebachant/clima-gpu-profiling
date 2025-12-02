@@ -27,6 +27,8 @@ module load climacommon/2025_05_15
 
 # Set environment variables for GPU usage
 export CLIMACOMMS_DEVICE=CUDA
+export GPU_COMPILER_MANGLE_STACK_TRACE=1
+export GPU_COMPILER_MANGLE_IGNORED_MODULES=":Base,:Core,:GPUCompiler,:CUDA,:NVTX,:ClimaCoreCUDAExt,:ClimaCore"
 
 # Set environmental variable for julia to not use global packages for
 # reproducibility
