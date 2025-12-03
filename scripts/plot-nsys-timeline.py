@@ -7,10 +7,8 @@ This was generated with Claude and hasn't been tested/fixed yet.
 
 import argparse
 import sqlite3
-from collections import defaultdict
 from pathlib import Path
 
-import plotly.express as px
 import plotly.graph_objects as go
 
 
@@ -198,7 +196,6 @@ def create_timeline_plot(events, output_file="timeline.html"):
 
     # Group events by category for swim lanes
     categories = sorted(set(e["category"] for e in events))
-    category_to_y = {cat: i for i, cat in enumerate(categories)}
 
     # Assign colors by type
     type_colors = {
@@ -212,7 +209,6 @@ def create_timeline_plot(events, output_file="timeline.html"):
 
     # Add events as rectangles
     for event in events:
-        y_pos = category_to_y[event["category"]]
         color = type_colors.get(event["type"], "#7f7f7f")
 
         fig.add_trace(
