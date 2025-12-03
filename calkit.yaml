@@ -16,7 +16,7 @@ environments:
     path: requirements.txt
     kind: uv-venv
     prefix: .venv
-    python: '3.13'
+    python: "3.13"
 pipeline:
   stages:
     baseline-nsys:
@@ -39,3 +39,12 @@ pipeline:
         - ClimaCoupler.jl/experiments/ClimaEarth/components
       outputs:
         - results/nsys/baseline.nsys-rep
+    baseline-nsys-to-sqlite:
+      kind: shell-command
+      environment: _system
+      command: nsys export results/nsys/baseline.nsys-rep -t sqlite
+        -o results/nsys/baseline.sqlite
+      inputs:
+        - results/nsys/baseline.nsys-rep
+      outputs:
+        - results/nsys/baseline.sqlite

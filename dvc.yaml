@@ -23,3 +23,12 @@ stages:
           persist: true
     desc: Automatically generated from the 'baseline-nsys' stage in 
       calkit.yaml. Changes made here will be overwritten.
+  baseline-nsys-to-sqlite:
+    cmd: ' bash --noprofile --norc -c "nsys export results/nsys/baseline.nsys-rep
+      -t sqlite -o results/nsys/baseline.sqlite"'
+    deps:
+      - results/nsys/baseline.nsys-rep
+    outs:
+      - results/nsys/baseline.sqlite
+    desc: Automatically generated from the 'baseline-nsys-to-sqlite' 
+      stage in calkit.yaml. Changes made here will be overwritten.
