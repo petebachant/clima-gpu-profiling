@@ -7,6 +7,7 @@ EXTRA_CONFIGS=""
 KERNEL_NAME=""
 LAUNCH_SKIP=""
 LAUNCH_COUNT=""
+PROJECT="."
 
 # Function to show usage
 show_usage() {
@@ -16,6 +17,7 @@ show_usage() {
   echo "  --kernel-name <name>   NCU kernel name filter"
   echo "  --launch-skip <n>      NCU launch skip count"
   echo "  --launch-count <n>     NCU launch count"
+  echo "  --project <path>       Julia project directory (default: .)"
   echo "  -h, --help            Show this help message"
 }
 
@@ -64,6 +66,14 @@ while [[ $# -gt 0 ]]; do
       LAUNCH_COUNT="$2"
       shift 2
       ;;
+    --project)
+      if [ -z "$2" ]; then
+        echo "Error: --project requires a value"
+        exit 1
+      fi
+      PROJECT="$2"
+      shift 2
+      ;;
     -h|--help)
       show_usage
       exit 0
@@ -95,7 +105,7 @@ module load climacommon/2025_05_15
 export JULIA_LOAD_PATH=@:@stdlib
 
 # Instantiate julia environment, precompile, and build CUDA
-julia --project=. -e 'using Pkg; Pkg.instantiate(;verbose=true); Pkg.precompile(;strict=true); using CUDA; CUDA.precompile_runtime(); Pkg.status()'
+julia --project=$PROJECT -e 'using Pkg; Pkg.instantiate(;verbose=true); Pkg.precompile(;strict=true); using CUDA; CUDA.precompile_runtime(); Pkg.status()'
 
 # Build NCU command with optional arguments
 NCU_CMD="ncu"
@@ -113,6 +123,6 @@ $NCU_CMD \
     -o $NCU_OUTPUT_PREFIX \
     --import-source 1 \
     --set full \
-    julia --project=. \
+    julia --project=$PROJECT \
     scripts/run.jl \
     $EXTRA_CONFIGS
