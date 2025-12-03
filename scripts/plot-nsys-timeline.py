@@ -181,7 +181,7 @@ def parse_nvtx(cursor):
     return events
 
 
-def create_timeline_plot(events, output_file="timeline.html"):
+def create_timeline_plot(events) -> go.Figure | None:
     """Create interactive Plotly timeline"""
     if not events:
         print("No events found to plot!")
@@ -244,11 +244,7 @@ def create_timeline_plot(events, output_file="timeline.html"):
         xaxis=dict(rangeslider=dict(visible=True), type="linear"),
     )
 
-    # Save to HTML
-    fig.write_html(output_file)
-    print(f"Timeline saved to {output_file}")
-    print(f"Total events plotted: {len(events)}")
-    print(f"Categories: {len(categories)}")
+    return fig
 
 
 def main():
@@ -309,7 +305,19 @@ def main():
         all_events = sorted(all_events, key=lambda x: x["start"])[: args.limit]
 
     # Create timeline
-    create_timeline_plot(all_events, args.output)
+    fig = create_timeline_plot(all_events)
+
+    # Save output
+    if args.output.endswith(".html") and fig is not None:
+        print(f"Saving timeline to {args.output}...")
+        fig.write_html(args.output)
+        print("Done.")
+    elif (
+        args.output.endswith(".png") or args.output.endswith(".pdf")
+    ) and fig is not None:
+        print(f"Saving timeline to {args.output}...")
+        fig.write_image(args.output)
+        print("Done.")
 
     conn.close()
 
