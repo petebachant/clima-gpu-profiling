@@ -51,3 +51,26 @@ pipeline:
         - results/nsys/baseline.nsys-rep
       outputs:
         - results/nsys/baseline.sqlite
+    mod-nsys:
+      kind: sbatch
+      environment: clima
+      script_path: scripts/run-nsys.sh
+      sbatch_options:
+        - --gpus=1
+        - --time=120
+      args:
+        - results/nsys/mod
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      inputs:
+        - scripts/run.jl
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth/components
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaCore.jl-mod/lib
+      outputs:
+        - results/nsys/mod.nsys-rep
