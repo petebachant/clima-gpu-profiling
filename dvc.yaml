@@ -1,238 +1,76 @@
 stages:
-  make-sample-device-df:
-    cmd: calkit slurm batch --name make-sample-device-df --environment
-      clima --dep ClimaAtmos.jl/perf/benchmark_step.jl --dep 
-      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
-      ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep ClimaCore.jl/ext 
-      --dep Manifest.toml --out results/sample-device-df.csv -s 
-      --time=10 -s --gpus=1 -s 
-      --export=CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=1 -- 
-      scripts/run-julia-script.sh scripts/make_sample_device_df.jl
+  baseline-nsys:
+    cmd: calkit slurm batch --name baseline-nsys --environment clima 
+      --dep scripts/run.jl --dep ClimaCoupler.jl/src --dep 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
+      --dep ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl --dep 
+      ClimaCoupler.jl/experiments/ClimaEarth/components --dep 
+      ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib 
+      --out results/nsys/baseline.nsys-rep -s --gpus=1 -s --time=120 
+      -- scripts/run-nsys.sh results/nsys/baseline 
+      ClimaCoupler.jl/experiments/ClimaEarth 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
-      - scripts/run-julia-script.sh
-      - ClimaAtmos.jl/perf/benchmark_step.jl
-      - ClimaAtmos.jl/config/default_configs/default_config.yml
-      - ClimaAtmos.jl/src
-      - ClimaCore.jl/src
+      - scripts/run-nsys.sh
+      - scripts/run.jl
+      - ClimaCoupler.jl/src
+      - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
+      - ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
+      - ClimaCoupler.jl/experiments/ClimaEarth/components
       - ClimaCore.jl/ext
-      - Manifest.toml
-    outs:
-      - results/sample-device-df.csv:
-          persist: true
-    desc: Automatically generated from the 'make-sample-device-df' 
-      stage in calkit.yaml. Changes made here will be overwritten.
-  baro-43-clima-nsys:
-    cmd: calkit slurm batch --name baro-43-clima-nsys --environment 
-      clima --dep ClimaAtmos.jl/perf/benchmark_step.jl --dep 
-      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
-      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
-      --dep 
-      ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml 
-      --dep ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep 
-      ClimaCore.jl/ext --dep Manifest.toml --out 
-      nsys-outputs/baroclinic-wave-moist-43.nsys-rep -s --gpus=1 -s 
-      --time=30 -s --export=CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=1
-      -- scripts/run-nsys-clima.sh 
-      nsys-outputs/baroclinic-wave-moist-43 
-      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
-      ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
-    deps:
-      - scripts/run-nsys-clima.sh
-      - ClimaAtmos.jl/perf/benchmark_step.jl
-      - ClimaAtmos.jl/config/default_configs/default_config.yml
-      - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
-      - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
-      - ClimaAtmos.jl/src
       - ClimaCore.jl/src
-      - ClimaCore.jl/ext
-      - Manifest.toml
+      - ClimaCore.jl/lib
     outs:
-      - nsys-outputs/baroclinic-wave-moist-43.nsys-rep:
+      - results/nsys/baseline.nsys-rep:
           persist: true
-    desc: Automatically generated from the 'baro-43-clima-nsys' stage 
-      in calkit.yaml. Changes made here will be overwritten.
-  baro-43-clima-nsys-orig:
-    cmd: calkit slurm batch --name baro-43-clima-nsys-orig 
-      --environment clima --dep ClimaAtmos.jl/perf/benchmark_step.jl 
-      --dep ClimaAtmos.jl/config/default_configs/default_config.yml 
-      --dep 
-      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
-      --dep 
-      ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml 
-      --dep ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep 
-      ClimaCore.jl/ext --dep Project.toml --out 
-      nsys-outputs/baroclinic-wave-moist-43-orig.nsys-rep -s --gpus=1 
-      -s --time=30 -s 
-      --export=CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=0 -- 
-      scripts/run-nsys-clima.sh 
-      nsys-outputs/baroclinic-wave-moist-43-orig 
-      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
-      ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
-    deps:
-      - scripts/run-nsys-clima.sh
-      - ClimaAtmos.jl/perf/benchmark_step.jl
-      - ClimaAtmos.jl/config/default_configs/default_config.yml
-      - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze43.yml
-      - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
-      - ClimaAtmos.jl/src
-      - ClimaCore.jl/src
-      - ClimaCore.jl/ext
-      - Project.toml
-    outs:
-      - nsys-outputs/baroclinic-wave-moist-43-orig.nsys-rep:
-          persist: true
-    desc: Automatically generated from the 'baro-43-clima-nsys-orig' 
-      stage in calkit.yaml. Changes made here will be overwritten.
-  baro-63-clima-nsys:
-    cmd: calkit slurm batch --name baro-63-clima-nsys --environment 
-      clima --dep ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
-      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
-      config/numerics_sphere_he30ze63.yml --dep 
-      ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml 
-      --dep ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep 
-      Project.toml --out 
-      nsys-outputs/baroclinic-wave-moist-63.nsys-rep -s --gpus=1 -s 
-      --time=60 -- scripts/run-nsys-clima.sh 
-      nsys-outputs/baroclinic-wave-moist-63 
-      config/numerics_sphere_he30ze63.yml 
-      ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
-    deps:
-      - scripts/run-nsys-clima.sh
-      - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
-      - ClimaAtmos.jl/config/default_configs/default_config.yml
-      - config/numerics_sphere_he30ze63.yml
-      - ClimaAtmos.jl/config/perf_configs/bm_baroclinic_wave_moist.yml
-      - ClimaAtmos.jl/src
-      - ClimaCore.jl/src
-      - Project.toml
-    outs:
-      - nsys-outputs/baroclinic-wave-moist-63.nsys-rep:
-          persist: true
-    desc: Automatically generated from the 'baro-63-clima-nsys' stage 
-      in calkit.yaml. Changes made here will be overwritten.
-  amip-clima-nsys:
-    cmd: calkit slurm batch --name amip-clima-nsys --environment clima
-      --dep ClimaAtmos.jl/perf/benchmark_step.jl --dep 
-      ClimaAtmos.jl/perf/common.jl --dep 
-      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
-      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      --dep config/amip_target_edonly.yml --dep 
-      ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep 
-      ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep ClimaCore.jl/ext 
-      --dep Project.toml --dep GPUCompiler.jl/src --out 
-      nsys-outputs/amip-target-edonly-63.nsys-rep -s --gpus=1 -s 
-      --time=240 -s 
-      --export=CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=1 -- 
-      scripts/run-nsys-clima.sh nsys-outputs/amip-target-edonly-63 
-      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      config/amip_target_edonly.yml
-    deps:
-      - scripts/run-nsys-clima.sh
-      - ClimaAtmos.jl/perf/benchmark_step.jl
-      - ClimaAtmos.jl/perf/common.jl
-      - ClimaAtmos.jl/config/default_configs/default_config.yml
-      - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      - config/amip_target_edonly.yml
-      - ClimaAtmos.jl/toml/longrun_aquaplanet.toml
-      - ClimaAtmos.jl/src
-      - ClimaCore.jl/src
-      - ClimaCore.jl/ext
-      - Project.toml
-      - GPUCompiler.jl/src
-    outs:
-      - nsys-outputs/amip-target-edonly-63.nsys-rep:
-          persist: true
-    desc: Automatically generated from the 'amip-clima-nsys' stage in 
+    desc: Automatically generated from the 'baseline-nsys' stage in 
       calkit.yaml. Changes made here will be overwritten.
-  amip-clima-nsys-orig:
-    cmd: calkit slurm batch --name amip-clima-nsys-orig --environment 
-      clima --dep ClimaAtmos.jl/perf/benchmark_step.jl --dep 
-      ClimaAtmos.jl/perf/common.jl --dep 
-      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
-      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      --dep config/amip_target_edonly.yml --dep 
-      ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep 
-      ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep Project.toml 
-      --dep GPUCompiler.jl/src --out 
-      nsys-outputs/amip-target-edonly-63-orig.nsys-rep -s --gpus=1 -s 
-      --time=240 -s 
-      --export=CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=0 -- 
-      scripts/run-nsys-clima.sh 
-      nsys-outputs/amip-target-edonly-63-orig 
-      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      config/amip_target_edonly.yml
+  baseline-nsys-to-sqlite:
+    cmd: ' bash --noprofile --norc -c "nsys export results/nsys/baseline.nsys-rep
+      -t sqlite -o results/nsys/baseline.sqlite"'
     deps:
-      - scripts/run-nsys-clima.sh
-      - ClimaAtmos.jl/perf/benchmark_step.jl
-      - ClimaAtmos.jl/perf/common.jl
-      - ClimaAtmos.jl/config/default_configs/default_config.yml
-      - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      - config/amip_target_edonly.yml
-      - ClimaAtmos.jl/toml/longrun_aquaplanet.toml
-      - ClimaAtmos.jl/src
-      - ClimaCore.jl/src
-      - Project.toml
-      - GPUCompiler.jl/src
+      - results/nsys/baseline.nsys-rep
     outs:
-      - nsys-outputs/amip-target-edonly-63-orig.nsys-rep:
-          persist: true
-    desc: Automatically generated from the 'amip-clima-nsys-orig' 
+      - results/nsys/baseline.sqlite
+    desc: Automatically generated from the 'baseline-nsys-to-sqlite' 
       stage in calkit.yaml. Changes made here will be overwritten.
-  amip-clima-ncu:
-    cmd: calkit slurm batch --name amip-clima-ncu --environment clima 
-      --dep ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
-      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
-      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      --dep config/amip_target_edonly.yml --dep 
-      ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep 
-      ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep Project.toml 
-      --out ncu-outputs/amip-target-edonly-63.ncu-rep -s --gpus=1 -s 
-      --time=240 -- scripts/run-ncu-clima.sh 
-      ncu-outputs/amip-target-edonly-63 --config 
-      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      --config config/amip_target_edonly.yml --kernel-name 
-      copyto_stencil_kernel_ --launch-skip 0 --launch-count 20
+  mod-nsys:
+    cmd: calkit slurm batch --name mod-nsys --environment clima --dep 
+      scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep 
+      ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml 
+      --dep ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl 
+      --dep ClimaCoupler.jl-mod/experiments/ClimaEarth/components 
+      --dep ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
+      ClimaCore.jl-mod/lib --out results/nsys/mod.nsys-rep -s --gpus=1
+      -s --time=120 -- scripts/run-nsys.sh results/nsys/mod 
+      ClimaCoupler.jl-mod/experiments/ClimaEarth 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
-      - scripts/run-ncu-clima.sh
-      - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
-      - ClimaAtmos.jl/config/default_configs/default_config.yml
-      - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      - config/amip_target_edonly.yml
-      - ClimaAtmos.jl/toml/longrun_aquaplanet.toml
-      - ClimaAtmos.jl/src
-      - ClimaCore.jl/src
-      - Project.toml
+      - scripts/run-nsys.sh
+      - scripts/run.jl
+      - ClimaCoupler.jl-mod/src
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
+      - ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl
+      - ClimaCoupler.jl-mod/experiments/ClimaEarth/components
+      - ClimaCore.jl-mod/ext
+      - ClimaCore.jl-mod/src
+      - ClimaCore.jl-mod/lib
     outs:
-      - ncu-outputs/amip-target-edonly-63.ncu-rep:
+      - results/nsys/mod.nsys-rep:
           persist: true
-    desc: Automatically generated from the 'amip-clima-ncu' stage in 
+    desc: Automatically generated from the 'mod-nsys' stage in 
       calkit.yaml. Changes made here will be overwritten.
-  amip-ncu-update-jacobian:
-    cmd: calkit slurm batch --name amip-ncu-update-jacobian 
-      --environment clima --dep 
-      ClimaAtmos.jl/perf/benchmark_step_gpu.jl --dep 
-      ClimaAtmos.jl/perf/common.jl --dep 
-      ClimaAtmos.jl/config/default_configs/default_config.yml --dep 
-      ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      --dep config/amip_target_edonly.yml --dep 
-      ClimaAtmos.jl/toml/longrun_aquaplanet.toml --dep 
-      ClimaAtmos.jl/src --dep ClimaCore.jl/src --dep Project.toml 
-      --out ncu-outputs/amip-update-jacobian-kernel.ncu-rep -s 
-      --gpus=1 -s --time=240 -- 
-      scripts/run-ncu-amip-update-jacobian.sh
+  mod-nsys-to-sqlite:
+    cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep
+      -t sqlite -o results/nsys/mod.sqlite"'
     deps:
-      - scripts/run-ncu-amip-update-jacobian.sh
-      - ClimaAtmos.jl/perf/benchmark_step_gpu.jl
-      - ClimaAtmos.jl/perf/common.jl
-      - ClimaAtmos.jl/config/default_configs/default_config.yml
-      - ClimaAtmos.jl/config/common_configs/numerics_sphere_he30ze63.yml
-      - config/amip_target_edonly.yml
-      - ClimaAtmos.jl/toml/longrun_aquaplanet.toml
-      - ClimaAtmos.jl/src
-      - ClimaCore.jl/src
-      - Project.toml
+      - results/nsys/mod.nsys-rep
     outs:
-      - ncu-outputs/amip-update-jacobian-kernel.ncu-rep:
-          persist: true
-    desc: Automatically generated from the 'amip-ncu-update-jacobian' 
-      stage in calkit.yaml. Changes made here will be overwritten.
+      - results/nsys/mod.sqlite
+    desc: Automatically generated from the 'mod-nsys-to-sqlite' stage 
+      in calkit.yaml. Changes made here will be overwritten.

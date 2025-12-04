@@ -57,3 +57,16 @@ calkit jupyter lab --ip=0.0.0.0 --no-browser
 
 Then, copy the server URL, which starts with `http://127.0.0.1`,
 and in VS Code, use that when selecting a kernel for the notebook.
+
+## Submodule branches
+
+- `ClimaCore.jl` --> `pb/rm-nvtx`
+- `ClimaCore.jl-mod` --> `pb/perf`
+- `ClimaCoupler.jl` --> `pb/rm-nvtx`
+- `ClimaCoupler.jl-mod` --> `pb/perf`
+
+## Experiment results
+
+| Commit (super-repo) | Result |
+|---------------------|--------|
+| `5d7e5dc` | Occupancy for `run_field_matrix_solver` increased and reduced registers per thread but slowed down overall. |
