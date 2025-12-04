@@ -74,3 +74,12 @@ pipeline:
         - ClimaCore.jl-mod/lib
       outputs:
         - results/nsys/mod.nsys-rep
+    mod-nsys-to-sqlite:
+      kind: shell-command
+      environment: _system
+      command: nsys export results/nsys/mod.nsys-rep -t sqlite
+        -o results/nsys/mod.sqlite
+      inputs:
+        - results/nsys/mod.nsys-rep
+      outputs:
+        - results/nsys/mod.sqlite

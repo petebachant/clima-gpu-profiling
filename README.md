@@ -64,3 +64,9 @@ and in VS Code, use that when selecting a kernel for the notebook.
 - `ClimaCore.jl-mod` --> `pb/perf`
 - `ClimaCoupler.jl` --> `pb/rm-nvtx`
 - `ClimaCoupler.jl-mod` --> `pb/perf`
+
+## Experiment results
+
+| Commit (super-repo) | Result |
+|---------------------|--------|
+| `200c093` | Occupancy for `run_field_matrix_solver` increased and reduced registers per thread but slowed down overall. |

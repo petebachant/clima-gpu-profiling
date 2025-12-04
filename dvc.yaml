@@ -65,3 +65,12 @@ stages:
           persist: true
     desc: Automatically generated from the 'mod-nsys' stage in 
       calkit.yaml. Changes made here will be overwritten.
+  mod-nsys-to-sqlite:
+    cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep
+      -t sqlite -o results/nsys/mod.sqlite"'
+    deps:
+      - results/nsys/mod.nsys-rep
+    outs:
+      - results/nsys/mod.sqlite
+    desc: Automatically generated from the 'mod-nsys-to-sqlite' stage 
+      in calkit.yaml. Changes made here will be overwritten.
