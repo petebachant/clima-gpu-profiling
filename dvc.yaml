@@ -5,9 +5,10 @@ stages:
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --dep ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
       --dep ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl --dep 
-      ClimaCoupler.jl/experiments/ClimaEarth/components --out 
-      results/nsys/baseline.nsys-rep -s --gpus=1 -s --time=120 -- 
-      scripts/run-nsys.sh results/nsys/baseline 
+      ClimaCoupler.jl/experiments/ClimaEarth/components --dep 
+      ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib 
+      --out results/nsys/baseline.nsys-rep -s --gpus=1 -s --time=120 
+      -- scripts/run-nsys.sh results/nsys/baseline 
       ClimaCoupler.jl/experiments/ClimaEarth 
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
@@ -18,6 +19,9 @@ stages:
       - ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
       - ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
       - ClimaCoupler.jl/experiments/ClimaEarth/components
+      - ClimaCore.jl/ext
+      - ClimaCore.jl/src
+      - ClimaCore.jl/lib
     outs:
       - results/nsys/baseline.nsys-rep:
           persist: true

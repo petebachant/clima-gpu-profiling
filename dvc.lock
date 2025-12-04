@@ -473,12 +473,28 @@ stages:
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml 
       --dep ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml --dep 
       ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl --dep 
-      ClimaCoupler.jl/experiments/ClimaEarth/components --out 
+      ClimaCoupler.jl/experiments/ClimaEarth/components --dep ClimaCore.jl/ext 
+      --dep ClimaCore.jl/src --dep ClimaCore.jl/lib --out 
       results/nsys/baseline.nsys-rep -s --gpus=1 -s --time=120 -- 
       scripts/run-nsys.sh results/nsys/baseline 
       ClimaCoupler.jl/experiments/ClimaEarth 
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
+    - path: ClimaCore.jl/ext
+      hash: md5
+      md5: 3eefe42314a0a373446ec73185101194.dir
+      size: 176683
+      nfiles: 25
+    - path: ClimaCore.jl/lib
+      hash: md5
+      md5: 1bae101a018dfc30cae2ab0636204b01.dir
+      size: 312470
+      nfiles: 58
+    - path: ClimaCore.jl/src
+      hash: md5
+      md5: 3050116892cbf0d3f2e09c60579b8892.dir
+      size: 1142423
+      nfiles: 95
     - path: 
         ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       hash: md5
@@ -486,8 +502,8 @@ stages:
       size: 458
     - path: ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
       hash: md5
-      md5: 6c8e6e95e8902be02016b0f6730e9fb8
-      size: 130043
+      md5: 1f7b04d38d866409a7085605ed541dda
+      size: 130015
     - path: ClimaCoupler.jl/experiments/ClimaEarth/components
       hash: md5
       md5: e3833196b1eacc780ffc3e34693afda7.dir
@@ -495,12 +511,12 @@ stages:
       nfiles: 11
     - path: ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
       hash: md5
-      md5: 37dd96dfdcd7d90f4a9ef27f21a2bc6d
-      size: 27983
+      md5: 1271cd9c5b7d2682ff905351e2fb1b3b
+      size: 28042
     - path: ClimaCoupler.jl/src
       hash: md5
-      md5: ba742f41be96bcdca547dba7368935d4.dir
-      size: 81934
+      md5: 12f8309b9a3f119831cf0324175bccd1.dir
+      size: 82001
       nfiles: 9
     - path: scripts/run-nsys.sh
       hash: md5
@@ -508,23 +524,23 @@ stages:
       size: 1524
     - path: scripts/run.jl
       hash: md5
-      md5: 37720cb67e8913d3c721ec785d6af8de
+      md5: da998a1edb4f588160675f8d185ae11d
       size: 1207
     outs:
     - path: results/nsys/baseline.nsys-rep
       hash: md5
-      md5: eb6269f2696f782fa35519a8b41cd399
-      size: 21118633
+      md5: 99083b931bac7db71faec7d9fc736fbd
+      size: 12897112
   baseline-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/baseline.nsys-rep
       -t sqlite -o results/nsys/baseline.sqlite"'
     deps:
     - path: results/nsys/baseline.nsys-rep
       hash: md5
-      md5: eb6269f2696f782fa35519a8b41cd399
-      size: 21118633
+      md5: 99083b931bac7db71faec7d9fc736fbd
+      size: 12897112
     outs:
     - path: results/nsys/baseline.sqlite
       hash: md5
-      md5: beda6b6d7b17af6bb09768239dc70335
-      size: 42561536
+      md5: 9a01a1561ff80acf8f763cc019f0ffb5
+      size: 25669632

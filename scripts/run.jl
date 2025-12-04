@@ -21,7 +21,7 @@ cs = CoupledSimulation(config_file)
 step!(cs)
 
 # Now profile
-n_steps = 5
+n_steps = 3
 use_external_profiler = CUDA.Profile.detect_cupti()
 if use_external_profiler
     @info "Using external CUDA profiler"
