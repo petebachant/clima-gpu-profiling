@@ -544,3 +544,67 @@ stages:
       hash: md5
       md5: e81b8990f403cfd1c7098323bb5663de
       size: 25554944
+  mod-nsys:
+    cmd: calkit slurm batch --name mod-nsys --environment clima --dep 
+      scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl --dep 
+      ClimaCoupler.jl-mod/experiments/ClimaEarth/components --dep 
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep ClimaCore.jl-mod/lib
+      --out results/nsys/mod.nsys-rep -s --gpus=1 -s --time=120 -- 
+      scripts/run-nsys.sh results/nsys/mod 
+      ClimaCoupler.jl-mod/experiments/ClimaEarth 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+    deps:
+    - path: ClimaCore.jl-mod/ext
+      hash: md5
+      md5: 47a707412ef389d0f172e334f10941b6.dir
+      size: 178063
+      nfiles: 25
+    - path: ClimaCore.jl-mod/lib
+      hash: md5
+      md5: 1bae101a018dfc30cae2ab0636204b01.dir
+      size: 312470
+      nfiles: 58
+    - path: ClimaCore.jl-mod/src
+      hash: md5
+      md5: b83f3712b71321a3d28347bcdf2f0eba.dir
+      size: 1142348
+      nfiles: 95
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 8d13e236db3b0111301fcaae59745655
+      size: 458
+    - path: ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
+      hash: md5
+      md5: 84a4b7b337151f3218799634616a90a2
+      size: 130019
+    - path: ClimaCoupler.jl-mod/experiments/ClimaEarth/components
+      hash: md5
+      md5: e3833196b1eacc780ffc3e34693afda7.dir
+      size: 154611
+      nfiles: 11
+    - path: ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl
+      hash: md5
+      md5: 1271cd9c5b7d2682ff905351e2fb1b3b
+      size: 28042
+    - path: ClimaCoupler.jl-mod/src
+      hash: md5
+      md5: 12f8309b9a3f119831cf0324175bccd1.dir
+      size: 82001
+      nfiles: 9
+    - path: scripts/run-nsys.sh
+      hash: md5
+      md5: d36f4c26ca500ac13504e3e2fd62ab68
+      size: 1524
+    - path: scripts/run.jl
+      hash: md5
+      md5: da998a1edb4f588160675f8d185ae11d
+      size: 1207
+    outs:
+    - path: results/nsys/mod.nsys-rep
+      hash: md5
+      md5: 22fc71670a7c2e3b1e7d5687f968943e
+      size: 12821140
