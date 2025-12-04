@@ -57,3 +57,10 @@ calkit jupyter lab --ip=0.0.0.0 --no-browser
 
 Then, copy the server URL, which starts with `http://127.0.0.1`,
 and in VS Code, use that when selecting a kernel for the notebook.
+
+## Submodule branches
+
+- `ClimaCore.jl` --> `pb/rm-nvtx`
+- `ClimaCore.jl-mod` --> `pb/perf`
+- `ClimaCoupler.jl` --> `pb/rm-nvtx`
+- `ClimaCoupler.jl-mod` --> `pb/perf`
