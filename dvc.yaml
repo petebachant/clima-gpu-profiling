@@ -25,6 +25,9 @@ stages:
     outs:
       - results/nsys/baseline.nsys-rep:
           persist: true
+      - .calkit/slurm/logs/baseline-nsys.out:
+          cache: false
+          persist: true
     desc: Automatically generated from the 'baseline-nsys' stage in 
       calkit.yaml. Changes made here will be overwritten.
   baseline-nsys-to-sqlite:
@@ -62,6 +65,9 @@ stages:
       - ClimaCore.jl-mod/lib
     outs:
       - results/nsys/mod.nsys-rep:
+          persist: true
+      - .calkit/slurm/logs/mod-nsys.out:
+          cache: false
           persist: true
     desc: Automatically generated from the 'mod-nsys' stage in 
       calkit.yaml. Changes made here will be overwritten.
