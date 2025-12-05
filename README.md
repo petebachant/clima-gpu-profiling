@@ -69,4 +69,5 @@ and in VS Code, use that when selecting a kernel for the notebook.
 
 | Commit (super-repo) | Result |
 |---------------------|--------|
-| `5d7e5dc` | Occupancy for `run_field_matrix_solver` increased and reduced registers per thread but slowed down overall. |
+| `130baab` | Occupancy for `run_field_matrix_solver` increased and reduced registers per thread but slowed down overall. |
+| `e5845b7` | Similar as above, but not quite as slow. |
