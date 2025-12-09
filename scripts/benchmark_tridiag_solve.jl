@@ -214,16 +214,8 @@ end
     # large roundoff errors when computing its inverse. Scale the non-square
     # matrices by the same amount as the square matrices.
     λ = 10 # scale factor
-    ᶜᶜmat1 = random_field(DiagonalMatrixRow{FT}, center_space) ./ λ .+ (I,)
-    ᶠᶠmat1 = random_field(DiagonalMatrixRow{FT}, face_space) ./ λ .+ (I,)
-    ᶜᶠmat2 = random_field(BidiagonalMatrixRow{FT}, center_space) ./ λ
-    ᶠᶜmat2 = random_field(BidiagonalMatrixRow{FT}, face_space) ./ λ
     ᶜᶜmat3 = random_field(TridiagonalMatrixRow{FT}, center_space) ./ λ .+ (I,)
     ᶠᶠmat3 = random_field(TridiagonalMatrixRow{FT}, face_space) ./ λ .+ (I,)
-    ᶜᶠmat4 = random_field(QuaddiagonalMatrixRow{FT}, center_space) ./ λ
-    ᶠᶜmat4 = random_field(QuaddiagonalMatrixRow{FT}, face_space) ./ λ
-    ᶜᶜmat5 = random_field(PentadiagonalMatrixRow{FT}, center_space) ./ λ .+ (I,)
-    ᶠᶠmat5 = random_field(PentadiagonalMatrixRow{FT}, face_space) ./ λ .+ (I,)
 
     for (vector, matrix, string1, string2) in (
         (ᶜvec, ᶜᶜmat3, "tri-diagonal matrix", "cell centers"),
