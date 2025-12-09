@@ -131,95 +131,95 @@ end
 
 function test_field_matrix_solver(; test_name, alg, A, b, use_rel_error=false)
     # @testset "$test_name" begin
-        x = similar(b)
-        A′ = FieldMatrixWithSolver(A, b, alg)
-        @test zero(A′) isa typeof(A′)
-        solve_time =
-            @benchmark ClimaComms.@cuda_sync comms_device ldiv!(x, A′, b)
+    x = similar(b)
+    A′ = FieldMatrixWithSolver(A, b, alg)
+    @test zero(A′) isa typeof(A′)
+    solve_time =
+        @benchmark ClimaComms.@cuda_sync comms_device ldiv!(x, A′, b)
 
-        b_test = similar(b)
-        # @test zero(b) isa typeof(b)
-        mul_time =
-            @benchmark ClimaComms.@cuda_sync comms_device mul!(b_test, A′, x)
+    b_test = similar(b)
+    # @test zero(b) isa typeof(b)
+    mul_time =
+        @benchmark ClimaComms.@cuda_sync comms_device mul!(b_test, A′, x)
 
-        solve_time_rounded = round(solve_time; sigdigits=2)
-        mul_time_rounded = round(mul_time; sigdigits=2)
-        time_ratio = solve_time_rounded / mul_time_rounded
-        time_ratio_rounded = round(time_ratio; sigdigits=2)
+    solve_time_rounded = round(solve_time; sigdigits=2)
+    mul_time_rounded = round(mul_time; sigdigits=2)
+    time_ratio = solve_time_rounded / mul_time_rounded
+    time_ratio_rounded = round(time_ratio; sigdigits=2)
 
-        error_vector = abs.(parent(b_test) .- parent(b))
-        if use_rel_error
-            rel_error = norm(error_vector) / norm(parent(b))
-            rel_error_rounded = round(rel_error; sigdigits=2)
-            error_string = "Relative Error = $rel_error_rounded"
-        else
-            max_error = maximum(error_vector)
-            max_eps_error = ceil(Int, max_error / eps(typeof(max_error)))
-            error_string = "Maximum Error = $max_eps_error eps"
-        end
+    error_vector = abs.(parent(b_test) .- parent(b))
+    if use_rel_error
+        rel_error = norm(error_vector) / norm(parent(b))
+        rel_error_rounded = round(rel_error; sigdigits=2)
+        error_string = "Relative Error = $rel_error_rounded"
+    else
+        max_error = maximum(error_vector)
+        max_eps_error = ceil(Int, max_error / eps(typeof(max_error)))
+        error_string = "Maximum Error = $max_eps_error eps"
+    end
 
-        @info "$test_name:\n\tSolve Time = $solve_time_rounded s, \
-               Multiplication Time = $mul_time_rounded s (Ratio = \
-               $time_ratio_rounded)\n\t$error_string"
+    @info "$test_name:\n\tSolve Time = $solve_time_rounded s, \
+           Multiplication Time = $mul_time_rounded s (Ratio = \
+           $time_ratio_rounded)\n\t$error_string"
 
-        if use_rel_error
-            @test rel_error < 1e-5
-        else
-            @test max_eps_error <= 3
-        end
+    if use_rel_error
+        @test rel_error < 1e-5
+    else
+        @test max_eps_error <= 3
+    end
 
-        # TODO: fix broken test when Nv is added to the type space
-        using_cuda || @test @allocated(ldiv!(x, A′, b)) ≤ 1536
-        using_cuda || @test @allocated(mul!(b_test, A′, x)) == 0
+    # TODO: fix broken test when Nv is added to the type space
+    using_cuda || @test @allocated(ldiv!(x, A′, b)) ≤ 1536
+    using_cuda || @test @allocated(mul!(b_test, A′, x)) == 0
     # end
 end
 
 # @testset "FieldMatrixSolver Unit Tests" begin
-    FT = Float64
-    center_space, face_space = test_spaces(FT)
-    surface_space = Spaces.level(face_space, half)
+FT = Float64
+center_space, face_space = test_spaces(FT)
+surface_space = Spaces.level(face_space, half)
 
-    seed!(1) # ensures reproducibility
+seed!(1) # ensures reproducibility
 
-    ᶜvec = random_field(FT, center_space)
-    ᶠvec = random_field(FT, face_space)
-    sfc_vec = random_field(FT, surface_space)
+ᶜvec = random_field(FT, center_space)
+ᶠvec = random_field(FT, face_space)
+sfc_vec = random_field(FT, surface_space)
 
-    # Make each random square matrix diagonally dominant in order to avoid large
-    # large roundoff errors when computing its inverse. Scale the non-square
-    # matrices by the same amount as the square matrices.
-    λ = 10 # scale factor
-    ᶜᶜmat3 = random_field(TridiagonalMatrixRow{FT}, center_space) ./ λ .+ (I,)
-    ᶠᶠmat3 = random_field(TridiagonalMatrixRow{FT}, face_space) ./ λ .+ (I,)
+# Make each random square matrix diagonally dominant in order to avoid large
+# large roundoff errors when computing its inverse. Scale the non-square
+# matrices by the same amount as the square matrices.
+λ = 10 # scale factor
+ᶜᶜmat3 = random_field(TridiagonalMatrixRow{FT}, center_space) ./ λ .+ (I,)
+ᶠᶠmat3 = random_field(TridiagonalMatrixRow{FT}, face_space) ./ λ .+ (I,)
 
-    for (vector, matrix, string1, string2) in (
-        (ᶜvec, ᶜᶜmat3, "tri-diagonal matrix", "cell centers"),
-        (ᶠvec, ᶠᶠmat3, "tri-diagonal matrix", "cell faces"),
-    )
-        test_field_matrix_solver(;
-            test_name="$string1 solve on $string2",
-            alg=MatrixFields.BlockDiagonalSolve(),
-            A=MatrixFields.FieldMatrix((@name(_), @name(_)) => matrix),
-            b=Fields.FieldVector(; _=vector),
-        )
-    end
-
-    # Test a more complex FieldMatrix similar to that used in ClimaAtmos's
-    # dycore + prognostic, EDMF + prognostic surface temperature solve.
-    A, b = dycore_prognostic_EDMF_FieldMatrix(FT, center_space, face_space)
-
-    keyname = keys(A).values[1]
-    keyname1 = @name(var1)
-
-    A1 = MatrixFields.FieldMatrix((keyname1, keyname1) => A[keyname])
-    b1_entry = MatrixFields.get_field(b, keyname[1])
-    b1 = Fields.FieldVector(; var1 = b1_entry)
-
+for (vector, matrix, string1, string2) in (
+    (ᶜvec, ᶜᶜmat3, "tri-diagonal matrix", "cell centers"),
+    (ᶠvec, ᶠᶠmat3, "tri-diagonal matrix", "cell faces"),
+)
     test_field_matrix_solver(;
-        test_name="Dycore + prognostic, EDMF + prognostic surface temperature \
-                   solve",
+        test_name="$string1 solve on $string2",
         alg=MatrixFields.BlockDiagonalSolve(),
-        A=A1,
-        b=b1,
+        A=MatrixFields.FieldMatrix((@name(_), @name(_)) => matrix),
+        b=Fields.FieldVector(; _=vector),
     )
+end
+
+# Test a more complex FieldMatrix similar to that used in ClimaAtmos's
+# dycore + prognostic, EDMF + prognostic surface temperature solve.
+A, b = dycore_prognostic_EDMF_FieldMatrix(FT, center_space, face_space)
+
+keyname = keys(A).values[1]
+keyname1 = @name(var1)
+
+A1 = MatrixFields.FieldMatrix((keyname1, keyname1) => A[keyname])
+b1_entry = MatrixFields.get_field(b, keyname[1])
+b1 = Fields.FieldVector(; var1=b1_entry)
+
+test_field_matrix_solver(;
+    test_name="Dycore + prognostic, EDMF + prognostic surface temperature \
+               solve",
+    alg=MatrixFields.BlockDiagonalSolve(),
+    A=A1,
+    b=b1,
+)
 # end
