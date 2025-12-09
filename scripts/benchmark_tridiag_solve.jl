@@ -13,8 +13,9 @@ include(joinpath("..", package_dir, "test", "MatrixFields", "matrix_field_test_u
 # Generate extruded finite difference spaces for testing. Include topography
 # when possible.
 function test_spaces(::Type{FT}) where {FT}
-    velem = 16 # This should be big enough to test high-bandwidth matrices.
-    helem = npoly = 3 # These should be small enough for the tests to be fast.
+    velem = 63 # This should be big enough to test high-bandwidth matrices.
+    helem = 16
+    npoly = 3 # These should be small enough for the tests to be fast.
 
     comms_ctx = ClimaComms.SingletonCommsContext(comms_device)
     hdomain = Domains.SphereDomain(FT(10))
