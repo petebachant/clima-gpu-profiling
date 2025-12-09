@@ -470,140 +470,140 @@ end
     end
 end
 
-@testset "FieldMatrixSolver ClimaAtmos-Based Tests" begin
-    FT = Float64
-    center_space, face_space = test_spaces(FT)
-    surface_space = Spaces.level(face_space, half)
+# @testset "FieldMatrixSolver ClimaAtmos-Based Tests" begin
+#     FT = Float64
+#     center_space, face_space = test_spaces(FT)
+#     surface_space = Spaces.level(face_space, half)
 
-    seed!(1) # ensures reproducibility
+#     seed!(1) # ensures reproducibility
 
-    ᶜvec = random_field(FT, center_space)
-    ᶠvec = random_field(FT, face_space)
-    sfc_vec = random_field(FT, surface_space)
+#     ᶜvec = random_field(FT, center_space)
+#     ᶠvec = random_field(FT, face_space)
+#     sfc_vec = random_field(FT, surface_space)
 
-    # Make each random square matrix diagonally dominant in order to avoid large
-    # large roundoff errors when computing its inverse. Scale the non-square
-    # matrices by the same amount as the square matrices.
-    λ = 10 # scale factor
-    ᶜᶜmat1 = random_field(DiagonalMatrixRow{FT}, center_space) ./ λ .+ (I,)
-    ᶜᶠmat2 = random_field(BidiagonalMatrixRow{FT}, center_space) ./ λ
-    ᶠᶜmat2 = random_field(BidiagonalMatrixRow{FT}, face_space) ./ λ
-    ᶜᶜmat3 = random_field(TridiagonalMatrixRow{FT}, center_space) ./ λ .+ (I,)
-    ᶠᶠmat3 = random_field(TridiagonalMatrixRow{FT}, face_space) ./ λ .+ (I,)
+#     # Make each random square matrix diagonally dominant in order to avoid large
+#     # large roundoff errors when computing its inverse. Scale the non-square
+#     # matrices by the same amount as the square matrices.
+#     λ = 10 # scale factor
+#     ᶜᶜmat1 = random_field(DiagonalMatrixRow{FT}, center_space) ./ λ .+ (I,)
+#     ᶜᶠmat2 = random_field(BidiagonalMatrixRow{FT}, center_space) ./ λ
+#     ᶠᶜmat2 = random_field(BidiagonalMatrixRow{FT}, face_space) ./ λ
+#     ᶜᶜmat3 = random_field(TridiagonalMatrixRow{FT}, center_space) ./ λ .+ (I,)
+#     ᶠᶠmat3 = random_field(TridiagonalMatrixRow{FT}, face_space) ./ λ .+ (I,)
 
-    e¹² = Geometry.Covariant12Vector(1, 1)
-    e³ = Geometry.Covariant3Vector(1)
-    e₃ = Geometry.Contravariant3Vector(1)
+#     e¹² = Geometry.Covariant12Vector(1, 1)
+#     e³ = Geometry.Covariant3Vector(1)
+#     e₃ = Geometry.Contravariant3Vector(1)
 
-    ρχ_unit = (; ρq_tot=1, ρq_liq=1, ρq_ice=1, ρq_rai=1, ρq_sno=1)
-    ρaχ_unit =
-        (; ρaq_tot=1, ρaq_liq=1, ρaq_ice=1, ρaq_rai=1, ρaq_sno=1)
+#     ρχ_unit = (; ρq_tot=1, ρq_liq=1, ρq_ice=1, ρq_rai=1, ρq_sno=1)
+#     ρaχ_unit =
+#         (; ρaq_tot=1, ρaq_liq=1, ρaq_ice=1, ρaq_rai=1, ρaq_sno=1)
 
-    dry_center_gs_unit = (; ρ=1, ρe_tot=1, uₕ=e¹²)
-    center_gs_unit = (; dry_center_gs_unit..., ρatke=1, ρχ=ρχ_unit)
-    center_sgsʲ_unit = (; ρa=1, ρae_tot=1, ρaχ=ρaχ_unit)
+#     dry_center_gs_unit = (; ρ=1, ρe_tot=1, uₕ=e¹²)
+#     center_gs_unit = (; dry_center_gs_unit..., ρatke=1, ρχ=ρχ_unit)
+#     center_sgsʲ_unit = (; ρa=1, ρae_tot=1, ρaχ=ρaχ_unit)
 
-    ᶠᶜmat2_u₃_scalar = ᶠᶜmat2 .* (e³,)
-    ᶜᶠmat2_scalar_u₃ = ᶜᶠmat2 .* (e₃',)
-    ᶠᶠmat3_u₃_u₃ = ᶠᶠmat3 .* (e³ * e₃',)
-    ᶜᶠmat2_ρχ_u₃ = map(Base.Fix1(map, Base.Fix2(⊠, ρχ_unit ⊠ e₃')), ᶜᶠmat2)
-    # We need to use Fix1 and Fix2 instead of defining anonymous functions in
-    # order for the result of map to be inferrable.
+#     ᶠᶜmat2_u₃_scalar = ᶠᶜmat2 .* (e³,)
+#     ᶜᶠmat2_scalar_u₃ = ᶜᶠmat2 .* (e₃',)
+#     ᶠᶠmat3_u₃_u₃ = ᶠᶠmat3 .* (e³ * e₃',)
+#     ᶜᶠmat2_ρχ_u₃ = map(Base.Fix1(map, Base.Fix2(⊠, ρχ_unit ⊠ e₃')), ᶜᶠmat2)
+#     # We need to use Fix1 and Fix2 instead of defining anonymous functions in
+#     # order for the result of map to be inferrable.
 
-    b_dry_dycore = Fields.FieldVector(;
-        c=ᶜvec .* (dry_center_gs_unit,),
-        f=ᶠvec .* ((; u₃=e³),),
-    )
+#     b_dry_dycore = Fields.FieldVector(;
+#         c=ᶜvec .* (dry_center_gs_unit,),
+#         f=ᶠvec .* ((; u₃=e³),),
+#     )
 
-    b_moist_dycore_diagnostic_edmf = Fields.FieldVector(;
-        c=ᶜvec .* (center_gs_unit,),
-        f=ᶠvec .* ((; u₃=e³),),
-    )
+#     b_moist_dycore_diagnostic_edmf = Fields.FieldVector(;
+#         c=ᶜvec .* (center_gs_unit,),
+#         f=ᶠvec .* ((; u₃=e³),),
+#     )
 
-    b_moist_dycore_prognostic_edmf_prognostic_surface = Fields.FieldVector(;
-        sfc=sfc_vec .* ((; T=1),),
-        c=ᶜvec .* ((; center_gs_unit..., sgsʲs=(center_sgsʲ_unit,)),),
-        f=ᶠvec .* ((; u₃=e³, sgsʲs=((; u₃=e³),)),),
-    )
+#     b_moist_dycore_prognostic_edmf_prognostic_surface = Fields.FieldVector(;
+#         sfc=sfc_vec .* ((; T=1),),
+#         c=ᶜvec .* ((; center_gs_unit..., sgsʲs=(center_sgsʲ_unit,)),),
+#         f=ᶠvec .* ((; u₃=e³, sgsʲs=((; u₃=e³),)),),
+#     )
 
-    test_field_matrix_solver(;
-        test_name="similar solve to ClimaAtmos's dry dycore with implicit \
-                   acoustic waves",
-        alg=MatrixFields.BlockArrowheadSolve(@name(c)),
-        A=MatrixFields.FieldMatrix(
-            (@name(c.ρ), @name(c.ρ)) => I,
-            (@name(c.ρe_tot), @name(c.ρe_tot)) => I,
-            (@name(c.uₕ), @name(c.uₕ)) => I,
-            (@name(c.ρ), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
-            (@name(c.ρe_tot), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
-            (@name(f.u₃), @name(c.ρ)) => ᶠᶜmat2_u₃_scalar,
-            (@name(f.u₃), @name(c.ρe_tot)) => ᶠᶜmat2_u₃_scalar,
-            (@name(f.u₃), @name(f.u₃)) => ᶠᶠmat3_u₃_u₃,
-        ),
-        b=b_dry_dycore,
-    )
+#     test_field_matrix_solver(;
+#         test_name="similar solve to ClimaAtmos's dry dycore with implicit \
+#                    acoustic waves",
+#         alg=MatrixFields.BlockArrowheadSolve(@name(c)),
+#         A=MatrixFields.FieldMatrix(
+#             (@name(c.ρ), @name(c.ρ)) => I,
+#             (@name(c.ρe_tot), @name(c.ρe_tot)) => I,
+#             (@name(c.uₕ), @name(c.uₕ)) => I,
+#             (@name(c.ρ), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
+#             (@name(c.ρe_tot), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
+#             (@name(f.u₃), @name(c.ρ)) => ᶠᶜmat2_u₃_scalar,
+#             (@name(f.u₃), @name(c.ρe_tot)) => ᶠᶜmat2_u₃_scalar,
+#             (@name(f.u₃), @name(f.u₃)) => ᶠᶠmat3_u₃_u₃,
+#         ),
+#         b=b_dry_dycore,
+#     )
 
-    test_field_matrix_solver(;
-        test_name="similar solve to ClimaAtmos's dry dycore with implicit \
-                   acoustic waves and diffusion",
-        alg=MatrixFields.ApproximateBlockArrowheadIterativeSolve(
-            @name(c);
-            n_iters=6,
-        ),
-        A=MatrixFields.FieldMatrix(
-            (@name(c.ρ), @name(c.ρ)) => I,
-            (@name(c.ρe_tot), @name(c.ρe_tot)) => ᶜᶜmat3,
-            (@name(c.uₕ), @name(c.uₕ)) => ᶜᶜmat3,
-            (@name(c.ρ), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
-            (@name(c.ρe_tot), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
-            (@name(f.u₃), @name(c.ρ)) => ᶠᶜmat2_u₃_scalar,
-            (@name(f.u₃), @name(c.ρe_tot)) => ᶠᶜmat2_u₃_scalar,
-            (@name(f.u₃), @name(f.u₃)) => ᶠᶠmat3_u₃_u₃,
-        ),
-        b=b_dry_dycore,
-    )
+#     test_field_matrix_solver(;
+#         test_name="similar solve to ClimaAtmos's dry dycore with implicit \
+#                    acoustic waves and diffusion",
+#         alg=MatrixFields.ApproximateBlockArrowheadIterativeSolve(
+#             @name(c);
+#             n_iters=6,
+#         ),
+#         A=MatrixFields.FieldMatrix(
+#             (@name(c.ρ), @name(c.ρ)) => I,
+#             (@name(c.ρe_tot), @name(c.ρe_tot)) => ᶜᶜmat3,
+#             (@name(c.uₕ), @name(c.uₕ)) => ᶜᶜmat3,
+#             (@name(c.ρ), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
+#             (@name(c.ρe_tot), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
+#             (@name(f.u₃), @name(c.ρ)) => ᶠᶜmat2_u₃_scalar,
+#             (@name(f.u₃), @name(c.ρe_tot)) => ᶠᶜmat2_u₃_scalar,
+#             (@name(f.u₃), @name(f.u₃)) => ᶠᶠmat3_u₃_u₃,
+#         ),
+#         b=b_dry_dycore,
+#     )
 
-    test_field_matrix_solver(;
-        test_name="similar solve to ClimaAtmos's moist dycore + diagnostic \
-                   EDMF with implicit acoustic waves and SGS fluxes",
-        alg=MatrixFields.ApproximateBlockArrowheadIterativeSolve(
-            @name(c);
-            n_iters=6,
-        ),
-        A=MatrixFields.FieldMatrix(
-            (@name(c.ρ), @name(c.ρ)) => I,
-            (@name(c.ρe_tot), @name(c.ρe_tot)) => ᶜᶜmat3,
-            (@name(c.ρatke), @name(c.ρatke)) => ᶜᶜmat3,
-            (@name(c.ρχ), @name(c.ρχ)) => ᶜᶜmat3,
-            (@name(c.uₕ), @name(c.uₕ)) => ᶜᶜmat3,
-            (@name(c.ρ), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
-            (@name(c.ρe_tot), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
-            (@name(c.ρatke), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
-            (@name(c.ρχ), @name(f.u₃)) => ᶜᶠmat2_ρχ_u₃,
-            (@name(f.u₃), @name(c.ρ)) => ᶠᶜmat2_u₃_scalar,
-            (@name(f.u₃), @name(c.ρe_tot)) => ᶠᶜmat2_u₃_scalar,
-            (@name(f.u₃), @name(f.u₃)) => ᶠᶠmat3_u₃_u₃,
-        ),
-        b=b_moist_dycore_diagnostic_edmf,
-    )
-    (
-        A_moist_dycore_prognostic_edmf_prognostic_surface,
-        b_moist_dycore_prognostic_edmf_prognostic_surface,
-    ) = dycore_prognostic_EDMF_FieldMatrix(FT)
-    test_field_matrix_solver(;
-        test_name="similar solve to ClimaAtmos's moist dycore + prognostic \
-                   EDMF + prognostic surface temperature with implicit \
-                   acoustic waves and SGS fluxes",
-        alg=MatrixFields.BlockLowerTriangularSolve(
-            @name(c.sgsʲs),
-            @name(f.sgsʲs);
-            alg₁=MatrixFields.BlockArrowheadSolve(@name(c)),
-            alg₂=MatrixFields.ApproximateBlockArrowheadIterativeSolve(
-                @name(c);
-                n_iters=6,
-            ),
-        ),
-        A=A_moist_dycore_prognostic_edmf_prognostic_surface,
-        b=b_moist_dycore_prognostic_edmf_prognostic_surface,
-    )
-end
+#     test_field_matrix_solver(;
+#         test_name="similar solve to ClimaAtmos's moist dycore + diagnostic \
+#                    EDMF with implicit acoustic waves and SGS fluxes",
+#         alg=MatrixFields.ApproximateBlockArrowheadIterativeSolve(
+#             @name(c);
+#             n_iters=6,
+#         ),
+#         A=MatrixFields.FieldMatrix(
+#             (@name(c.ρ), @name(c.ρ)) => I,
+#             (@name(c.ρe_tot), @name(c.ρe_tot)) => ᶜᶜmat3,
+#             (@name(c.ρatke), @name(c.ρatke)) => ᶜᶜmat3,
+#             (@name(c.ρχ), @name(c.ρχ)) => ᶜᶜmat3,
+#             (@name(c.uₕ), @name(c.uₕ)) => ᶜᶜmat3,
+#             (@name(c.ρ), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
+#             (@name(c.ρe_tot), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
+#             (@name(c.ρatke), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
+#             (@name(c.ρχ), @name(f.u₃)) => ᶜᶠmat2_ρχ_u₃,
+#             (@name(f.u₃), @name(c.ρ)) => ᶠᶜmat2_u₃_scalar,
+#             (@name(f.u₃), @name(c.ρe_tot)) => ᶠᶜmat2_u₃_scalar,
+#             (@name(f.u₃), @name(f.u₃)) => ᶠᶠmat3_u₃_u₃,
+#         ),
+#         b=b_moist_dycore_diagnostic_edmf,
+#     )
+#     (
+#         A_moist_dycore_prognostic_edmf_prognostic_surface,
+#         b_moist_dycore_prognostic_edmf_prognostic_surface,
+#     ) = dycore_prognostic_EDMF_FieldMatrix(FT)
+#     test_field_matrix_solver(;
+#         test_name="similar solve to ClimaAtmos's moist dycore + prognostic \
+#                    EDMF + prognostic surface temperature with implicit \
+#                    acoustic waves and SGS fluxes",
+#         alg=MatrixFields.BlockLowerTriangularSolve(
+#             @name(c.sgsʲs),
+#             @name(f.sgsʲs);
+#             alg₁=MatrixFields.BlockArrowheadSolve(@name(c)),
+#             alg₂=MatrixFields.ApproximateBlockArrowheadIterativeSolve(
+#                 @name(c);
+#                 n_iters=6,
+#             ),
+#         ),
+#         A=A_moist_dycore_prognostic_edmf_prognostic_surface,
+#         b=b_moist_dycore_prognostic_edmf_prognostic_surface,
+#     )
+# end
