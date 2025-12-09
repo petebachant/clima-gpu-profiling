@@ -76,7 +76,6 @@ function dycore_prognostic_EDMF_FieldMatrix(
     ρaχ_unit =
         (; ρaq_tot=1, ρaq_liq=1, ρaq_ice=1, ρaq_rai=1, ρaq_sno=1)
 
-
     ᶠᶜmat2_u₃_scalar = ᶠᶜmat2 .* (e³,)
     ᶜᶠmat2_scalar_u₃ = ᶜᶠmat2 .* (e₃',)
     ᶠᶠmat3_u₃_u₃ = ᶠᶠmat3 .* (e³ * e₃',)
