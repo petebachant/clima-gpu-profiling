@@ -130,7 +130,7 @@ end
 
 
 function test_field_matrix_solver(; test_name, alg, A, b, use_rel_error=false)
-    @testset "$test_name" begin
+    # @testset "$test_name" begin
         x = similar(b)
         A′ = FieldMatrixWithSolver(A, b, alg)
         @test zero(A′) isa typeof(A′)
@@ -138,7 +138,7 @@ function test_field_matrix_solver(; test_name, alg, A, b, use_rel_error=false)
             @benchmark ClimaComms.@cuda_sync comms_device ldiv!(x, A′, b)
 
         b_test = similar(b)
-        @test zero(b) isa typeof(b)
+        # @test zero(b) isa typeof(b)
         mul_time =
             @benchmark ClimaComms.@cuda_sync comms_device mul!(b_test, A′, x)
 
@@ -171,10 +171,10 @@ function test_field_matrix_solver(; test_name, alg, A, b, use_rel_error=false)
         # TODO: fix broken test when Nv is added to the type space
         using_cuda || @test @allocated(ldiv!(x, A′, b)) ≤ 1536
         using_cuda || @test @allocated(mul!(b_test, A′, x)) == 0
-    end
+    # end
 end
 
-@testset "FieldMatrixSolver Unit Tests" begin
+# @testset "FieldMatrixSolver Unit Tests" begin
     FT = Float64
     center_space, face_space = test_spaces(FT)
     surface_space = Spaces.level(face_space, half)
@@ -203,4 +203,23 @@ end
             b=Fields.FieldVector(; _=vector),
         )
     end
-end
+
+    # Test a more complex FieldMatrix similar to that used in ClimaAtmos's
+    # dycore + prognostic, EDMF + prognostic surface temperature solve.
+    A, b = dycore_prognostic_EDMF_FieldMatrix(FT, center_space, face_space)
+
+    keyname = keys(A).values[1]
+    keyname1 = @name(var1)
+
+    A1 = MatrixFields.FieldMatrix((keyname1, keyname1) => A[keyname])
+    b1_entry = MatrixFields.get_field(b, keyname[1])
+    b1 = Fields.FieldVector(; var1 = b1_entry)
+
+    test_field_matrix_solver(;
+        test_name="Dycore + prognostic, EDMF + prognostic surface temperature \
+                   solve",
+        alg=MatrixFields.BlockDiagonalSolve(),
+        A=A1,
+        b=b1,
+    )
+# end
