@@ -10,6 +10,38 @@ end
 
 include(joinpath("..", package_dir, "test", "MatrixFields", "matrix_field_test_utils.jl"))
 
+# Generate extruded finite difference spaces for testing. Include topography
+# when possible.
+function test_spaces(::Type{FT}) where {FT}
+    velem = 16 # This should be big enough to test high-bandwidth matrices.
+    helem = npoly = 3 # These should be small enough for the tests to be fast.
+
+    comms_ctx = ClimaComms.SingletonCommsContext(comms_device)
+    hdomain = Domains.SphereDomain(FT(10))
+    hmesh = Meshes.EquiangularCubedSphere(hdomain, helem)
+    htopology = Topologies.Topology2D(comms_ctx, hmesh)
+    quad = Quadratures.GLL{npoly + 1}()
+    hspace = Spaces.SpectralElementSpace2D(htopology, quad)
+    vdomain = Domains.IntervalDomain(
+        Geometry.ZPoint(FT(0)),
+        Geometry.ZPoint(FT(10));
+        boundary_names = (:bottom, :top),
+    )
+    vmesh = Meshes.IntervalMesh(vdomain, nelems = velem)
+    vtopology = Topologies.IntervalTopology(comms_ctx, vmesh)
+    vspace = Spaces.CenterFiniteDifferenceSpace(vtopology)
+    sfc_coord = Fields.coordinate_field(hspace)
+    hypsography =
+        using_cuda ? Hypsography.Flat() :
+        Hypsography.LinearAdaption(
+            Geometry.ZPoint.(@. cosd(sfc_coord.lat) + cosd(sfc_coord.long) + 1),
+        ) # TODO: FD operators don't currently work with hypsography on GPUs.
+    center_space =
+        Spaces.ExtrudedFiniteDifferenceSpace(hspace, vspace, hypsography)
+    face_space = Spaces.FaceExtrudedFiniteDifferenceSpace(center_space)
+
+    return center_space, face_space
+end
 
 # Create a field matrix for a similar solve to ClimaAtmos's moist dycore + prognostic,
 # EDMF + prognostic surface temperature with implicit acoustic waves and SGS fluxes
