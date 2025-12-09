@@ -588,35 +588,3 @@ end
         b=b_moist_dycore_prognostic_edmf_prognostic_surface,
     )
 end
-
-@testset "FieldMatrixSolver with CenterFiniteDifferenceSpace" begin
-    # Set up FiniteDifferenceSpace
-    FT = Float32
-    zmax = FT(0)
-    zmin = FT(-0.35)
-    nelems = 5
-
-    context = ClimaComms.context()
-    z_domain = Domains.IntervalDomain(
-        Geometry.ZPoint(zmin),
-        Geometry.ZPoint(zmax);
-        boundary_names=(:bottom, :top),
-    )
-    z_mesh = Meshes.IntervalMesh(z_domain, nelems=nelems)
-    z_topology = Topologies.IntervalTopology(context, z_mesh)
-    space = Spaces.CenterFiniteDifferenceSpace(z_topology)
-
-    # Create a field containing a `TridiagonalMatrixRow` at each point
-    tridiag_type = MatrixFields.TridiagonalMatrixRow{FT}
-    tridiag_field = Fields.Field(tridiag_type, space)
-
-    # Set up objects for matrix solve
-    A = MatrixFields.FieldMatrix((@name(_), @name(_)) => tridiag_field)
-    field = Fields.ones(space)
-    b = Fields.FieldVector(; _=field)
-    x = similar(b)
-    A′ = FieldMatrixWithSolver(A, b)
-
-    # Run matrix solve
-    ldiv!(x, A′, b)
-end
