@@ -105,18 +105,10 @@ function dycore_prognostic_EDMF_FieldMatrix(
     )
     A = MatrixFields.FieldMatrix(
         # GS-GS blocks:
-        (@name(sfc), @name(sfc)) => I,
-        (@name(c.ρ), @name(c.ρ)) => I,
         (@name(c.ρe_tot), @name(c.ρe_tot)) => ᶜᶜmat3,
         (@name(c.ρatke), @name(c.ρatke)) => ᶜᶜmat3,
         (@name(c.ρχ), @name(c.ρχ)) => ᶜᶜmat3,
         (@name(c.uₕ), @name(c.uₕ)) => ᶜᶜmat3_uₕ_uₕ,
-        (@name(c.ρ), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
-        (@name(c.ρe_tot), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
-        (@name(c.ρatke), @name(f.u₃)) => ᶜᶠmat2_scalar_u₃,
-        (@name(c.ρχ), @name(f.u₃)) => ᶜᶠmat2_ρχ_u₃,
-        (@name(f.u₃), @name(c.ρ)) => ᶠᶜmat2_u₃_scalar,
-        (@name(f.u₃), @name(c.ρe_tot)) => ᶠᶜmat2_u₃_scalar,
         (@name(f.u₃), @name(f.u₃)) => ᶠᶠmat3_u₃_u₃,
         # GS-SGS blocks:
         (@name(c.ρe_tot), @name(c.sgsʲs.:(1).ρae_tot)) => ᶜᶜmat3,
@@ -129,25 +121,8 @@ function dycore_prognostic_EDMF_FieldMatrix(
         (@name(c.ρatke), @name(c.sgsʲs.:(1).ρa)) => ᶜᶜmat3,
         (@name(c.ρχ), @name(c.sgsʲs.:(1).ρa)) => ᶜᶜmat3_ρχ_scalar,
         (@name(c.uₕ), @name(c.sgsʲs.:(1).ρa)) => ᶜᶜmat3_uₕ_scalar,
-        (@name(c.ρe_tot), @name(f.sgsʲs.:(1).u₃)) => ᶜᶠmat2_scalar_u₃,
-        (@name(c.ρatke), @name(f.sgsʲs.:(1).u₃)) => ᶜᶠmat2_scalar_u₃,
-        (@name(c.ρχ), @name(f.sgsʲs.:(1).u₃)) => ᶜᶠmat2_ρχ_u₃,
-        (@name(c.uₕ), @name(f.sgsʲs.:(1).u₃)) => ᶜᶠmat2_uₕ_u₃,
-        (@name(f.u₃), @name(c.sgsʲs.:(1).ρa)) => ᶠᶜmat2_u₃_scalar,
         (@name(f.u₃), @name(f.sgsʲs.:(1).u₃)) => ᶠᶠmat3_u₃_u₃,
         # SGS-SGS blocks:
-        (@name(c.sgsʲs.:(1).ρa), @name(c.sgsʲs.:(1).ρa)) => I,
-        (@name(c.sgsʲs.:(1).ρae_tot), @name(c.sgsʲs.:(1).ρae_tot)) => I,
-        (@name(c.sgsʲs.:(1).ρaχ), @name(c.sgsʲs.:(1).ρaχ)) => I,
-        (@name(c.sgsʲs.:(1).ρa), @name(f.sgsʲs.:(1).u₃)) =>
-            ᶜᶠmat2_scalar_u₃,
-        (@name(c.sgsʲs.:(1).ρae_tot), @name(f.sgsʲs.:(1).u₃)) =>
-            ᶜᶠmat2_scalar_u₃,
-        (@name(c.sgsʲs.:(1).ρaχ), @name(f.sgsʲs.:(1).u₃)) => ᶜᶠmat2_ρaχ_u₃,
-        (@name(f.sgsʲs.:(1).u₃), @name(c.sgsʲs.:(1).ρa)) =>
-            ᶠᶜmat2_u₃_scalar,
-        (@name(f.sgsʲs.:(1).u₃), @name(c.sgsʲs.:(1).ρae_tot)) =>
-            ᶠᶜmat2_u₃_scalar,
         (@name(f.sgsʲs.:(1).u₃), @name(f.sgsʲs.:(1).u₃)) => ᶠᶠmat3_u₃_u₃,
     )
     return A, b
