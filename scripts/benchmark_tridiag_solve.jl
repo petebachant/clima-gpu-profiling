@@ -223,3 +223,18 @@ test_field_matrix_solver(;
     b=b1,
 )
 # end
+
+# Test batched tri-diagonal solver
+if package_dir == "ClimaCore.jl-mod"
+    for (vector, matrix, string1, string2) in (
+        (ᶜvec, ᶜᶜmat3, "tri-diagonal matrix", "cell centers"),
+        (ᶠvec, ᶠᶠmat3, "tri-diagonal matrix", "cell faces"),
+    )
+        test_field_matrix_solver(;
+            test_name="Batched $string1 solve on $string2",
+            alg=MatrixFields.BatchedTridiagonalSolve(),
+            A=MatrixFields.FieldMatrix((@name(_), @name(_)) => matrix),
+            b=Fields.FieldVector(; _=vector),
+        )
+    end
+end
