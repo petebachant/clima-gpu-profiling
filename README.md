@@ -72,3 +72,4 @@ and in VS Code, use that when selecting a kernel for the notebook.
 |---------------------|--------|
 | `130baab` | Occupancy for `run_field_matrix_solver` increased and reduced registers per thread but slowed down overall. |
 | `e5845b7` | Similar as above, but not quite as slow. |
+| `ff26f4b1 | PCR for tri-diagonal matrix solve seems to be 3% faster, but higher error. |
