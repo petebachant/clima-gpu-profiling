@@ -115,3 +115,14 @@ stages:
           persist: true
     desc: Automatically generated from the 'baseline-ncu' stage in 
       calkit.yaml. Changes made here will be overwritten.
+  baseline-ncu-details-csv:
+    cmd: ' bash --noprofile --norc -c "ncu --csv -i results/ncu/baseline.ncu-rep
+      --page details --log-file results/ncu/baseline-details.csv"'
+    deps:
+      - results/ncu/baseline.ncu-rep
+    outs:
+      - results/ncu/baseline-details.csv:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'baseline-ncu-details-csv' 
+      stage in calkit.yaml. Changes made here will be overwritten.

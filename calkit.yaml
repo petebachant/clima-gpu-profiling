@@ -113,3 +113,13 @@ pipeline:
         - ClimaCore.jl/lib
       outputs:
         - results/ncu/baseline.ncu-rep
+    baseline-ncu-details-csv:
+      kind: shell-command
+      environment: _system
+      command: ncu --csv -i results/ncu/baseline.ncu-rep --page details
+        --log-file results/ncu/baseline-details.csv
+      inputs:
+        - results/ncu/baseline.ncu-rep
+      outputs:
+        - path: results/ncu/baseline-details.csv
+          storage: git
