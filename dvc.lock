@@ -634,3 +634,73 @@ stages:
       hash: md5
       md5: cf01a161bca84e054c172a0f8a288fbc
       size: 48791552
+  baseline-ncu:
+    cmd: calkit slurm batch --name baseline-ncu --environment clima --dep 
+      scripts/run.jl --dep ClimaCoupler.jl/src --dep 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml 
+      --dep ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml --dep 
+      ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl --dep 
+      ClimaCoupler.jl/experiments/ClimaEarth/components --dep ClimaCore.jl/ext 
+      --dep ClimaCore.jl/src --dep ClimaCore.jl/lib --out 
+      results/ncu/baseline.ncu-rep -s --gpus=1 -s --time=120 -- 
+      scripts/run-ncu.sh results/ncu/baseline --kernel-name 
+      run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L354
+      --project ClimaCoupler.jl/experiments/ClimaEarth --config 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml 
+      --launch-count 6
+    deps:
+    - path: ClimaCore.jl/ext
+      hash: md5
+      md5: 3eefe42314a0a373446ec73185101194.dir
+      size: 176683
+      nfiles: 25
+    - path: ClimaCore.jl/lib
+      hash: md5
+      md5: 1bae101a018dfc30cae2ab0636204b01.dir
+      size: 312470
+      nfiles: 58
+    - path: ClimaCore.jl/src
+      hash: md5
+      md5: b83f3712b71321a3d28347bcdf2f0eba.dir
+      size: 1142348
+      nfiles: 95
+    - path: 
+        ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 577bef53fd5c8e8eb2897c6d236dec53
+      size: 461
+    - path: ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
+      hash: md5
+      md5: 20f5d337eb4f2eb7878da4df9d17fffe
+      size: 130015
+    - path: ClimaCoupler.jl/experiments/ClimaEarth/components
+      hash: md5
+      md5: e81dfd2ecc81b192dcda7a68bf87c2b5.dir
+      size: 155597
+      nfiles: 11
+    - path: ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
+      hash: md5
+      md5: 477bfee6c3064f2c0bafa00b65b2f46f
+      size: 28333
+    - path: ClimaCoupler.jl/src
+      hash: md5
+      md5: fd4db4a25bcc5125953ecf6d27dee80f.dir
+      size: 84412
+      nfiles: 9
+    - path: scripts/run-ncu.sh
+      hash: md5
+      md5: 284e69bc117cd26779b5a9983edc89e5
+      size: 3023
+    - path: scripts/run.jl
+      hash: md5
+      md5: da998a1edb4f588160675f8d185ae11d
+      size: 1207
+    outs:
+    - path: .calkit/slurm/logs/baseline-ncu.out
+      hash: md5
+      md5: 1a0e9fb803178a27bb572bc4d8339234
+      size: 21796
+    - path: results/ncu/baseline.ncu-rep
+      hash: md5
+      md5: 093eaa8fba61c098b928e3ad047b0a3f
+      size: 16075871

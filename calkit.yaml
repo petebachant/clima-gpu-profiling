@@ -84,3 +84,32 @@ pipeline:
         - results/nsys/mod.nsys-rep
       outputs:
         - results/nsys/mod.sqlite
+    baseline-ncu:
+      kind: sbatch
+      environment: clima
+      script_path: scripts/run-ncu.sh
+      sbatch_options:
+        - --gpus=1
+        - --time=120
+      args:
+        - results/ncu/baseline
+        - --kernel-name
+        - run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L354
+        - --project
+        - ClimaCoupler.jl/experiments/ClimaEarth
+        - --config
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --launch-count
+        - "6"
+      inputs:
+        - scripts/run.jl
+        - ClimaCoupler.jl/src
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
+        - ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
+        - ClimaCoupler.jl/experiments/ClimaEarth/components
+        - ClimaCore.jl/ext
+        - ClimaCore.jl/src
+        - ClimaCore.jl/lib
+      outputs:
+        - results/ncu/baseline.ncu-rep
