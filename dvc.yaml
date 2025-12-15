@@ -126,3 +126,49 @@ stages:
           persist: false
     desc: Automatically generated from the 'baseline-ncu-details-csv' 
       stage in calkit.yaml. Changes made here will be overwritten.
+  mod-ncu:
+    cmd: calkit slurm batch --name mod-ncu --environment clima --dep 
+      scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep 
+      ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml 
+      --dep ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl 
+      --dep ClimaCoupler.jl-mod/experiments/ClimaEarth/components 
+      --dep ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
+      ClimaCore.jl-mod/lib --out results/ncu/mod.ncu-rep -s --gpus=1 
+      -s --time=120 -- scripts/run-ncu.sh results/ncu/mod 
+      --kernel-name 
+      run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L354
+      --project ClimaCoupler.jl-mod/experiments/ClimaEarth --config 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --launch-count 6
+    deps:
+      - scripts/run-ncu.sh
+      - scripts/run.jl
+      - ClimaCoupler.jl-mod/src
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
+      - ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl
+      - ClimaCoupler.jl-mod/experiments/ClimaEarth/components
+      - ClimaCore.jl-mod/ext
+      - ClimaCore.jl-mod/src
+      - ClimaCore.jl-mod/lib
+    outs:
+      - results/ncu/mod.ncu-rep:
+          persist: true
+      - .calkit/slurm/logs/mod-ncu.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'mod-ncu' stage in 
+      calkit.yaml. Changes made here will be overwritten.
+  mod-ncu-details-csv:
+    cmd: ' bash --noprofile --norc -c "ncu --csv -i results/ncu/mod.ncu-rep
+      --page details --log-file results/ncu/mod-details.csv"'
+    deps:
+      - results/ncu/mod.ncu-rep
+    outs:
+      - results/ncu/mod-details.csv:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'mod-ncu-details-csv' stage
+      in calkit.yaml. Changes made here will be overwritten.

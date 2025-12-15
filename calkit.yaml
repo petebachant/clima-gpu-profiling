@@ -123,3 +123,42 @@ pipeline:
       outputs:
         - path: results/ncu/baseline-details.csv
           storage: git
+    mod-ncu:
+      kind: sbatch
+      environment: clima
+      script_path: scripts/run-ncu.sh
+      sbatch_options:
+        - --gpus=1
+        - --time=120
+      args:
+        - results/ncu/mod
+        - --kernel-name
+        - run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L354
+        - --project
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth
+        - --config
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --launch-count
+        - "6"
+      inputs:
+        - scripts/run.jl
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth/components
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaCore.jl-mod/lib
+      outputs:
+        - results/ncu/mod.ncu-rep
+    mod-ncu-details-csv:
+      kind: shell-command
+      environment: _system
+      command: ncu --csv -i results/ncu/mod.ncu-rep --page details
+        --log-file results/ncu/mod-details.csv
+      inputs:
+        - results/ncu/mod.ncu-rep
+      outputs:
+        - path: results/ncu/mod-details.csv
+          storage: git
