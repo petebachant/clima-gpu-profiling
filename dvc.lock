@@ -717,3 +717,28 @@ stages:
       hash: md5
       md5: 5acf4a23b562efe7a1781b3c2b2c7348
       size: 183213
+  summarize:
+    cmd: calkit xenv -n py --no-check -- python scripts/summarize.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: aee4b326de2858bf8c654092f045ac11.dir
+      size: 1955
+      nfiles: 2
+    - path: results/nsys/baseline.sqlite
+      hash: md5
+      md5: 7e65437ff60cd038263d8742887c29df
+      size: 47243264
+    - path: results/nsys/mod.sqlite
+      hash: md5
+      md5: 21d63cf50c19d58634693bfb27c8a57a
+      size: 48644096
+    - path: scripts/summarize.py
+      hash: md5
+      md5: 59d5067e8d21a949a0c5ed2a6a4a18b5
+      size: 985
+    outs:
+    - path: results/summary.json
+      hash: md5
+      md5: cfe4662f5d9416f089f1e985b5c61ba2
+      size: 385
