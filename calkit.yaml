@@ -51,17 +51,6 @@ pipeline:
         - results/nsys/baseline.nsys-rep
       outputs:
         - results/nsys/baseline.sqlite
-    summarize-baseline-nsys:
-      kind: python-script
-      environment: py
-      script_path: scripts/summary-from-nsys.py
-      args:
-        - results/nsys/baseline.sqlite
-      inputs:
-        - results/nsys/baseline.sqlite
-      outputs:
-        - path: results/nsys/baseline.summary.json
-          storage: git
     mod-nsys:
       kind: sbatch
       environment: clima
