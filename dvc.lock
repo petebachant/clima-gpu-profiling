@@ -563,13 +563,13 @@ stages:
     deps:
     - path: ClimaAtmos.jl-mod/src
       hash: md5
-      md5: 972a127da48c2362ff9ecf0f101f08d6.dir
-      size: 1314508
+      md5: 2881e36ec0519d1cc0c2be66eb992957.dir
+      size: 1314512
       nfiles: 101
     - path: ClimaCore.jl-mod/ext
       hash: md5
-      md5: 242e6c52a039e77c6834b0c79096f86a.dir
-      size: 186973
+      md5: d16d0789d42934680153f31a1b25b4de.dir
+      size: 191378
       nfiles: 25
     - path: ClimaCore.jl-mod/lib
       hash: md5
@@ -615,25 +615,25 @@ stages:
     outs:
     - path: .calkit/slurm/logs/mod-nsys.out
       hash: md5
-      md5: 2552cbfbba2bfcbfe2aedbca9c5afd3a
-      size: 25503
+      md5: 00a695bda5583da04c16faaf39ebd079
+      size: 27105
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: ac9afe05d6959e5a4c72410b1ad19acc
-      size: 23554519
+      md5: bac35addcc2d204de4924c20205d5915
+      size: 23567839
   mod-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep -t sqlite
       -o results/nsys/mod.sqlite"'
     deps:
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: ac9afe05d6959e5a4c72410b1ad19acc
-      size: 23554519
+      md5: bac35addcc2d204de4924c20205d5915
+      size: 23567839
     outs:
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 3848b411d64695916895acb3782c9c7e
-      size: 48652288
+      md5: e91ffa7e7861aa36c62c9676bc857440
+      size: 48685056
   baseline-ncu:
     cmd: calkit slurm batch --name baseline-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl/src --dep 
@@ -731,8 +731,8 @@ stages:
       size: 47009792
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 3848b411d64695916895acb3782c9c7e
-      size: 48652288
+      md5: e91ffa7e7861aa36c62c9676bc857440
+      size: 48685056
     - path: scripts/summarize.py
       hash: md5
       md5: 07c34af8e650da2ed6884efa945adf97
@@ -740,5 +740,5 @@ stages:
     outs:
     - path: results/summary.json
       hash: md5
-      md5: e32ca9074c2dc108e103cb847e40fff5
-      size: 384
+      md5: be3803a96799abb9c5fa5b0527b750de
+      size: 385
