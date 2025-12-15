@@ -742,3 +742,86 @@ stages:
       hash: md5
       md5: be3803a96799abb9c5fa5b0527b750de
       size: 385
+  mod-ncu:
+    cmd: calkit slurm batch --name mod-ncu --environment clima --dep 
+      scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl --dep 
+      ClimaCoupler.jl-mod/experiments/ClimaEarth/components --dep 
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep ClimaCore.jl-mod/lib
+      --out results/ncu/mod.ncu-rep -s --gpus=1 -s --time=120 -- 
+      scripts/run-ncu.sh results/ncu/mod --kernel-name 
+      run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixFields_field_matrix_solver_jl_L419
+      --project ClimaCoupler.jl-mod/experiments/ClimaEarth --config 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --launch-count 6
+    deps:
+    - path: ClimaCore.jl-mod/ext
+      hash: md5
+      md5: d16d0789d42934680153f31a1b25b4de.dir
+      size: 191378
+      nfiles: 25
+    - path: ClimaCore.jl-mod/lib
+      hash: md5
+      md5: 1bae101a018dfc30cae2ab0636204b01.dir
+      size: 312470
+      nfiles: 58
+    - path: ClimaCore.jl-mod/src
+      hash: md5
+      md5: 808e798a37a76e4271db35ab891aac0f.dir
+      size: 1144562
+      nfiles: 95
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 577bef53fd5c8e8eb2897c6d236dec53
+      size: 461
+    - path: ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
+      hash: md5
+      md5: 998c658c0c3248cb46fd09b3931a5eb3
+      size: 130026
+    - path: ClimaCoupler.jl-mod/experiments/ClimaEarth/components
+      hash: md5
+      md5: 6822f39e84eeb7bd9204d30cbe525426.dir
+      size: 152251
+      nfiles: 10
+    - path: ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl
+      hash: md5
+      md5: 90bf4dce16adc70b5b76b521004ad354
+      size: 28296
+    - path: ClimaCoupler.jl-mod/src
+      hash: md5
+      md5: 2e37b67c313a4a49e61198eacb326631.dir
+      size: 111498
+      nfiles: 10
+    - path: scripts/run-ncu.sh
+      hash: md5
+      md5: 284e69bc117cd26779b5a9983edc89e5
+      size: 3023
+    - path: scripts/run.jl
+      hash: md5
+      md5: ac0b4094547618457fea2b864b0dc6de
+      size: 1219
+    outs:
+    - path: .calkit/slurm/logs/mod-ncu.out
+      hash: md5
+      md5: d72513f142b6fd49b9e1bf2ea59aa7a1
+      size: 22043
+    - path: results/ncu/mod.ncu-rep
+      hash: md5
+      md5: 5473dd8d4eb70ba2f70bd342fd63126a
+      size: 15877348
+  mod-ncu-details-csv:
+    cmd: ' bash --noprofile --norc -c "ncu --csv -i results/ncu/mod.ncu-rep --page
+      details --log-file results/ncu/mod-details.csv"'
+    deps:
+    - path: results/ncu/mod.ncu-rep
+      hash: md5
+      md5: 5473dd8d4eb70ba2f70bd342fd63126a
+      size: 15877348
+    outs:
+    - path: results/ncu/mod-details.csv
+      hash: md5
+      md5: 0c61c732f181bf13b7bdc69ffdbe46f3
+      size: 184664

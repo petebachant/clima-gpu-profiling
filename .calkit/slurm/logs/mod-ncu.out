@@ -71,7 +71,13 @@ Status `~/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/experiments/ClimaEarth/
   [9c32591e] Poppler_jll v24.6.0+0
 Info Packages marked with ⌃ and ⌅ have new versions available. Those with ⌃ may be upgradable, but those with ⌅ are restricted by compatibility constraints from upgrading. To see why use `status --outdated`
 Warning The project dependencies or compat requirements have changed since the manifest was last resolved. It is recommended to `Pkg.resolve()` or consider `Pkg.update()` if necessary.
-==PROF== Connected to process 2960912 (/clima/software/julia/julia-1.11.5/bin/julia)
+==PROF== Connected to process 3492339 (/clima/software/julia/julia-1.11.5/bin/julia)
+==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixFields_field_matrix_solver_jl_L419": 0%....50%....100% - 50 passes
+==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixFields_field_matrix_solver_jl_L419": 0%....50%....100% - 51 passes
+==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixFields_field_matrix_solver_jl_L419": 0%....50%....100% - 50 passes
+==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixFields_field_matrix_solver_jl_L419": 0%....50%....100% - 51 passes
+==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixFields_field_matrix_solver_jl_L419": 0%....50%....100% - 51 passes
+==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixFields_field_matrix_solver_jl_L419": 0%....50%....100% - 50 passes
 ┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
 │ This may cause errors.
 │ 
@@ -117,14 +123,14 @@ Warning The project dependencies or compat requirements have changed since the m
 [ Info: Using Atmos configuration from ClimaCoupler in config/atmos_configs/climaatmos_progedmf_1m.yml
 [ Info: Setting up single-process ClimaCoupler run on device: CUDADevice.
 [ Info: Dict{Any, Any}("sleve_eta" => 0.7, "surface_thermo_state_type" => "GCMSurfaceThermoState", "use_coupler_diagnostics" => true, "era5_diurnal_warming" => nothing, "dt" => "30secs", "prognostic_tke" => true, "use_newton_rtol" => false, "netcdf_output_at_levels" => true, "output_dir_style" => "ActiveLink", "external_forcing" => nothing, "device" => "auto", "t_end" => "1200secs", "c_amd" => 0.29, "y_elem" => 6, "z_stretch" => true, "extra_atmos_diagnostics" => Dict{Any, Any}[], "forcing" => nothing, "edmfx_nh_pressure" => true, "era5_initial_condition_dir" => nothing, "conservation_softfail" => false, "check_steady_state" => false, "restart_cache" => true, "update_jacobian_every" => "solve", "test_dycore_consistency" => false, "add_isothermal_boundary_layer" => true, "use_itime" => true, "moist" => "nonequil", "rad" => "allskywithclear", "share_surface_space" => true, "cloud_model" => "quadrature", "initial_condition" => "DecayingProfile", "krylov_rtol" => 0.1, "eisenstat_walker_forcing_alpha" => 2.0, "dt_cloud_fraction" => "1hours", "surface_setup" => "PrescribedSurface", "jvp_step_adjustment" => 1.0, "insolation" => "timevarying", "log_progress" => true, "site_latitude" => 17.0, "h_elem" => 16, "implicit_sgs_nh_pressure" => true, "coupler_toml" => ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/toml/amip_progedmf_1m.toml"], "netcdf_interpolation_num_points" => nothing, "coupler_output_dir" => "experiments/ClimaEarth/output", "z_max" => 60000.0, "moisture_fixer" => false, "apply_limiter" => false, "precip_model" => "1M", "atmos_log_progress" => false, "surface_temperature" => "ZonallySymmetric", "debug_jacobian" => false, "edmfx_filter" => true, "job_id" => "amip_progedmf_1m_land_he16", "log_to_file" => false, "orographic_gravity_wave" => nothing, "dt_rad" => "600secs", "edmfx_upwinding" => "first_order", "tracer_upwinding" => "vanleer_limiter", "nh_poly" => 3, "edmfx_sgs_diffusive_flux" => true, "y_max" => 300000.0, "non_orographic_gravity_wave" => false, "print_config_dict" => true, "save_cache" => true, "topography_damping_factor" => 5, "config" => "sphere", "reproducibility_test" => false, "component_dt_dict" => Dict("dt_atmos" => 30.0, "dt_land" => 30.0, "dt_seaice" => 30.0, "dt_ocean" => 30.0), "check_conservation" => false, "rmse_check" => false, "land_spun_up_ic" => true, "auto_jacobian_padding_bands" => nothing, "implicit_diffusion" => true, "z_elem" => 63, "implicit_sgs_entr_detr" => true, "use_auto_jacobian" => false, "disable_surface_flux_tendency" => false, "cfsite_number" => "site23", "turbconv" => "prognostic_edmfx", "x_elem" => 6, "idealized_clouds" => false, "edmfx_mse_q_tot_upwinding" => "first_order", "check_nan_every" => 1024, "ice_model" => "prescribed", "subsidence" => nothing, "use_dynamic_krylov_rtol" => false, "reproducible_restart" => false, "toml" => ["toml/longrun_aquaplanet_diagedmf.toml"], "mesh_warp_type" => "SLEVE", "edmfx_detr_model" => "Generalized", "external_forcing_file" => nothing, "topo_smoothing" => true, "hyperdiff" => "CAM_SE", "output_dir" => nothing, "constant_horizontal_diffusion" => false, "scm_coriolis" => nothing, "bubble" => false, "co2_model" => "maunaloa", "ode_algo" => "ARS343", "max_newton_iters_ode" => 3, "start_date" => "20100101", "use_dense_jacobian" => false, "implicit_noneq_cloud_formation" => false, "scalar_hyperdiffusion_coefficient" => 0.929738, "prognostic_surface" => "false", "detect_restart_file" => false, "edmfx_vertical_diffusion" => true, "restart_file" => nothing, "unique_seed" => false, "rayleigh_sponge" => true, "edmfx_tracer_upwinding" => "first_order", "divergence_damping_factor" => 5.0, "edmfx_entr_model" => "Generalized", "energy_check" => false, "land_model" => "integrated", "use_land_diagnostics" => true, "idealized_h2o" => false, "perturb_initstate" => true, "implicit_sgs_advection" => true, "edmfx_scale_blending" => "SmoothMinimum", "discrete_hydrostatic_balance" => false, "t_start" => "0secs", "dz_bottom" => 30.0, "dt_save_state_to_disk" => "30days", "restart_t" => nothing, "advection_test" => false, "dt_cpl" => "30secs", "checkpoint_dt" => "366days", "topography" => "Earth", "aerosol_radiation" => true, "reference_job_id" => nothing, "perf_summary" => false, "vorticity_hyperdiffusion_coefficient" => 0.1857, "implicit_sgs_mass_flux" => true, "call_cloud_diagnostics_per_stage" => false, "viscous_sponge" => true, "strict_params" => true, "config_file" => "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml", "bucket_initial_condition" => "", "approximate_linear_solve_iters" => 2, "smagorinsky_lilly" => nothing, "enable_diagnostics" => true, "site_longitude" => -149.0, "evolving_ocean" => true, "implicit_sgs_vertdiff" => true, "prescribe_clouds_in_radiation" => false, "albedo_model" => "CouplerAlbedo", "FLOAT_TYPE" => "Float32", "deep_atmosphere" => true, "split_ode" => true, "amd_les" => false, "prescribe_ozone" => true, "updraft_number" => 1, "restart_dir" => nothing, "detect_restart_files" => false, "ls_adv" => nothing, "energy_q_tot_upwinding" => "vanleer_limiter", "prescribed_aerosols" => ["CB1", "CB2", "DST01", "DST02", "DST03", "DST04", "DST05", "OC1", "OC2", "SO4", "SSLT01", "SSLT02", "SSLT03", "SSLT04", "SSLT05"], "dt_nogw" => "1800secs", "output_default_diagnostics" => true, "edmfx_sgs_mass_flux" => true, "x_max" => 300000.0, "radiation_reset_rng_seed" => true, "newton_rtol" => 1.0e-5, "atmos_config_file" => "config/atmos_configs/climaatmos_progedmf_1m.yml", "edmfx_sgsflux_upwinding" => "none", "mode_name" => "amip", "land_temperature_anomaly" => "aquaplanet", "bucket_albedo_type" => "map_static", "vert_diff" => "false", "use_krylov_method" => false, "sleve_s" => 10.0, "prescribed_flow" => nothing)
-[ Info: Output directories experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0022
+[ Info: Output directories experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0024
 [ Info: Coupler artifacts directory experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/artifacts
 [ Info: Coupler checkpoint directory experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/checkpoints
 [ Info: Overwriting Atmos parameters from input TOML file(s): ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/toml/amip_progedmf_1m.toml"]
 ┌ Warning: The configuration passed to ClimaAtmos contains unused keys: share_surface_space, use_coupler_diagnostics, bucket_initial_condition, energy_check, use_land_diagnostics, land_model, edmfx_upwinding, atmos_config_file, mode_name, land_temperature_anomaly, evolving_ocean, bucket_albedo_type, save_cache, print_config_dict, extra_atmos_diagnostics, ice_model, coupler_toml, restart_t, coupler_output_dir, dt_cpl, checkpoint_dt, component_dt_dict, atmos_log_progress, conservation_softfail, restart_dir, restart_cache, detect_restart_files, rmse_check, land_spun_up_ic, config_file, unique_seed
 └ @ ClimaAtmos ~/calkit/clima-gpu-profiling/ClimaAtmos.jl-mod/src/solver/yaml_helper.jl:89
 [ Info: Random seed set to 1234
-┌ Warning: Removing experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0022/clima_atmos
+┌ Warning: Removing experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0024/clima_atmos
 └ @ ClimaUtilities.OutputPathGenerator ~/.julia/packages/ClimaUtilities/5ClV5/src/OutputPathGenerator.jl:157
 [ Info: Running on CUDADevice
 [ Info: Setting up single-process ClimaAtmos run
@@ -160,7 +166,7 @@ Warning The project dependencies or compat requirements have changed since the m
 [ Info: SLEVE mesh warp (eta=0.7, s=10.0)
 ┌ Info: Simulation info
 │   job_id = "amip_progedmf_1m_land_he16"
-└   output_dir = "experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0022/clima_atmos"
+└   output_dir = "experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0024/clima_atmos"
 ┌ Info: Simulation Grid: ExtrudedFiniteDifferenceGrid:
 │   horizontal:
 │     context: SingletonCommsContext using CUDADevice
@@ -168,19 +174,19 @@ Warning The project dependencies or compat requirements have changed since the m
 │     quadrature: 4-point Gauss-Legendre-Lobatto quadrature
 │   vertical:
 └     mesh: 63-element IntervalMesh of IntervalDomain: z ∈ [0.0,60000.0] (:bottom, :top)
-[ Info: Allocating Y: 12.147 s (12817204 allocations: 613.07 MiB)
+[ Info: Allocating Y: 12.048 s (12817105 allocations: 612.86 MiB)
 [ Info: using deep atmosphere
-[ Info: Allocating cache (p): 374.818 s (434909125 allocations: 23.85 GiB)
+[ Info: Allocating cache (p): 370.93 s (434917694 allocations: 23.85 GiB)
 [ Info: Using ODE config: `ClimaTimeSteppers.ARS343`
-[ Info: ode_configuration: 651.823 ms (748513 allocations: 36.84 MiB)
+[ Info: ode_configuration: 624.2 ms (748513 allocations: 36.84 MiB)
 [ Info: Checking NaNs in the state every 1024 steps
-[ Info: get_callbacks: 653.88 ms (724216 allocations: 36.84 MiB)
+[ Info: get_callbacks: 647.328 ms (724215 allocations: 36.83 MiB)
 [ Info: Saving accumulated diagnostics to disk with frequency: 1 hour
 [ Info: DictWriter: String[]
 [ Info: HDF5Writer: String[]
 [ Info: NetCDFWriter: ["orog_inst", "ts_1h_min", "ts_1h_max"]
-[ Info: initializing diagnostics: 9.361 s (14583109 allocations: 754.77 MiB)
-[ Info: Prepared SciMLBase.CallbackSet callbacks: 17.061 ms (561 allocations: 27.46 KiB)
+[ Info: initializing diagnostics: 9.401 s (14583309 allocations: 755.01 MiB)
+[ Info: Prepared SciMLBase.CallbackSet callbacks: 17.065 ms (561 allocations: 27.46 KiB)
 [ Info: n_steps_per_cycle_per_cb (non diagnostics): Real[1024, 1, 120//1, 20//1]
 [ Info: n_steps_per_cycle (non diagnostics): 15360//1
 ┌ Info: Jacobian algorithm: ManualSparseJacobian(
@@ -193,11 +199,11 @@ Warning The project dependencies or compat requirements have changed since the m
 │   sgs_vertdiff_flag = ClimaAtmos.UseDerivative(),
 │   approximate_solve_iters = 2,
 └ )
-[ Info: Define ode function: 8.04 s (7670997 allocations: 278.32 MiB)
+[ Info: Define ode function: 8.014 s (7670998 allocations: 278.32 MiB)
 ┌ Warning: Setting surface albedo to 0.38 at the beginning of the simulation
 └ @ Main ~/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/experiments/ClimaEarth/components/atmosphere/climaatmos.jl:109
-[ Info: init integrator: 173.864 s (99460878 allocations: 6.18 GiB)
-[ Info: Added diagnostics: 17.278 s (13091418 allocations: 639.01 MiB)
+[ Info: init integrator: 171.176 s (99456436 allocations: 6.18 GiB)
+[ Info: Added diagnostics: 16.939 s (13091353 allocations: 638.9 MiB)
 [ Info: AMIPMode
 [ Info: AMIP/CMIP boundary conditions - do not expect energy conservation
 ┌ Info: ClimaLand: using land IC file
@@ -212,7 +218,7 @@ Warning The project dependencies or compat requirements have changed since the m
 └ @ ClimaCoupler.Interfacer ~/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/src/Interfacer.jl:326
 ┌ Warning: Setting surface albedo to 0.38 at the beginning of the simulation
 └ @ Main ~/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/experiments/ClimaEarth/components/atmosphere/climaatmos.jl:109
-[ Info: Memory in use: 15.608 GiB
+[ Info: Memory in use: 15.512 GiB
 [ Info: Using external CUDA profiler
 [ Info: Step 1 / 3
 [ Info: Step 2 / 3
@@ -226,459 +232,23 @@ Warning The project dependencies or compat requirements have changed since the m
 │   wall_time_spent = "0 seconds"
 │   percent_complete = "10.0%"
 │   estimated_sypd = "Inf"
-│   date_now = 2025-12-14T17:12:40.588
-└   estimated_finish_date = 2025-12-14T17:12:40.588
-==PROF== Disconnected from process 2960912
-==WARNING== No kernels were profiled.
-Available Kernels:
-1. ClimaAtmosSimulation_FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_atmosphere_climaatmos_jl_L56
-2. ClimaAtmosSimulation_FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_atmosphere_climaatmos_jl_L68
-3. ClimaAtmosSimulation_FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_atmosphere_climaatmos_jl_L90
-4. _ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Grids_extruded_jl_L104
-5. _ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Grids_extruded_jl_L110
-6. _ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L180
-7. _ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L181
-8. _ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L228
-9. _ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L235
-10. _ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L241
-11. _ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L249
-12. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L501
-13. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L503
-14. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L524
-15. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_entr_detr_jl_L573
-16. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_hyperdiffusion_jl_L319
-17. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1081
-18. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1092
-19. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1104
-20. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1115
-21. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1120
-22. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1372
-23. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1383
-24. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1394
-25. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L504
-26. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L510
-27. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_remaining_tendency_jl_L224
-28. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_surface_flux_jl_L131
-29. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_surface_flux_jl_L136
-30. _FILE_ClimaAtmos_jl_mod_src_prognostic_equations_surface_flux_jl_L144
-31. _FILE_ClimaAtmos_jl_mod_src_utils_variable_manipulations_jl_L179
-32. _FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl_L993
-33. _FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_land_climaland_integrated_jl_L165
-34. _FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_land_climaland_integrated_jl_L178
-35. _FILE_ClimaDiagnostics_3h9MG_src_clima_diagnostics_jl_L188
-36. _FILE_ClimaLand_x80pg_src_diagnostics_define_diagnostics_jl_L610
-37. _FILE_ClimaLand_x80pg_src_diagnostics_define_diagnostics_jl_L683
-38. _FILE_ClimaLand_x80pg_src_diagnostics_define_diagnostics_jl_L861
-39. _FILE_ClimaLand_x80pg_src_diagnostics_define_diagnostics_jl_L937
-40. _FILE_ClimaLand_x80pg_src_simulations_initial_conditions_jl_L180
-41. _FILE_ClimaLand_x80pg_src_simulations_initial_conditions_jl_L181
-42. _FILE_ClimaLand_x80pg_src_simulations_initial_conditions_jl_L182
-43. _FILE_ClimaLand_x80pg_src_simulations_initial_conditions_jl_L52
-44. _FILE_ClimaLand_x80pg_src_simulations_initial_conditions_jl_L53
-45. _FILE_ClimaLand_x80pg_src_simulations_initial_conditions_jl_L54
-46. _FILE_ClimaLand_x80pg_src_simulations_initial_conditions_jl_L56
-47. _FILE_ClimaLand_x80pg_src_simulations_initial_conditions_jl_L78
-48. _FILE_ClimaLand_x80pg_src_simulations_initial_conditions_jl_L79
-49. _FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L143
-50. _FILE_ClimaLand_x80pg_src_standalone_Soil_spatially_varying_parameters_jl_L180
-51. _FILE_ClimaLand_x80pg_src_standalone_Soil_spatially_varying_parameters_jl_L182
-52. _FILE_ClimaLand_x80pg_src_standalone_Soil_spatially_varying_parameters_jl_L223
-53. _FILE_ClimaLand_x80pg_src_standalone_Soil_spatially_varying_parameters_jl_L312
-54. _FILE_ClimaTimeSteppers_UDtux_src_solvers_imex_ark_jl_L136
-55. _FILE_ClimaUtilities_5ClV5_ext_TimeVaryingInputsExt_jl_L425
-56. _diffuse_surface_elevation__FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L317
-57. _mixing_length_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_eddy_diffusion_closures_jl_L417
-58. additional_tendency__NVTX
-59. apply_hyperdiffusion_tendency__NVTX
-60. apply_tracer_hyperdiffusion_tendency__NVTX
-61. boundary_flux__FILE_ClimaLand_x80pg_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L743
-62. boundary_flux__FILE_ClimaLand_x80pg_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L807
-63. build_cache_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L133
-64. check_land_equality_FILE_ClimaLand_x80pg_src_shared_utilities_utils_jl_L36
-65. check_land_equality_FILE_ClimaLand_x80pg_src_shared_utilities_utils_jl_L38
-66. column_integral_definite__FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L22
-67. combine_surfaces__FILE_ClimaCoupler_jl_mod_src_FieldExchanger_jl_L334
-68. combine_surfaces__FILE_ClimaCoupler_jl_mod_src_FieldExchanger_jl_L362
-69. combine_surfaces__FILE_ClimaCoupler_jl_mod_src_FieldExchanger_jl_L368
-70. compute_10cm_water_mass__FILE_ClimaLand_x80pg_src_diagnostics_land_compute_methods_jl_L459
-71. compute_10cm_water_mass__FILE_ClimaLand_x80pg_src_diagnostics_land_compute_methods_jl_L466
-72. compute_10cm_water_mass__FILE_ClimaLand_x80pg_src_diagnostics_land_compute_methods_jl_L473
-73. compute_canopy_temperature__FILE_ClimaLand_x80pg_src_diagnostics_land_compute_methods_jl_L875
-74. compute_canopy_temperature__FILE_ClimaLand_x80pg_src_diagnostics_land_compute_methods_jl_L879
-75. compute_canopy_transpiration__FILE_ClimaLand_x80pg_src_diagnostics_land_compute_methods_jl_L205
-76. compute_col_gas_CUDA_
-77. compute_dss_weights_FILE_ClimaCore_jl_mod_src_Grids_spectralelement_jl_L613
-78. compute_evapotranspiration__FILE_ClimaLand_x80pg_src_diagnostics_land_compute_methods_jl_L721
-79. compute_evapotranspiration__FILE_ClimaLand_x80pg_src_diagnostics_land_compute_methods_jl_L722
-80. compute_exp_tendency__FILE_ClimaLand_x80pg_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L334
-81. compute_exp_tendency__FILE_ClimaLand_x80pg_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L355
-82. compute_exp_tendency__FILE_ClimaLand_x80pg_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L366
-83. compute_exp_tendency__FILE_ClimaLand_x80pg_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L378
-84. compute_exp_tendency__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L317
-85. compute_exp_tendency__FILE_ClimaLand_x80pg_src_standalone_Vegetation_PlantHydraulics_jl_L501
-86. compute_exp_tendency__FILE_ClimaLand_x80pg_src_standalone_Vegetation_component_models_jl_L134
-87. compute_fractional_absorbances__FILE_ClimaLand_x80pg_src_standalone_Vegetation_radiation_jl_L490
-88. compute_imp_tendency__FILE_ClimaLand_x80pg_src_shared_utilities_models_jl_L271
-89. compute_imp_tendency__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L362
-90. compute_imp_tendency__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L375
-91. compute_imp_tendency__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L382
-92. compute_imp_tendency__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L395
-93. compute_imp_tendency__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L412
-94. compute_imp_tendency__FILE_ClimaLand_x80pg_src_standalone_Vegetation_canopy_energy_jl_L136
-95. compute_jacobian__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L465
-96. compute_jacobian__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L477
-97. compute_jacobian__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L500
-98. compute_jacobian__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L507
-99. compute_jacobian__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L522
-100. compute_jacobian__FILE_ClimaLand_x80pg_src_standalone_Vegetation_canopy_energy_jl_L209
-101. compute_jacobian__FILE_ClimaLand_x80pg_src_standalone_Vegetation_canopy_energy_jl_L210
-102. compute_jacobian__FILE_ClimaLand_x80pg_src_standalone_Vegetation_canopy_energy_jl_L214
-103. compute_leaf_area_index__FILE_ClimaLand_x80pg_src_diagnostics_land_compute_methods_jl_L42
-104. compute_precipitation_sinks__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L365
-105. compute_precipitation_sinks__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L374
-106. compute_precipitation_sinks__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L375
-107. compute_precipitation_sources__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L223
-108. compute_precipitation_sources__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L230
-109. compute_precipitation_sources__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L235
-110. compute_precipitation_sources__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L236
-111. compute_precipitation_sources__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L237
-112. compute_precipitation_sources__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L240
-113. compute_precipitation_sources__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L249
-114. compute_precipitation_sources__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L258
-115. compute_precipitation_sources__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L268
-116. compute_precipitation_sources__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L275
-117. compute_precipitation_sources__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L282
-118. compute_precipitation_sources__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L285
-119. compute_precipitation_sources__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_microphysics_wrappers_jl_L293
-120. compute_sensible_heat_flux__FILE_ClimaLand_x80pg_src_diagnostics_land_compute_methods_jl_L833
-121. compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_land_climaland_integrated_jl_L613
-122. compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_land_climaland_integrated_jl_L619
-123. compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_land_climaland_integrated_jl_L625
-124. compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_land_climaland_integrated_jl_L673
-125. compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_land_climaland_integrated_jl_L677
-126. compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_land_climaland_integrated_jl_L687
-127. compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_land_climaland_integrated_jl_L692
-128. compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_src_FluxCalculator_jl_L299
-129. compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_src_FluxCalculator_jl_L335
-130. compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_src_FluxCalculator_jl_L339
-131. compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_src_FluxCalculator_jl_L351
-132. compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_src_FluxCalculator_jl_L355
-133. compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_src_FluxCalculator_jl_L362
-134. copy_FILE_ClimaCore_jl_mod_src_Fields_broadcast_jl_L118
-135. copyto__FILE_ClimaCore_jl_mod_src_DataLayouts_copyto_jl_L17
-136. copyto__FILE_ClimaCore_jl_mod_src_Fields_broadcast_jl_L498
-137. copyto_foreach__NVTX
-138. diffuse_surface_elevation__FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L284
-139. dss__FILE_ClimaCore_jl_mod_src_Topologies_dss_jl_L694
-140. dss__FILE_ClimaCore_jl_mod_src_Topologies_dss_jl_L702
-141. dss__FILE_ClimaCore_jl_mod_src_Topologies_dss_jl_L710
-142. edmfx_entr_detr_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_entr_detr_jl_L561
-143. edmfx_entr_detr_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_entr_detr_jl_L563
-144. edmfx_entr_detr_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_entr_detr_jl_L565
-145. edmfx_entr_detr_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_entr_detr_jl_L576
-146. edmfx_filter_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_mass_flux_closures_jl_L226
-147. edmfx_filter_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_mass_flux_closures_jl_L228
-148. edmfx_filter_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_mass_flux_closures_jl_L229
-149. edmfx_first_interior_entr_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_entr_detr_jl_L660
-150. edmfx_first_interior_entr_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_entr_detr_jl_L672
-151. edmfx_first_interior_entr_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_entr_detr_jl_L679
-152. edmfx_first_interior_entr_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_entr_detr_jl_L690
-153. edmfx_first_interior_entr_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_entr_detr_jl_L694
-154. edmfx_first_interior_entr_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_entr_detr_jl_L705
-155. edmfx_nh_pressure_drag_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_mass_flux_closures_jl_L117
-156. edmfx_precipitation_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_precipitation_jl_L81
-157. edmfx_sgs_diffusive_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L406
-158. edmfx_sgs_diffusive_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L408
-159. edmfx_sgs_diffusive_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L417
-160. edmfx_sgs_diffusive_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L427
-161. edmfx_sgs_diffusive_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L478
-162. edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L108
-163. edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L142
-164. edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L153
-165. edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L162
-166. edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L63
-167. edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L64
-168. edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L74
-169. edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L77
-170. edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L79
-171. edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L87
-172. edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L93
-173. edmfx_sgs_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L399
-174. edmfx_sgs_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L407
-175. edmfx_sgs_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L412
-176. edmfx_sgs_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L424
-177. edmfx_sgs_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L433
-178. edmfx_sgs_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L530
-179. edmfx_tke_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_tke_jl_L79
-180. edmfx_tke_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_tke_jl_L81
-181. edmfx_tke_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_tke_jl_L86
-182. edmfx_tke_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_tke_jl_L96
-183. edmfx_vertical_diffusion_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_mass_flux_closures_jl_L162
-184. edmfx_vertical_diffusion_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_mass_flux_closures_jl_L197
-185. exp_tendency__FILE_ClimaLand_x80pg_src_ClimaLand_jl_L181
-186. explicit_vertical_advection_tendency__NVTX
-187. field_matrix_solve__NVTX
-188. fill__FILE_ClimaCore_jl_mod_src_DataLayouts_fill_jl_L2
-189. fill__FILE_ClimaCore_jl_mod_src_Fields_Fields_jl_L307
-190. foreach_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_set_jl_L81
-191. gpu_broadcast_kernel_cartesian
-192. gpu_broadcast_kernel_linear
-193. gpu_fill_kernel_
-194. gpu_getindex_kernel
-195. gpu_linear_copy_kernel_
-196. ground_albedo_PAR_FILE_ClimaLand_x80pg_src_integrated_land_radiation_jl_L112
-197. horizontal_dynamics_tendency__NVTX
-198. horizontal_tracer_advection_tendency__NVTX
-199. hypsography_FILE_ClimaAtmos_jl_mod_src_simulation_grids_jl_L314
-200. ice_rhs__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_ocean_prescr_seaice_jl_L325
-201. ice_rhs__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_ocean_prescr_seaice_jl_L329
-202. ice_rhs__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_ocean_prescr_seaice_jl_L340
-203. ice_rhs__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_ocean_prescr_seaice_jl_L343
-204. implicit_precomputed_quantities_FILE_ClimaAtmos_jl_mod_src_cache_precomputed_quantities_jl_L37
-205. implicit_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_implicit_tendency_jl_L121
-206. implicit_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_implicit_tendency_jl_L125
-207. implicit_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_implicit_tendency_jl_L129
-208. implicit_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_implicit_tendency_jl_L138
-209. implicit_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_implicit_tendency_jl_L205
-210. implicit_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_implicit_tendency_jl_L212
-211. interpolate__FILE_ClimaCore_jl_mod_src_Remapping_distributed_remapping_jl_L926
-212. linear_interpolation_to_surface__FILE_ClimaLand_x80pg_src_shared_utilities_Domains_jl_L894
-213. lsm_radiant_energy_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L456
-214. lsm_radiant_energy_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L459
-215. lsm_radiant_energy_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L462
-216. lsm_radiant_energy_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L475
-217. lsm_radiant_energy_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L476
-218. lsm_radiant_energy_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L477
-219. lsm_radiant_energy_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L478
-220. lsm_radiant_energy_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L479
-221. lsm_radiant_energy_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L480
-222. lsm_radiant_energy_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L484
-223. mapreduce_cuda_kernel_
-224. materialize__FILE_ClimaCore_jl_mod_src_MatrixFields_lazy_operators_jl_L54
-225. materialize__FILE_ClimaCore_jl_mod_src_Operators_common_jl_L61
-226. orchestrate_diagnostics_FILE_ClimaDiagnostics_3h9MG_src_clima_diagnostics_jl_L273
-227. partial_mapreduce_grid
-228. precipitation_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_precipitation_jl_L150
-229. precipitation_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_precipitation_jl_L158
-230. precomputed_quantities_FILE_ClimaAtmos_jl_mod_src_cache_precomputed_quantities_jl_L101
-231. prep_hyperdiffusion_tendency__NVTX
-232. prep_tracer_hyperdiffusion_tendency__NVTX
-233. radiation_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_radiation_jl_L423
-234. radiation_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_radiation_jl_L432
-235. reduce_cuda_blocks_kernel_
-236. regridded_snapshot__FILE_ClimaUtilities_5ClV5_ext_DataHandlingExt_jl_L666
-237. remaining_tendency__NVTX
-238. remap__FILE_ClimaCoupler_jl_mod_src_Interfacer_jl_L531
-239. rte_lw_2stream_solve_CUDA_
-240. rte_sw_2stream_solve_CUDA_
-241. run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixFields_field_matrix_solver_jl_L417
-242. run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixFields_field_matrix_solver_jl_L419
-243. set_cloud_fraction__NVTX
-244. set_dummy_surface_conditions__FILE_ClimaAtmos_jl_mod_src_surface_conditions_surface_conditions_jl_L102
-245. set_dummy_surface_conditions__FILE_ClimaAtmos_jl_mod_src_surface_conditions_surface_conditions_jl_L85
-246. set_dummy_surface_conditions__FILE_ClimaAtmos_jl_mod_src_surface_conditions_surface_conditions_jl_L91
-247. set_dummy_surface_conditions__FILE_ClimaAtmos_jl_mod_src_surface_conditions_surface_conditions_jl_L94
-248. set_explicit_precomputed_quantities__NVTX
-249. set_implicit_precomputed_quantities__NVTX
-250. set_insolation_variables__FILE_ClimaAtmos_jl_mod_src_callbacks_callbacks_jl_L229
-251. set_insolation_variables__FILE_ClimaAtmos_jl_mod_src_callbacks_callbacks_jl_L242
-252. set_insolation_variables__FILE_ClimaAtmos_jl_mod_src_callbacks_callbacks_jl_L243
-253. set_precipitation_surface_fluxes__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L946
-254. set_precipitation_surface_fluxes__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L967
-255. set_precipitation_surface_fluxes__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L969
-256. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L150
-257. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L151
-258. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L157
-259. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L164
-260. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L165
-261. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L166
-262. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L170
-263. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L171
-264. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L173
-265. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L177
-266. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L178
-267. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L200
-268. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L204
-269. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L205
-270. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L227
-271. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L231
-272. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L232
-273. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L259
-274. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L268
-275. set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_precipitation_precomputed_quantities_jl_L270
-276. set_prognostic_edmf_precomputed_quantities_draft__NVTX
-277. set_prognostic_edmf_precomputed_quantities_explicit_closures__NVTX
-278. set_prognostic_edmf_precomputed_quantities_implicit_closures__NVTX
-279. set_prognostic_edmf_precomputed_quantities_precipitation__NVTX
-280. set_sgs__u___FILE_ClimaAtmos_jl_mod_src_cache_precomputed_quantities_jl_L361
-281. set_velocity_at_surface__FILE_ClimaAtmos_jl_mod_src_cache_precomputed_quantities_jl_L309
-282. set_velocity_at_surface__FILE_ClimaAtmos_jl_mod_src_cache_precomputed_quantities_jl_L313
-283. set_velocity_at_top__FILE_ClimaAtmos_jl_mod_src_cache_precomputed_quantities_jl_L336
-284. set_velocity_quantities__FILE_ClimaAtmos_jl_mod_src_cache_precomputed_quantities_jl_L352
-285. set_velocity_quantities__FILE_ClimaAtmos_jl_mod_src_cache_precomputed_quantities_jl_L353
-286. set_velocity_quantities__FILE_ClimaAtmos_jl_mod_src_cache_precomputed_quantities_jl_L354
-287. single_field_solve_diag_matrix_row__FILE_ClimaCore_jl_mod_src_MatrixFields_single_field_solver_jl_L61
-288. snow_boundary_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L631
-289. snow_boundary_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L636
-290. snow_boundary_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L648
-291. soil_boundary_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L540
-292. soil_boundary_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L550
-293. soil_boundary_fluxes__FILE_ClimaLand_x80pg_src_standalone_Soil_boundary_conditions_jl_L602
-294. soil_boundary_fluxes__FILE_ClimaLand_x80pg_src_standalone_Soil_boundary_conditions_jl_L603
-295. soil_infiltration_capacity_FILE_ClimaLand_x80pg_src_standalone_Soil_Runoff_Runoff_jl_L355
-296. solve_newton__FILE_ClimaTimeSteppers_UDtux_src_nl_solvers_newtons_method_jl_L607
-297. source__FILE_ClimaLand_x80pg_src_integrated_soil_canopy_root_interactions_jl_L153
-298. source__FILE_ClimaLand_x80pg_src_integrated_soil_canopy_root_interactions_jl_L163
-299. source__FILE_ClimaLand_x80pg_src_integrated_soil_snow_model_jl_L485
-300. source__FILE_ClimaLand_x80pg_src_integrated_soil_snow_model_jl_L489
-301. source__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L799
-302. source__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L823
-303. step_u__FILE_ClimaTimeSteppers_UDtux_src_solvers_imex_ark_jl_L71
-304. step_u__FILE_ClimaTimeSteppers_UDtux_src_solvers_imex_ark_jl_L82
-305. surface_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_surface_flux_jl_L114
-306. surface_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_surface_flux_jl_L120
-307. surface_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_surface_flux_jl_L124
-308. turbulent_fluxes__FILE_ClimaLand_x80pg_src_shared_utilities_drivers_jl_L395
-309. turbulent_fluxes__FILE_ClimaLand_x80pg_src_shared_utilities_drivers_jl_L402
-310. turbulent_fluxes__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L1001
-311. turbulent_fluxes__FILE_ClimaLand_x80pg_src_standalone_Vegetation_canopy_boundary_fluxes_jl_L226
-312. update_SIF__FILE_ClimaLand_x80pg_src_standalone_Vegetation_solar_induced_fluorescence_jl_L86
-313. update_aerosol_concentrations__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L220
-314. update_albedo__FILE_ClimaLand_x80pg_src_standalone_Soil_soil_albedo_jl_L193
-315. update_autotrophic_respiration__FILE_ClimaLand_x80pg_src_standalone_Vegetation_autotrophic_respiration_jl_L96
-316. update_aux__FILE_ClimaLand_x80pg_src_standalone_Snow_Snow_jl_L667
-317. update_aux__FILE_ClimaLand_x80pg_src_standalone_Snow_Snow_jl_L669
-318. update_aux__FILE_ClimaLand_x80pg_src_standalone_Snow_Snow_jl_L687
-319. update_aux__FILE_ClimaLand_x80pg_src_standalone_Snow_Snow_jl_L689
-320. update_aux__FILE_ClimaLand_x80pg_src_standalone_Snow_Snow_jl_L692
-321. update_aux__FILE_ClimaLand_x80pg_src_standalone_Snow_Snow_jl_L694
-322. update_aux__FILE_ClimaLand_x80pg_src_standalone_Snow_Snow_jl_L703
-323. update_aux__FILE_ClimaLand_x80pg_src_standalone_Snow_Snow_jl_L706
-324. update_aux__FILE_ClimaLand_x80pg_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L578
-325. update_aux__FILE_ClimaLand_x80pg_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L584
-326. update_aux__FILE_ClimaLand_x80pg_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L586
-327. update_aux__FILE_ClimaLand_x80pg_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L590
-328. update_aux__FILE_ClimaLand_x80pg_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L593
-329. update_aux__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L706
-330. update_aux__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L717
-331. update_aux__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L731
-332. update_aux__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L743
-333. update_aux__FILE_ClimaLand_x80pg_src_standalone_Soil_energy_hydrology_jl_L751
-334. update_biomass__FILE_ClimaLand_x80pg_src_standalone_Vegetation_biomass_jl_L293
-335. update_boundary_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L358
-336. update_boundary_fluxes__FILE_ClimaLand_x80pg_src_integrated_land_jl_L376
-337. update_boundary_fluxes__FILE_ClimaLand_x80pg_src_standalone_Snow_Snow_jl_L722
-338. update_boundary_fluxes__FILE_ClimaLand_x80pg_src_standalone_Snow_Snow_jl_L728
-339. update_boundary_fluxes__FILE_ClimaLand_x80pg_src_standalone_Snow_Snow_jl_L737
-340. update_boundary_fluxes__FILE_ClimaLand_x80pg_src_standalone_Snow_Snow_jl_L744
-341. update_boundary_fluxes__FILE_ClimaLand_x80pg_src_standalone_Snow_Snow_jl_L746
-342. update_cloud_properties__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L292
-343. update_cloud_properties__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L298
-344. update_cloud_properties__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L318
-345. update_cloud_properties__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L333
-346. update_cloud_properties__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L353
-347. update_drivers__FILE_ClimaLand_x80pg_src_shared_utilities_drivers_jl_L1265
-348. update_field__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_atmosphere_climaatmos_jl_L368
-349. update_field__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_atmosphere_climaatmos_jl_L395
-350. update_hydraulics__FILE_ClimaLand_x80pg_src_standalone_Vegetation_PlantHydraulics_jl_L661
-351. update_infiltration_water_flux__FILE_ClimaLand_x80pg_src_standalone_Soil_Runoff_Runoff_jl_L241
-352. update_infiltration_water_flux__FILE_ClimaLand_x80pg_src_standalone_Soil_Runoff_Runoff_jl_L243
-353. update_infiltration_water_flux__FILE_ClimaLand_x80pg_src_standalone_Soil_Runoff_Runoff_jl_L251
-354. update_infiltration_water_flux__FILE_ClimaLand_x80pg_src_standalone_Soil_Runoff_Runoff_jl_L258
-355. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1003
-356. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1014
-357. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1015
-358. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1016
-359. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1017
-360. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1018
-361. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1020
-362. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1129
-363. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1132
-364. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1135
-365. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1151
-366. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1165
-367. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1169
-368. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1171
-369. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1207
-370. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1218
-371. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1223
-372. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1239
-373. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1248
-374. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1255
-375. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1262
-376. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1268
-377. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1272
-378. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1276
-379. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1287
-380. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1299
-381. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1309
-382. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1319
-383. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1324
-384. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1330
-385. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1333
-386. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1335
-387. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1341
-388. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L464
-389. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L469
-390. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L472
-391. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L478
-392. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L482
-393. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L484
-394. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L489
-395. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L494
-396. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L525
-397. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L532
-398. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L564
-399. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L567
-400. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L593
-401. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L610
-402. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L638
-403. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L642
-404. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L681
-405. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L686
-406. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L690
-407. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L692
-408. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L705
-409. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L712
-410. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L715
-411. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L727
-412. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L755
-413. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L764
-414. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L768
-415. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L787
-416. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L835
-417. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L841
-418. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L849
-419. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L860
-420. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L888
-421. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L895
-422. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L911
-423. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L922
-424. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L928
-425. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L954
-426. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L959
-427. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L970
-428. update_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L992
-429. update_photosynthesis__FILE_ClimaLand_x80pg_src_standalone_Vegetation_photosynthesis_farquhar_jl_L338
-430. update_photosynthesis__FILE_ClimaLand_x80pg_src_standalone_Vegetation_photosynthesis_farquhar_jl_L394
-431. update_photosynthesis__FILE_ClimaLand_x80pg_src_standalone_Vegetation_photosynthesis_farquhar_jl_L396
-432. update_radiative_transfer__FILE_ClimaLand_x80pg_src_standalone_Vegetation_radiation_jl_L787
-433. update_radiative_transfer__FILE_ClimaLand_x80pg_src_standalone_Vegetation_radiation_jl_L789
-434. update_relative_humidity__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L111
-435. update_relative_humidity__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L115
-436. update_root_extraction__FILE_ClimaLand_x80pg_src_integrated_soil_canopy_root_interactions_jl_L13
-437. update_root_extraction__FILE_ClimaLand_x80pg_src_integrated_soil_canopy_root_interactions_jl_L28
-438. update_root_extraction__FILE_ClimaLand_x80pg_src_integrated_soil_canopy_root_interactions_jl_L42
-439. update_sim__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_land_climaland_integrated_jl_L477
-440. update_sim__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_land_climaland_integrated_jl_L478
-441. update_soil_moisture_stress__FILE_ClimaLand_x80pg_src_standalone_Vegetation_soil_moisture_stress_jl_L86
-442. update_soil_snow_ground_heat_flux__FILE_ClimaLand_x80pg_src_integrated_soil_snow_model_jl_L239
-443. update_temperature_pressure__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L57
-444. update_temperature_pressure__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L64
-445. update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_atmosphere_climaatmos_jl_L491
-446. update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_experiments_ClimaEarth_components_atmosphere_climaatmos_jl_L501
-447. update_volume_mixing_ratios__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L137
-448. vertical_advection_of_water_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_water_advection_jl_L55
-449. weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L242
-450. weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L251
-451. weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L257
+│   date_now = 2025-12-15T08:57:04.372
+└   estimated_finish_date = 2025-12-15T08:57:04.372
+==PROF== Disconnected from process 3492339
+==WARNING== Failed to import the following source files:
+==WARNING==  abstractarray.jl
+==WARNING==  boot.jl
+==WARNING==  essentials.jl
+==WARNING==  float.jl
+==WARNING==  int.jl
+==WARNING==  multidimensional.jl
+==WARNING==  namedtuple.jl
+==WARNING==  none
+==WARNING==  number.jl
+==WARNING==  operators.jl
+==WARNING==  pointer.jl
+==WARNING==  promotion.jl
+==WARNING==  range.jl
+==WARNING==  subarray.jl
+==WARNING==  tuple.jl
+==PROF== Report: /home/pbachant/calkit/clima-gpu-profiling/results/ncu/mod.ncu-rep
