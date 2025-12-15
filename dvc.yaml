@@ -39,19 +39,6 @@ stages:
       - results/nsys/baseline.sqlite
     desc: Automatically generated from the 'baseline-nsys-to-sqlite' 
       stage in calkit.yaml. Changes made here will be overwritten.
-  summarize-baseline-nsys:
-    cmd: calkit xenv -n py --no-check -- python 
-      scripts/summary-from-nsys.py results/nsys/baseline.sqlite
-    deps:
-      - scripts/summary-from-nsys.py
-      - results/nsys/baseline.sqlite
-      - .calkit/env-locks/py
-    outs:
-      - results/nsys/baseline.summary.json:
-          cache: false
-          persist: false
-    desc: Automatically generated from the 'summarize-baseline-nsys' 
-      stage in calkit.yaml. Changes made here will be overwritten.
   mod-nsys:
     cmd: calkit slurm batch --name mod-nsys --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
