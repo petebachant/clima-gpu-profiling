@@ -7,6 +7,7 @@ fpath_in_baseline = "results/nsys/baseline.sqlite"
 fpath_in_mod = "results/nsys/mod.sqlite"
 fpath_out = "results/summary.json"
 
+
 def get_summary(fpath_in) -> dict:
     """Extract summary from nsys report file."""
     conn = sqlite3.connect(fpath_in)
@@ -18,6 +19,7 @@ def get_summary(fpath_in) -> dict:
     summary["duration_s"] = summary["duration"] / 1e9  # Convert from ns to s
     conn.close()
     return summary
+
 
 baseline = get_summary(fpath_in_baseline)
 mod = get_summary(fpath_in_mod)
