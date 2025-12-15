@@ -1,3 +1,9 @@
+"""Benchmark tests for FieldMatrix tridiagonal solves.
+
+Run with:
+  clear && julia --project=ClimaCore.jl-mod/.buildkite scripts/benchmark_tridiag_solve.jl
+"""
+
 # Figure out which project is currently activated
 project_dir = dirname(Base.active_project())
 @info "Active project: $project_dir"
