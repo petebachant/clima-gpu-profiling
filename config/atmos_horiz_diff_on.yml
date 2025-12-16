@@ -28,13 +28,13 @@ log_to_file: false
 use_itime: false
 device: "auto"
 toml:
-  - "toml/longrun_aquaplanet_1M.toml"
+  - "ClimaAtmos.jl/toml/longrun_aquaplanet_1M.toml"
 # output_dir: "/glade/derecho/scratch/ajaruga/scaling_1M_dt_30s_dEDMF_max_newton_iters_ode_3_h_elem16_1GPU/"
 #
 # Numerics
 #
 ode_algo: "ARS343"
-tracer_upwinding: "vanleer_limiter"
+# tracer_upwinding: "vanleer_limiter"
 energy_upwinding: "vanleer_limiter"
 apply_limiter: false
 discrete_hydrostatic_balance: false
@@ -127,7 +127,8 @@ co2_model: ~
 vert_diff: false
 # vert_diff: "DecayWithHeightDiffusion"
 # vert_diff: "VerticalDiffusion"
-smagorinsky_lilly: false
+# smagorinsky_lilly: UV
+smagorinsky_lilly: null
 amd_les: false
 implicit_diffusion: false
 hyperdiff: "CAM_SE"
