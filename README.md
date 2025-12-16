@@ -74,3 +74,4 @@ and in VS Code, use that when selecting a kernel for the notebook.
 | `e5845b7` | | Similar as above, but not quite as slow. |
 | `ff26f4b1` | Use PCR for tri-diagonal matrix solve. | Seems to be 3% faster, but higher error. May not have isolated changed properly though. |
 | `e6099c2` | Try capping all threads to 256 | 1% slower on flagship. |
+| `23c9104` | Attempt to coalesce memory access in solvers. | 5% slowdown. |
