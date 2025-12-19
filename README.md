@@ -64,6 +64,7 @@ and in VS Code, use that when selecting a kernel for the notebook.
 - `ClimaCore.jl-mod` --> `pb/perf`
 - `ClimaCoupler.jl` --> `pb/rm-nvtx`
 - `ClimaCoupler.jl-mod` --> `pb/perf`
+- `ClimaAtmos.jl` --> `pb/rm-nvtx`
 - `ClimaAtmos.jl-mod` --> `pb/perf`
 
 ## Experiment results
