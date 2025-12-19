@@ -502,22 +502,22 @@ stages:
       size: 461
     - path: ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
       hash: md5
-      md5: 7c2dea0af11f6046f67a1d185b332f32
-      size: 130121
+      md5: 3bf70f1dbfe6e4f2138fd668c01a38a5
+      size: 130038
     - path: ClimaCoupler.jl/experiments/ClimaEarth/components
       hash: md5
-      md5: 6822f39e84eeb7bd9204d30cbe525426.dir
-      size: 152251
+      md5: a9cd806394ec610c3fbe9597cf6f531f.dir
+      size: 152637
       nfiles: 10
     - path: ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
       hash: md5
-      md5: 90bf4dce16adc70b5b76b521004ad354
-      size: 28296
+      md5: 9019eb1717558e5c926e70833c07538d
+      size: 28225
     - path: ClimaCoupler.jl/src
       hash: md5
-      md5: 2e37b67c313a4a49e61198eacb326631.dir
-      size: 111498
-      nfiles: 10
+      md5: 9dfac9d706ddac540e9b9c610ff14612.dir
+      size: 125880
+      nfiles: 13
     - path: scripts/run-nsys.sh
       hash: md5
       md5: d36f4c26ca500ac13504e3e2fd62ab68
@@ -529,25 +529,25 @@ stages:
     outs:
     - path: .calkit/slurm/logs/baseline-nsys.out
       hash: md5
-      md5: 8c481f647f4432652ecbd11345d08079
-      size: 24960
+      md5: eb1678cf81ecb1b92e648dfd1b79d3ef
+      size: 24560
     - path: results/nsys/baseline.nsys-rep
       hash: md5
-      md5: 127aaaf5b437cacfad9bf694f903249e
-      size: 22751724
+      md5: 6bfb824bad6124cd9e1c8d88849d4c4b
+      size: 25164332
   baseline-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/baseline.nsys-rep
       -t sqlite -o results/nsys/baseline.sqlite"'
     deps:
     - path: results/nsys/baseline.nsys-rep
       hash: md5
-      md5: 127aaaf5b437cacfad9bf694f903249e
-      size: 22751724
+      md5: 6bfb824bad6124cd9e1c8d88849d4c4b
+      size: 25164332
     outs:
     - path: results/nsys/baseline.sqlite
       hash: md5
-      md5: 20c580889c76deda48628d7b860081ab
-      size: 47009792
+      md5: a93e08a5ed7b22ea6db44dcce86010dd
+      size: 53075968
   mod-nsys:
     cmd: calkit slurm batch --name mod-nsys --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -563,8 +563,8 @@ stages:
     deps:
     - path: ClimaAtmos.jl-mod/src
       hash: md5
-      md5: 972a127da48c2362ff9ecf0f101f08d6.dir
-      size: 1314508
+      md5: c97e64141686ed385b5696e7293164ec.dir
+      size: 1316712
       nfiles: 101
     - path: ClimaCore.jl-mod/ext
       hash: md5
@@ -588,22 +588,22 @@ stages:
       size: 461
     - path: ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
       hash: md5
-      md5: 998c658c0c3248cb46fd09b3931a5eb3
-      size: 130026
+      md5: e8e641761f046a4b48b80381db3391cb
+      size: 130046
     - path: ClimaCoupler.jl-mod/experiments/ClimaEarth/components
       hash: md5
-      md5: 6822f39e84eeb7bd9204d30cbe525426.dir
-      size: 152251
+      md5: a9cd806394ec610c3fbe9597cf6f531f.dir
+      size: 152637
       nfiles: 10
     - path: ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl
       hash: md5
-      md5: 90bf4dce16adc70b5b76b521004ad354
-      size: 28296
+      md5: 9019eb1717558e5c926e70833c07538d
+      size: 28225
     - path: ClimaCoupler.jl-mod/src
       hash: md5
-      md5: 2e37b67c313a4a49e61198eacb326631.dir
-      size: 111498
-      nfiles: 10
+      md5: 9dfac9d706ddac540e9b9c610ff14612.dir
+      size: 125880
+      nfiles: 13
     - path: scripts/run-nsys.sh
       hash: md5
       md5: d36f4c26ca500ac13504e3e2fd62ab68
@@ -615,25 +615,25 @@ stages:
     outs:
     - path: .calkit/slurm/logs/mod-nsys.out
       hash: md5
-      md5: a96a7015ee9bf36b7988b47125b6537e
-      size: 27043
+      md5: 9fda8ca037da421ef79159af3d40a1e4
+      size: 24795
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: 71dcf34f4053f8a6695bf9275e9f41b2
-      size: 23011215
+      md5: 10608ed3e2753b769af2316164b4568a
+      size: 24497284
   mod-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep -t sqlite
       -o results/nsys/mod.sqlite"'
     deps:
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: 71dcf34f4053f8a6695bf9275e9f41b2
-      size: 23011215
+      md5: 10608ed3e2753b769af2316164b4568a
+      size: 24497284
     outs:
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 38e0f21c177bc74bd27e7322e5920a20
-      size: 47710208
+      md5: 586fb32aef31c1c7a95bff14ee2b1f25
+      size: 51785728
   baseline-ncu:
     cmd: calkit slurm batch --name baseline-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl/src --dep 
@@ -671,22 +671,22 @@ stages:
       size: 461
     - path: ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
       hash: md5
-      md5: 7c2dea0af11f6046f67a1d185b332f32
-      size: 130121
+      md5: 3bf70f1dbfe6e4f2138fd668c01a38a5
+      size: 130038
     - path: ClimaCoupler.jl/experiments/ClimaEarth/components
       hash: md5
-      md5: 6822f39e84eeb7bd9204d30cbe525426.dir
-      size: 152251
+      md5: a9cd806394ec610c3fbe9597cf6f531f.dir
+      size: 152637
       nfiles: 10
     - path: ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
       hash: md5
-      md5: 90bf4dce16adc70b5b76b521004ad354
-      size: 28296
+      md5: 9019eb1717558e5c926e70833c07538d
+      size: 28225
     - path: ClimaCoupler.jl/src
       hash: md5
-      md5: 2e37b67c313a4a49e61198eacb326631.dir
-      size: 111498
-      nfiles: 10
+      md5: 9dfac9d706ddac540e9b9c610ff14612.dir
+      size: 125880
+      nfiles: 13
     - path: scripts/run-ncu.sh
       hash: md5
       md5: 284e69bc117cd26779b5a9983edc89e5
@@ -698,25 +698,25 @@ stages:
     outs:
     - path: .calkit/slurm/logs/baseline-ncu.out
       hash: md5
-      md5: 418157fdfaa204c48e14dada254f89ab
-      size: 21785
+      md5: b160fc83c63899bb832d206230f5f706
+      size: 21163
     - path: results/ncu/baseline.ncu-rep
       hash: md5
-      md5: a87565bccaaf9aec6c0455a398986ac3
-      size: 16143768
+      md5: ea92c8b058eed09e441af5db44c501c9
+      size: 10333737
   baseline-ncu-details-csv:
     cmd: ' bash --noprofile --norc -c "ncu --csv -i results/ncu/baseline.ncu-rep --page
       details --log-file results/ncu/baseline-details.csv"'
     deps:
     - path: results/ncu/baseline.ncu-rep
       hash: md5
-      md5: a87565bccaaf9aec6c0455a398986ac3
-      size: 16143768
+      md5: ea92c8b058eed09e441af5db44c501c9
+      size: 10333737
     outs:
     - path: results/ncu/baseline-details.csv
       hash: md5
-      md5: d92e5be914ead921220b520dcc559bd7
-      size: 183211
+      md5: ed7d064ca3fc2b1c3917b21166eda335
+      size: 183078
   summarize:
     cmd: calkit xenv -n py --no-check -- python scripts/summarize.py
     deps:
@@ -727,12 +727,12 @@ stages:
       nfiles: 2
     - path: results/nsys/baseline.sqlite
       hash: md5
-      md5: 20c580889c76deda48628d7b860081ab
-      size: 47009792
+      md5: a93e08a5ed7b22ea6db44dcce86010dd
+      size: 53075968
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 38e0f21c177bc74bd27e7322e5920a20
-      size: 47710208
+      md5: 586fb32aef31c1c7a95bff14ee2b1f25
+      size: 51785728
     - path: scripts/summarize.py
       hash: md5
       md5: 07c34af8e650da2ed6884efa945adf97
@@ -740,8 +740,8 @@ stages:
     outs:
     - path: results/summary.json
       hash: md5
-      md5: 39dba7d961ffbbd0d3506be3f0affa36
-      size: 385
+      md5: 316d64b5d9009e9e3e781dc19d5e21f3
+      size: 386
   mod-ncu:
     cmd: calkit slurm batch --name mod-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -759,8 +759,8 @@ stages:
     deps:
     - path: ClimaCore.jl-mod/ext
       hash: md5
-      md5: da3ffd73c881018265b863fa010b6d51.dir
-      size: 192522
+      md5: babb92fb4598e4168a065d0b10bcd803.dir
+      size: 193544
       nfiles: 25
     - path: ClimaCore.jl-mod/lib
       hash: md5
@@ -779,22 +779,22 @@ stages:
       size: 461
     - path: ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
       hash: md5
-      md5: 998c658c0c3248cb46fd09b3931a5eb3
-      size: 130026
+      md5: e8e641761f046a4b48b80381db3391cb
+      size: 130046
     - path: ClimaCoupler.jl-mod/experiments/ClimaEarth/components
       hash: md5
-      md5: 6822f39e84eeb7bd9204d30cbe525426.dir
-      size: 152251
+      md5: a9cd806394ec610c3fbe9597cf6f531f.dir
+      size: 152637
       nfiles: 10
     - path: ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl
       hash: md5
-      md5: 90bf4dce16adc70b5b76b521004ad354
-      size: 28296
+      md5: 9019eb1717558e5c926e70833c07538d
+      size: 28225
     - path: ClimaCoupler.jl-mod/src
       hash: md5
-      md5: 2e37b67c313a4a49e61198eacb326631.dir
-      size: 111498
-      nfiles: 10
+      md5: 9dfac9d706ddac540e9b9c610ff14612.dir
+      size: 125880
+      nfiles: 13
     - path: scripts/run-ncu.sh
       hash: md5
       md5: 284e69bc117cd26779b5a9983edc89e5
@@ -806,22 +806,22 @@ stages:
     outs:
     - path: .calkit/slurm/logs/mod-ncu.out
       hash: md5
-      md5: 9f0690b36097017679c43dfd499a9fdd
-      size: 22019
+      md5: 4c80aa046e9322e5f5d664bba65c5b3c
+      size: 21882
     - path: results/ncu/mod.ncu-rep
       hash: md5
-      md5: b6b0df54aefd18f1d05d1c90d526aaca
-      size: 21157133
+      md5: 0997963dc413e542848982ecc84cc257
+      size: 20161877
   mod-ncu-details-csv:
     cmd: ' bash --noprofile --norc -c "ncu --csv -i results/ncu/mod.ncu-rep --page
       details --log-file results/ncu/mod-details.csv"'
     deps:
     - path: results/ncu/mod.ncu-rep
       hash: md5
-      md5: b6b0df54aefd18f1d05d1c90d526aaca
-      size: 21157133
+      md5: 0997963dc413e542848982ecc84cc257
+      size: 20161877
     outs:
     - path: results/ncu/mod-details.csv
       hash: md5
-      md5: f6e2a73a38ee82f4c45e104e67406117
-      size: 183925
+      md5: 1f8b255e5169e944afdbbe2650acd938
+      size: 181165

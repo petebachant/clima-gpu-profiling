@@ -1,12 +1,10 @@
 Loading climacommon/2025_05_15
   Loading requirement: climaauth/2025_05_15 openmpi/4.1.5-mpitrampoline
     julia/1.11.5 cuda/julia-pref
-┌ Warning: The project dependencies or compat requirements have changed since the manifest was last resolved.
-│ It is recommended to `Pkg.resolve()` or consider `Pkg.update()` if necessary.
-└ @ Pkg.API /clima/software/julia/julia-1.11.5/share/julia/stdlib/v1.11/Pkg/src/API.jl:1206
-┌ Warning: The project dependencies or compat requirements have changed since the manifest was last resolved.
-│ It is recommended to `Pkg.resolve()` or consider `Pkg.update()` if necessary.
-└ @ Pkg.API /clima/software/julia/julia-1.11.5/share/julia/stdlib/v1.11/Pkg/src/API.jl:1206
+Precompiling project...
+  17036.8 ms  ✓ ClimaAtmos
+   6141.6 ms  ✓ ClimaCoupler
+  2 dependencies successfully precompiled in 38 seconds. 646 already precompiled.
 ┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
 │ This may cause errors.
 │ 
@@ -39,13 +37,13 @@ Status `~/calkit/clima-gpu-profiling/ClimaCoupler.jl/experiments/ClimaEarth/Proj
 ⌃ [052768ef] CUDA v5.8.5
 ⌃ [13f3f980] CairoMakie v0.12.18
   [29b5916a] ClimaAnalysis v0.5.20
-  [b2c96348] ClimaAtmos v0.32.0 `https://github.com/CliMA/ClimaAtmos.jl#pb/rm-nvtx`
+  [b2c96348] ClimaAtmos v0.33.0 `../../../ClimaAtmos.jl`
   [4347a170] ClimaCalibrate v0.1.4
   [3a4d1b5c] ClimaComms v0.6.10
-  [d414da3d] ClimaCore v0.14.43 `../../../ClimaCore.jl`
+  [d414da3d] ClimaCore v0.14.44 `../../../ClimaCore.jl`
   [908f55d8] ClimaCoreMakie v0.4.6
   [4ade58fe] ClimaCoupler v0.1.2 `../..`
-⌅ [1ecacbb8] ClimaDiagnostics v0.2.15
+⌃ [1ecacbb8] ClimaDiagnostics v0.2.15
   [08f4d4ce] ClimaLand v1.2.1
 ⌃ [0376089a] ClimaOcean v0.8.7
   [5c42b081] ClimaParams v1.0.7
@@ -70,7 +68,6 @@ Status `~/calkit/clima-gpu-profiling/ClimaCoupler.jl/experiments/ClimaEarth/Proj
   [ddb6d928] YAML v0.4.16
   [9c32591e] Poppler_jll v24.6.0+0
 Info Packages marked with ⌃ and ⌅ have new versions available. Those with ⌃ may be upgradable, but those with ⌅ are restricted by compatibility constraints from upgrading. To see why use `status --outdated`
-Warning The project dependencies or compat requirements have changed since the manifest was last resolved. It is recommended to `Pkg.resolve()` or consider `Pkg.update()` if necessary.
 ┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
 │ This may cause errors.
 │ 
@@ -115,15 +112,15 @@ Warning The project dependencies or compat requirements have changed since the m
 └ @ Oceananigans ~/.julia/packages/Oceananigans/A56vm/src/Oceananigans.jl:125
 [ Info: Using Atmos configuration from ClimaCoupler in config/atmos_configs/climaatmos_progedmf_1m.yml
 [ Info: Setting up single-process ClimaCoupler run on device: CUDADevice.
-[ Info: Dict{Any, Any}("sleve_eta" => 0.7, "surface_thermo_state_type" => "GCMSurfaceThermoState", "use_coupler_diagnostics" => true, "era5_diurnal_warming" => nothing, "dt" => "30secs", "prognostic_tke" => true, "use_newton_rtol" => false, "netcdf_output_at_levels" => true, "output_dir_style" => "ActiveLink", "external_forcing" => nothing, "device" => "auto", "t_end" => "1200secs", "c_amd" => 0.29, "y_elem" => 6, "z_stretch" => true, "extra_atmos_diagnostics" => Dict{Any, Any}[], "forcing" => nothing, "edmfx_nh_pressure" => true, "era5_initial_condition_dir" => nothing, "conservation_softfail" => false, "check_steady_state" => false, "restart_cache" => true, "update_jacobian_every" => "solve", "test_dycore_consistency" => false, "add_isothermal_boundary_layer" => true, "use_itime" => true, "moist" => "nonequil", "rad" => "allskywithclear", "share_surface_space" => true, "cloud_model" => "quadrature", "initial_condition" => "DecayingProfile", "krylov_rtol" => 0.1, "eisenstat_walker_forcing_alpha" => 2.0, "dt_cloud_fraction" => "1hours", "surface_setup" => "PrescribedSurface", "jvp_step_adjustment" => 1.0, "insolation" => "timevarying", "log_progress" => true, "site_latitude" => 17.0, "h_elem" => 16, "implicit_sgs_nh_pressure" => true, "coupler_toml" => ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl/toml/amip_progedmf_1m.toml"], "netcdf_interpolation_num_points" => nothing, "coupler_output_dir" => "experiments/ClimaEarth/output", "z_max" => 60000.0, "moisture_fixer" => false, "apply_limiter" => false, "precip_model" => "1M", "atmos_log_progress" => false, "surface_temperature" => "ZonallySymmetric", "debug_jacobian" => false, "edmfx_filter" => true, "job_id" => "amip_progedmf_1m_land_he16", "log_to_file" => false, "orographic_gravity_wave" => nothing, "dt_rad" => "600secs", "edmfx_upwinding" => "first_order", "tracer_upwinding" => "vanleer_limiter", "nh_poly" => 3, "edmfx_sgs_diffusive_flux" => true, "y_max" => 300000.0, "non_orographic_gravity_wave" => false, "print_config_dict" => true, "save_cache" => true, "topography_damping_factor" => 5, "config" => "sphere", "reproducibility_test" => false, "component_dt_dict" => Dict("dt_atmos" => 30.0, "dt_land" => 30.0, "dt_seaice" => 30.0, "dt_ocean" => 30.0), "check_conservation" => false, "rmse_check" => false, "land_spun_up_ic" => true, "auto_jacobian_padding_bands" => nothing, "implicit_diffusion" => true, "z_elem" => 63, "implicit_sgs_entr_detr" => true, "use_auto_jacobian" => false, "disable_surface_flux_tendency" => false, "cfsite_number" => "site23", "turbconv" => "prognostic_edmfx", "x_elem" => 6, "idealized_clouds" => false, "edmfx_mse_q_tot_upwinding" => "first_order", "check_nan_every" => 1024, "ice_model" => "prescribed", "subsidence" => nothing, "use_dynamic_krylov_rtol" => false, "toml" => ["toml/longrun_aquaplanet_diagedmf.toml"], "mesh_warp_type" => "SLEVE", "edmfx_detr_model" => "Generalized", "external_forcing_file" => nothing, "topo_smoothing" => true, "hyperdiff" => "CAM_SE", "output_dir" => nothing, "scm_coriolis" => nothing, "bubble" => false, "co2_model" => "maunaloa", "ode_algo" => "ARS343", "max_newton_iters_ode" => 3, "start_date" => "20100101", "use_dense_jacobian" => false, "implicit_noneq_cloud_formation" => false, "scalar_hyperdiffusion_coefficient" => 0.929738, "prognostic_surface" => "false", "detect_restart_file" => false, "edmfx_vertical_diffusion" => true, "restart_file" => nothing, "unique_seed" => false, "rayleigh_sponge" => true, "edmfx_tracer_upwinding" => "first_order", "divergence_damping_factor" => 5.0, "edmfx_entr_model" => "Generalized", "energy_check" => false, "land_model" => "integrated", "use_land_diagnostics" => true, "idealized_h2o" => false, "perturb_initstate" => true, "implicit_sgs_advection" => true, "edmfx_scale_blending" => "SmoothMinimum", "discrete_hydrostatic_balance" => false, "t_start" => "0secs", "dz_bottom" => 30.0, "dt_save_state_to_disk" => "30days", "restart_t" => nothing, "advection_test" => false, "dt_cpl" => "30secs", "checkpoint_dt" => "366days", "topography" => "Earth", "aerosol_radiation" => true, "reference_job_id" => nothing, "perf_summary" => false, "vorticity_hyperdiffusion_coefficient" => 0.1857, "implicit_sgs_mass_flux" => true, "call_cloud_diagnostics_per_stage" => false, "viscous_sponge" => true, "strict_params" => true, "config_file" => "ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml", "bucket_initial_condition" => "", "approximate_linear_solve_iters" => 2, "smagorinsky_lilly" => nothing, "enable_diagnostics" => true, "site_longitude" => -149.0, "evolving_ocean" => true, "implicit_sgs_vertdiff" => true, "prescribe_clouds_in_radiation" => false, "albedo_model" => "CouplerAlbedo", "FLOAT_TYPE" => "Float32", "deep_atmosphere" => true, "split_ode" => true, "amd_les" => false, "prescribe_ozone" => true, "updraft_number" => 1, "restart_dir" => nothing, "detect_restart_files" => false, "ls_adv" => nothing, "energy_q_tot_upwinding" => "vanleer_limiter", "prescribed_aerosols" => ["CB1", "CB2", "DST01", "DST02", "DST03", "DST04", "DST05", "OC1", "OC2", "SO4", "SSLT01", "SSLT02", "SSLT03", "SSLT04", "SSLT05"], "dt_nogw" => "1800secs", "output_default_diagnostics" => true, "edmfx_sgs_mass_flux" => true, "x_max" => 300000.0, "radiation_reset_rng_seed" => true, "newton_rtol" => 1.0e-5, "atmos_config_file" => "config/atmos_configs/climaatmos_progedmf_1m.yml", "edmfx_sgsflux_upwinding" => "none", "mode_name" => "amip", "land_temperature_anomaly" => "aquaplanet", "bucket_albedo_type" => "map_static", "vert_diff" => "false", "use_krylov_method" => false, "sleve_s" => 10.0)
-[ Info: Output directories experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0019
+[ Info: Dict{Any, Any}("sleve_eta" => 0.7, "surface_thermo_state_type" => "GCMSurfaceThermoState", "use_coupler_diagnostics" => true, "era5_diurnal_warming" => nothing, "dt" => "30secs", "prognostic_tke" => true, "use_newton_rtol" => false, "netcdf_output_at_levels" => true, "output_dir_style" => "ActiveLink", "external_forcing" => nothing, "device" => "auto", "t_end" => "1200secs", "c_amd" => 0.29, "y_elem" => 6, "z_stretch" => true, "extra_atmos_diagnostics" => Dict{Any, Any}[], "forcing" => nothing, "edmfx_nh_pressure" => true, "era5_initial_condition_dir" => nothing, "conservation_softfail" => false, "check_steady_state" => false, "restart_cache" => true, "update_jacobian_every" => "solve", "test_dycore_consistency" => false, "add_isothermal_boundary_layer" => true, "use_itime" => true, "moist" => "nonequil", "rad" => "allskywithclear", "share_surface_space" => true, "cloud_model" => "quadrature", "initial_condition" => "DecayingProfile", "krylov_rtol" => 0.1, "eisenstat_walker_forcing_alpha" => 2.0, "dt_cloud_fraction" => "1hours", "surface_setup" => "PrescribedSurface", "jvp_step_adjustment" => 1.0, "insolation" => "timevarying", "log_progress" => true, "site_latitude" => 17.0, "h_elem" => 16, "implicit_sgs_nh_pressure" => true, "coupler_toml" => ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl/toml/amip_progedmf_1m.toml"], "netcdf_interpolation_num_points" => nothing, "coupler_output_dir" => "experiments/ClimaEarth/output", "z_max" => 60000.0, "moisture_fixer" => false, "apply_limiter" => false, "precip_model" => "1M", "atmos_log_progress" => false, "surface_temperature" => "ZonallySymmetric", "debug_jacobian" => false, "edmfx_filter" => true, "job_id" => "amip_progedmf_1m_land_he16", "log_to_file" => false, "orographic_gravity_wave" => nothing, "dt_rad" => "600secs", "edmfx_upwinding" => "first_order", "tracer_upwinding" => "vanleer_limiter", "nh_poly" => 3, "edmfx_sgs_diffusive_flux" => true, "y_max" => 300000.0, "non_orographic_gravity_wave" => false, "print_config_dict" => true, "save_cache" => true, "topography_damping_factor" => 5, "config" => "sphere", "reproducibility_test" => false, "component_dt_dict" => Dict("dt_atmos" => 30.0, "dt_land" => 30.0, "dt_seaice" => 30.0, "dt_ocean" => 30.0), "check_conservation" => false, "rmse_check" => false, "land_spun_up_ic" => true, "auto_jacobian_padding_bands" => nothing, "implicit_diffusion" => true, "z_elem" => 63, "implicit_sgs_entr_detr" => true, "use_auto_jacobian" => false, "disable_surface_flux_tendency" => false, "cfsite_number" => "site23", "turbconv" => "prognostic_edmfx", "x_elem" => 6, "idealized_clouds" => false, "edmfx_mse_q_tot_upwinding" => "first_order", "check_nan_every" => 1024, "ice_model" => "prescribed", "subsidence" => nothing, "use_dynamic_krylov_rtol" => false, "reproducible_restart" => false, "toml" => ["toml/longrun_aquaplanet_diagedmf.toml"], "mesh_warp_type" => "SLEVE", "edmfx_detr_model" => "Generalized", "external_forcing_file" => nothing, "topo_smoothing" => true, "hyperdiff" => "CAM_SE", "output_dir" => nothing, "constant_horizontal_diffusion" => false, "scm_coriolis" => nothing, "bubble" => false, "ode_algo" => "ARS343", "max_newton_iters_ode" => 3, "start_date" => "20100101", "time_varying_trace_gases" => ["CO2", "O3"], "use_dense_jacobian" => false, "implicit_noneq_cloud_formation" => false, "scalar_hyperdiffusion_coefficient" => 0.929738, "prognostic_surface" => "false", "detect_restart_file" => false, "edmfx_vertical_diffusion" => true, "restart_file" => nothing, "unique_seed" => false, "rayleigh_sponge" => true, "edmfx_tracer_upwinding" => "first_order", "divergence_damping_factor" => 5.0, "edmfx_entr_model" => "Generalized", "energy_check" => false, "land_model" => "integrated", "use_land_diagnostics" => true, "idealized_h2o" => false, "perturb_initstate" => true, "implicit_sgs_advection" => true, "edmfx_scale_blending" => "SmoothMinimum", "discrete_hydrostatic_balance" => false, "t_start" => "0secs", "dz_bottom" => 30.0, "dt_save_state_to_disk" => "30days", "restart_t" => nothing, "advection_test" => false, "dt_cpl" => "30secs", "checkpoint_dt" => "366days", "topography" => "Earth", "aerosol_radiation" => true, "reference_job_id" => nothing, "perf_summary" => false, "vorticity_hyperdiffusion_coefficient" => 0.1857, "implicit_sgs_mass_flux" => true, "call_cloud_diagnostics_per_stage" => false, "viscous_sponge" => true, "strict_params" => true, "config_file" => "ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml", "bucket_initial_condition" => "", "approximate_linear_solve_iters" => 2, "smagorinsky_lilly" => nothing, "enable_diagnostics" => true, "site_longitude" => -149.0, "evolving_ocean" => true, "implicit_sgs_vertdiff" => true, "prescribe_clouds_in_radiation" => false, "albedo_model" => "CouplerAlbedo", "FLOAT_TYPE" => "Float32", "deep_atmosphere" => true, "split_ode" => true, "amd_les" => false, "updraft_number" => 1, "restart_dir" => nothing, "detect_restart_files" => false, "ls_adv" => nothing, "energy_q_tot_upwinding" => "vanleer_limiter", "prescribed_aerosols" => ["CB1", "CB2", "DST01", "DST02", "DST03", "DST04", "DST05", "OC1", "OC2", "SO4", "SSLT01", "SSLT02", "SSLT03", "SSLT04", "SSLT05"], "dt_nogw" => "1800secs", "output_default_diagnostics" => true, "edmfx_sgs_mass_flux" => true, "x_max" => 300000.0, "radiation_reset_rng_seed" => true, "newton_rtol" => 1.0e-5, "atmos_config_file" => "config/atmos_configs/climaatmos_progedmf_1m.yml", "edmfx_sgsflux_upwinding" => "none", "mode_name" => "amip", "land_temperature_anomaly" => "aquaplanet", "bucket_albedo_type" => "map_static", "vert_diff" => "false", "use_krylov_method" => false, "sleve_s" => 10.0, "prescribed_flow" => nothing)
+[ Info: Output directories experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0028
 [ Info: Coupler artifacts directory experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/artifacts
 [ Info: Coupler checkpoint directory experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/checkpoints
 [ Info: Overwriting Atmos parameters from input TOML file(s): ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl/toml/amip_progedmf_1m.toml"]
 ┌ Warning: The configuration passed to ClimaAtmos contains unused keys: share_surface_space, use_coupler_diagnostics, bucket_initial_condition, energy_check, use_land_diagnostics, land_model, edmfx_upwinding, atmos_config_file, mode_name, land_temperature_anomaly, evolving_ocean, bucket_albedo_type, save_cache, print_config_dict, extra_atmos_diagnostics, ice_model, coupler_toml, restart_t, coupler_output_dir, dt_cpl, checkpoint_dt, component_dt_dict, atmos_log_progress, conservation_softfail, restart_dir, restart_cache, detect_restart_files, rmse_check, land_spun_up_ic, config_file, unique_seed
-└ @ ClimaAtmos ~/.julia/packages/ClimaAtmos/GFtCj/src/solver/yaml_helper.jl:89
+└ @ ClimaAtmos ~/calkit/clima-gpu-profiling/ClimaAtmos.jl/src/solver/yaml_helper.jl:89
 [ Info: Random seed set to 1234
-┌ Warning: Removing experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0019/clima_atmos
+┌ Warning: Removing experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0028/clima_atmos
 └ @ ClimaUtilities.OutputPathGenerator ~/.julia/packages/ClimaUtilities/5ClV5/src/OutputPathGenerator.jl:157
 [ Info: Running on CUDADevice
 [ Info: Setting up single-process ClimaAtmos run
@@ -139,6 +136,7 @@ Warning The project dependencies or compat requirements have changed since the m
 │       `edmfx_sgsflux_upwinding`::`Val{:none}`
 │        `edmfx_tracer_upwinding`::`Val{:first_order}`
 │       `test_dycore_consistency`::`Nothing`
+│          `reproducible_restart`::`Nothing`
 │                       `limiter`::`Nothing`
 │                     `diff_mode`::`ClimaAtmos.Implicit`
 └                     `hyperdiff`::`ClimaAtmos.ClimaHyperdiffusion{Float32}`
@@ -146,48 +144,39 @@ Warning The project dependencies or compat requirements have changed since the m
 │ 
 │                             `water`::`ClimaAtmos.AtmosWater{ClimaAtmos.NonEquilMoistModel, ClimaAtmos.Microphysics1Moment, ClimaAtmos.QuadratureCloud{ClimaAtmos.SGSQuadrature{3, StaticArraysCore.SVector{3, Float32}, StaticArraysCore.SVector{3, Float32}}}, ClimaAtmos.Explicit, Nothing}`
 │                         `scm_setup`::`ClimaAtmos.SCMSetup{Nothing, Nothing, Nothing, Bool, Nothing}`
-│                         `radiation`::`ClimaAtmos.AtmosRadiation{ClimaAtmos.RRTMGPInterface.AllSkyRadiationWithClearSkyDiagnostics{ClimaAtmos.InteractiveCloudInRadiation}, ClimaAtmos.PrescribedOzone, ClimaAtmos.MaunaLoaCO2, ClimaAtmos.TimeVaryingInsolation}`
-│                          `turbconv`::`ClimaAtmos.AtmosTurbconv{ClimaAtmos.EDMFXModel{ClimaAtmos.InvZEntrainment, ClimaAtmos.BuoyancyVelocityDetrainment, Val{true}, Val{true}, Val{true}, Val{true}, Val{true}, ClimaAtmos.SmoothMinimumBlending}, ClimaAtmos.PrognosticEDMFX{1, true, Float32}, ClimaAtmos.Implicit, ClimaAtmos.Implicit, ClimaAtmos.Implicit, ClimaAtmos.Implicit, ClimaAtmos.Implicit, Nothing, Nothing}`
+│                         `radiation`::`ClimaAtmos.AtmosRadiation{ClimaAtmos.RRTMGPInterface.AllSkyRadiationWithClearSkyDiagnostics{ClimaAtmos.InteractiveCloudInRadiation}, ClimaAtmos.TimeVaryingInsolation}`
+│                          `turbconv`::`ClimaAtmos.AtmosTurbconv{ClimaAtmos.EDMFXModel{ClimaAtmos.InvZEntrainment, ClimaAtmos.BuoyancyVelocityDetrainment, Val{true}, Val{true}, Val{true}, Val{true}, Val{true}, ClimaAtmos.SmoothMinimumBlending}, ClimaAtmos.PrognosticEDMFX{1, true, Float32}, ClimaAtmos.Implicit, ClimaAtmos.Implicit, ClimaAtmos.Implicit, ClimaAtmos.Implicit, ClimaAtmos.Implicit, Nothing, Nothing, Nothing}`
+│                   `prescribed_flow`::`Nothing`
 │                      `gravity_wave`::`ClimaAtmos.AtmosGravityWave{Nothing, Nothing}`
 │                `vertical_diffusion`::`Nothing`
 │                            `sponge`::`ClimaAtmos.AtmosSponge{ClimaAtmos.ViscousSponge{Float32}, ClimaAtmos.RayleighSponge{Float32}}`
 │                           `surface`::`ClimaAtmos.AtmosSurface{ClimaAtmos.ZonallySymmetricSST, ClimaAtmos.PrescribedSST, ClimaAtmos.CouplerAlbedo}`
-└                          `numerics`::`ClimaAtmos.AtmosNumerics{Val{:vanleer_limiter}, Val{:vanleer_limiter}, Val{:first_order}, Val{:none}, Val{:first_order}, Nothing, Nothing, ClimaAtmos.Implicit, ClimaAtmos.ClimaHyperdiffusion{Float32}}`
+└                          `numerics`::`ClimaAtmos.AtmosNumerics{Val{:vanleer_limiter}, Val{:vanleer_limiter}, Val{:first_order}, Val{:none}, Val{:first_order}, Nothing, Nothing, Nothing, ClimaAtmos.Implicit, ClimaAtmos.ClimaHyperdiffusion{Float32}}`
+[ Info: Remapping Earth orography from ETOPO2022 data onto horizontal space
+[ Info: SLEVE mesh warp (eta=0.7, s=10.0)
 ┌ Info: Simulation info
 │   job_id = "amip_progedmf_1m_land_he16"
-└   output_dir = "experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0019/clima_atmos"
-┌ Info: z heights
-│   z_mesh.faces =
-│    64-element Vector{ClimaCore.Geometry.ZPoint{Float32}}:
-│     ZPoint(0.0)
-│     ZPoint(30.000004)
-│     ZPoint(62.974285)
-│     ZPoint(99.21583)
-│     ⋮
-│     ZPoint(54285.29)
-│     ZPoint(57136.2)
-└     ZPoint(60000.0)
-[ Info: Remapping Earth orography from ETOPO2022 data onto horizontal space
-[ Info: SLEVE mesh warp
-┌ Info: Resolution stats: 
-│   Nq = 4
-│   h_elem = 16
-│   z_elem = 63
-│   ncols = 24576
-└   ndofs_total = 1548288
-[ Info: Allocating Y: 7.431 s (12828563 allocations: 614.23 MiB)
+└   output_dir = "experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0028/clima_atmos"
+┌ Info: Simulation Grid: ExtrudedFiniteDifferenceGrid:
+│   horizontal:
+│     context: SingletonCommsContext using CUDADevice
+│     mesh: 16×16×6-element EquiangularCubedSphere of SphereDomain: radius = 6.371e6
+│     quadrature: 4-point Gauss-Legendre-Lobatto quadrature
+│   vertical:
+└     mesh: 63-element IntervalMesh of IntervalDomain: z ∈ [0.0,60000.0] (:bottom, :top)
+[ Info: Allocating Y: 10.099 s (12889168 allocations: 617.38 MiB)
 [ Info: using deep atmosphere
-[ Info: Allocating cache (p): 225.324 s (443028466 allocations: 24.26 GiB)
+[ Info: Allocating cache (p): 218.208 s (436579946 allocations: 23.97 GiB)
 [ Info: Using ODE config: `ClimaTimeSteppers.ARS343`
-[ Info: ode_configuration: 481.26 ms (748598 allocations: 36.79 MiB)
+[ Info: ode_configuration: 473.571 ms (748522 allocations: 36.82 MiB)
 [ Info: Checking NaNs in the state every 1024 steps
-[ Info: get_callbacks: 468.652 ms (724594 allocations: 36.85 MiB)
+[ Info: get_callbacks: 472.288 ms (724218 allocations: 36.84 MiB)
 [ Info: Saving accumulated diagnostics to disk with frequency: 1 hour
 [ Info: DictWriter: String[]
 [ Info: HDF5Writer: String[]
 [ Info: NetCDFWriter: ["orog_inst", "ts_1h_min", "ts_1h_max"]
-[ Info: initializing diagnostics: 6.047 s (14510057 allocations: 751.69 MiB)
-[ Info: Prepared SciMLBase.CallbackSet callbacks: 11.766 ms (561 allocations: 27.46 KiB)
+[ Info: initializing diagnostics: 6.972 s (14583744 allocations: 755.47 MiB)
+[ Info: Prepared SciMLBase.CallbackSet callbacks: 11.242 ms (561 allocations: 27.46 KiB)
 [ Info: n_steps_per_cycle_per_cb (non diagnostics): Real[1024, 1, 120//1, 20//1]
 [ Info: n_steps_per_cycle (non diagnostics): 15360//1
 ┌ Info: Jacobian algorithm: ManualSparseJacobian(
@@ -200,11 +189,11 @@ Warning The project dependencies or compat requirements have changed since the m
 │   sgs_vertdiff_flag = ClimaAtmos.UseDerivative(),
 │   approximate_solve_iters = 2,
 └ )
-[ Info: Define ode function: 4.407 s (5620138 allocations: 212.06 MiB)
+[ Info: Define ode function: 5.375 s (8432725 allocations: 302.66 MiB)
 ┌ Warning: Setting surface albedo to 0.38 at the beginning of the simulation
 └ @ Main ~/calkit/clima-gpu-profiling/ClimaCoupler.jl/experiments/ClimaEarth/components/atmosphere/climaatmos.jl:109
-[ Info: init integrator: 100.312 s (90811145 allocations: 5.78 GiB)
-[ Info: Added diagnostics: 11.112 s (13092299 allocations: 639.56 MiB)
+[ Info: init integrator: 100.043 s (104081979 allocations: 6.38 GiB)
+[ Info: Added diagnostics: 9.321 s (13091914 allocations: 639.5 MiB)
 [ Info: AMIPMode
 [ Info: AMIP/CMIP boundary conditions - do not expect energy conservation
 ┌ Info: ClimaLand: using land IC file
@@ -219,7 +208,7 @@ Warning The project dependencies or compat requirements have changed since the m
 └ @ ClimaCoupler.Interfacer ~/calkit/clima-gpu-profiling/ClimaCoupler.jl/src/Interfacer.jl:326
 ┌ Warning: Setting surface albedo to 0.38 at the beginning of the simulation
 └ @ Main ~/calkit/clima-gpu-profiling/ClimaCoupler.jl/experiments/ClimaEarth/components/atmosphere/climaatmos.jl:109
-[ Info: Memory in use: 15.746 GiB
+[ Info: Memory in use: 15.884 GiB
 [ Info: Using external CUDA profiler
 [ Info: Step 1 / 3
 [ Info: Step 2 / 3
@@ -233,12 +222,12 @@ Warning The project dependencies or compat requirements have changed since the m
 │   wall_time_spent = "0 seconds"
 │   percent_complete = "10.0%"
 │   estimated_sypd = "Inf"
-│   date_now = 2025-12-14T13:34:48.147
-└   estimated_finish_date = 2025-12-14T13:34:48.147
+│   date_now = 2025-12-19T08:51:34.561
+└   estimated_finish_date = 2025-12-19T08:51:34.561
 Capture range started in the application.
 Capture range ended in the application.
-Generating '/tmp/nsys-report-5e42.qdstrm'
+Generating '/tmp/nsys-report-f625.qdstrm'
 [1/1] [0%                          ] baseline.nsys-repProcessing events...
-[1/1] [0%                          ] baseline.nsys-rep[1/1] [===24%                      ] baseline.nsys-rep[1/1] [8%                          ] baseline.nsys-rep[1/1] [9%                          ] baseline.nsys-rep[1/1] [5%                          ] baseline.nsys-rep[1/1] [5%                          ] baseline.nsys-rep[1/1] [6%                          ] baseline.nsys-rep[1/1] [5%                          ] baseline.nsys-rep[1/1] [6%                          ] baseline.nsys-rep[1/1] [5%                          ] baseline.nsys-rep[1/1] [0%                          ] baseline.nsys-rep[1/1] [5%                          ] baseline.nsys-rep[1/1] [6%                          ] baseline.nsys-rep[1/1] [7%                          ] baseline.nsys-rep[1/1] [9%                          ] baseline.nsys-rep[1/1] [10%                         ] baseline.nsys-rep[1/1] [12%                         ] baseline.nsys-rep[1/1] [13%                         ] baseline.nsys-rep[1/1] [14%                         ] baseline.nsys-rep[1/1] [=16%                        ] baseline.nsys-rep[1/1] [=17%                        ] baseline.nsys-rep[1/1] [==19%                       ] baseline.nsys-rep[1/1] [==20%                       ] baseline.nsys-rep[1/1] [==21%                       ] baseline.nsys-rep[1/1] [===23%                      ] baseline.nsys-rep[1/1] [===24%                      ] baseline.nsys-rep[1/1] [====26%                     ] baseline.nsys-rep[1/1] [====27%                     ] baseline.nsys-rep[1/1] [=====29%                    ] baseline.nsys-rep[1/1] [=====30%                    ] baseline.nsys-rep[1/1] [=====31%                    ] baseline.nsys-rep[1/1] [======33%                   ] baseline.nsys-rep[1/1] [======34%                   ] baseline.nsys-rep[1/1] [=======36%                  ] baseline.nsys-rep[1/1] [=======37%                  ] baseline.nsys-rep[1/1] [=======38%                  ] baseline.nsys-rep[1/1] [========40%                 ] baseline.nsys-rep[1/1] [========41%                 ] baseline.nsys-rep[1/1] [=========43%                ] baseline.nsys-rep[1/1] [=========44%                ] baseline.nsys-rep[1/1] [=========45%                ] baseline.nsys-rep[1/1] [==========47%               ] baseline.nsys-rep[1/1] [==========48%               ] baseline.nsys-rep[1/1] [===========50%              ] baseline.nsys-rep[1/1] [===========51%              ] baseline.nsys-rep[1/1] [===========53%              ] baseline.nsys-rep[1/1] [============54%             ] baseline.nsys-rep[1/1] [============55%             ] baseline.nsys-rep[1/1] [============57%             ] baseline.nsys-rep[1/1] [=============58%            ] baseline.nsys-rep[1/1] [=============60%            ] baseline.nsys-rep[1/1] [==============61%           ] baseline.nsys-rep[1/1] [==============62%           ] baseline.nsys-rep[1/1] [==============64%           ] baseline.nsys-rep[1/1] [===============65%          ] baseline.nsys-rep[1/1] [===============67%          ] baseline.nsys-rep[1/1] [================68%         ] baseline.nsys-rep[1/1] [================69%         ] baseline.nsys-rep[1/1] [================71%         ] baseline.nsys-rep[1/1] [=================72%        ] baseline.nsys-rep[1/1] [=================74%        ] baseline.nsys-rep[1/1] [==================75%       ] baseline.nsys-rep[1/1] [==================76%       ] baseline.nsys-rep[1/1] [==================78%       ] baseline.nsys-rep[1/1] [===================79%      ] baseline.nsys-rep[1/1] [===================81%      ] baseline.nsys-rep[1/1] [===================82%      ] baseline.nsys-rep[1/1] [====================84%     ] baseline.nsys-rep[1/1] [====================85%     ] baseline.nsys-rep[1/1] [=====================86%    ] baseline.nsys-rep[1/1] [=====================88%    ] baseline.nsys-rep[1/1] [=====================89%    ] baseline.nsys-rep[1/1] [======================91%   ] baseline.nsys-rep[1/1] [======================92%   ] baseline.nsys-rep[1/1] [=======================93%  ] baseline.nsys-rep[1/1] [=======================95%  ] baseline.nsys-rep[1/1] [=======================96%  ] baseline.nsys-rep[1/1] [========================98% ] baseline.nsys-rep[1/1] [========================100%] baseline.nsys-rep[1/1] [========================100%] baseline.nsys-rep
+[1/1] [0%                          ] baseline.nsys-rep[1/1] [6%                          ] baseline.nsys-rep[1/1] [7%                          ] baseline.nsys-rep[1/1] [5%                          ] baseline.nsys-rep[1/1] [0%                          ] baseline.nsys-rep[1/1] [6%                          ] baseline.nsys-rep[1/1] [7%                          ] baseline.nsys-rep[1/1] [8%                          ] baseline.nsys-rep[1/1] [9%                          ] baseline.nsys-rep[1/1] [11%                         ] baseline.nsys-rep[1/1] [12%                         ] baseline.nsys-rep[1/1] [13%                         ] baseline.nsys-rep[1/1] [14%                         ] baseline.nsys-rep[1/1] [=16%                        ] baseline.nsys-rep[1/1] [=17%                        ] baseline.nsys-rep[1/1] [==18%                       ] baseline.nsys-rep[1/1] [==20%                       ] baseline.nsys-rep[1/1] [==21%                       ] baseline.nsys-rep[1/1] [===22%                      ] baseline.nsys-rep[1/1] [===23%                      ] baseline.nsys-rep[1/1] [====25%                     ] baseline.nsys-rep[1/1] [====26%                     ] baseline.nsys-rep[1/1] [====27%                     ] baseline.nsys-rep[1/1] [====28%                     ] baseline.nsys-rep[1/1] [=====30%                    ] baseline.nsys-rep[1/1] [=====31%                    ] baseline.nsys-rep[1/1] [=====32%                    ] baseline.nsys-rep[1/1] [======34%                   ] baseline.nsys-rep[1/1] [======35%                   ] baseline.nsys-rep[1/1] [=======36%                  ] baseline.nsys-rep[1/1] [=======37%                  ] baseline.nsys-rep[1/1] [=======39%                  ] baseline.nsys-rep[1/1] [========40%                 ] baseline.nsys-rep[1/1] [========41%                 ] baseline.nsys-rep[1/1] [========42%                 ] baseline.nsys-rep[1/1] [=========44%                ] baseline.nsys-rep[1/1] [=========45%                ] baseline.nsys-rep[1/1] [=========46%                ] baseline.nsys-rep[1/1] [==========48%               ] baseline.nsys-rep[1/1] [==========49%               ] baseline.nsys-rep[1/1] [===========50%              ] baseline.nsys-rep[1/1] [===========51%              ] baseline.nsys-rep[1/1] [===========53%              ] baseline.nsys-rep[1/1] [============54%             ] baseline.nsys-rep[1/1] [============55%             ] baseline.nsys-rep[1/1] [============57%             ] baseline.nsys-rep[1/1] [=============58%            ] baseline.nsys-rep[1/1] [=============59%            ] baseline.nsys-rep[1/1] [=============60%            ] baseline.nsys-rep[1/1] [==============62%           ] baseline.nsys-rep[1/1] [==============63%           ] baseline.nsys-rep[1/1] [==============64%           ] baseline.nsys-rep[1/1] [===============65%          ] baseline.nsys-rep[1/1] [===============67%          ] baseline.nsys-rep[1/1] [================68%         ] baseline.nsys-rep[1/1] [================69%         ] baseline.nsys-rep[1/1] [================71%         ] baseline.nsys-rep[1/1] [=================72%        ] baseline.nsys-rep[1/1] [=================73%        ] baseline.nsys-rep[1/1] [=================74%        ] baseline.nsys-rep[1/1] [==================76%       ] baseline.nsys-rep[1/1] [==================77%       ] baseline.nsys-rep[1/1] [==================78%       ] baseline.nsys-rep[1/1] [===================79%      ] baseline.nsys-rep[1/1] [===================81%      ] baseline.nsys-rep[1/1] [===================82%      ] baseline.nsys-rep[1/1] [====================83%     ] baseline.nsys-rep[1/1] [====================85%     ] baseline.nsys-rep[1/1] [=====================86%    ] baseline.nsys-rep[1/1] [=====================87%    ] baseline.nsys-rep[1/1] [=====================88%    ] baseline.nsys-rep[1/1] [======================90%   ] baseline.nsys-rep[1/1] [======================91%   ] baseline.nsys-rep[1/1] [======================92%   ] baseline.nsys-rep[1/1] [=======================93%  ] baseline.nsys-rep[1/1] [=======================95%  ] baseline.nsys-rep[1/1] [=======================96%  ] baseline.nsys-rep[1/1] [========================97% ] baseline.nsys-rep[1/1] [========================98% ] baseline.nsys-rep[1/1] [========================100%] baseline.nsys-rep[1/1] [========================100%] baseline.nsys-rep
 Generated:
 	/home/pbachant/calkit/clima-gpu-profiling/results/nsys/baseline.nsys-rep
