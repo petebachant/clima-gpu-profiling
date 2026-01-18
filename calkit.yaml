@@ -172,3 +172,30 @@ pipeline:
       outputs:
         - path: results/ncu/mod-details.csv
           storage: git
+    # A stage to run a bit longer for a better picture of performane differences
+    amip-baseline:
+      kind: sbatch
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      sbatch_options:
+        - --gpus=1
+        - --time=240
+      args:
+        - --project=ClimaCoupler.jl/experiments/ClimaEarth
+        - ClimaCoupler.jl/experiments/ClimaEarth/run_amip.jl
+        - --config_file
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --job_id
+        - gpu_amip_progedmf_1M_land_he16_baseline
+      inputs:
+        - ClimaCoupler.jl/experiments/ClimaEarth/run_amip.jl
+        - ClimaCoupler.jl/src
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
+        - ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
+        - ClimaCoupler.jl/experiments/ClimaEarth/components
+        - ClimaCore.jl/ext
+        - ClimaCore.jl/src
+        - ClimaCore.jl/lib
+        - ClimaAtmos.jl/src
+        - ClimaAtmos.jl/toml

@@ -185,3 +185,37 @@ stages:
           persist: false
     desc: Automatically generated from the 'mod-ncu-details-csv' stage
       in calkit.yaml. Changes made here will be overwritten.
+  amip-baseline:
+    cmd: calkit slurm batch --name amip-baseline --environment clima 
+      --dep ClimaCoupler.jl/experiments/ClimaEarth/run_amip.jl --dep 
+      ClimaCoupler.jl/src --dep 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
+      --dep ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl --dep 
+      ClimaCoupler.jl/experiments/ClimaEarth/components --dep 
+      ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib 
+      --dep ClimaAtmos.jl/src --dep ClimaAtmos.jl/toml -s --gpus=1 -s 
+      --time=240 -- scripts/run-julia-script.sh 
+      --project=ClimaCoupler.jl/experiments/ClimaEarth 
+      ClimaCoupler.jl/experiments/ClimaEarth/run_amip.jl --config_file
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --job_id gpu_amip_progedmf_1M_land_he16_baseline
+    deps:
+      - scripts/run-julia-script.sh
+      - ClimaCoupler.jl/experiments/ClimaEarth/run_amip.jl
+      - ClimaCoupler.jl/src
+      - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
+      - ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
+      - ClimaCoupler.jl/experiments/ClimaEarth/components
+      - ClimaCore.jl/ext
+      - ClimaCore.jl/src
+      - ClimaCore.jl/lib
+      - ClimaAtmos.jl/src
+      - ClimaAtmos.jl/toml
+    outs:
+      - .calkit/slurm/logs/amip-baseline.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'amip-baseline' stage in 
+      calkit.yaml. Changes made here will be overwritten.
