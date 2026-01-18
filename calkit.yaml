@@ -199,3 +199,29 @@ pipeline:
         - ClimaCore.jl/lib
         - ClimaAtmos.jl/src
         - ClimaAtmos.jl/toml
+    amip-mod:
+      kind: sbatch
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      sbatch_options:
+        - --gpus=1
+        - --time=240
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/ClimaEarth
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth/run_amip.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --job_id
+        - gpu_amip_progedmf_1M_land_he16_mod
+      inputs:
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth/run_amip.jl
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth/components
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaCore.jl-mod/lib
+        - ClimaAtmos.jl-mod/src
+        - ClimaAtmos.jl-mod/toml
