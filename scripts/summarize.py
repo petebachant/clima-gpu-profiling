@@ -20,6 +20,7 @@ def get_nsys_summary(fpath_in) -> dict:
     summary["nsys_duration_s"] = (
         summary["nsys_duration"] / 1e9
     )  # Convert from ns to s
+    # TODO: Extract the top 3 most expensive kernels by total time
     conn.close()
     return summary
 
