@@ -529,25 +529,25 @@ stages:
     outs:
     - path: .calkit/slurm/logs/baseline-nsys.out
       hash: md5
-      md5: b1be1f3b41f5405e0987a0bb721869e8
-      size: 31992
+      md5: e1b40e2d43dc77af47e5d0e2abd30d8c
+      size: 27317
     - path: results/nsys/baseline.nsys-rep
       hash: md5
-      md5: 609e00537809d86ef1ee3505dda13a4f
-      size: 26498100
+      md5: 05b31335b06639efd03903cbf2c49ec9
+      size: 26553331
   baseline-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/baseline.nsys-rep
       -t sqlite -o results/nsys/baseline.sqlite"'
     deps:
     - path: results/nsys/baseline.nsys-rep
       hash: md5
-      md5: 609e00537809d86ef1ee3505dda13a4f
-      size: 26498100
+      md5: 05b31335b06639efd03903cbf2c49ec9
+      size: 26553331
     outs:
     - path: results/nsys/baseline.sqlite
       hash: md5
-      md5: 9856bd4b38fc07cda223c6e52b3b85b2
-      size: 54435840
+      md5: a5524f3346058fdef49037f15f1a025e
+      size: 54497280
   mod-nsys:
     cmd: calkit slurm batch --name mod-nsys --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -615,25 +615,25 @@ stages:
     outs:
     - path: .calkit/slurm/logs/mod-nsys.out
       hash: md5
-      md5: 00bca1ab76c0667660677c29f1f75516
-      size: 27709
+      md5: 7050d4ed304df0db0386e5d180f11aae
+      size: 27419
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: 0e906b8c77861690f1b6dc75ecda61b0
-      size: 26550554
+      md5: 17c1d3cc5401de013056fd0e5e8db6c3
+      size: 26539868
   mod-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep -t sqlite
       -o results/nsys/mod.sqlite"'
     deps:
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: 0e906b8c77861690f1b6dc75ecda61b0
-      size: 26550554
+      md5: 17c1d3cc5401de013056fd0e5e8db6c3
+      size: 26539868
     outs:
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 95b8d2a6a58bda9af8d6c965bc126cdb
-      size: 54472704
+      md5: 1df55fb25733bca9d43e9a8c80b67fea
+      size: 54603776
   baseline-ncu:
     cmd: calkit slurm batch --name baseline-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl/src --dep 
@@ -727,20 +727,20 @@ stages:
       nfiles: 2
     - path: .calkit/slurm/logs/amip-baseline.out
       hash: md5
-      md5: bae712fc7f16443610adade55beebaef
-      size: 28435
+      md5: bfc4ca86bb4f0570421fc85528bb5216
+      size: 28398
     - path: .calkit/slurm/logs/amip-mod.out
       hash: md5
-      md5: 0a4b3b0b6a38a759c152c379005ea103
-      size: 28385
+      md5: c6f34cb9aa1363c1d49ba0ea8c01aa0e
+      size: 28393
     - path: results/nsys/baseline.sqlite
       hash: md5
-      md5: 9856bd4b38fc07cda223c6e52b3b85b2
-      size: 54435840
+      md5: a5524f3346058fdef49037f15f1a025e
+      size: 54497280
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 95b8d2a6a58bda9af8d6c965bc126cdb
-      size: 54472704
+      md5: 1df55fb25733bca9d43e9a8c80b67fea
+      size: 54603776
     - path: scripts/summarize.py
       hash: md5
       md5: 5bc2f68d4f1b6c2a14882ec26f39cb5f
@@ -748,8 +748,8 @@ stages:
     outs:
     - path: results/summary.json
       hash: md5
-      md5: e2c2789fe3e079901bf812d81e933c2f
-      size: 684
+      md5: c6eced30de58c58d0fdcd0d3726ec831
+      size: 668
   mod-ncu:
     cmd: calkit slurm batch --name mod-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -908,8 +908,8 @@ stages:
     outs:
     - path: .calkit/slurm/logs/amip-baseline.out
       hash: md5
-      md5: bae712fc7f16443610adade55beebaef
-      size: 28435
+      md5: bfc4ca86bb4f0570421fc85528bb5216
+      size: 28398
   amip-mod:
     cmd: calkit slurm batch --name amip-mod --environment clima --dep 
       ClimaCoupler.jl-mod/experiments/ClimaEarth/run_amip.jl --dep 
@@ -985,5 +985,5 @@ stages:
     outs:
     - path: .calkit/slurm/logs/amip-mod.out
       hash: md5
-      md5: 0a4b3b0b6a38a759c152c379005ea103
-      size: 28385
+      md5: c6f34cb9aa1363c1d49ba0ea8c01aa0e
+      size: 28393
