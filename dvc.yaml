@@ -82,19 +82,6 @@ stages:
       - results/nsys/mod.sqlite
     desc: Automatically generated from the 'mod-nsys-to-sqlite' stage 
       in calkit.yaml. Changes made here will be overwritten.
-  summarize:
-    cmd: calkit xenv -n py --no-check -- python scripts/summarize.py
-    deps:
-      - scripts/summarize.py
-      - results/nsys/baseline.sqlite
-      - results/nsys/mod.sqlite
-      - .calkit/env-locks/py
-    outs:
-      - results/summary.json:
-          cache: false
-          persist: false
-    desc: Automatically generated from the 'summarize' stage in 
-      calkit.yaml. Changes made here will be overwritten.
   baseline-ncu:
     cmd: calkit slurm batch --name baseline-ncu --environment clima 
       --dep scripts/run.jl --dep ClimaCoupler.jl/src --dep 
@@ -255,4 +242,19 @@ stages:
           cache: false
           persist: true
     desc: Automatically generated from the 'amip-mod' stage in 
+      calkit.yaml. Changes made here will be overwritten.
+  summarize:
+    cmd: calkit xenv -n py --no-check -- python scripts/summarize.py
+    deps:
+      - scripts/summarize.py
+      - results/nsys/baseline.sqlite
+      - results/nsys/mod.sqlite
+      - .calkit/env-locks/py
+      - .calkit/slurm/logs/amip-baseline.out
+      - .calkit/slurm/logs/amip-mod.out
+    outs:
+      - results/summary.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'summarize' stage in 
       calkit.yaml. Changes made here will be overwritten.

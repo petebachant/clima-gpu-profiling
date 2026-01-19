@@ -84,16 +84,6 @@ pipeline:
         - results/nsys/mod.nsys-rep
       outputs:
         - results/nsys/mod.sqlite
-    summarize:
-      kind: python-script
-      environment: py
-      script_path: scripts/summarize.py
-      inputs:
-        - results/nsys/baseline.sqlite
-        - results/nsys/mod.sqlite
-      outputs:
-        - path: results/summary.json
-          storage: git
     baseline-ncu:
       kind: sbatch
       environment: clima
@@ -172,7 +162,7 @@ pipeline:
       outputs:
         - path: results/ncu/mod-details.csv
           storage: git
-    # A stage to run a bit longer for a better picture of performane differences
+    # A stage to run a bit longer for a better picture of performance differences
     amip-baseline:
       kind: sbatch
       environment: clima
@@ -225,3 +215,15 @@ pipeline:
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
         - ClimaAtmos.jl-mod/toml
+    summarize:
+      kind: python-script
+      environment: py
+      script_path: scripts/summarize.py
+      inputs:
+        - results/nsys/baseline.sqlite
+        - results/nsys/mod.sqlite
+        - from_stage_outputs: amip-baseline
+        - from_stage_outputs: amip-mod
+      outputs:
+        - path: results/summary.json
+          storage: git

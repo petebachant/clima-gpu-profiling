@@ -31,24 +31,25 @@ Loading climacommon/2025_05_15
 Status `~/calkit/clima-gpu-profiling/ClimaCoupler.jl/experiments/ClimaEarth/Project.toml`
   [c7e460c6] ArgParse v1.2.0
 ⌃ [052768ef] CUDA v5.8.5
+  [159f3aea] Cairo v1.1.1
 ⌃ [13f3f980] CairoMakie v0.12.18
   [29b5916a] ClimaAnalysis v0.5.20
-  [b2c96348] ClimaAtmos v0.33.0 `../../../ClimaAtmos.jl`
-  [4347a170] ClimaCalibrate v0.1.4
+  [b2c96348] ClimaAtmos v0.33.2
+⌅ [4347a170] ClimaCalibrate v0.1.4
   [3a4d1b5c] ClimaComms v0.6.10
-  [d414da3d] ClimaCore v0.14.44 `../../../ClimaCore.jl`
+  [d414da3d] ClimaCore v0.14.45 `../../../ClimaCore.jl`
   [908f55d8] ClimaCoreMakie v0.4.6
   [4ade58fe] ClimaCoupler v0.1.2 `../..`
-⌃ [1ecacbb8] ClimaDiagnostics v0.2.15
-  [08f4d4ce] ClimaLand v1.2.1
+⌅ [1ecacbb8] ClimaDiagnostics v0.2.15
+  [08f4d4ce] ClimaLand v1.3.0
 ⌃ [0376089a] ClimaOcean v0.8.7
-  [5c42b081] ClimaParams v1.0.7
+  [5c42b081] ClimaParams v1.0.10
 ⌃ [6ba0ff68] ClimaSeaIce v0.3.10
   [595c0a79] ClimaTimeSteppers v0.8.5 `https://github.com/CliMA/ClimaTimesteppers.jl#pb/rm-nvtx`
   [b3f4f4ca] ClimaUtilities v0.1.27
   [aa8a2aa5] EnsembleKalmanProcesses v2.6.0
 ⌃ [db073c08] GeoMakie v0.7.12
-  [e98cc03f] Insolation v0.10.2
+⌅ [e98cc03f] Insolation v0.10.2
 ⌅ [a98d9a8b] Interpolations v0.15.1
   [033835bb] JLD2 v0.6.3
   [63c18a36] KernelAbstractions v0.9.39
@@ -57,17 +58,17 @@ Status `~/calkit/clima-gpu-profiling/ClimaCoupler.jl/experiments/ClimaEarth/Proj
 ⌅ [9e8cae18] Oceananigans v0.100.7
 ⌅ [08abe8d2] PrettyTables v2.4.0
   [1bc83da4] SafeTestsets v0.1.0
-⌃ [0bca4576] SciMLBase v2.112.0
-  [90137ffa] StaticArrays v1.9.15
-  [49b00bb7] SurfaceFluxes v0.14.1
-  [b60c26fb] Thermodynamics v0.15.2
+⌅ [0bca4576] SciMLBase v2.112.0
+  [90137ffa] StaticArrays v1.9.16
+⌅ [49b00bb7] SurfaceFluxes v0.14.2
+⌅ [b60c26fb] Thermodynamics v0.15.2
   [ddb6d928] YAML v0.4.16
-  [9c32591e] Poppler_jll v24.6.0+0
+⌅ [9c32591e] Poppler_jll v24.6.0+0
 Info Packages marked with ⌃ and ⌅ have new versions available. Those with ⌃ may be upgradable, but those with ⌅ are restricted by compatibility constraints from upgrading. To see why use `status --outdated`
-==PROF== Connected to process 3575139 (/clima/software/julia/julia-1.11.5/bin/julia)
-==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L354": 0%....50%....100% - 51 passes
-==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L354": 0%....50%....100% - 51 passes
-==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L354": 0%....50%....100% - 51 passes
+==PROF== Connected to process 3681196 (/clima/software/julia/julia-1.11.5/bin/julia)
+==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L354": 0%....50%....100% - 50 passes
+==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L354": 0%....50%....100% - 50 passes
+==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L354": 0%....50%....100% - 50 passes
 ==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L354": 0%....50%....100% - 51 passes
 ==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L354": 0%....50%....100% - 51 passes
 ==PROF== Profiling "run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L354": 0%....50%....100% - 51 passes
@@ -115,15 +116,15 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 └ @ Oceananigans ~/.julia/packages/Oceananigans/A56vm/src/Oceananigans.jl:125
 [ Info: Using Atmos configuration from ClimaCoupler in config/atmos_configs/climaatmos_progedmf_1m.yml
 [ Info: Setting up single-process ClimaCoupler run on device: CUDADevice.
-[ Info: Dict{Any, Any}("sleve_eta" => 0.7, "surface_thermo_state_type" => "GCMSurfaceThermoState", "use_coupler_diagnostics" => true, "era5_diurnal_warming" => nothing, "dt" => "30secs", "prognostic_tke" => true, "use_newton_rtol" => false, "netcdf_output_at_levels" => true, "output_dir_style" => "ActiveLink", "external_forcing" => nothing, "device" => "auto", "t_end" => "1200secs", "c_amd" => 0.29, "y_elem" => 6, "z_stretch" => true, "extra_atmos_diagnostics" => Dict{Any, Any}[], "forcing" => nothing, "edmfx_nh_pressure" => true, "era5_initial_condition_dir" => nothing, "conservation_softfail" => false, "check_steady_state" => false, "restart_cache" => true, "update_jacobian_every" => "solve", "test_dycore_consistency" => false, "add_isothermal_boundary_layer" => true, "use_itime" => true, "moist" => "nonequil", "rad" => "allskywithclear", "share_surface_space" => true, "cloud_model" => "quadrature", "initial_condition" => "DecayingProfile", "krylov_rtol" => 0.1, "eisenstat_walker_forcing_alpha" => 2.0, "dt_cloud_fraction" => "1hours", "surface_setup" => "PrescribedSurface", "jvp_step_adjustment" => 1.0, "insolation" => "timevarying", "log_progress" => true, "site_latitude" => 17.0, "h_elem" => 16, "implicit_sgs_nh_pressure" => true, "coupler_toml" => ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl/toml/amip_progedmf_1m.toml"], "netcdf_interpolation_num_points" => nothing, "coupler_output_dir" => "experiments/ClimaEarth/output", "z_max" => 60000.0, "moisture_fixer" => false, "apply_limiter" => false, "precip_model" => "1M", "atmos_log_progress" => false, "surface_temperature" => "ZonallySymmetric", "debug_jacobian" => false, "edmfx_filter" => true, "job_id" => "amip_progedmf_1m_land_he16", "log_to_file" => false, "orographic_gravity_wave" => nothing, "dt_rad" => "600secs", "edmfx_upwinding" => "first_order", "tracer_upwinding" => "vanleer_limiter", "nh_poly" => 3, "edmfx_sgs_diffusive_flux" => true, "y_max" => 300000.0, "non_orographic_gravity_wave" => false, "print_config_dict" => true, "save_cache" => true, "topography_damping_factor" => 5, "config" => "sphere", "reproducibility_test" => false, "component_dt_dict" => Dict("dt_atmos" => 30.0, "dt_land" => 30.0, "dt_seaice" => 30.0, "dt_ocean" => 30.0), "check_conservation" => false, "rmse_check" => false, "land_spun_up_ic" => true, "auto_jacobian_padding_bands" => nothing, "implicit_diffusion" => true, "z_elem" => 63, "implicit_sgs_entr_detr" => true, "use_auto_jacobian" => false, "disable_surface_flux_tendency" => false, "cfsite_number" => "site23", "turbconv" => "prognostic_edmfx", "x_elem" => 6, "idealized_clouds" => false, "edmfx_mse_q_tot_upwinding" => "first_order", "check_nan_every" => 1024, "ice_model" => "prescribed", "subsidence" => nothing, "use_dynamic_krylov_rtol" => false, "reproducible_restart" => false, "toml" => ["toml/longrun_aquaplanet_diagedmf.toml"], "mesh_warp_type" => "SLEVE", "edmfx_detr_model" => "Generalized", "external_forcing_file" => nothing, "topo_smoothing" => true, "hyperdiff" => "CAM_SE", "output_dir" => nothing, "constant_horizontal_diffusion" => false, "scm_coriolis" => nothing, "bubble" => false, "ode_algo" => "ARS343", "max_newton_iters_ode" => 3, "start_date" => "20100101", "time_varying_trace_gases" => ["CO2", "O3"], "use_dense_jacobian" => false, "implicit_noneq_cloud_formation" => false, "scalar_hyperdiffusion_coefficient" => 0.929738, "prognostic_surface" => "false", "detect_restart_file" => false, "edmfx_vertical_diffusion" => true, "restart_file" => nothing, "unique_seed" => false, "rayleigh_sponge" => true, "edmfx_tracer_upwinding" => "first_order", "divergence_damping_factor" => 5.0, "edmfx_entr_model" => "Generalized", "energy_check" => false, "land_model" => "integrated", "use_land_diagnostics" => true, "idealized_h2o" => false, "perturb_initstate" => true, "implicit_sgs_advection" => true, "edmfx_scale_blending" => "SmoothMinimum", "discrete_hydrostatic_balance" => false, "t_start" => "0secs", "dz_bottom" => 30.0, "dt_save_state_to_disk" => "30days", "restart_t" => nothing, "advection_test" => false, "dt_cpl" => "30secs", "checkpoint_dt" => "366days", "topography" => "Earth", "aerosol_radiation" => true, "reference_job_id" => nothing, "perf_summary" => false, "vorticity_hyperdiffusion_coefficient" => 0.1857, "implicit_sgs_mass_flux" => true, "call_cloud_diagnostics_per_stage" => false, "viscous_sponge" => true, "strict_params" => true, "config_file" => "ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml", "bucket_initial_condition" => "", "approximate_linear_solve_iters" => 2, "smagorinsky_lilly" => nothing, "enable_diagnostics" => true, "site_longitude" => -149.0, "evolving_ocean" => true, "implicit_sgs_vertdiff" => true, "prescribe_clouds_in_radiation" => false, "albedo_model" => "CouplerAlbedo", "FLOAT_TYPE" => "Float32", "deep_atmosphere" => true, "split_ode" => true, "amd_les" => false, "updraft_number" => 1, "restart_dir" => nothing, "detect_restart_files" => false, "ls_adv" => nothing, "energy_q_tot_upwinding" => "vanleer_limiter", "prescribed_aerosols" => ["CB1", "CB2", "DST01", "DST02", "DST03", "DST04", "DST05", "OC1", "OC2", "SO4", "SSLT01", "SSLT02", "SSLT03", "SSLT04", "SSLT05"], "dt_nogw" => "1800secs", "output_default_diagnostics" => true, "edmfx_sgs_mass_flux" => true, "x_max" => 300000.0, "radiation_reset_rng_seed" => true, "newton_rtol" => 1.0e-5, "atmos_config_file" => "config/atmos_configs/climaatmos_progedmf_1m.yml", "edmfx_sgsflux_upwinding" => "none", "mode_name" => "amip", "land_temperature_anomaly" => "aquaplanet", "bucket_albedo_type" => "map_static", "vert_diff" => "false", "use_krylov_method" => false, "sleve_s" => 10.0, "prescribed_flow" => nothing)
-[ Info: Output directories experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0030
-[ Info: Coupler artifacts directory experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/artifacts
-[ Info: Coupler checkpoint directory experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/checkpoints
+[ Info: Dict{Any, Any}("sleve_eta" => 0.7, "surface_thermo_state_type" => "GCMSurfaceThermoState", "use_coupler_diagnostics" => true, "era5_diurnal_warming" => nothing, "dt" => "30secs", "prognostic_tke" => true, "use_newton_rtol" => false, "netcdf_output_at_levels" => true, "output_dir_style" => "ActiveLink", "external_forcing" => nothing, "device" => "auto", "t_end" => "1200secs", "c_amd" => 0.29, "y_elem" => 6, "z_stretch" => true, "extra_atmos_diagnostics" => Dict{Any, Any}[], "forcing" => nothing, "edmfx_nh_pressure" => true, "era5_initial_condition_dir" => nothing, "conservation_softfail" => false, "check_steady_state" => false, "restart_cache" => true, "update_jacobian_every" => "solve", "test_dycore_consistency" => false, "add_isothermal_boundary_layer" => true, "use_itime" => true, "moist" => "nonequil", "rad" => "allskywithclear", "share_surface_space" => true, "binary_area_fraction" => true, "cloud_model" => "quadrature", "initial_condition" => "DecayingProfile", "krylov_rtol" => 0.1, "eisenstat_walker_forcing_alpha" => 2.0, "dt_cloud_fraction" => "1hours", "surface_setup" => "PrescribedSurface", "jvp_step_adjustment" => 1.0, "insolation" => "timevarying", "log_progress" => true, "site_latitude" => 17.0, "h_elem" => 16, "implicit_sgs_nh_pressure" => true, "coupler_toml" => ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl/toml/amip_progedmf_1m.toml"], "netcdf_interpolation_num_points" => nothing, "coupler_output_dir" => "output", "z_max" => 60000.0, "moisture_fixer" => false, "apply_limiter" => false, "precip_model" => "1M", "atmos_log_progress" => false, "surface_temperature" => "ZonallySymmetric", "debug_jacobian" => false, "edmfx_filter" => true, "job_id" => "amip_progedmf_1m_land_he16", "log_to_file" => false, "orographic_gravity_wave" => nothing, "dt_rad" => "600secs", "edmfx_upwinding" => "first_order", "tracer_upwinding" => "vanleer_limiter", "nh_poly" => 3, "edmfx_sgs_diffusive_flux" => true, "y_max" => 300000.0, "non_orographic_gravity_wave" => false, "print_config_dict" => true, "save_cache" => true, "topography_damping_factor" => 5, "config" => "sphere", "reproducibility_test" => false, "component_dt_dict" => Dict("dt_atmos" => 30.0, "dt_land" => 30.0, "dt_seaice" => 30.0, "dt_ocean" => 30.0), "check_conservation" => false, "rmse_check" => false, "land_spun_up_ic" => true, "auto_jacobian_padding_bands" => nothing, "implicit_diffusion" => true, "z_elem" => 63, "implicit_sgs_entr_detr" => true, "use_auto_jacobian" => false, "disable_surface_flux_tendency" => false, "cfsite_number" => "site23", "turbconv" => "prognostic_edmfx", "x_elem" => 6, "idealized_clouds" => false, "edmfx_mse_q_tot_upwinding" => "first_order", "check_nan_every" => 1024, "ice_model" => "prescribed", "subsidence" => nothing, "use_dynamic_krylov_rtol" => false, "reproducible_restart" => false, "toml" => ["toml/longrun_aquaplanet_diagedmf.toml"], "mesh_warp_type" => "SLEVE", "edmfx_detr_model" => "Generalized", "external_forcing_file" => nothing, "cloud_nn_architecture" => "arch_2layers_8nodes.jld2", "topo_smoothing" => true, "hyperdiff" => "CAM_SE", "output_dir" => nothing, "constant_horizontal_diffusion" => false, "scm_coriolis" => nothing, "bubble" => false, "ode_algo" => "ARS343", "max_newton_iters_ode" => 3, "start_date" => "20100101", "time_varying_trace_gases" => ["CO2", "O3"], "use_dense_jacobian" => false, "implicit_noneq_cloud_formation" => false, "scalar_hyperdiffusion_coefficient" => 0.929738, "prognostic_surface" => "false", "detect_restart_file" => false, "edmfx_vertical_diffusion" => true, "restart_file" => nothing, "unique_seed" => false, "rayleigh_sponge" => true, "edmfx_tracer_upwinding" => "first_order", "divergence_damping_factor" => 5.0, "edmfx_entr_model" => "Generalized", "energy_check" => false, "land_model" => "integrated", "use_land_diagnostics" => true, "idealized_h2o" => false, "perturb_initstate" => true, "implicit_sgs_advection" => true, "edmfx_scale_blending" => "SmoothMinimum", "discrete_hydrostatic_balance" => false, "t_start" => "0secs", "land_fraction_source" => "etopo", "dz_bottom" => 30.0, "dt_save_state_to_disk" => "30days", "restart_t" => nothing, "advection_test" => false, "dt_cpl" => "30secs", "checkpoint_dt" => "366days", "topography" => "Earth", "aerosol_radiation" => true, "reference_job_id" => nothing, "perf_summary" => false, "vorticity_hyperdiffusion_coefficient" => 0.1857, "implicit_sgs_mass_flux" => true, "call_cloud_diagnostics_per_stage" => false, "viscous_sponge" => true, "strict_params" => true, "config_file" => "ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml", "bucket_initial_condition" => "", "approximate_linear_solve_iters" => 2, "smagorinsky_lilly" => nothing, "enable_diagnostics" => true, "site_longitude" => -149.0, "evolving_ocean" => true, "implicit_sgs_vertdiff" => true, "prescribe_clouds_in_radiation" => false, "albedo_model" => "CouplerAlbedo", "FLOAT_TYPE" => "Float32", "deep_atmosphere" => true, "split_ode" => true, "amd_les" => false, "updraft_number" => 1, "restart_dir" => nothing, "detect_restart_files" => false, "ls_adv" => nothing, "energy_q_tot_upwinding" => "vanleer_limiter", "prescribed_aerosols" => ["CB1", "CB2", "DST01", "DST02", "DST03", "DST04", "DST05", "OC1", "OC2", "SO4", "SSLT01", "SSLT02", "SSLT03", "SSLT04", "SSLT05"], "dt_nogw" => "1800secs", "output_default_diagnostics" => true, "edmfx_sgs_mass_flux" => true, "x_max" => 300000.0, "radiation_reset_rng_seed" => true, "newton_rtol" => 1.0e-5, "atmos_config_file" => "config/atmos_configs/climaatmos_progedmf_1m.yml", "edmfx_sgsflux_upwinding" => "none", "mode_name" => "amip", "land_temperature_anomaly" => "aquaplanet", "bucket_albedo_type" => "map_static", "vert_diff" => "false", "use_krylov_method" => false, "sleve_s" => 10.0, "prescribed_flow" => nothing)
+[ Info: Output directories output/amip_progedmf_1m_land_he16/output_0002
+[ Info: Coupler artifacts directory output/amip_progedmf_1m_land_he16/artifacts
+[ Info: Coupler checkpoint directory output/amip_progedmf_1m_land_he16/checkpoints
 [ Info: Overwriting Atmos parameters from input TOML file(s): ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl/toml/amip_progedmf_1m.toml"]
-┌ Warning: The configuration passed to ClimaAtmos contains unused keys: share_surface_space, use_coupler_diagnostics, bucket_initial_condition, energy_check, use_land_diagnostics, land_model, edmfx_upwinding, atmos_config_file, mode_name, land_temperature_anomaly, evolving_ocean, bucket_albedo_type, save_cache, print_config_dict, extra_atmos_diagnostics, ice_model, coupler_toml, restart_t, coupler_output_dir, dt_cpl, checkpoint_dt, component_dt_dict, atmos_log_progress, conservation_softfail, restart_dir, restart_cache, detect_restart_files, rmse_check, land_spun_up_ic, config_file, unique_seed
-└ @ ClimaAtmos ~/calkit/clima-gpu-profiling/ClimaAtmos.jl/src/solver/yaml_helper.jl:89
+┌ Warning: The configuration passed to ClimaAtmos contains unused keys: share_surface_space, binary_area_fraction, use_coupler_diagnostics, bucket_initial_condition, energy_check, use_land_diagnostics, land_model, edmfx_upwinding, atmos_config_file, mode_name, land_temperature_anomaly, evolving_ocean, bucket_albedo_type, save_cache, print_config_dict, land_fraction_source, extra_atmos_diagnostics, ice_model, coupler_toml, restart_t, coupler_output_dir, dt_cpl, checkpoint_dt, component_dt_dict, atmos_log_progress, conservation_softfail, restart_dir, restart_cache, detect_restart_files, rmse_check, land_spun_up_ic, config_file, unique_seed
+└ @ ClimaAtmos ~/.julia/packages/ClimaAtmos/DthX8/src/solver/yaml_helper.jl:89
 [ Info: Random seed set to 1234
-┌ Warning: Removing experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0030/clima_atmos
+┌ Warning: Removing output/amip_progedmf_1m_land_he16/output_0002/clima_atmos
 └ @ ClimaUtilities.OutputPathGenerator ~/.julia/packages/ClimaUtilities/5ClV5/src/OutputPathGenerator.jl:157
 [ Info: Running on CUDADevice
 [ Info: Setting up single-process ClimaAtmos run
@@ -155,11 +156,9 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 │                            `sponge`::`ClimaAtmos.AtmosSponge{ClimaAtmos.ViscousSponge{Float32}, ClimaAtmos.RayleighSponge{Float32}}`
 │                           `surface`::`ClimaAtmos.AtmosSurface{ClimaAtmos.ZonallySymmetricSST, ClimaAtmos.PrescribedSST, ClimaAtmos.CouplerAlbedo}`
 └                          `numerics`::`ClimaAtmos.AtmosNumerics{Val{:vanleer_limiter}, Val{:vanleer_limiter}, Val{:first_order}, Val{:none}, Val{:first_order}, Nothing, Nothing, Nothing, ClimaAtmos.Implicit, ClimaAtmos.ClimaHyperdiffusion{Float32}}`
-[ Info: Remapping Earth orography from ETOPO2022 data onto horizontal space
-[ Info: SLEVE mesh warp (eta=0.7, s=10.0)
 ┌ Info: Simulation info
 │   job_id = "amip_progedmf_1m_land_he16"
-└   output_dir = "experiments/ClimaEarth/output/amip_progedmf_1m_land_he16/output_0030/clima_atmos"
+└   output_dir = "output/amip_progedmf_1m_land_he16/output_0002/clima_atmos"
 ┌ Info: Simulation Grid: ExtrudedFiniteDifferenceGrid:
 │   horizontal:
 │     context: SingletonCommsContext using CUDADevice
@@ -167,19 +166,17 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 │     quadrature: 4-point Gauss-Legendre-Lobatto quadrature
 │   vertical:
 └     mesh: 63-element IntervalMesh of IntervalDomain: z ∈ [0.0,60000.0] (:bottom, :top)
-[ Info: Allocating Y: 15.955 s (12888836 allocations: 616.82 MiB)
-[ Info: using deep atmosphere
-[ Info: Allocating cache (p): 383.913 s (436551016 allocations: 23.94 GiB)
+[ Info: Allocating Y: 13.12 s (12805949 allocations: 612.54 MiB)
+[ Info: Allocating cache (p): 385.38 s (435134585 allocations: 23.87 GiB)
 [ Info: Using ODE config: `ClimaTimeSteppers.ARS343`
-[ Info: ode_configuration: 675.591 ms (748521 allocations: 36.82 MiB)
-[ Info: Checking NaNs in the state every 1024 steps
-[ Info: get_callbacks: 661.465 ms (724216 allocations: 36.84 MiB)
+[ Info: ode_configuration: 670.47 ms (817934 allocations: 40.46 MiB)
+[ Info: get_callbacks: 582.92 ms (773373 allocations: 39.29 MiB)
 [ Info: Saving accumulated diagnostics to disk with frequency: 1 hour
 [ Info: DictWriter: String[]
 [ Info: HDF5Writer: String[]
 [ Info: NetCDFWriter: ["orog_inst", "ts_1h_min", "ts_1h_max"]
-[ Info: initializing diagnostics: 9.569 s (14583204 allocations: 755.01 MiB)
-[ Info: Prepared SciMLBase.CallbackSet callbacks: 16.905 ms (561 allocations: 27.46 KiB)
+[ Info: initializing diagnostics: 9.466 s (14637932 allocations: 758.11 MiB)
+[ Info: Prepared SciMLBase.CallbackSet callbacks: 17.243 ms (561 allocations: 27.46 KiB)
 [ Info: n_steps_per_cycle_per_cb (non diagnostics): Real[1024, 1, 120//1, 20//1]
 [ Info: n_steps_per_cycle (non diagnostics): 15360//1
 ┌ Info: Jacobian algorithm: ManualSparseJacobian(
@@ -192,15 +189,14 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 │   sgs_vertdiff_flag = ClimaAtmos.UseDerivative(),
 │   approximate_solve_iters = 2,
 └ )
-[ Info: Define ode function: 8.897 s (8432724 allocations: 302.66 MiB)
 ┌ Warning: Setting surface albedo to 0.38 at the beginning of the simulation
-└ @ Main ~/calkit/clima-gpu-profiling/ClimaCoupler.jl/experiments/ClimaEarth/components/atmosphere/climaatmos.jl:109
-[ Info: init integrator: 190.031 s (104072901 allocations: 6.37 GiB)
-[ Info: Added diagnostics: 17.939 s (13091314 allocations: 638.85 MiB)
+└ @ Main ~/calkit/clima-gpu-profiling/ClimaCoupler.jl/experiments/ClimaEarth/components/atmosphere/climaatmos.jl:110
+[ Info: init integrator: 178.264 s (103967641 allocations: 6.36 GiB)
+[ Info: Added diagnostics: 16.838 s (12870238 allocations: 628.22 MiB)
 [ Info: AMIPMode
 [ Info: AMIP/CMIP boundary conditions - do not expect energy conservation
 ┌ Info: ClimaLand: using land IC file
-└   ic_path = "/net/sampo/data1/ClimaArtifacts/artifacts/soil_ic_2008_50m/soil_ic_2008_50m.nc"
+└   ic_path = "/home/pbachant/.julia/artifacts/cc2888b590f5158113b54c75eee3e2f797be8956/saturated_land_ic.nc"
 ┌ Info: PrescribedOcean: using SST file
 └   sst_data = "/net/sampo/data1/ClimaArtifacts/artifacts/historical_sst_sic/MODEL.SST.HAD187001-198110.OI198111-202206.nc"
 ┌ Info: PrescribedIce: using SIC file
@@ -210,8 +206,8 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 ┌ Warning: `update_field!` is not extended for the `liquid_precipitation` field of PrescribedIceSimulation: skipping update.
 └ @ ClimaCoupler.Interfacer ~/calkit/clima-gpu-profiling/ClimaCoupler.jl/src/Interfacer.jl:326
 ┌ Warning: Setting surface albedo to 0.38 at the beginning of the simulation
-└ @ Main ~/calkit/clima-gpu-profiling/ClimaCoupler.jl/experiments/ClimaEarth/components/atmosphere/climaatmos.jl:109
-[ Info: Memory in use: 15.751 GiB
+└ @ Main ~/calkit/clima-gpu-profiling/ClimaCoupler.jl/experiments/ClimaEarth/components/atmosphere/climaatmos.jl:110
+[ Info: Memory in use: 15.705 GiB
 [ Info: Using external CUDA profiler
 [ Info: Step 1 / 3
 [ Info: Step 2 / 3
@@ -225,9 +221,9 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 │   wall_time_spent = "0 seconds"
 │   percent_complete = "10.0%"
 │   estimated_sypd = "Inf"
-│   date_now = 2025-12-19T11:10:43.235
-└   estimated_finish_date = 2025-12-19T11:10:43.235
-==PROF== Disconnected from process 3575139
+│   date_now = 2026-01-18T13:34:37.360
+└   estimated_finish_date = 2026-01-18T13:34:37.360
+==PROF== Disconnected from process 3681196
 ==WARNING== Failed to import the following source files:
 ==WARNING==  abstractarray.jl
 ==WARNING==  boot.jl
