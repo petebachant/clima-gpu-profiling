@@ -76,4 +76,4 @@ and in VS Code, use that when selecting a kernel for the notebook.
 | `ff26f4b1` | Use PCR for tri-diagonal matrix solve. | Seems to be 3% faster, but higher error. May not have isolated changed properly though. |
 | `e6099c2` | Try capping all threads to 256 | 1% slower on flagship. |
 | `23c9104` | Attempt to coalesce memory access in solvers. | 5% slowdown. |
-| `7614ca6` | [Thread block restructuring and LocalGeometry caching](https://github.com/CliMA/ClimaCore.jl/pull/2425) | No significant change. |
+| `7614ca6` | [Thread block restructuring and LocalGeometry caching](https://github.com/CliMA/ClimaCore.jl/pull/2425). | No significant change. |
