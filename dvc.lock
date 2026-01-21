@@ -529,25 +529,25 @@ stages:
     outs:
     - path: .calkit/slurm/logs/baseline-nsys.out
       hash: md5
-      md5: e1b40e2d43dc77af47e5d0e2abd30d8c
-      size: 27317
+      md5: 8e6e85058f7ba9375cb0484dbd231e28
+      size: 27261
     - path: results/nsys/baseline.nsys-rep
       hash: md5
-      md5: 05b31335b06639efd03903cbf2c49ec9
-      size: 26553331
+      md5: 84909e3c5d47bf6b810bf45fb58acf13
+      size: 26515084
   baseline-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/baseline.nsys-rep
       -t sqlite -o results/nsys/baseline.sqlite"'
     deps:
     - path: results/nsys/baseline.nsys-rep
       hash: md5
-      md5: 05b31335b06639efd03903cbf2c49ec9
-      size: 26553331
+      md5: 84909e3c5d47bf6b810bf45fb58acf13
+      size: 26515084
     outs:
     - path: results/nsys/baseline.sqlite
       hash: md5
-      md5: a5524f3346058fdef49037f15f1a025e
-      size: 54497280
+      md5: 74c8a500a313b42d33b06d0055b287d4
+      size: 54398976
   mod-nsys:
     cmd: calkit slurm batch --name mod-nsys --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -568,8 +568,8 @@ stages:
       nfiles: 101
     - path: ClimaCore.jl-mod/ext
       hash: md5
-      md5: bd269ddfbe1e9722bde84829e3b1310c.dir
-      size: 184437
+      md5: a49144773469108f1fdaeefaba4b651c.dir
+      size: 185497
       nfiles: 25
     - path: ClimaCore.jl-mod/lib
       hash: md5
@@ -615,25 +615,25 @@ stages:
     outs:
     - path: .calkit/slurm/logs/mod-nsys.out
       hash: md5
-      md5: 7050d4ed304df0db0386e5d180f11aae
-      size: 27419
+      md5: cf98b20aa4b736176db3a72ee147dea9
+      size: 25472
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: 17c1d3cc5401de013056fd0e5e8db6c3
-      size: 26539868
+      md5: a608857b2de3be3b28096d0feaa55999
+      size: 17033365
   mod-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep -t sqlite
       -o results/nsys/mod.sqlite"'
     deps:
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: 17c1d3cc5401de013056fd0e5e8db6c3
-      size: 26539868
+      md5: a608857b2de3be3b28096d0feaa55999
+      size: 17033365
     outs:
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 1df55fb25733bca9d43e9a8c80b67fea
-      size: 54603776
+      md5: aed10d2fdcbb23f879a374eb7ffd2f7c
+      size: 34992128
   baseline-ncu:
     cmd: calkit slurm batch --name baseline-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl/src --dep 
@@ -727,20 +727,20 @@ stages:
       nfiles: 2
     - path: .calkit/slurm/logs/amip-baseline.out
       hash: md5
-      md5: bfc4ca86bb4f0570421fc85528bb5216
-      size: 28398
+      md5: 712795e0dbe3aa284e57562674611ab7
+      size: 28401
     - path: .calkit/slurm/logs/amip-mod.out
       hash: md5
-      md5: c6f34cb9aa1363c1d49ba0ea8c01aa0e
-      size: 28393
+      md5: c7a3b0eb391d00a6edb20af37e7f7239
+      size: 28553
     - path: results/nsys/baseline.sqlite
       hash: md5
-      md5: a5524f3346058fdef49037f15f1a025e
-      size: 54497280
+      md5: 74c8a500a313b42d33b06d0055b287d4
+      size: 54398976
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 1df55fb25733bca9d43e9a8c80b67fea
-      size: 54603776
+      md5: aed10d2fdcbb23f879a374eb7ffd2f7c
+      size: 34992128
     - path: scripts/summarize.py
       hash: md5
       md5: 5bc2f68d4f1b6c2a14882ec26f39cb5f
@@ -748,8 +748,8 @@ stages:
     outs:
     - path: results/summary.json
       hash: md5
-      md5: c6eced30de58c58d0fdcd0d3726ec831
-      size: 668
+      md5: 56dddfb767b6e0a838a7b08e650153f3
+      size: 681
   mod-ncu:
     cmd: calkit slurm batch --name mod-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -908,8 +908,8 @@ stages:
     outs:
     - path: .calkit/slurm/logs/amip-baseline.out
       hash: md5
-      md5: bfc4ca86bb4f0570421fc85528bb5216
-      size: 28398
+      md5: 712795e0dbe3aa284e57562674611ab7
+      size: 28401
   amip-mod:
     cmd: calkit slurm batch --name amip-mod --environment clima --dep 
       ClimaCoupler.jl-mod/experiments/ClimaEarth/run_amip.jl --dep 
@@ -938,8 +938,8 @@ stages:
       nfiles: 36
     - path: ClimaCore.jl-mod/ext
       hash: md5
-      md5: bd269ddfbe1e9722bde84829e3b1310c.dir
-      size: 184437
+      md5: a49144773469108f1fdaeefaba4b651c.dir
+      size: 185497
       nfiles: 25
     - path: ClimaCore.jl-mod/lib
       hash: md5
@@ -985,5 +985,5 @@ stages:
     outs:
     - path: .calkit/slurm/logs/amip-mod.out
       hash: md5
-      md5: c6f34cb9aa1363c1d49ba0ea8c01aa0e
-      size: 28393
+      md5: c7a3b0eb391d00a6edb20af37e7f7239
+      size: 28553
