@@ -5,7 +5,7 @@ Profiling GPU performance for CliMA.
 To run this project, first install Calkit on the `clima` machine:
 
 ```sh
-curl -LsSf https://github.com/calkit/calkit/raw/refs/heads/main/scripts/install.sh | sh
+curl -LsSf install.calkit.org | sh
 ```
 
 Next,
@@ -60,12 +60,12 @@ and in VS Code, use that when selecting a kernel for the notebook.
 
 ## Submodule branches
 
-- `ClimaCore.jl` --> `pb/rm-nvtx`
-- `ClimaCore.jl-mod` --> `pb/perf`
-- `ClimaCoupler.jl` --> `pb/rm-nvtx`
-- `ClimaCoupler.jl-mod` --> `pb/perf`
-- `ClimaAtmos.jl` --> `pb/rm-nvtx`
-- `ClimaAtmos.jl-mod` --> `pb/perf`
+- `ClimaCore.jl` -->
+- `ClimaCore.jl-mod` -->
+- `ClimaCoupler.jl` --> `pb/investigate-atmos-4231`
+- `ClimaCoupler.jl-mod` --> `pb/investigate-atmos-4231-mod`
+- `ClimaAtmos.jl` -->
+- `ClimaAtmos.jl-mod` -->
 
 ## Experiment results
 
