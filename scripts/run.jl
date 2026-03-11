@@ -5,7 +5,7 @@ import CUDA
 # script
 project_dir = dirname(Base.active_project())
 @info "Active project: $project_dir"
-include(joinpath(project_dir, "setup_run.jl"))
+include(joinpath(project_dir, "code_loading.jl"))
 
 # Get the configuration file from the command line (or manually set it here)
 # For the integrated land model, use:

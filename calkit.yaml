@@ -35,21 +35,12 @@ pipeline:
         - ClimaCoupler.jl/src
         - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
         - ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
-        - ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
-        - ClimaCoupler.jl/experiments/ClimaEarth/components
+        - ClimaCoupler.jl/experiments/ClimaEarth/code_loading.jl
         - ClimaCore.jl/ext
         - ClimaCore.jl/src
         - ClimaCore.jl/lib
       outputs:
         - results/nsys/baseline.nsys-rep
-    baseline-nsys-to-sqlite:
-      kind: shell-command
-      environment: _system
-      command: nsys export results/nsys/baseline.nsys-rep -t sqlite
-        -o results/nsys/baseline.sqlite
-      inputs:
-        - results/nsys/baseline.nsys-rep
-      outputs:
         - results/nsys/baseline.sqlite
     mod-nsys:
       kind: sbatch
@@ -67,22 +58,13 @@ pipeline:
         - ClimaCoupler.jl-mod/src
         - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
         - ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
-        - ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl
-        - ClimaCoupler.jl-mod/experiments/ClimaEarth/components
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth/code_loading.jl
         - ClimaCore.jl-mod/ext
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
       outputs:
         - results/nsys/mod.nsys-rep
-    mod-nsys-to-sqlite:
-      kind: shell-command
-      environment: _system
-      command: nsys export results/nsys/mod.nsys-rep -t sqlite
-        -o results/nsys/mod.sqlite
-      inputs:
-        - results/nsys/mod.nsys-rep
-      outputs:
         - results/nsys/mod.sqlite
     # baseline-ncu:
     #   kind: sbatch
@@ -182,8 +164,7 @@ pipeline:
         - ClimaCoupler.jl/src
         - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
         - ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
-        - ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
-        - ClimaCoupler.jl/experiments/ClimaEarth/components
+        - ClimaCoupler.jl/experiments/ClimaEarth/code_loading.jl
         - ClimaCore.jl/ext
         - ClimaCore.jl/src
         - ClimaCore.jl/lib
@@ -208,8 +189,7 @@ pipeline:
         - ClimaCoupler.jl-mod/src
         - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
         - ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
-        - ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl
-        - ClimaCoupler.jl-mod/experiments/ClimaEarth/components
+        - ClimaCoupler.jl-mod/experiments/ClimaEarth/code_loading.jl
         - ClimaCore.jl-mod/ext
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib

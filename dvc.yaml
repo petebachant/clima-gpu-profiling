@@ -4,11 +4,11 @@ stages:
       --dep scripts/run.jl --dep ClimaCoupler.jl/src --dep 
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --dep ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
-      --dep ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl --dep 
-      ClimaCoupler.jl/experiments/ClimaEarth/components --dep 
-      ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib 
-      --out results/nsys/baseline.nsys-rep -s --gpus=1 -s --time=120 
-      -- scripts/run-nsys.sh results/nsys/baseline 
+      --dep ClimaCoupler.jl/experiments/ClimaEarth/code_loading.jl 
+      --dep ClimaCore.jl/ext --dep ClimaCore.jl/src --dep 
+      ClimaCore.jl/lib --out results/nsys/baseline.nsys-rep --out 
+      results/nsys/baseline.sqlite -s --gpus=1 -s --time=120 -- 
+      scripts/run-nsys.sh results/nsys/baseline 
       ClimaCoupler.jl/experiments/ClimaEarth 
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
@@ -17,40 +17,31 @@ stages:
       - ClimaCoupler.jl/src
       - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       - ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
-      - ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
-      - ClimaCoupler.jl/experiments/ClimaEarth/components
+      - ClimaCoupler.jl/experiments/ClimaEarth/code_loading.jl
       - ClimaCore.jl/ext
       - ClimaCore.jl/src
       - ClimaCore.jl/lib
     outs:
       - results/nsys/baseline.nsys-rep:
           persist: true
+      - results/nsys/baseline.sqlite:
+          persist: true
       - .calkit/slurm/logs/baseline-nsys.out:
           cache: false
           persist: true
     desc: Automatically generated from the 'baseline-nsys' stage in 
       calkit.yaml. Changes made here will be overwritten.
-  baseline-nsys-to-sqlite:
-    cmd: ' bash --noprofile --norc -c "nsys export results/nsys/baseline.nsys-rep
-      -t sqlite -o results/nsys/baseline.sqlite"'
-    deps:
-      - results/nsys/baseline.nsys-rep
-    outs:
-      - results/nsys/baseline.sqlite
-    desc: Automatically generated from the 'baseline-nsys-to-sqlite' 
-      stage in calkit.yaml. Changes made here will be overwritten.
   mod-nsys:
     cmd: calkit slurm batch --name mod-nsys --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --dep 
       ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml 
-      --dep ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl 
-      --dep ClimaCoupler.jl-mod/experiments/ClimaEarth/components 
+      --dep ClimaCoupler.jl-mod/experiments/ClimaEarth/code_loading.jl
       --dep ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
       ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --out 
-      results/nsys/mod.nsys-rep -s --gpus=1 -s --time=120 -- 
-      scripts/run-nsys.sh results/nsys/mod 
+      results/nsys/mod.nsys-rep --out results/nsys/mod.sqlite -s 
+      --gpus=1 -s --time=120 -- scripts/run-nsys.sh results/nsys/mod 
       ClimaCoupler.jl-mod/experiments/ClimaEarth 
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
@@ -59,8 +50,7 @@ stages:
       - ClimaCoupler.jl-mod/src
       - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       - ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
-      - ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl
-      - ClimaCoupler.jl-mod/experiments/ClimaEarth/components
+      - ClimaCoupler.jl-mod/experiments/ClimaEarth/code_loading.jl
       - ClimaCore.jl-mod/ext
       - ClimaCore.jl-mod/src
       - ClimaCore.jl-mod/lib
@@ -68,31 +58,24 @@ stages:
     outs:
       - results/nsys/mod.nsys-rep:
           persist: true
+      - results/nsys/mod.sqlite:
+          persist: true
       - .calkit/slurm/logs/mod-nsys.out:
           cache: false
           persist: true
     desc: Automatically generated from the 'mod-nsys' stage in 
       calkit.yaml. Changes made here will be overwritten.
-  mod-nsys-to-sqlite:
-    cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep
-      -t sqlite -o results/nsys/mod.sqlite"'
-    deps:
-      - results/nsys/mod.nsys-rep
-    outs:
-      - results/nsys/mod.sqlite
-    desc: Automatically generated from the 'mod-nsys-to-sqlite' stage 
-      in calkit.yaml. Changes made here will be overwritten.
   amip-baseline:
     cmd: calkit slurm batch --name amip-baseline --environment clima 
       --dep ClimaCoupler.jl/experiments/ClimaEarth/run_amip.jl --dep 
       ClimaCoupler.jl/src --dep 
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --dep ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
-      --dep ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl --dep 
-      ClimaCoupler.jl/experiments/ClimaEarth/components --dep 
-      ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib 
-      --dep ClimaAtmos.jl/src --dep ClimaAtmos.jl/toml -s --gpus=1 -s 
-      --time=240 -- scripts/run-julia-script.sh 
+      --dep ClimaCoupler.jl/experiments/ClimaEarth/code_loading.jl 
+      --dep ClimaCore.jl/ext --dep ClimaCore.jl/src --dep 
+      ClimaCore.jl/lib --dep ClimaAtmos.jl/src --dep 
+      ClimaAtmos.jl/toml -s --gpus=1 -s --time=240 -- 
+      scripts/run-julia-script.sh 
       --project=ClimaCoupler.jl/experiments/ClimaEarth 
       ClimaCoupler.jl/experiments/ClimaEarth/run_amip.jl --config_file
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -103,8 +86,7 @@ stages:
       - ClimaCoupler.jl/src
       - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       - ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
-      - ClimaCoupler.jl/experiments/ClimaEarth/setup_run.jl
-      - ClimaCoupler.jl/experiments/ClimaEarth/components
+      - ClimaCoupler.jl/experiments/ClimaEarth/code_loading.jl
       - ClimaCore.jl/ext
       - ClimaCore.jl/src
       - ClimaCore.jl/lib
@@ -123,8 +105,7 @@ stages:
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --dep 
       ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml 
-      --dep ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl 
-      --dep ClimaCoupler.jl-mod/experiments/ClimaEarth/components 
+      --dep ClimaCoupler.jl-mod/experiments/ClimaEarth/code_loading.jl
       --dep ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
       ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep 
       ClimaAtmos.jl-mod/toml -s --gpus=1 -s --time=240 -- 
@@ -140,8 +121,7 @@ stages:
       - ClimaCoupler.jl-mod/src
       - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       - ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
-      - ClimaCoupler.jl-mod/experiments/ClimaEarth/setup_run.jl
-      - ClimaCoupler.jl-mod/experiments/ClimaEarth/components
+      - ClimaCoupler.jl-mod/experiments/ClimaEarth/code_loading.jl
       - ClimaCore.jl-mod/ext
       - ClimaCore.jl-mod/src
       - ClimaCore.jl-mod/lib
