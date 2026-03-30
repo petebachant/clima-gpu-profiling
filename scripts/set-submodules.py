@@ -7,8 +7,6 @@ traceability.
 Process:
 1. In ClimaCoupler.jl, checkout main, pull, checkout branch for investigation
    so we can commit our Julia manifest there.
-   Update ClimaParams? Won't be necessary every time, but was the first time
-   I tried.
 2. In ClimaAtmos.jl, checkout main, pull, leave on main. In ClimaCoupler.jl
    dev ClimaAtmos.jl.
 3. In ClimaCore.jl, checkout main, pull, leave on main. In ClimaCoupler.jl,
