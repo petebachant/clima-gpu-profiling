@@ -60,12 +60,7 @@ and in VS Code, use that when selecting a kernel for the notebook.
 
 ## Submodule branches
 
-- `ClimaCore.jl` -->
-- `ClimaCore.jl-mod` -->
-- `ClimaCoupler.jl` --> `pb/investigate-atmos-4231`
-- `ClimaCoupler.jl-mod` --> `pb/investigate-atmos-4231-mod`
-- `ClimaAtmos.jl` -->
-- `ClimaAtmos.jl-mod` -->
+Run `bash scripts/show-submodule-status.sh` to see current statuses.
 
 ## Experiment results
 

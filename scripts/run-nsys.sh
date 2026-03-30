@@ -54,3 +54,6 @@ nsys profile \
     julia --project=$PROJECT_DIR \
     scripts/run.jl \
     $EXTRA_CONFIGS
+
+# Generate stats report
+nsys stats $NSYS_OUTPUT_PREFIX.nsys-rep

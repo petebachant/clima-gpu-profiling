@@ -38,7 +38,7 @@ def get_run_summary(case_name: Literal["baseline", "mod"]) -> dict:
         if found_step_40:
             if "estimated_sypd =" in line:
                 parts = line.strip().split()
-                res["sypd"] = float(parts[-1].replace('"', ""))
+                res["sypd_callback"] = float(parts[-1].replace('"', ""))
             elif "n_steps_completed =" in line:
                 parts = line.strip().split()
                 res["n_steps_completed"] = int(parts[-1])
@@ -46,6 +46,8 @@ def get_run_summary(case_name: Literal["baseline", "mod"]) -> dict:
                 res["wall_time_total"] = (
                     line.split("=")[-1].strip().replace('"', "")
                 )
+        if "Info: SYPD:" in line:
+            res["sypd"] = float(line.strip().split()[-1])
     return res
 
 
