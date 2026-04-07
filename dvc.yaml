@@ -3,21 +3,21 @@ stages:
     cmd: calkit slurm batch --name baseline-nsys --environment clima 
       --dep scripts/run.jl --dep ClimaCoupler.jl/src --dep 
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
-      --dep ClimaCoupler.jl/experiments/ClimaEarth/code_loading.jl 
-      --dep ClimaCore.jl/ext --dep ClimaCore.jl/src --dep 
-      ClimaCore.jl/lib --out results/nsys/baseline.nsys-rep --out 
+      --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep 
+      ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib 
+      --out results/nsys/baseline.nsys-rep --out 
       results/nsys/baseline.sqlite -s --gpus=1 -s --time=120 -- 
       scripts/run-nsys.sh results/nsys/baseline 
-      ClimaCoupler.jl/experiments/ClimaEarth 
+      ClimaCoupler.jl/experiments/AMIP 
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
       - scripts/run-nsys.sh
       - scripts/run.jl
       - ClimaCoupler.jl/src
       - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      - ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
-      - ClimaCoupler.jl/experiments/ClimaEarth/code_loading.jl
+      - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
       - ClimaCore.jl/ext
       - ClimaCore.jl/src
       - ClimaCore.jl/lib
@@ -35,22 +35,21 @@ stages:
     cmd: calkit slurm batch --name mod-nsys --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep 
-      ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml 
-      --dep ClimaCoupler.jl-mod/experiments/ClimaEarth/code_loading.jl
-      --dep ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml 
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
       ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --out 
       results/nsys/mod.nsys-rep --out results/nsys/mod.sqlite -s 
       --gpus=1 -s --time=120 -- scripts/run-nsys.sh results/nsys/mod 
-      ClimaCoupler.jl-mod/experiments/ClimaEarth 
+      ClimaCoupler.jl-mod/experiments/AMIP 
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
       - scripts/run-nsys.sh
       - scripts/run.jl
       - ClimaCoupler.jl-mod/src
       - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      - ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
-      - ClimaCoupler.jl-mod/experiments/ClimaEarth/code_loading.jl
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
       - ClimaCore.jl-mod/ext
       - ClimaCore.jl-mod/src
       - ClimaCore.jl-mod/lib
@@ -67,26 +66,25 @@ stages:
       calkit.yaml. Changes made here will be overwritten.
   amip-baseline:
     cmd: calkit slurm batch --name amip-baseline --environment clima 
-      --dep ClimaCoupler.jl/experiments/ClimaEarth/run_amip.jl --dep 
+      --dep ClimaCoupler.jl/experiments/AMIP/run_simulation.jl --dep 
       ClimaCoupler.jl/src --dep 
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
-      --dep ClimaCoupler.jl/experiments/ClimaEarth/code_loading.jl 
-      --dep ClimaCore.jl/ext --dep ClimaCore.jl/src --dep 
-      ClimaCore.jl/lib --dep ClimaAtmos.jl/src --dep 
-      ClimaAtmos.jl/toml -s --gpus=1 -s --time=240 -- 
-      scripts/run-julia-script.sh 
-      --project=ClimaCoupler.jl/experiments/ClimaEarth 
-      ClimaCoupler.jl/experiments/ClimaEarth/run_amip.jl --config_file
+      --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep 
+      ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib 
+      --dep ClimaAtmos.jl/src --dep ClimaAtmos.jl/toml -s --gpus=1 -s 
+      --time=240 -- scripts/run-julia-script.sh 
+      --project=ClimaCoupler.jl/experiments/AMIP 
+      ClimaCoupler.jl/experiments/AMIP/run_simulation.jl --config_file
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --job_id gpu_amip_progedmf_1M_land_he16_baseline
     deps:
       - scripts/run-julia-script.sh
-      - ClimaCoupler.jl/experiments/ClimaEarth/run_amip.jl
+      - ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
       - ClimaCoupler.jl/src
       - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      - ClimaCoupler.jl/experiments/ClimaEarth/Manifest-v1.11.toml
-      - ClimaCoupler.jl/experiments/ClimaEarth/code_loading.jl
+      - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
       - ClimaCore.jl/ext
       - ClimaCore.jl/src
       - ClimaCore.jl/lib
@@ -100,28 +98,27 @@ stages:
       calkit.yaml. Changes made here will be overwritten.
   amip-mod:
     cmd: calkit slurm batch --name amip-mod --environment clima --dep 
-      ClimaCoupler.jl-mod/experiments/ClimaEarth/run_amip.jl --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl --dep 
       ClimaCoupler.jl-mod/src --dep 
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep 
-      ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml 
-      --dep ClimaCoupler.jl-mod/experiments/ClimaEarth/code_loading.jl
-      --dep ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml 
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
       ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep 
       ClimaAtmos.jl-mod/toml -s --gpus=1 -s --time=240 -- 
       scripts/run-julia-script.sh 
-      --project=ClimaCoupler.jl-mod/experiments/ClimaEarth 
-      ClimaCoupler.jl-mod/experiments/ClimaEarth/run_amip.jl 
+      --project=ClimaCoupler.jl-mod/experiments/AMIP 
+      ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl 
       --config_file 
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --job_id gpu_amip_progedmf_1M_land_he16_mod
     deps:
       - scripts/run-julia-script.sh
-      - ClimaCoupler.jl-mod/experiments/ClimaEarth/run_amip.jl
+      - ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
       - ClimaCoupler.jl-mod/src
       - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      - ClimaCoupler.jl-mod/experiments/ClimaEarth/Manifest-v1.11.toml
-      - ClimaCoupler.jl-mod/experiments/ClimaEarth/code_loading.jl
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
       - ClimaCore.jl-mod/ext
       - ClimaCore.jl-mod/src
       - ClimaCore.jl-mod/lib
