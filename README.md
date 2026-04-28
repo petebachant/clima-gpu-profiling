@@ -2,15 +2,20 @@
 
 Profiling GPU performance for CliMA.
 
-To run this project, first install Calkit on the `clima` machine:
+To run this project, first install Calkit on the `clima` machine
+(this will install in your home directory):
 
 ```sh
 curl -LsSf install.calkit.org | sh
 ```
 
 Next,
-[configure a token for interacting with calkit.io](https://docs.calkit.org/cloud-integration/)
-(where we store version-controlled Nsight reports).
+[authenticate with with calkit.io](https://docs.calkit.org/cloud-integration/)
+(where we store version-controlled Nsight reports):
+
+```sh
+calkit cloud login
+```
 
 If you don't already have an SSH key added to GitHub,
 either follow their documentation or run:
@@ -38,25 +43,17 @@ you can use its name as the first positional argument to `calkit run`.
 For example:
 
 ```sh
-calkit run amip-clima-nsys
+calkit run mod-nsys
 ```
 
 However, by default, only stages whose Nsight reports are now invalid
 (since their inputs have changed since the last run)
 will run.
 
-## Running a Jupyter server on `clima` with `srun`
+## Running a Jupyter notebook with a GPU reserved on `clima`
 
-```sh
-srun --gpus=1 --mpi=none --pty bash
-```
-
-```sh
-calkit jupyter lab --ip=0.0.0.0 --no-browser
-```
-
-Then, copy the server URL, which starts with `http://127.0.0.1`,
-and in VS Code, use that when selecting a kernel for the notebook.
+Use the [Calkit VS Code extension](https://marketplace.visualstudio.com/items?itemName=Calkit.calkit-vscode) to define a `slurm` and `julia` environment
+and attach it to a notebook.
 
 ## Submodule branches
 
