@@ -82,7 +82,8 @@ Note that if Nsight modifies the report after opening, you may need to use
 To create a new project using this one as a template, run:
 
 ```sh
-calkit new project --cloud \
+calkit new project --cloud --public \
+    --title "CliMA GPU profiling" \
     --template petebachant/clima-gpu-profiling \
     your-project-folder-location
 ```
