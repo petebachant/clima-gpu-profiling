@@ -15,6 +15,8 @@ The general process we follow is:
 
 1. Make some modifications to suboptimal kernels.
 2. Run `calkit run mod-nsys` to profile and wait for the SLURM job to finish.
+   You can use `calkit slurm queue` to view the jobs associated with this
+   project.
 3. If the `estimated_sypd` is significantly higher than baseline, run the
    rest of the pipeline with `calkit run`.
    If not, try some more modifications in the `-mod` suffix submodules.
