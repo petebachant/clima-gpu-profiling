@@ -77,6 +77,19 @@ on a machine with a display and open with Nsight.
 Note that if Nsight modifies the report after opening, you may need to use
 `calkit pull -f` to force checking out the newest version in the workspace.
 
+## Use this project as a template
+
+To create a new project using this one as a template, run:
+
+```sh
+calkit new project --cloud \
+    --template petebachant/clima-gpu-profiling \
+    your-project-folder-location
+```
+
+This will create a new project both on GitHub and calkit.io and link them
+together.
+
 ## Running a Jupyter notebook with a GPU reserved on `clima`
 
 Use the [Calkit VS Code extension](https://marketplace.visualstudio.com/items?itemName=Calkit.calkit-vscode) to define a `slurm` and `julia` environment
