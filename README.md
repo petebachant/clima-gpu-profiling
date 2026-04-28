@@ -2,6 +2,8 @@
 
 Profiling GPU performance for CliMA.
 
+## Getting started
+
 To run this project, first install Calkit on the `clima` machine
 (this will install in your home directory):
 
@@ -11,14 +13,17 @@ curl -LsSf install.calkit.org | sh
 
 Next,
 [authenticate with with calkit.io](https://docs.calkit.org/cloud-integration/)
-(where we store version-controlled Nsight reports):
+(where we store version-controlled Nsight reports to avoid bloating the Git
+repo):
 
 ```sh
 calkit cloud login
 ```
 
 If you don't already have an SSH key added to GitHub,
-either follow their documentation or run:
+either follow their
+[documentation](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+or run:
 
 ```sh
 calkit config github-ssh
@@ -30,14 +35,25 @@ Then clone the project:
 calkit clone --ssh petebachant/clima-gpu-profiling
 ```
 
-Lastly, call:
+## Usage
+
+To see if any of the results are "stale," i.e., the code has changed since
+they were last generated, call:
+
+```sh
+calkit status
+```
+
+To run the pipeline (skipping up-to-date stages), call:
 
 ```sh
 calkit run
 ```
 
-This will run all pipeline stages in the order they're defined in
-`calkit.yaml`.
+Stages will be executed in the order they're defined in
+`calkit.yaml`, and `sbatch` stages are robust to disconnects, i.e.,
+if the pipeline is interrupted and run again, it will pick up where it left
+off without submitting new jobs.
 If you'd like to run a single stage (in a reproducible way),
 you can use its name as the first positional argument to `calkit run`.
 For example:
@@ -46,9 +62,20 @@ For example:
 calkit run mod-nsys
 ```
 
-However, by default, only stages whose Nsight reports are now invalid
+However, by default, only stages whose outputs are now invalid
 (since their inputs have changed since the last run)
 will run.
+
+To view the Nsight reports, commit and push them with:
+
+```sh
+calkit save -am "Run with <code changes description>"
+```
+
+Then, run `calkit pull` inside a clone of the repo
+on a machine with a display and open with Nsight.
+Note that if Nsight modifies the report after opening, you may need to use
+`calkit pull -f` to force checking out the newest version in the workspace.
 
 ## Running a Jupyter notebook with a GPU reserved on `clima`
 
