@@ -145,3 +145,19 @@ stages:
           persist: false
     desc: Automatically generated from the 'summarize' stage in 
       calkit.yaml. Changes made here will be overwritten.
+  make-diffs:
+    cmd: bash --noprofile --norc scripts/make-diffs.sh
+    deps:
+      - scripts/make-diffs.sh
+      - ClimaCoupler.jl
+      - ClimaCoupler.jl-mod
+      - ClimaCore.jl
+      - ClimaCore.jl-mod
+      - ClimaAtmos.jl
+      - ClimaAtmos.jl-mod
+    outs:
+      - diffs:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'make-diffs' stage in 
+      calkit.yaml. Changes made here will be overwritten.

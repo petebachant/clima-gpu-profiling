@@ -1,0 +1,33 @@
+diff --git a/ClimaCore.jl/src/Fields/Fields.jl b/ClimaCore.jl-mod/src/Fields/Fields.jl
+index 6f2b675..087bd2c 100644
+--- a/ClimaCore.jl/src/Fields/Fields.jl
++++ b/ClimaCore.jl-mod/src/Fields/Fields.jl
+@@ -464,7 +464,14 @@ function Spaces.weighted_dss!(
+         )
+     end
+ 
+-    cuda_synchronize(device; blocking = true)
++    needs_sync =
++        dss_buffer1 isa Topologies.DSSBuffer &&
++        !isempty(dss_buffer1.perimeter_elems) ||
++        any(
++            b isa Topologies.DSSBuffer && !isempty(b.perimeter_elems)
++            for (_, b) in field_buffer_pairs
++        )
++    needs_sync && cuda_synchronize(device; blocking = true)
+     dss_buffer1 isa Topologies.DSSBuffer &&
+         ClimaComms.start(dss_buffer1.graph_context)
+     for (field, dss_buffer) in field_buffer_pairs
+diff --git a/ClimaCore.jl/src/Spaces/dss.jl b/ClimaCore.jl-mod/src/Spaces/dss.jl
+index 2c117ea..09d9a62 100644
+--- a/ClimaCore.jl/src/Spaces/dss.jl
++++ b/ClimaCore.jl-mod/src/Spaces/dss.jl
+@@ -179,7 +179,7 @@ function weighted_dss_start!(
+     sizeof(eltype(data)) > 0 || return nothing
+     device = ClimaComms.device(topology(space))
+     weighted_dss_prepare!(data, space, dss_buffer)
+-    cuda_synchronize(device; blocking = true)
++    isempty(dss_buffer.perimeter_elems) || cuda_synchronize(device; blocking = true)
+     ClimaComms.start(dss_buffer.graph_context)
+     return nothing
+ end
