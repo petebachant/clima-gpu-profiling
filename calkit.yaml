@@ -207,3 +207,17 @@ pipeline:
       outputs:
         - path: results/summary.json
           storage: git
+    make-diffs:
+      kind: shell-script
+      environment: _system
+      script_path: scripts/make-diffs.sh
+      inputs:
+        - ClimaCoupler.jl
+        - ClimaCoupler.jl-mod
+        - ClimaCore.jl
+        - ClimaCore.jl-mod
+        - ClimaAtmos.jl
+        - ClimaAtmos.jl-mod
+      outputs:
+        - path: diffs
+          storage: git
