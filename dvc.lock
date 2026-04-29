@@ -523,16 +523,16 @@ stages:
     outs:
     - path: .calkit/slurm/logs/baseline-nsys.out
       hash: md5
-      md5: f0f6b737645b321f75b58bc6a72f34ef
-      size: 135374
+      md5: 60af4ae06e9922ca2ead77da9fe093a2
+      size: 134209
     - path: results/nsys/baseline.nsys-rep
       hash: md5
-      md5: 31c1a69ddcdf3cf96db737d0ba28822a
-      size: 28532620
+      md5: efe1e799ca21c2b0f551cd24b51fa0ed
+      size: 28399135
     - path: results/nsys/baseline.sqlite
       hash: md5
-      md5: 663f7d1b3befd05d07ca5e8a993dba30
-      size: 59039744
+      md5: 84cbd37d316a23d39a4b2998cc06acc2
+      size: 58744832
   baseline-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/baseline.nsys-rep
       -t sqlite -o results/nsys/baseline.sqlite"'
@@ -575,8 +575,8 @@ stages:
       nfiles: 58
     - path: ClimaCore.jl-mod/src
       hash: md5
-      md5: 206fca55ba2d04a2dbc071bf9c1ef89b.dir
-      size: 1188440
+      md5: 7e2a7d88a81989e5d15e83478af44579.dir
+      size: 1188485
       nfiles: 97
     - path: 
         ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -607,16 +607,16 @@ stages:
     outs:
     - path: .calkit/slurm/logs/mod-nsys.out
       hash: md5
-      md5: dd59ef1805ff130b87c5d6f0549a3e91
-      size: 133224
+      md5: 9b8e369288a0f4a735c608571dee4af7
+      size: 134876
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: c4843e23b3ab99be5f8a9502b9c9cfc9
-      size: 28565955
+      md5: 4ed6f0d6516ec728cf959886cad1f4ce
+      size: 28612062
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 722e87e32e07f6207ca5075054a7938b
-      size: 58462208
+      md5: c37881754331068171e34b7683965fd5
+      size: 58433536
   mod-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep -t sqlite
       -o results/nsys/mod.sqlite"'
@@ -727,16 +727,16 @@ stages:
       size: 44773
     - path: .calkit/slurm/logs/amip-mod.out
       hash: md5
-      md5: dcedc05ec24a05f7a108fd321e9b4280
-      size: 44773
+      md5: f76fc32d3f3e5d37f77588effeec4da6
+      size: 44779
     - path: results/nsys/baseline.sqlite
       hash: md5
-      md5: 663f7d1b3befd05d07ca5e8a993dba30
-      size: 59039744
+      md5: 84cbd37d316a23d39a4b2998cc06acc2
+      size: 58744832
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 722e87e32e07f6207ca5075054a7938b
-      size: 58462208
+      md5: c37881754331068171e34b7683965fd5
+      size: 58433536
     - path: scripts/summarize.py
       hash: md5
       md5: c4cb57ce18f4352627b9b8f01f07ac2b
@@ -744,8 +744,8 @@ stages:
     outs:
     - path: results/summary.json
       hash: md5
-      md5: 8887bae8911f09272ee6e390a4eec14c
-      size: 767
+      md5: 62d1f66ceb6b93dc2232cc8edbcb7b7b
+      size: 766
   mod-ncu:
     cmd: calkit slurm batch --name mod-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -936,8 +936,8 @@ stages:
       nfiles: 58
     - path: ClimaCore.jl-mod/src
       hash: md5
-      md5: 206fca55ba2d04a2dbc071bf9c1ef89b.dir
-      size: 1188440
+      md5: 7e2a7d88a81989e5d15e83478af44579.dir
+      size: 1188485
       nfiles: 97
     - path: 
         ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -968,8 +968,8 @@ stages:
     outs:
     - path: .calkit/slurm/logs/amip-mod.out
       hash: md5
-      md5: dcedc05ec24a05f7a108fd321e9b4280
-      size: 44773
+      md5: f76fc32d3f3e5d37f77588effeec4da6
+      size: 44779
   make-diffs:
     cmd: bash --noprofile --norc scripts/make-diffs.sh
     deps:
@@ -990,8 +990,8 @@ stages:
       nfiles: 552
     - path: ClimaCore.jl-mod
       hash: md5
-      md5: db47978eaa718baf711512729501682e.dir
-      size: 4700656
+      md5: a7bc3cee6d0cacf18aa35a10d9b6ac8b.dir
+      size: 4700701
       nfiles: 553
     - path: ClimaCoupler.jl
       hash: md5
@@ -1011,6 +1011,6 @@ stages:
     outs:
     - path: diffs
       hash: md5
-      md5: 18f22b0a0bc377f8c91ff7ac666581c9.dir
-      size: 3081
+      md5: 2b2be2f64491c0c707ff2ef4ad865af9.dir
+      size: 3787
       nfiles: 3

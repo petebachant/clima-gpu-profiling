@@ -18,6 +18,19 @@ index 6f2b675..087bd2c 100644
      dss_buffer1 isa Topologies.DSSBuffer &&
          ClimaComms.start(dss_buffer1.graph_context)
      for (field, dss_buffer) in field_buffer_pairs
+diff --git a/ClimaCore.jl/src/Remapping/distributed_remapping.jl b/ClimaCore.jl-mod/src/Remapping/distributed_remapping.jl
+index b361cf9..e1098a5 100644
+--- a/ClimaCore.jl/src/Remapping/distributed_remapping.jl
++++ b/ClimaCore.jl-mod/src/Remapping/distributed_remapping.jl
+@@ -1030,7 +1030,7 @@ function _collect_interpolated_values!(
+     index_field_end::Int;
+     only_one_field,
+ )
+-    cuda_synchronize(ClimaComms.device(remapper.comms_ctx))   # Sync streams before MPI calls
++    ClimaComms.nprocs(remapper.comms_ctx) > 1 && cuda_synchronize(ClimaComms.device(remapper.comms_ctx))   # Sync streams before MPI calls
+     if only_one_field
+         ClimaComms.reduce!(
+             remapper.comms_ctx,
 diff --git a/ClimaCore.jl/src/Spaces/dss.jl b/ClimaCore.jl-mod/src/Spaces/dss.jl
 index 2c117ea..09d9a62 100644
 --- a/ClimaCore.jl/src/Spaces/dss.jl
