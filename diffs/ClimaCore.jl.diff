@@ -45,10 +45,10 @@ index ced5990..3bc5d11 100644
      else
          launch_fused_copyto!(fmb)
 diff --git a/ClimaCore.jl/ext/cuda/matrix_fields_single_field_solve.jl b/ClimaCore.jl-mod/ext/cuda/matrix_fields_single_field_solve.jl
-index b32000f..ea87315 100644
+index fbb2ed5..56a0d2b 100644
 --- a/ClimaCore.jl/ext/cuda/matrix_fields_single_field_solve.jl
 +++ b/ClimaCore.jl-mod/ext/cuda/matrix_fields_single_field_solve.jl
-@@ -7,14 +7,25 @@ import ClimaCore.Fields
+@@ -7,13 +7,24 @@ import ClimaCore.Fields
  import ClimaCore.Spaces
  import ClimaCore.Topologies
  import ClimaCore.MatrixFields
@@ -57,7 +57,6 @@ index b32000f..ea87315 100644
  import ClimaCore.MatrixFields: single_field_solve!
  import ClimaCore.MatrixFields: _single_field_solve!
  import ClimaCore.MatrixFields: band_matrix_solve!, unzip_tuple_field_values
- import ClimaCore.RecursiveApply: ⊠, ⊞, ⊟, rmap, rzero, rdiv
  
  function single_field_solve!(device::ClimaComms.CUDADevice, cache, x, A, b)
 -    Ni, Nj, _, _, Nh = size(Fields.field_values(A))
@@ -76,7 +75,7 @@ index b32000f..ea87315 100644
      us = UniversalSize(Fields.field_values(A))
      mask = Spaces.get_mask(axes(x))
      cart_inds = cartesian_indices_columnwise(us)
-@@ -211,3 +222,116 @@ function band_matrix_solve_local_mem!(
+@@ -210,3 +221,116 @@ function band_matrix_solve_local_mem!(
      end
      return nothing
  end
@@ -121,14 +120,14 @@ index b32000f..ea87315 100644
 +
 +        # Compute elimination factors
 +        @inbounds begin
-+            k1 = (i > stride) ? -local_ai ⊠ inv(s_b[i_minus]) : zero(eltype(a))
-+            k2 = (i <= Nv - stride) ? -local_ci ⊠ inv(s_b[i_plus]) : zero(eltype(a))
++            k1 = (i > stride) ? -local_ai * inv(s_b[i_minus]) : zero(eltype(a))
++            k2 = (i <= Nv - stride) ? -local_ci * inv(s_b[i_plus]) : zero(eltype(a))
 +
 +            # Update coefficients
-+            local_ai = k1 ⊠ s_a[i_minus]
-+            local_bi = local_bi ⊞ k1 ⊠ s_c[i_minus] ⊞ k2 ⊠ s_a[i_plus]
-+            local_ci = k2 ⊠ s_c[i_plus]
-+            local_di = local_di ⊞ k1 ⊠ s_d[i_minus] ⊞ k2 ⊠ s_d[i_plus]
++            local_ai = k1 * s_a[i_minus]
++            local_bi = local_bi + k1 * s_c[i_minus] + k2 * s_a[i_plus]
++            local_ci = k2 * s_c[i_plus]
++            local_di = local_di + k1 * s_d[i_minus] + k2 * s_d[i_plus]
 +        end
 +
 +        CUDA.sync_threads()
@@ -146,7 +145,7 @@ index b32000f..ea87315 100644
 +    end
 +
 +    #  Final solve into x
-+    @inbounds x[idx] = inv(s_b[i]) ⊠ s_d[i]
++    @inbounds x[idx] = inv(s_b[i]) * s_d[i]
 +    return nothing
 +end
 +
@@ -237,7 +236,7 @@ index e5e8cda..fce78b9 100644
      )
      # check_fused_broadcast_axes(fmbc) # we should already have checked the axes
 diff --git a/ClimaCore.jl/src/Fields/Fields.jl b/ClimaCore.jl-mod/src/Fields/Fields.jl
-index 6f2b675..087bd2c 100644
+index efeb824..0b9d4a9 100644
 --- a/ClimaCore.jl/src/Fields/Fields.jl
 +++ b/ClimaCore.jl-mod/src/Fields/Fields.jl
 @@ -464,7 +464,14 @@ function Spaces.weighted_dss!(
@@ -304,6 +303,71 @@ index 90634a1..59c0f9b 100644
          foreach(names) do name
              single_field_solve!(cache[name], x[name], A[name, name], b[name])
          end
+diff --git a/ClimaCore.jl/src/MatrixFields/field_name_dict.jl b/ClimaCore.jl-mod/src/MatrixFields/field_name_dict.jl
+index 589f16e..2829bd7 100644
+--- a/ClimaCore.jl/src/MatrixFields/field_name_dict.jl
++++ b/ClimaCore.jl-mod/src/MatrixFields/field_name_dict.jl
+@@ -971,18 +971,54 @@ Base.Broadcast.materialize!(
+     vector_or_matrix::FieldNameDict,
+ ) = Base.Broadcast.materialize!(field_vector_view(dest), vector_or_matrix)
+ 
++# Pairs are eligible for fused multi-broadcast when both sides are plain Fields
++# of the same concrete type (so axes / data layout / element type all match) —
++# this keeps the GPU codegen for `_newindex` static.
++@inline _is_fusable_pair(dest_entry::F, entry::F) where {F <: Fields.Field} =
++    true
++@inline _is_fusable_pair(_, _) = false
++
+ NVTX.@annotate function copyto_foreach!(
+     dest::FieldNameDict,
+     vector_or_matrix::FieldNameDict,
+ )
+-    foreach(keys(vector_or_matrix)) do key
+-        entry = vector_or_matrix[key]
+-        if dest[key] isa ScalingFieldMatrixEntry
+-            dest[key] == entry || error("matrix entry at $key is immutable")
++    key_values = keys(vector_or_matrix).values
++    triples = unrolled_map(key_values) do key
++        (key, dest[key], vector_or_matrix[key])
++    end
++    fusable = unrolled_filter(triples) do t
++        _is_fusable_pair(t[2], t[3])
++    end
++    non_fusable = unrolled_filter(triples) do t
++        !_is_fusable_pair(t[2], t[3])
++    end
++    # All fusable triples must share the same concrete destination type for
++    # FusedMultiBroadcast (its `check_mismatched_spaces` requires uniform space
++    # types across pairs, and uniform `_newindex` types across pairs).
++    uniform_fusable = if length(fusable) > 1
++        F1 = typeof(fusable[1][2])
++        unrolled_all(t -> typeof(t[2]) === F1, fusable)
++    else
++        false
++    end
++    if uniform_fusable
++        pairs = unrolled_map(fusable) do t
++            Pair(t[2], Base.broadcasted(identity, t[3]))
++        end
++        Base.copyto!(Fields.FusedMultiBroadcast(pairs))
++    else
++        unrolled_foreach(fusable) do t
++            t[2] .= t[3]
++        end
++    end
++    unrolled_foreach(non_fusable) do t
++        key, dest_entry, entry = t
++        if dest_entry isa ScalingFieldMatrixEntry
++            dest_entry == entry || error("matrix entry at $key is immutable")
+         elseif entry isa ScalingFieldMatrixEntry
+-            dest[key] .= (entry,)
++            dest_entry .= (entry,)
+         else
+-            dest[key] .= entry
++            dest_entry .= entry
+         end
+     end
+ end
 diff --git a/ClimaCore.jl/src/Remapping/distributed_remapping.jl b/ClimaCore.jl-mod/src/Remapping/distributed_remapping.jl
 index b361cf9..41f1761 100644
 --- a/ClimaCore.jl/src/Remapping/distributed_remapping.jl
@@ -348,10 +412,10 @@ index b361cf9..41f1761 100644
          ClimaComms.reduce!(
              remapper.comms_ctx,
 diff --git a/ClimaCore.jl/src/Spaces/dss.jl b/ClimaCore.jl-mod/src/Spaces/dss.jl
-index 2c117ea..eff1c96 100644
+index bd204a2..7ec109b 100644
 --- a/ClimaCore.jl/src/Spaces/dss.jl
 +++ b/ClimaCore.jl-mod/src/Spaces/dss.jl
-@@ -74,7 +74,7 @@ end
+@@ -73,7 +73,7 @@ end
          dss_buffer::Union{DSSBuffer, Nothing},
      )
  
@@ -360,7 +424,7 @@ index 2c117ea..eff1c96 100644
  
  It comprises of the following steps:
  
-@@ -154,14 +154,14 @@ cuda_synchronize(device::ClimaComms.AbstractDevice; kwargs...) = nothing
+@@ -151,14 +151,14 @@ cuda_synchronize(device::ClimaComms.AbstractDevice; kwargs...) = nothing
  
  It comprises of the following steps:
  
@@ -378,7 +442,7 @@ index 2c117ea..eff1c96 100644
  Loads the send buffer from `perimeter_data`. For unique ghost vertices, only data from the
  representative ghost vertices which store result of "ghost local" DSS are loaded.
  
-@@ -179,7 +179,7 @@ function weighted_dss_start!(
+@@ -176,7 +176,7 @@ function weighted_dss_start!(
      sizeof(eltype(data)) > 0 || return nothing
      device = ClimaComms.device(topology(space))
      weighted_dss_prepare!(data, space, dss_buffer)
@@ -387,7 +451,7 @@ index 2c117ea..eff1c96 100644
      ClimaComms.start(dss_buffer.graph_context)
      return nothing
  end
-@@ -206,7 +206,7 @@ weighted_dss_start!(data, space, dss_buffer::Nothing) = nothing
+@@ -203,7 +203,7 @@ weighted_dss_start!(data, space, dss_buffer::Nothing) = nothing
          dss_buffer::DSSBuffer,
      )
  
@@ -396,7 +460,7 @@ index 2c117ea..eff1c96 100644
  and perimeter elements to facilitate overlapping of communication with computation.
  
  2). Probe communication
-@@ -289,8 +289,8 @@ end
+@@ -285,8 +285,8 @@ end
  1). Finish communications.
  
  2). Call [`Spaces.load_from_recv_buffer!`](@ref)
@@ -407,34 +471,3 @@ index 2c117ea..eff1c96 100644
  then scattered to other local vertices corresponding to each unique ghost vertex in `dss_local_ghost`.
  
  3). Call [`Spaces.dss_untransform!`](@ref) on all local elements.
-diff --git a/ClimaCore.jl/test/gpu/latency_benchmarks.jl b/ClimaCore.jl-mod/test/gpu/latency_benchmarks.jl
-index 090a471..dd1cd68 100644
---- a/ClimaCore.jl/test/gpu/latency_benchmarks.jl
-+++ b/ClimaCore.jl-mod/test/gpu/latency_benchmarks.jl
-@@ -31,7 +31,7 @@ import LazyBroadcast: lazy
-     latency = median(@benchmark $scalar_field_1 .= $scalar_field_1 .+ $scalar_field_2).time
-     # update this value if the kernel launch time changes significantly and it is expected
-     baseline_latency = 20500
--    @test latency ≈ baseline_latency atol = 4000
-+    @test latency ≈ baseline_latency atol = 3000
-     percent_change_latency =
-         round(Int, (latency - baseline_latency) / baseline_latency * 100)
-     @info "Latency: $latency ns, Percent change from baseline: $percent_change_latency%"
-@@ -45,7 +45,7 @@ import LazyBroadcast: lazy
-         ).time
-     # update this value if the kernel launch time changes significantly and it is expected
-     baseline_latency = 22500
--    @test latency ≈ baseline_latency atol = 4000
-+    @test latency ≈ baseline_latency atol = 3000
-     percent_change_latency =
-         round(Int, (latency - baseline_latency) / baseline_latency * 100)
-     @info "Latency: $latency ns, Percent change from baseline: $percent_change_latency%"
-@@ -58,7 +58,7 @@ import LazyBroadcast: lazy
-     latency = median(@benchmark $scalar_field_1 .= $lazy_sum_3).time
-     # update this value if the kernel launch time changes significantly and it is expected
-     baseline_latency = 29000
--    @test latency ≈ baseline_latency atol = 4000
-+    @test latency ≈ baseline_latency atol = 3000
-     percent_change_latency =
-         round(Int, (latency - baseline_latency) / baseline_latency * 100)
-     @info "Latency: $latency ns, Percent change from baseline: $percent_change_latency%"
