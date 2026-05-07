@@ -17,11 +17,20 @@ config_file = Input.parse_commandline(Input.argparse_settings())["config_file"]
 # Set up and run the coupled simulation
 cs = CoupledSimulation(config_file)
 
-# Run a single step to compile
-step!(cs)
+# Run a few warmup steps so JIT compilation, kernel caches, and any
+# step-dependent code paths (e.g. variable Newton iteration counts) settle
+# before profiling. Earlier we used a single warmup step, but the captured
+# window then reflected first-call costs that don't recur in steady-state
+# runs and skewed per-kernel times relative to long simulations.
+n_warmup_steps = 3
+for i in 1:n_warmup_steps
+    @info "Warmup step $i / $n_warmup_steps"
+    step!(cs)
+end
 
-# Now profile
-n_steps = 5
+# Now profile a window large enough that one-shot per-step variation
+# averages out and steady-state kernel times dominate.
+n_steps = 10
 use_external_profiler = CUDA.Profile.detect_cupti()
 if use_external_profiler
     @info "Using external CUDA profiler"

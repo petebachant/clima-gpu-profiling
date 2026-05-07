@@ -67,69 +67,73 @@ pipeline:
       outputs:
         - results/nsys/mod.nsys-rep
         - results/nsys/mod.sqlite
-    baseline-ncu:
-      kind: sbatch
-      environment: clima
-      script_path: scripts/run-ncu.sh
-      sbatch_options:
-        - --gpus=1
-        - --time=120
-      args:
-        - results/ncu/baseline
-        - --kernel-name
-        - set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1021
-        - --project
-        - ClimaCoupler.jl/experiments/AMIP
-        - --config
-        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - --launch-count
-        - "6"
-      inputs:
-        - scripts/run.jl
-        - ClimaCoupler.jl/src
-        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
-        - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
-        - ClimaCore.jl/ext
-        - ClimaCore.jl/src
-        - ClimaCore.jl/lib
-        - ClimaAtmos.jl/src
-      outputs:
-        - results/ncu/baseline.ncu-rep
-        - path: results/ncu/baseline-details.csv
-          storage: git
-    mod-ncu:
-      kind: sbatch
-      environment: clima
-      script_path: scripts/run-ncu.sh
-      sbatch_options:
-        - --gpus=1
-        - --time=120
-      args:
-        - results/ncu/mod
-        - --kernel-name
-        - set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1021
-        - --project
-        - ClimaCoupler.jl-mod/experiments/AMIP
-        - --config
-        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - --launch-count
-        - "6"
-      inputs:
-        - scripts/run.jl
-        - ClimaCoupler.jl-mod/src
-        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
-        - ClimaCore.jl-mod/ext
-        - ClimaCore.jl-mod/src
-        - ClimaCore.jl-mod/lib
-        - ClimaAtmos.jl-mod/src
-        - CloudMicrophysics.jl-mod/src
-      outputs:
-        - results/ncu/mod.ncu-rep
-        - path: results/ncu/mod-details.csv
-          storage: git
+    # baseline-ncu:
+    #   kind: sbatch
+    #   environment: clima
+    #   script_path: scripts/run-ncu.sh
+    #   sbatch_options:
+    #     - --gpus=1
+    #     - --time=120
+    #   args:
+    #     - results/ncu/baseline
+    #     - --kernel-name
+    #     - set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1021
+    #     - --project
+    #     - ClimaCoupler.jl/experiments/AMIP
+    #     - --config
+    #     - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+    #     - --launch-skip
+    #     - "3"
+    #     - --launch-count
+    #     - "6"
+    #   inputs:
+    #     - scripts/run.jl
+    #     - ClimaCoupler.jl/src
+    #     - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+    #     - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+    #     - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
+    #     - ClimaCore.jl/ext
+    #     - ClimaCore.jl/src
+    #     - ClimaCore.jl/lib
+    #     - ClimaAtmos.jl/src
+    #   outputs:
+    #     - results/ncu/baseline.ncu-rep
+    #     - path: results/ncu/baseline-details.csv
+    #       storage: git
+    # mod-ncu:
+    #   kind: sbatch
+    #   environment: clima
+    #   script_path: scripts/run-ncu.sh
+    #   sbatch_options:
+    #     - --gpus=1
+    #     - --time=120
+    #   args:
+    #     - results/ncu/mod
+    #     - --kernel-name
+    #     - set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1021
+    #     - --project
+    #     - ClimaCoupler.jl-mod/experiments/AMIP
+    #     - --config
+    #     - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+    #     - --launch-skip
+    #     - "3"
+    #     - --launch-count
+    #     - "6"
+    #   inputs:
+    #     - scripts/run.jl
+    #     - ClimaCoupler.jl-mod/src
+    #     - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+    #     - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+    #     - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+    #     - ClimaCore.jl-mod/ext
+    #     - ClimaCore.jl-mod/src
+    #     - ClimaCore.jl-mod/lib
+    #     - ClimaAtmos.jl-mod/src
+    #     - CloudMicrophysics.jl-mod/src
+    #   outputs:
+    #     - results/ncu/mod.ncu-rep
+    #     - path: results/ncu/mod-details.csv
+    #       storage: git
     # A stage to run a bit longer for a better picture of performance differences
     amip-baseline:
       kind: sbatch
