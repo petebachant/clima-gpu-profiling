@@ -38,9 +38,10 @@ stages:
       --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml 
       --dep ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
       ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
-      ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --out 
-      results/nsys/mod.nsys-rep --out results/nsys/mod.sqlite -s 
-      --gpus=1 -s --time=120 -- scripts/run-nsys.sh results/nsys/mod 
+      ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep 
+      CloudMicrophysics.jl-mod/src --out results/nsys/mod.nsys-rep 
+      --out results/nsys/mod.sqlite -s --gpus=1 -s --time=120 -- 
+      scripts/run-nsys.sh results/nsys/mod 
       ClimaCoupler.jl-mod/experiments/AMIP 
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
@@ -54,6 +55,7 @@ stages:
       - ClimaCore.jl-mod/src
       - ClimaCore.jl-mod/lib
       - ClimaAtmos.jl-mod/src
+      - CloudMicrophysics.jl-mod/src
     outs:
       - results/nsys/mod.nsys-rep:
           persist: true
@@ -63,6 +65,80 @@ stages:
           cache: false
           persist: true
     desc: Automatically generated from the 'mod-nsys' stage in 
+      calkit.yaml. Changes made here will be overwritten.
+  baseline-ncu:
+    cmd: calkit slurm batch --name baseline-ncu --environment clima 
+      --dep scripts/run.jl --dep ClimaCoupler.jl/src --dep 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep 
+      ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib 
+      --dep ClimaAtmos.jl/src --out results/ncu/baseline.ncu-rep --out
+      results/ncu/baseline-details.csv -s --gpus=1 -s --time=120 -- 
+      scripts/run-ncu.sh results/ncu/baseline --kernel-name 
+      set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1021
+      --project ClimaCoupler.jl/experiments/AMIP --config 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --launch-count 6
+    deps:
+      - scripts/run-ncu.sh
+      - scripts/run.jl
+      - ClimaCoupler.jl/src
+      - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
+      - ClimaCore.jl/ext
+      - ClimaCore.jl/src
+      - ClimaCore.jl/lib
+      - ClimaAtmos.jl/src
+    outs:
+      - results/ncu/baseline.ncu-rep:
+          persist: true
+      - results/ncu/baseline-details.csv:
+          cache: false
+          persist: true
+      - .calkit/slurm/logs/baseline-ncu.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'baseline-ncu' stage in 
+      calkit.yaml. Changes made here will be overwritten.
+  mod-ncu:
+    cmd: calkit slurm batch --name mod-ncu --environment clima --dep 
+      scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml 
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
+      ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep 
+      CloudMicrophysics.jl-mod/src --out results/ncu/mod.ncu-rep --out
+      results/ncu/mod-details.csv -s --gpus=1 -s --time=120 -- 
+      scripts/run-ncu.sh results/ncu/mod --kernel-name 
+      set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1021
+      --project ClimaCoupler.jl-mod/experiments/AMIP --config 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --launch-count 6
+    deps:
+      - scripts/run-ncu.sh
+      - scripts/run.jl
+      - ClimaCoupler.jl-mod/src
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCore.jl-mod/ext
+      - ClimaCore.jl-mod/src
+      - ClimaCore.jl-mod/lib
+      - ClimaAtmos.jl-mod/src
+      - CloudMicrophysics.jl-mod/src
+    outs:
+      - results/ncu/mod.ncu-rep:
+          persist: true
+      - results/ncu/mod-details.csv:
+          cache: false
+          persist: true
+      - .calkit/slurm/logs/mod-ncu.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'mod-ncu' stage in 
       calkit.yaml. Changes made here will be overwritten.
   amip-baseline:
     cmd: calkit slurm batch --name amip-baseline --environment clima 
@@ -105,8 +181,8 @@ stages:
       --dep ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
       ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
       ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep 
-      ClimaAtmos.jl-mod/toml -s --gpus=1 -s --time=240 -- 
-      scripts/run-julia-script.sh 
+      ClimaAtmos.jl-mod/toml --dep CloudMicrophysics.jl-mod/src -s 
+      --gpus=1 -s --time=240 -- scripts/run-julia-script.sh 
       --project=ClimaCoupler.jl-mod/experiments/AMIP 
       ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl 
       --config_file 
@@ -124,6 +200,7 @@ stages:
       - ClimaCore.jl-mod/lib
       - ClimaAtmos.jl-mod/src
       - ClimaAtmos.jl-mod/toml
+      - CloudMicrophysics.jl-mod/src
     outs:
       - .calkit/slurm/logs/amip-mod.out:
           cache: false
@@ -144,6 +221,43 @@ stages:
           cache: false
           persist: false
     desc: Automatically generated from the 'summarize' stage in 
+      calkit.yaml. Changes made here will be overwritten.
+  compare-kernels:
+    cmd: calkit nb execute --environment py --no-check --to html 
+      "notebooks/compare-kernels.ipynb"
+    deps:
+      - .calkit/notebooks/cleaned/notebooks/compare-kernels.ipynb
+      - .calkit/env-locks/py
+      - results/nsys/baseline.nsys-rep
+      - results/nsys/baseline.sqlite
+      - .calkit/slurm/logs/baseline-nsys.out
+      - results/nsys/mod.nsys-rep
+      - results/nsys/mod.sqlite
+      - .calkit/slurm/logs/mod-nsys.out
+    outs:
+      - .calkit/notebooks/executed/notebooks/compare-kernels.ipynb:
+          cache: false
+      - .calkit/notebooks/html/notebooks/compare-kernels.html:
+          cache: false
+    desc: Automatically generated from the 'compare-kernels' stage in 
+      calkit.yaml. Changes made here will be overwritten.
+  analyze-logs:
+    cmd: calkit nb execute --environment py --no-check --to html 
+      "notebooks/analyze-logs.ipynb"
+    deps:
+      - .calkit/notebooks/cleaned/notebooks/analyze-logs.ipynb
+      - .calkit/env-locks/py
+      - .calkit/slurm/logs/amip-baseline.out
+      - .calkit/slurm/logs/amip-mod.out
+    outs:
+      - figures/sypd-time-series.png:
+          cache: false
+          persist: false
+      - .calkit/notebooks/executed/notebooks/analyze-logs.ipynb:
+          cache: false
+      - .calkit/notebooks/html/notebooks/analyze-logs.html:
+          cache: false
+    desc: Automatically generated from the 'analyze-logs' stage in 
       calkit.yaml. Changes made here will be overwritten.
   make-diffs:
     cmd: bash --noprofile --norc scripts/make-diffs.sh

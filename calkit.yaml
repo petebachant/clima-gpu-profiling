@@ -63,87 +63,73 @@ pipeline:
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
+        - CloudMicrophysics.jl-mod/src
       outputs:
         - results/nsys/mod.nsys-rep
         - results/nsys/mod.sqlite
-    # baseline-ncu:
-    #   kind: sbatch
-    #   environment: clima
-    #   script_path: scripts/run-ncu.sh
-    #   sbatch_options:
-    #     - --gpus=1
-    #     - --time=120
-    #   args:
-    #     - results/ncu/baseline
-    #     - --kernel-name
-    #     - run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L354
-    #     - --project
-    #     - ClimaCoupler.jl/experiments/AMIP
-    #     - --config
-    #     - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-    #     - --launch-count
-    #     - "6"
-    #   inputs:
-    #     - scripts/run.jl
-    #     - ClimaCoupler.jl/src
-    #     - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-    #     - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
-    #     - ClimaCoupler.jl/experiments/AMIP/setup_run.jl
-    #     - ClimaCoupler.jl/experiments/AMIP/components
-    #     - ClimaCore.jl/ext
-    #     - ClimaCore.jl/src
-    #     - ClimaCore.jl/lib
-    #   outputs:
-    #     - results/ncu/baseline.ncu-rep
-    # baseline-ncu-details-csv:
-    #   kind: shell-command
-    #   environment: _system
-    #   command: ncu --csv -i results/ncu/baseline.ncu-rep --page details
-    #     --log-file results/ncu/baseline-details.csv
-    #   inputs:
-    #     - results/ncu/baseline.ncu-rep
-    #   outputs:
-    #     - path: results/ncu/baseline-details.csv
-    #       storage: git
-    # mod-ncu:
-    #   kind: sbatch
-    #   environment: clima
-    #   script_path: scripts/run-ncu.sh
-    #   sbatch_options:
-    #     - --gpus=1
-    #     - --time=120
-    #   args:
-    #     - results/ncu/mod
-    #     - --kernel-name
-    #     - run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixFields_field_matrix_solver_jl_L419
-    #     - --project
-    #     - ClimaCoupler.jl-mod/experiments/AMIP
-    #     - --config
-    #     - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-    #     - --launch-count
-    #     - "6"
-    #   inputs:
-    #     - scripts/run.jl
-    #     - ClimaCoupler.jl-mod/src
-    #     - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-    #     - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-    #     - ClimaCoupler.jl-mod/experiments/AMIP/setup_run.jl
-    #     - ClimaCoupler.jl-mod/experiments/AMIP/components
-    #     - ClimaCore.jl-mod/ext
-    #     - ClimaCore.jl-mod/src
-    #     - ClimaCore.jl-mod/lib
-    #   outputs:
-    #     - results/ncu/mod.ncu-rep
-    # mod-ncu-details-csv:
-    #   kind: shell-command
-    #   environment: _system
-    #   command: ncu --csv -i results/ncu/mod.ncu-rep --page details
-    #     --log-file results/ncu/mod-details.csv
-    #   inputs:
-    #     - results/ncu/mod.ncu-rep
-    #   outputs:
-    #     - path: results/ncu/mod-details.csv
-    #       storage: git
+    baseline-ncu:
+      kind: sbatch
+      environment: clima
+      script_path: scripts/run-ncu.sh
+      sbatch_options:
+        - --gpus=1
+        - --time=120
+      args:
+        - results/ncu/baseline
+        - --kernel-name
+        - set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1021
+        - --project
+        - ClimaCoupler.jl/experiments/AMIP
+        - --config
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --launch-count
+        - "6"
+      inputs:
+        - scripts/run.jl
+        - ClimaCoupler.jl/src
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl/ext
+        - ClimaCore.jl/src
+        - ClimaCore.jl/lib
+        - ClimaAtmos.jl/src
+      outputs:
+        - results/ncu/baseline.ncu-rep
+        - path: results/ncu/baseline-details.csv
+          storage: git
+    mod-ncu:
+      kind: sbatch
+      environment: clima
+      script_path: scripts/run-ncu.sh
+      sbatch_options:
+        - --gpus=1
+        - --time=120
+      args:
+        - results/ncu/mod
+        - --kernel-name
+        - set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1021
+        - --project
+        - ClimaCoupler.jl-mod/experiments/AMIP
+        - --config
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --launch-count
+        - "6"
+      inputs:
+        - scripts/run.jl
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaCore.jl-mod/lib
+        - ClimaAtmos.jl-mod/src
+        - CloudMicrophysics.jl-mod/src
+      outputs:
+        - results/ncu/mod.ncu-rep
+        - path: results/ncu/mod-details.csv
+          storage: git
     # A stage to run a bit longer for a better picture of performance differences
     amip-baseline:
       kind: sbatch
@@ -195,6 +181,7 @@ pipeline:
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
         - ClimaAtmos.jl-mod/toml
+        - CloudMicrophysics.jl-mod/src
     summarize:
       kind: python-script
       environment: py
@@ -207,6 +194,27 @@ pipeline:
       outputs:
         - path: results/summary.json
           storage: git
+    compare-kernels:
+      kind: jupyter-notebook
+      notebook_path: notebooks/compare-kernels.ipynb
+      environment: py
+      inputs:
+        - from_stage_outputs: baseline-nsys
+        - from_stage_outputs: mod-nsys
+      html_storage: git
+      executed_ipynb_storage: git
+    analyze-logs:
+      kind: jupyter-notebook
+      notebook_path: notebooks/analyze-logs.ipynb
+      environment: py
+      inputs:
+        - from_stage_outputs: amip-baseline
+        - from_stage_outputs: amip-mod
+      outputs:
+        - path: figures/sypd-time-series.png
+          storage: git
+      html_storage: git
+      executed_ipynb_storage: git
     make-diffs:
       kind: shell-script
       environment: _system

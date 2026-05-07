@@ -126,3 +126,7 @@ $NCU_CMD \
     julia --project=$PROJECT \
     scripts/run.jl \
     $EXTRA_CONFIGS
+
+# Export per-kernel details to CSV alongside the .ncu-rep
+ncu --csv -i $NCU_OUTPUT_PREFIX.ncu-rep --page details \
+    --log-file $NCU_OUTPUT_PREFIX-details.csv

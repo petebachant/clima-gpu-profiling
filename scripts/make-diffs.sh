@@ -23,3 +23,7 @@ for repo in ClimaAtmos.jl ClimaCore.jl ClimaCoupler.jl; do
         git diff --no-index "${base_f}" "${mod_f}" || true
     done <<< "${all_files}" > "diffs/${repo}.diff"
 done
+
+# Now simply diff CloudMicrophysics.jl-mod against origin/main
+git -C CloudMicrophysics.jl-mod fetch origin main
+git -C CloudMicrophysics.jl-mod diff origin/main -- . > diffs/CloudMicrophysics.diff || true
