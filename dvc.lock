@@ -649,7 +649,7 @@ stages:
       set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1021
       --project ClimaCoupler.jl/experiments/AMIP --config 
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml 
-      --launch-count 6
+      --launch-skip 3 --launch-count 6
     deps:
     - path: ClimaAtmos.jl/src
       hash: md5
@@ -695,21 +695,21 @@ stages:
       size: 3185
     - path: scripts/run.jl
       hash: md5
-      md5: fe7f43eb4d9b53cd1bbe10d8e279df5d
-      size: 1222
+      md5: 692eb3325cd4047e0bd92df834a40b68
+      size: 1757
     outs:
     - path: .calkit/slurm/logs/baseline-ncu.out
       hash: md5
-      md5: d1cbe37ac9ccdf990f2d59684cdb1d5c
-      size: 30575
+      md5: ce8e7c8c16f8846cd5a7d428fb79a889
+      size: 29454
     - path: results/ncu/baseline-details.csv
       hash: md5
-      md5: 581270b82113af79ea676f3668242a58
-      size: 163066
+      md5: d89930b5d54a424829643ff2cca6cec6
+      size: 162530
     - path: results/ncu/baseline.ncu-rep
       hash: md5
-      md5: ac282a7df148be1a18054b49cdcfdde9
-      size: 62568856
+      md5: f088a38e2bc222ba46d700d05e847274
+      size: 62592942
   baseline-ncu-details-csv:
     cmd: ' bash --noprofile --norc -c "ncu --csv -i results/ncu/baseline.ncu-rep --page
       details --log-file results/ncu/baseline-details.csv"'
@@ -769,7 +769,7 @@ stages:
       set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1021
       --project ClimaCoupler.jl-mod/experiments/AMIP --config 
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --launch-count 6
+      --launch-skip 3 --launch-count 6
     deps:
     - path: ClimaAtmos.jl-mod/src
       hash: md5
@@ -820,21 +820,21 @@ stages:
       size: 3185
     - path: scripts/run.jl
       hash: md5
-      md5: fe7f43eb4d9b53cd1bbe10d8e279df5d
-      size: 1222
+      md5: 692eb3325cd4047e0bd92df834a40b68
+      size: 1757
     outs:
     - path: .calkit/slurm/logs/mod-ncu.out
       hash: md5
-      md5: 5b635104dc6552ef893c055a1be6cb32
-      size: 27979
+      md5: 0dc93a837ac85bf77651590c2f0e0e98
+      size: 29562
     - path: results/ncu/mod-details.csv
       hash: md5
-      md5: 3fd3305deccc146c6c7efc1188e84904
-      size: 157649
+      md5: 92d79c651bf3da8f935e27b2ffceb5c2
+      size: 157122
     - path: results/ncu/mod.ncu-rep
       hash: md5
-      md5: 709d5c9a137ed26722a1f83541b7a931
-      size: 35684260
+      md5: ef84171ce08a4c6041e16b33b8b03ba3
+      size: 35739854
   mod-ncu-details-csv:
     cmd: ' bash --noprofile --norc -c "ncu --csv -i results/ncu/mod.ncu-rep --page
       details --log-file results/ncu/mod-details.csv"'
