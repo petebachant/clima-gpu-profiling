@@ -8,7 +8,7 @@ NVIDIA Nsight Systems profiling is set up to run as part of a Calkit pipeline,
 submitting SLURM jobs on the `clima` cluster one at a time
 (so we don't take up too many resources).
 
-The logs in `.calkit/slurm/logs` print important information like estimated
+The logs in `.calkit/scheduler/logs` print important information like estimated
 SYPD and a table of kernel resource consumption.
 
 The general process we follow is:

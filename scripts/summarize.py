@@ -27,7 +27,7 @@ def get_nsys_summary(fpath_in) -> dict:
 
 def get_run_summary(case_name: Literal["baseline", "mod"]) -> dict:
     """Extract non-nsys run summary from log file."""
-    fpath = f".calkit/slurm/logs/amip-{case_name}.out"
+    fpath = f".calkit/scheduler/logs/amip-{case_name}.out"
     with open(fpath, "r") as f:
         lines = f.readlines()
     found_step_40 = False

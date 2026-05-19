@@ -8,6 +8,9 @@ environments:
   clima:
     kind: slurm
     host: clima.gps.caltech.edu
+    default_options:
+      - --gpus=1
+      - --time=120
   sassy:
     kind: system
     host: sassy.caltech.edu
@@ -20,12 +23,9 @@ environments:
 pipeline:
   stages:
     baseline-nsys:
-      kind: sbatch
+      kind: shell-script
       environment: clima
       script_path: scripts/run-nsys.sh
-      sbatch_options:
-        - --gpus=1
-        - --time=120
       args:
         - results/nsys/baseline
         - ClimaCoupler.jl/experiments/AMIP
@@ -43,12 +43,9 @@ pipeline:
         - results/nsys/baseline.nsys-rep
         - results/nsys/baseline.sqlite
     mod-nsys:
-      kind: sbatch
+      kind: shell-script
       environment: clima
       script_path: scripts/run-nsys.sh
-      sbatch_options:
-        - --gpus=1
-        - --time=120
       args:
         - results/nsys/mod
         - ClimaCoupler.jl-mod/experiments/AMIP
@@ -68,16 +65,13 @@ pipeline:
         - results/nsys/mod.nsys-rep
         - results/nsys/mod.sqlite
     baseline-ncu:
-      kind: sbatch
+      kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
-      sbatch_options:
-        - --gpus=1
-        - --time=120
       args:
         - results/ncu/baseline
         - --kernel-name
-        - set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1021
+        - set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1024
         - --project
         - ClimaCoupler.jl/experiments/AMIP
         - --config
@@ -100,17 +94,15 @@ pipeline:
         - results/ncu/baseline.ncu-rep
         - path: results/ncu/baseline-details.csv
           storage: git
+          delete_before_run: true
     mod-ncu:
-      kind: sbatch
+      kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
-      sbatch_options:
-        - --gpus=1
-        - --time=120
       args:
         - results/ncu/mod
         - --kernel-name
-        - set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1021
+        - set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1024
         - --project
         - ClimaCoupler.jl-mod/experiments/AMIP
         - --config
@@ -134,14 +126,11 @@ pipeline:
         - results/ncu/mod.ncu-rep
         - path: results/ncu/mod-details.csv
           storage: git
-    # A stage to run a bit longer for a better picture of performance differences
+          delete_before_run: true
     amip-baseline:
-      kind: sbatch
+      kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
-      sbatch_options:
-        - --gpus=1
-        - --time=240
       args:
         - --project=ClimaCoupler.jl/experiments/AMIP
         - ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
@@ -161,12 +150,9 @@ pipeline:
         - ClimaAtmos.jl/src
         - ClimaAtmos.jl/toml
     amip-mod:
-      kind: sbatch
+      kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
-      sbatch_options:
-        - --gpus=1
-        - --time=240
       args:
         - --project=ClimaCoupler.jl-mod/experiments/AMIP
         - ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
