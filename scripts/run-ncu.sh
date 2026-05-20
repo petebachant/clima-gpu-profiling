@@ -3,7 +3,7 @@
 
 # Default values
 NCU_OUTPUT_PREFIX=""
-EXTRA_CONFIGS=""
+EXTRA_CONFIGS=()
 KERNEL_NAME=""
 LAUNCH_SKIP=""
 LAUNCH_COUNT=""
@@ -39,7 +39,7 @@ while [[ $# -gt 0 ]]; do
         echo "Error: --config requires a value"
         exit 1
       fi
-      EXTRA_CONFIGS="$EXTRA_CONFIGS --config $2"
+      EXTRA_CONFIGS+=(--config "$2")
       shift 2
       ;;
     --kernel-name)
@@ -107,26 +107,28 @@ export JULIA_LOAD_PATH=@:@stdlib
 # Instantiate julia environment, precompile, and build CUDA
 julia --project=$PROJECT -e 'using Pkg; Pkg.instantiate(;verbose=true); Pkg.precompile(;strict=true); using CUDA; CUDA.precompile_runtime(); Pkg.status()'
 
-# Build NCU command with optional arguments
-NCU_CMD="ncu"
+# Build NCU command with optional arguments. Use an array so values
+# containing regex metacharacters (e.g. --kernel-name "regex:..._L[0-9]+")
+# survive intact instead of being word-split / glob-expanded.
+NCU_ARGS=()
 if [ -n "$KERNEL_NAME" ]; then
-  NCU_CMD="$NCU_CMD --kernel-name $KERNEL_NAME"
+  NCU_ARGS+=(--kernel-name "$KERNEL_NAME")
 fi
 if [ -n "$LAUNCH_SKIP" ]; then
-  NCU_CMD="$NCU_CMD --launch-skip $LAUNCH_SKIP"
+  NCU_ARGS+=(--launch-skip "$LAUNCH_SKIP")
 fi
 if [ -n "$LAUNCH_COUNT" ]; then
-  NCU_CMD="$NCU_CMD --launch-count $LAUNCH_COUNT"
+  NCU_ARGS+=(--launch-count "$LAUNCH_COUNT")
 fi
 
-$NCU_CMD \
-    -o $NCU_OUTPUT_PREFIX \
+ncu "${NCU_ARGS[@]}" \
+    -o "$NCU_OUTPUT_PREFIX" \
     --import-source 1 \
     --set full \
-    julia --project=$PROJECT \
+    julia --project="$PROJECT" \
     scripts/run.jl \
-    $EXTRA_CONFIGS
+    "${EXTRA_CONFIGS[@]}"
 
 # Export per-kernel details to CSV alongside the .ncu-rep
-ncu --csv -i $NCU_OUTPUT_PREFIX.ncu-rep --page details \
-    --log-file $NCU_OUTPUT_PREFIX-details.csv
+ncu --csv -i "$NCU_OUTPUT_PREFIX.ncu-rep" --page details \
+    --log-file "$NCU_OUTPUT_PREFIX-details.csv"

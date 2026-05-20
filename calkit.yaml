@@ -70,8 +70,15 @@ pipeline:
       script_path: scripts/run-ncu.sh
       args:
         - results/ncu/baseline
+        # Line-number-agnostic so the filter survives edits above the
+        # call site (which renumber the kernel, e.g. L1024 -> L1045).
+        # Still pinned to this function + file in the baseline tree. It
+        # also matches the cheaper sibling set_microphysics_tendency_cache
+        # kernel in this file; the compare-kernels notebook selects the
+        # hottest, so the report stays valid. If launch-count no longer
+        # captures enough of the hot kernel, raise it.
         - --kernel-name
-        - set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1024
+        - regex:set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L[0-9]+
         - --project
         - ClimaCoupler.jl/experiments/AMIP
         - --config
@@ -101,8 +108,15 @@ pipeline:
       script_path: scripts/run-ncu.sh
       args:
         - results/ncu/mod
+        # Line-number-agnostic so the filter survives edits above the
+        # call site (which renumber the kernel, e.g. L1024 -> L1045).
+        # Still pinned to this function + file in the mod tree. It also
+        # matches the cheaper sibling set_microphysics_tendency_cache
+        # kernel in this file; the compare-kernels notebook selects the
+        # hottest, so the report stays valid. If launch-count no longer
+        # captures enough of the hot kernel, raise it.
         - --kernel-name
-        - set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1045
+        - regex:set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L[0-9]+
         - --project
         - ClimaCoupler.jl-mod/experiments/AMIP
         - --config
@@ -216,6 +230,7 @@ pipeline:
         - ClimaCore.jl-mod
         - ClimaAtmos.jl
         - ClimaAtmos.jl-mod
+        - CloudMicrophysics.jl-mod
       outputs:
         - path: diffs
           storage: git
