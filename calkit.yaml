@@ -22,6 +22,21 @@ environments:
 
 pipeline:
   stages:
+    make-diffs:
+      kind: shell-script
+      environment: _system
+      script_path: scripts/make-diffs.sh
+      inputs:
+        - ClimaCoupler.jl
+        - ClimaCoupler.jl-mod
+        - ClimaCore.jl
+        - ClimaCore.jl-mod
+        - ClimaAtmos.jl
+        - ClimaAtmos.jl-mod
+        - CloudMicrophysics.jl-mod
+      outputs:
+        - path: diffs
+          storage: git
     baseline-nsys:
       kind: shell-script
       environment: clima
@@ -222,18 +237,3 @@ pipeline:
           storage: git
       html_storage: git
       executed_ipynb_storage: git
-    make-diffs:
-      kind: shell-script
-      environment: _system
-      script_path: scripts/make-diffs.sh
-      inputs:
-        - ClimaCoupler.jl
-        - ClimaCoupler.jl-mod
-        - ClimaCore.jl
-        - ClimaCore.jl-mod
-        - ClimaAtmos.jl
-        - ClimaAtmos.jl-mod
-        - CloudMicrophysics.jl-mod
-      outputs:
-        - path: diffs
-          storage: git
