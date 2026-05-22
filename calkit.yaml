@@ -39,6 +39,7 @@ pipeline:
         - ClimaCore.jl/ext
         - ClimaCore.jl/src
         - ClimaCore.jl/lib
+        - ClimaAtmos.jl/src
       outputs:
         - results/nsys/baseline.nsys-rep
         - results/nsys/baseline.sqlite
@@ -65,6 +66,7 @@ pipeline:
         - results/nsys/mod.nsys-rep
         - results/nsys/mod.sqlite
     baseline-ncu:
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
@@ -103,6 +105,7 @@ pipeline:
           storage: git
           delete_before_run: true
     mod-ncu:
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh

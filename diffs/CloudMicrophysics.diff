@@ -1,8 +1,8 @@
 diff --git a/src/BulkMicrophysicsTendencies.jl b/src/BulkMicrophysicsTendencies.jl
-index 0e08b130..2b96b363 100644
+index 3a8ae291..47239e25 100644
 --- a/src/BulkMicrophysicsTendencies.jl
 +++ b/src/BulkMicrophysicsTendencies.jl
-@@ -337,13 +337,25 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
+@@ -354,17 +354,29 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
      # minimum specific humidity threshold for regularizing S/q
      q_min = TDI.TD.Parameters.q_min(tps)
  
@@ -21,39 +21,44 @@ index 0e08b130..2b96b363 100644
      # ------------------------------------------------------------
      # Vapor -> cloud condensate: constant sources
      # ------------------------------------------------------------
-     S_lcl_cond = CMNonEq.conv_q_vap_to_q_lcl_icl_MM2015(
-         lcl, tps, q_tot, q_lcl, q_icl, q_rai, q_sno, ρ, T,
-     )
+     S_lcl_cond = CMNonEq.conv_q_vap_to_q_lcl(opts.cloud_liquid_formation, mp, tps, micro, thermo)
 -    D = S_lcl_cond / max(q_min, q_lcl)
 +    D = S_lcl_cond * inv_q_lcl
      is_source = S_lcl_cond >= zero(FT)
      e1 += ifelse(is_source, S_lcl_cond, zero(FT))
      M11 += ifelse(is_source, zero(FT), D)
-@@ -351,7 +363,7 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
-     S_icl_dep = CMNonEq.conv_q_vap_to_q_lcl_icl_MM2015(
-         icl, tps, q_tot, q_lcl, q_icl, q_rai, q_sno, ρ, T,
-     )
+ 
+     S_icl_dep = CMNonEq.conv_q_vap_to_q_icl(opts.cloud_ice_formation, mp, tps, micro, thermo)
 -    D = S_icl_dep / max(q_min, q_icl)
 +    D = S_icl_dep * inv_q_icl
      is_source = S_icl_dep >= zero(FT)
      e2 += ifelse(is_source, S_icl_dep, zero(FT))
      M22 += ifelse(is_source, zero(FT), D)
-@@ -362,12 +374,12 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
-     S_acnv_1M = CM1.conv_q_lcl_to_q_rai(rai.acnv1M, q_lcl, true)
-     S_acnv_2M = isnothing(var) ? S_acnv_1M : CM2.conv_q_lcl_to_q_rai(var, q_lcl, ρ, N_lcl)
-     S_acnv_lcl = ifelse(N_lcl > zero(N_lcl), S_acnv_2M, S_acnv_1M)
+@@ -373,7 +385,7 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
+     # Cloud ice melt: ice → cloud liquid
+     # ------------------------------------------------------------
+     S_melt_icl = CM1.conv_q_icl_to_q_lcl(opts.cloud_ice_melt, mp, tps, micro, thermo)
+-    D = S_melt_icl / max(q_min, q_icl)
++    D = S_melt_icl * inv_q_icl
+     M22 -= D
+     M12 += D
+ 
+@@ -387,12 +399,12 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
+     else
+         S_acnv_1M
+     end
 -    D = S_acnv_lcl / max(q_min, q_lcl)
 +    D = S_acnv_lcl * inv_q_lcl
      M11 -= D
      M31 += D
  
-     S_acnv_icl = CM1.conv_q_icl_to_q_sno_no_supersat(sno.acnv1M, q_icl, true)
+     S_acnv_icl = CM1.conv_q_icl_to_q_sno(opts.snow_autoconversion, mp, tps, micro, thermo)
 -    D = S_acnv_icl / max(q_min, q_icl)
 +    D = S_acnv_icl * inv_q_icl
      M22 -= D
      M42 += D
  
-@@ -375,12 +387,12 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
+@@ -400,12 +412,12 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
      # Accretion: donor-based transfer
      # ------------------------------------------------------------
      S_accr_lcl_rai = CM1.accretion(lcl, rai, vel.rain, ce, q_lcl, q_rai, ρ)
@@ -68,7 +73,7 @@ index 0e08b130..2b96b363 100644
      M11 -= D
      is_warm = T >= sno.T_freeze
      M31 += ifelse(is_warm, D, zero(FT))
-@@ -390,22 +402,22 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
+@@ -415,22 +427,22 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
      S_accr_melt = α * S_accr_lcl_sno
      # this is snow -> rain melt induced by warm collected liquid
      # donor is snow
@@ -95,7 +100,7 @@ index 0e08b130..2b96b363 100644
      M33 -= D
      M43 += D
  
-@@ -413,17 +425,17 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
+@@ -438,17 +450,17 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
      S_accr_sno_rai = CM1.accretion_snow_rain(rai, sno, vel.rain, vel.snow, ce, q_rai, q_sno, ρ)
  
      # snow -> rain
@@ -116,34 +121,51 @@ index 0e08b130..2b96b363 100644
      M33 -= ifelse(is_warm, zero(FT), D)
      M43 += ifelse(is_warm, zero(FT), D)
  
-@@ -433,7 +445,7 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
-     S_evap_rai = CM1.evaporation_sublimation(
-         rai, vel.rain, aps, tps, q_tot, q_lcl, q_icl, q_rai, q_sno, ρ, T,
-     )
+@@ -456,14 +468,14 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
+     # Rain evaporation: sink to vapor (always zero or negative)
+     # ------------------------------------------------------------
+     S_evap_rai = CM1.conv_q_rai_to_q_vap(opts.rain_evaporation, mp, tps, micro, thermo)
 -    D = (-S_evap_rai) / max(q_min, q_rai)
 +    D = (-S_evap_rai) * inv_q_rai
      M33 -= D
  
      # ------------------------------------------------------------
-@@ -442,7 +454,7 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
-     S_subl_sno = CM1.evaporation_sublimation(
-         sno, vel.snow, aps, tps, q_tot, q_lcl, q_icl, q_rai, q_sno, ρ, T,
-     )
+     # Snow sublimation/deposition (generic: handles both options)
+     # ------------------------------------------------------------
+     S_subl_sno = CM1.conv_q_sno_to_q_vap(opts.snow_sublimation, mp, tps, micro, thermo)
 -    D = S_subl_sno / max(q_min, q_sno)
 +    D = S_subl_sno * inv_q_sno
      is_source = S_subl_sno >= zero(FT)
      e4 += ifelse(is_source, S_subl_sno, zero(FT))
      M44 += ifelse(is_source, zero(FT), D)
-@@ -451,7 +463,7 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
+@@ -472,7 +484,7 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
      # Snow melt: snow -> rain
      # ------------------------------------------------------------
-     S_melt_sno = CM1.snow_melt(sno, vel.snow, aps, tps, q_sno, ρ, T)
+     S_melt_sno = CM1.conv_q_sno_to_q_rai(opts.snow_melt, mp, tps, micro, thermo)
 -    D = S_melt_sno / max(q_min, q_sno)
 +    D = S_melt_sno * inv_q_sno
      M44 -= D
      M34 += D
  
-@@ -506,25 +518,35 @@ exponential decays over the substep.
+@@ -500,8 +512,16 @@ The system uses a sparse structure specific to the 1-moment microphysics model.
+ 
+ Because sinks are linearized as `-D q`, they are effectively integrated as
+ exponential decays over the substep.
++
++!!! note
++    No `@inline` to relieve register pressure when called repeatedly from a
++    quadrature loop (N² evaluations, often in a kernel that already inlines its
++    caller). Inlining replicates the entire substep live state across every
++    quadrature point and pushes registers/thread to ~250, capping occupancy at
++    12.5%. Treating it as an opaque call collapses live ranges to the small
++    returned NamedTuple.
+ """
+-@inline function _average_bulk_microphysics_tendencies(
++function _average_bulk_microphysics_tendencies(
+     ::Microphysics1Moment, mp::CMP.Microphysics1MParams, tps,
+     ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno, Δt, N_lcl = zero(ρ),
+ )
+@@ -527,17 +547,19 @@ exponential decays over the substep.
      a43 = -lin.M43
      a44 = invΔt - lin.M44
  
@@ -157,37 +179,44 @@ index 0e08b130..2b96b363 100644
      b3 = invΔt * q_rai
 -    b4 = lin.e4 + invΔt * q_sno
 +    b4 = muladd(invΔt, q_sno, lin.e4)
-+
-+    det = muladd(-a34, a43, a33 * a44)
-+    # det is a positive number because a44 and a33 are positive (greater than invΔt)
-+    # and a34 and a43 are non-positive so we don't need to safeguard division by det.
  
--    q_lcl_new = b1 / a11
--    q_icl_new = b2 / a22
-+    # Solve via reciprocal-multiply. a11, a22 and det are computed from
-+    # independent inputs, so these three reciprocals issue back-to-back
-+    # instead of serializing as dependent divides. This loop is the
-+    # latency-bound critical path (GPU divide is high-latency and
-+    # non-pipelined, and the enclosing substep loop is serial), so
-+    # shortening the dependent-divide chain directly reduces stall_wait.
-+    inv_a11 = one(FT) / a11
-+    inv_a22 = one(FT) / a22
-+    inv_det = one(FT) / det
-+
-+    q_lcl_new = b1 * inv_a11
-+    q_icl_new = b2 * inv_a22
+-    # Solve 2×2 system for q_lcl, q_icl (coupled via ice melt M12)
++    # Solve 2×2 system for q_lcl, q_icl (coupled via ice melt M12).
++    # Reciprocal-multiply: compute 1/det12 once and reuse, shortening the
++    # dependent-divide chain on the latency-bound substep critical path.
+     det12 = a11 * a22  # a21 = 0
+-    q_lcl_new = (b1 * a22 - a12 * b2) / det12
+-    q_icl_new = a11 * b2 / det12
++    inv_det12 = one(FT) / det12
++    q_lcl_new = muladd(b1, a22, -(a12 * b2)) * inv_det12
++    q_icl_new = (a11 * b2) * inv_det12
  
      # Reduced 2x2 system for q_rai_new, q_sno_new
      r3 = muladd(-a31, q_lcl_new, b3)
-     r4 = muladd(-a41, q_lcl_new, muladd(-a42, q_icl_new, b4))
- 
--    det = muladd(-a34, a43, a33 * a44)
--    # det is a positive number because a44 and a33 are positive (greater than invΔt) 
--    # and a34 and a43 are non-positive so we don't need to safeguard division by det.
+@@ -546,8 +568,9 @@ exponential decays over the substep.
+     det = muladd(-a34, a43, a33 * a44)
+     # det is a positive number because a44 and a33 are positive (greater than invΔt)
+     # and a34 and a43 are non-positive so we don't need to safeguard division by det.
 -    q_rai_new = (r3 * a44 - a34 * r4) / det
 -    q_sno_new = (a33 * r4 - r3 * a43) / det
++    inv_det = one(FT) / det
 +    q_rai_new = muladd(r3, a44, -(a34 * r4)) * inv_det
 +    q_sno_new = muladd(a33, r4, -(r3 * a43)) * inv_det
  
      dq_lcl_dt = (q_lcl_new - q_lcl) * invΔt
      dq_icl_dt = (q_icl_new - q_icl) * invΔt
+@@ -571,8 +594,13 @@ full interval divided by `Δt`.
+ 
+ Increasing `nsub` improves how well the method captures nonlinear changes in the
+ active microphysical processes, including regime changes near freezing.
++
++!!! note
++    No `@inline` for the same reason as `_average_bulk_microphysics_tendencies`:
++    this is called per quadrature point inside a hot kernel; inlining replicates
++    the substepping loop's live state and crushes occupancy.
+ """
+-@inline function average_bulk_microphysics_tendencies(
++function average_bulk_microphysics_tendencies(
+     cm::Microphysics1Moment,
+     mp::CMP.Microphysics1MParams,
+     tps,

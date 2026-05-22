@@ -204,3 +204,87 @@ index 4fa2c35..40b8399 100644
      return f(μ_T, μ_q)
  end
  
+diff --git a/ClimaAtmos.jl/src/parameters/create_parameters.jl b/ClimaAtmos.jl-mod/src/parameters/create_parameters.jl
+index 5380908..a5f2cf3 100644
+--- a/ClimaAtmos.jl/src/parameters/create_parameters.jl
++++ b/ClimaAtmos.jl-mod/src/parameters/create_parameters.jl
+@@ -195,7 +195,12 @@ microphys_1m_parameters(::Type{FT}) where {FT <: AbstractFloat} =
+     microphys_1m_parameters(CP.create_toml_dict(FT))
+ 
+ microphys_1m_parameters(toml_dict::CP.ParamDict) =
+-    CM.Parameters.Microphysics1MParams(toml_dict; with_2M_autoconv = true)
++    CM.Parameters.Microphysics1MParams(
++        toml_dict;
++        options = CM.Parameters.Microphysics1MOptions(
++            cloud_liquid_autoconversion = CM.Parameters.LiquidAutoconv2M(),
++        ),
++    )
+ 
+ microphys_2m_parameters(::Type{FT}) where {FT <: AbstractFloat} =
+     microphys_2m_parameters(CP.create_toml_dict(FT))
+diff --git a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/bmt_integration.jl b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/bmt_integration.jl
+index 76fc2fc..aff0fcd 100644
+--- a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/bmt_integration.jl
++++ b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/bmt_integration.jl
+@@ -27,7 +27,7 @@ import CloudMicrophysics.BulkMicrophysicsTendencies as BMT
+                 @test hasfield(typeof(mp_0m.precip), :qc_0)
+ 
+                 # 1M parameters
+-                mp_1m = CMP.Microphysics1MParams(toml_dict; with_2M_autoconv = true)
++                mp_1m = CMP.Microphysics1MParams(toml_dict; options = CMP.Microphysics1MOptions(cloud_liquid_autoconversion = CMP.LiquidAutoconv2M()))
+                 @test hasfield(typeof(mp_1m), :cloud)
+                 @test hasfield(typeof(mp_1m), :precip)
+                 @test hasfield(typeof(mp_1m), :terminal_velocity)
+@@ -88,7 +88,7 @@ import CloudMicrophysics.BulkMicrophysicsTendencies as BMT
+         for FT in (Float32, Float64)
+             @testset "FT = $FT" begin
+                 toml_dict = CP.create_toml_dict(FT)
+-                mp = CMP.Microphysics1MParams(toml_dict; with_2M_autoconv = true)
++                mp = CMP.Microphysics1MParams(toml_dict; options = CMP.Microphysics1MOptions(cloud_liquid_autoconversion = CMP.LiquidAutoconv2M()))
+                 thp = TD.Parameters.ThermodynamicsParameters(toml_dict)
+ 
+                 # Realistic atmospheric conditions
+@@ -206,7 +206,7 @@ import CloudMicrophysics.BulkMicrophysicsTendencies as BMT
+         for FT in (Float32, Float64)
+             @testset "FT = $FT" begin
+                 toml_dict = CP.create_toml_dict(FT)
+-                mp = CMP.Microphysics1MParams(toml_dict; with_2M_autoconv = true)
++                mp = CMP.Microphysics1MParams(toml_dict; options = CMP.Microphysics1MOptions(cloud_liquid_autoconversion = CMP.LiquidAutoconv2M()))
+                 thp = TD.Parameters.ThermodynamicsParameters(toml_dict)
+ 
+                 ρ = FT(1.0)
+@@ -249,7 +249,7 @@ import CloudMicrophysics.BulkMicrophysicsTendencies as BMT
+         for FT in (Float32, Float64)
+             @testset "FT = $FT" begin
+                 toml_dict = CP.create_toml_dict(FT)
+-                mp = CMP.Microphysics1MParams(toml_dict; with_2M_autoconv = true)
++                mp = CMP.Microphysics1MParams(toml_dict; options = CMP.Microphysics1MOptions(cloud_liquid_autoconversion = CMP.LiquidAutoconv2M()))
+                 thp = TD.Parameters.ThermodynamicsParameters(toml_dict)
+ 
+                 # Zero hydrometeors
+diff --git a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/microphysics_wrappers.jl b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/microphysics_wrappers.jl
+index 6b53bbc..3bd0f27 100644
+--- a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/microphysics_wrappers.jl
++++ b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/microphysics_wrappers.jl
+@@ -130,7 +130,7 @@ import ClimaAtmos: limit_sink
+         for FT in (Float32, Float64)
+             @testset "FT = $FT" begin
+                 toml_dict = CP.create_toml_dict(FT)
+-                mp = CMP.Microphysics1MParams(toml_dict; with_2M_autoconv = true)
++                mp = CMP.Microphysics1MParams(toml_dict; options = CMP.Microphysics1MOptions(cloud_liquid_autoconversion = CMP.LiquidAutoconv2M()))
+                 thp = TD.Parameters.ThermodynamicsParameters(toml_dict)
+ 
+                 ρ = FT(1.0)
+diff --git a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/sgs_quadrature.jl b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/sgs_quadrature.jl
+index a08092b..2bec9c3 100644
+--- a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/sgs_quadrature.jl
++++ b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/sgs_quadrature.jl
+@@ -798,7 +798,7 @@ using ClimaAtmos
+ 
+                 @testset "1M: sign consistency" begin
+                     quad = ClimaAtmos.SGSQuadrature(FT)
+-                    mp_1m = CMP.Microphysics1MParams(toml_dict; with_2M_autoconv = true)
++                    mp_1m = CMP.Microphysics1MParams(toml_dict; options = CMP.Microphysics1MOptions(cloud_liquid_autoconversion = CMP.LiquidAutoconv2M()))
+                     thp = TD.Parameters.ThermodynamicsParameters(toml_dict)
+ 
+                     ρ = FT(1.0)

@@ -6,7 +6,7 @@ stages:
       --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
       ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep 
       ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib 
-      --dep .calkit/env-locks/clima --out 
+      --dep ClimaAtmos.jl/src --dep .calkit/env-locks/clima --out 
       results/nsys/baseline.nsys-rep --out 
       results/nsys/baseline.sqlite -- scripts/run-nsys.sh 
       results/nsys/baseline ClimaCoupler.jl/experiments/AMIP 
@@ -21,6 +21,7 @@ stages:
       - ClimaCore.jl/ext
       - ClimaCore.jl/src
       - ClimaCore.jl/lib
+      - ClimaAtmos.jl/src
       - .calkit/env-locks/clima
     outs:
       - results/nsys/baseline.nsys-rep
@@ -99,6 +100,7 @@ stages:
       - .calkit/scheduler/logs/baseline-ncu.out:
           cache: false
           persist: true
+    frozen: true
     desc: Automatically generated from the 'baseline-ncu' stage in 
       calkit.yaml. Changes made here will be overwritten.
   mod-ncu:
@@ -137,6 +139,7 @@ stages:
       - .calkit/scheduler/logs/mod-ncu.out:
           cache: false
           persist: true
+    frozen: true
     desc: Automatically generated from the 'mod-ncu' stage in 
       calkit.yaml. Changes made here will be overwritten.
   amip-baseline:
