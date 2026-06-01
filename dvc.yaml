@@ -41,8 +41,10 @@ stages:
       - ClimaAtmos.jl/src
       - .calkit/env-locks/clima
     outs:
-      - results/nsys/baseline.nsys-rep
-      - results/nsys/baseline.sqlite
+      - results/nsys/baseline.nsys-rep:
+          persist: true
+      - results/nsys/baseline.sqlite:
+          persist: true
       - .calkit/scheduler/logs/baseline-nsys.out:
           cache: false
           persist: true
@@ -75,8 +77,10 @@ stages:
       - CloudMicrophysics.jl-mod/src
       - .calkit/env-locks/clima
     outs:
-      - results/nsys/mod.nsys-rep
-      - results/nsys/mod.sqlite
+      - results/nsys/mod.nsys-rep:
+          persist: true
+      - results/nsys/mod.sqlite:
+          persist: true
       - .calkit/scheduler/logs/mod-nsys.out:
           cache: false
           persist: true
@@ -110,10 +114,11 @@ stages:
       - ClimaAtmos.jl/src
       - .calkit/env-locks/clima
     outs:
-      - results/ncu/baseline.ncu-rep
+      - results/ncu/baseline.ncu-rep:
+          persist: true
       - results/ncu/baseline-details.csv:
           cache: false
-          persist: false
+          persist: true
       - .calkit/scheduler/logs/baseline-ncu.out:
           cache: false
           persist: true
@@ -149,10 +154,11 @@ stages:
       - CloudMicrophysics.jl-mod/src
       - .calkit/env-locks/clima
     outs:
-      - results/ncu/mod.ncu-rep
+      - results/ncu/mod.ncu-rep:
+          persist: true
       - results/ncu/mod-details.csv:
           cache: false
-          persist: false
+          persist: true
       - .calkit/scheduler/logs/mod-ncu.out:
           cache: false
           persist: true
