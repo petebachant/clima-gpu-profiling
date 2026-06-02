@@ -1,16 +1,3 @@
-diff --git a/ClimaAtmos.jl/.buildkite/coupler_perf/pipeline.yml b/ClimaAtmos.jl-mod/.buildkite/coupler_perf/pipeline.yml
-index f8b2f5b..cd66b2d 100644
---- a/ClimaAtmos.jl/.buildkite/coupler_perf/pipeline.yml
-+++ b/ClimaAtmos.jl-mod/.buildkite/coupler_perf/pipeline.yml
-@@ -22,6 +22,8 @@ steps:
-     command:
-       - git clone https://github.com/CliMA/ClimaCoupler.jl.git $COUPLER_PATH && bash -c "cd $COUPLER_PATH && git checkout $COUPLER_COMMIT"
-       - "echo $$JULIA_DEPOT_PATH"
-+      # Update package registry, since dev installs do not do that with a manifest
-+      - "julia --project=$COUPLER_PATH/experiments/AMIP/ -e 'using Pkg; Pkg.Registry.update()'"
-       - echo "--- Instantiate AMIP env"
-       # Instantiate and dev install ClimaCore
-       - "julia --project=$COUPLER_PATH/experiments/AMIP/ -e 'using Pkg; Pkg.instantiate(;verbose=true)'"
 diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/sgs_quadrature.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/sgs_quadrature.jl
 index 4fa2c35..fd2efe2 100644
 --- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/sgs_quadrature.jl
