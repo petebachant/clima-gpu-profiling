@@ -8450,20 +8450,26 @@ a.anchor-link {
 <pre>Selecting the hottest kernel from baseline...
 
 Top 5 kernels in baseline (by total time):
-   849.45 ms  [  40 invocations] set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1024
-   123.67 ms  [  80 invocations] set_cloud_fraction__NVTX
-   104.17 ms  [3090 invocations] copyto_foreach__NVTX
-    73.20 ms  [  40 invocations] set_sgs_moments_mp__NVTX
-    73.06 ms  [1460 invocations] run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L371
+   670.86 ms  [  40 invocations] set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1024
+   125.27 ms  [  80 invocations] set_cloud_fraction__NVTX
+   101.80 ms  [3090 invocations] copyto_foreach__NVTX
+    75.55 ms  [  40 invocations] set_sgs_moments_mp__NVTX
+    74.11 ms  [1460 invocations] run_field_matrix_solver__FILE_ClimaCore_jl_src_MatrixFields_field_matrix_solver_jl_L371
 
 Top 5 kernels in modified (by total time):
-   711.48 ms  [  40 invocations] set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1024
-   123.58 ms  [  80 invocations] set_cloud_fraction__NVTX
-   104.90 ms  [3090 invocations] copyto_foreach__NVTX
-    73.96 ms  [1460 invocations] run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixFields_field_matrix_solver_jl_L371
-    73.14 ms  [  40 invocations] set_sgs_moments_mp__NVTX
-Selected baseline kernel: set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1024 (total=849.45 ms)
-Selected modified kernel: set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1024 (total=711.48 ms, score=0.978)
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>   462.56 ms  [ 400 invocations] set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1024
+   122.94 ms  [  80 invocations] set_cloud_fraction__NVTX
+   101.87 ms  [3090 invocations] copyto_foreach__NVTX
+    74.08 ms  [1460 invocations] run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixFields_field_matrix_solver_jl_L371
+    73.28 ms  [  40 invocations] set_sgs_moments_mp__NVTX
+Selected baseline kernel: set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1024 (total=670.86 ms)
+Selected modified kernel: set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1024 (total=462.56 ms, score=0.978)
 </pre>
 </div>
 </div>
@@ -8540,43 +8546,43 @@ KERNEL: set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysi
 <th>0</th>
 <td>Invocations</td>
 <td>40</td>
-<td>40</td>
-<td>0.00%</td>
+<td>400</td>
+<td>+900.00%</td>
 </tr>
 <tr>
 <th>1</th>
 <td>Total Duration</td>
-<td>849.45 ms</td>
-<td>711.48 ms</td>
-<td>-16.24%</td>
+<td>670.86 ms</td>
+<td>462.56 ms</td>
+<td>-31.05%</td>
 </tr>
 <tr>
 <th>2</th>
 <td>Mean Duration</td>
-<td>21.24 ms</td>
-<td>17.79 ms</td>
-<td>-16.24%</td>
+<td>16.77 ms</td>
+<td>1.16 ms</td>
+<td>-93.10%</td>
 </tr>
 <tr>
 <th>3</th>
 <td>Median Duration</td>
-<td>21.17 ms</td>
-<td>17.46 ms</td>
-<td>-17.50%</td>
+<td>16.60 ms</td>
+<td>1.28 ms</td>
+<td>-92.32%</td>
 </tr>
 <tr>
 <th>4</th>
 <td>Min Duration</td>
-<td>21.09 ms</td>
-<td>17.33 ms</td>
-<td>-17.83%</td>
+<td>16.51 ms</td>
+<td>20.22 µs</td>
+<td>-99.88%</td>
 </tr>
 <tr>
 <th>5</th>
 <td>Max Duration</td>
-<td>24.11 ms</td>
-<td>20.93 ms</td>
-<td>-13.20%</td>
+<td>19.73 ms</td>
+<td>1.56 ms</td>
+<td>-92.08%</td>
 </tr>
 <tr>
 <th>6</th>
@@ -8624,8 +8630,8 @@ KERNEL: set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysi
 <th>12</th>
 <td>Registers Per Thread</td>
 <td>255</td>
-<td>255</td>
-<td>—</td>
+<td>16</td>
+<td>-93.73%</td>
 </tr>
 <tr>
 <th>13</th>
@@ -8645,8 +8651,8 @@ KERNEL: set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysi
 <th>15</th>
 <td>Shared Memory Executed (bytes)</td>
 <td>8,192</td>
-<td>8,192</td>
-<td>—</td>
+<td>32,768</td>
+<td>+300.00%</td>
 </tr>
 <tr>
 <th>16</th>
@@ -8658,15 +8664,15 @@ KERNEL: set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysi
 <tr>
 <th>17</th>
 <td>Local Memory Total (bytes)</td>
-<td>1,394,343,936</td>
-<td>1,376,649,216</td>
-<td>-1.27%</td>
+<td>1,341,259,776</td>
+<td>244,187,136</td>
+<td>-81.79%</td>
 </tr>
 <tr>
 <th>18</th>
 <td>Theoretical Occupancy (%)</td>
 <td>12.5%</td>
-<td>12.5%</td>
+<td>33.3%</td>
 <td>—</td>
 </tr>
 </tbody>
@@ -8679,7 +8685,7 @@ KERNEL: set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysi
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 ============================================================================================================================================
-✅ Modified version is 16.24% FASTER (mean duration)
+✅ Modified version is 93.10% FASTER (mean duration)
 ============================================================================================================================================
 </pre>
 </div>
@@ -8755,21 +8761,21 @@ KERNEL: set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysi
 <tbody>
 <tr>
 <th>0</th>
-<td>0.322</td>
-<td>0.286</td>
-<td>-11.180124</td>
+<td>0.326</td>
+<td>0.362</td>
+<td>11.042945</td>
 </tr>
 <tr>
 <th>1</th>
-<td>0.287</td>
-<td>0.273</td>
-<td>-4.878049</td>
+<td>0.294</td>
+<td>0.326</td>
+<td>10.884354</td>
 </tr>
 <tr>
 <th>2</th>
-<td>0.283</td>
-<td>0.272</td>
-<td>-3.886926</td>
+<td>0.288</td>
+<td>0.329</td>
+<td>14.236111</td>
 </tr>
 </tbody>
 </table>
@@ -9052,19 +9058,19 @@ KERNEL: set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysi
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>
 Total Profiling Duration:
-  Baseline: 3.30 s
-  Modified: 3.24 s
-  ✅ Modified run is 1.71% SHORTER overall
+  Baseline: 3.18 s
+  Modified: 2.84 s
+  ✅ Modified run is 10.72% SHORTER overall
 
 Total GPU Kernel Time:
-  Baseline: 2.30 s
-  Modified: 2.17 s
-  Change: -5.52%
+  Baseline: 2.14 s
+  Modified: 1.93 s
+  Change: -10.08%
 
 CPU/Sync Overhead (Total Duration - GPU Time):
-  Baseline: 1.00 s
-  Modified: 1.07 s
-  ⚠️  Modified has 7.03% MORE overhead
+  Baseline: 1.04 s
+  Modified: 914.71 ms
+  ✅ Modified has 12.05% LESS overhead
 
 Kernel Count Comparison:
   Baseline: 373 unique kernels
@@ -9083,23 +9089,23 @@ Kernel Family Analysis (by name pattern):
 
   Pattern: 'set_prognostic_edmf_precomputed_quantities'
     Invocations:    980 →    980 (+0.0%)
-    Total time:    39.89 ms →   40.46 ms (+1.4%)
+    Total time:    40.05 ms →   39.87 ms (-0.4%)
 
   Pattern: 'microphysics'
-    Invocations:   6100 →   6100 (+0.0%)
-    Total time:      1.09 s →  951.77 ms (-12.3%)
+    Invocations:   6100 →   6460 (+5.9%)
+    Total time:   910.05 ms →  699.68 ms (-23.1%)
 
   Pattern: 'precipitation'
     Invocations:   1060 →   1060 (+0.0%)
-    Total time:    21.77 ms →   22.16 ms (+1.8%)
+    Total time:    22.04 ms →   21.90 ms (-0.6%)
 
   Pattern: 'tendency'
-    Invocations:   4900 →   4900 (+0.0%)
-    Total time:      1.15 s →     1.01 s (-11.8%)
+    Invocations:   4900 →   5260 (+7.3%)
+    Total time:   980.16 ms →  771.08 ms (-21.3%)
 
   Pattern: 'implicit'
     Invocations:   4900 →   4900 (+0.0%)
-    Total time:   222.83 ms →  224.46 ms (+0.7%)
+    Total time:   227.56 ms →  227.47 ms (-0.0%)
 </pre>
 </div>
 </div>
