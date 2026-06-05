@@ -1,51 +1,1548 @@
+diff --git a/ClimaAtmos.jl/.buildkite/coupler_perf/pipeline.yml b/ClimaAtmos.jl-mod/.buildkite/coupler_perf/pipeline.yml
+index cd66b2d..dd44d84 100644
+--- a/ClimaAtmos.jl/.buildkite/coupler_perf/pipeline.yml
++++ b/ClimaAtmos.jl-mod/.buildkite/coupler_perf/pipeline.yml
+@@ -48,7 +48,7 @@ steps:
+     artifact_paths: "output/gpu_amip_progedmf_1M_land_he16/artifacts/*"
+     env:
+       CLIMACOMMS_DEVICE: "CUDA"
+-      BASELINE_SYPD: "0.24"
++      BASELINE_SYPD: "0.262"
+       MIN_PERCENT_CHANGE: "-1"
+     agents:
+       slurm_gpus_per_task: 1
+diff --git a/ClimaAtmos.jl/config/default_configs/default_config.yml b/ClimaAtmos.jl-mod/config/default_configs/default_config.yml
+index 50825e3..472d155 100644
+--- a/ClimaAtmos.jl/config/default_configs/default_config.yml
++++ b/ClimaAtmos.jl-mod/config/default_configs/default_config.yml
+@@ -237,8 +237,8 @@ use_sgs_quadrature:
+   help: "Enable subgrid-scale quadrature integration for microphysics tendencies. When true, microphysics tendencies are integrated over the joint SGS PDF of (T, q_tot). [`true` (default), `false`]"
+   value: true
+ sgs_distribution:
+-  help: "Distribution type for SGS quadrature over microphysics. [`gaussian`, `lognormal` (default), `mean` (grid-mean only, no SGS sampling)]"
+-  value: "lognormal"
++  help: "Distribution type for SGS quadrature over microphysics. [`gaussian` (default), `lognormal`, `mean` (grid-mean only, no SGS sampling)]"
++  value: "gaussian"
+ quadrature_order:
+   help: "Quadrature order for SGS integration (1-5). Higher orders are more accurate but slower. Default: 3"
+   value: 3
+@@ -261,8 +261,8 @@ cloud_ice_melt:
+   help: "Cloud ice melting option for 1M microphysics [`CloudIceMelt`, ~ (default)]"
+   value: ~
+ rain_autoconversion:
+-  help: "Rain autoconversion option for 1M microphysics [`Kessler1M`, `PrescribedNd` (default), ~]"
+-  value: "PrescribedNd"
++  help: "Rain autoconversion option for 1M microphysics [`Kessler1M` (default), `PrescribedNd`, ~]"
++  value: "Kessler1M"
+ snow_autoconversion:
+   help: "Snow autoconversion option for 1M microphysics [`NoSupersaturation` (default), `WithSupersaturation`, ~]"
+   value: "NoSupersaturation"
+diff --git a/ClimaAtmos.jl/config/model_configs/prognostic_edmfx_dycoms_rf02_column.yml b/ClimaAtmos.jl-mod/config/model_configs/prognostic_edmfx_dycoms_rf02_column.yml
+index 38a9abc..40acd7a 100644
+--- a/ClimaAtmos.jl/config/model_configs/prognostic_edmfx_dycoms_rf02_column.yml
++++ b/ClimaAtmos.jl-mod/config/model_configs/prognostic_edmfx_dycoms_rf02_column.yml
+@@ -36,4 +36,38 @@ diagnostics:
+     period: 10mins
+   - short_name: [husra, hussn]
+     period: 10mins
++  - short_name: [
++      mp1m_S_phase_change_vap_lcl, mp1m_S_phase_change_vap_icl,
++      mp1m_S_acnv_lcl_rai, mp1m_S_acnv_icl_sno,
++      mp1m_S_accr_lcl_rai, mp1m_S_accr_lcl_sno_cold, mp1m_S_accr_lcl_sno_warm,
++      mp1m_S_accr_melt_lcl_sno,
++      mp1m_S_accr_icl_rai, mp1m_S_accr_freeze_icl_rai, mp1m_S_accr_icl_sno,
++      mp1m_S_accr_rai_sno_cold, mp1m_S_accr_rai_sno_warm, mp1m_S_accr_melt_rai_sno,
++      mp1m_S_phase_change_vap_rai, mp1m_S_phase_change_vap_sno,
++      mp1m_S_melt_icl_lcl, mp1m_S_melt_sno_rai,
++    ]
++    period: 10mins
++  - short_name: [
++      mp1mup_S_phase_change_vap_lcl, mp1mup_S_phase_change_vap_icl,
++      mp1mup_S_acnv_lcl_rai, mp1mup_S_acnv_icl_sno,
++      mp1mup_S_accr_lcl_rai, mp1mup_S_accr_lcl_sno_cold, mp1mup_S_accr_lcl_sno_warm,
++      mp1mup_S_accr_melt_lcl_sno,
++      mp1mup_S_accr_icl_rai, mp1mup_S_accr_freeze_icl_rai, mp1mup_S_accr_icl_sno,
++      mp1mup_S_accr_rai_sno_cold, mp1mup_S_accr_rai_sno_warm, mp1mup_S_accr_melt_rai_sno,
++      mp1mup_S_phase_change_vap_rai, mp1mup_S_phase_change_vap_sno,
++      mp1mup_S_melt_icl_lcl, mp1mup_S_melt_sno_rai,
++    ]
++    period: 10mins
++  - short_name: [
++      mp1men_S_phase_change_vap_lcl, mp1men_S_phase_change_vap_icl,
++      mp1men_S_acnv_lcl_rai, mp1men_S_acnv_icl_sno,
++      mp1men_S_accr_lcl_rai, mp1men_S_accr_lcl_sno_cold, mp1men_S_accr_lcl_sno_warm,
++      mp1men_S_accr_melt_lcl_sno,
++      mp1men_S_accr_icl_rai, mp1men_S_accr_freeze_icl_rai, mp1men_S_accr_icl_sno,
++      mp1men_S_accr_rai_sno_cold, mp1men_S_accr_rai_sno_warm, mp1men_S_accr_melt_rai_sno,
++      mp1men_S_phase_change_vap_rai, mp1men_S_phase_change_vap_sno,
++      mp1men_S_melt_icl_lcl, mp1men_S_melt_sno_rai,
++    ]
++    period: 10mins
+ ode_algo: "ARS222"
++
+diff --git a/ClimaAtmos.jl/config/model_configs/prognostic_edmfx_rico_column.yml b/ClimaAtmos.jl-mod/config/model_configs/prognostic_edmfx_rico_column.yml
+index ec609d6..9dd6d9a 100644
+--- a/ClimaAtmos.jl/config/model_configs/prognostic_edmfx_rico_column.yml
++++ b/ClimaAtmos.jl-mod/config/model_configs/prognostic_edmfx_rico_column.yml
+@@ -34,4 +34,38 @@ diagnostics:
+     period: 10mins
+   - short_name: [husra, hussn]
+     period: 10mins
++  - short_name: [
++      mp1m_S_phase_change_vap_lcl, mp1m_S_phase_change_vap_icl,
++      mp1m_S_acnv_lcl_rai, mp1m_S_acnv_icl_sno,
++      mp1m_S_accr_lcl_rai, mp1m_S_accr_lcl_sno_cold, mp1m_S_accr_lcl_sno_warm,
++      mp1m_S_accr_melt_lcl_sno,
++      mp1m_S_accr_icl_rai, mp1m_S_accr_freeze_icl_rai, mp1m_S_accr_icl_sno,
++      mp1m_S_accr_rai_sno_cold, mp1m_S_accr_rai_sno_warm, mp1m_S_accr_melt_rai_sno,
++      mp1m_S_phase_change_vap_rai, mp1m_S_phase_change_vap_sno,
++      mp1m_S_melt_icl_lcl, mp1m_S_melt_sno_rai,
++    ]
++    period: 10mins
++  - short_name: [
++      mp1mup_S_phase_change_vap_lcl, mp1mup_S_phase_change_vap_icl,
++      mp1mup_S_acnv_lcl_rai, mp1mup_S_acnv_icl_sno,
++      mp1mup_S_accr_lcl_rai, mp1mup_S_accr_lcl_sno_cold, mp1mup_S_accr_lcl_sno_warm,
++      mp1mup_S_accr_melt_lcl_sno,
++      mp1mup_S_accr_icl_rai, mp1mup_S_accr_freeze_icl_rai, mp1mup_S_accr_icl_sno,
++      mp1mup_S_accr_rai_sno_cold, mp1mup_S_accr_rai_sno_warm, mp1mup_S_accr_melt_rai_sno,
++      mp1mup_S_phase_change_vap_rai, mp1mup_S_phase_change_vap_sno,
++      mp1mup_S_melt_icl_lcl, mp1mup_S_melt_sno_rai,
++    ]
++    period: 10mins
++  - short_name: [
++      mp1men_S_phase_change_vap_lcl, mp1men_S_phase_change_vap_icl,
++      mp1men_S_acnv_lcl_rai, mp1men_S_acnv_icl_sno,
++      mp1men_S_accr_lcl_rai, mp1men_S_accr_lcl_sno_cold, mp1men_S_accr_lcl_sno_warm,
++      mp1men_S_accr_melt_lcl_sno,
++      mp1men_S_accr_icl_rai, mp1men_S_accr_freeze_icl_rai, mp1men_S_accr_icl_sno,
++      mp1men_S_accr_rai_sno_cold, mp1men_S_accr_rai_sno_warm, mp1men_S_accr_melt_rai_sno,
++      mp1men_S_phase_change_vap_rai, mp1men_S_phase_change_vap_sno,
++      mp1men_S_melt_icl_lcl, mp1men_S_melt_sno_rai,
++    ]
++    period: 10mins
+ ode_algo: "ARS222"
++
+diff --git a/ClimaAtmos.jl/config/model_configs/prognostic_edmfx_trmm_column.yml b/ClimaAtmos.jl-mod/config/model_configs/prognostic_edmfx_trmm_column.yml
+index 4b9273c..8c36c9a 100644
+--- a/ClimaAtmos.jl/config/model_configs/prognostic_edmfx_trmm_column.yml
++++ b/ClimaAtmos.jl-mod/config/model_configs/prognostic_edmfx_trmm_column.yml
+@@ -34,4 +34,38 @@ diagnostics:
+     period: 10mins
+   - short_name: [husra, hussn, husraup, hussnup, husraen, hussnen]
+     period: 10mins
++  - short_name: [
++      mp1m_S_phase_change_vap_lcl, mp1m_S_phase_change_vap_icl,
++      mp1m_S_acnv_lcl_rai, mp1m_S_acnv_icl_sno,
++      mp1m_S_accr_lcl_rai, mp1m_S_accr_lcl_sno_cold, mp1m_S_accr_lcl_sno_warm,
++      mp1m_S_accr_melt_lcl_sno,
++      mp1m_S_accr_icl_rai, mp1m_S_accr_freeze_icl_rai, mp1m_S_accr_icl_sno,
++      mp1m_S_accr_rai_sno_cold, mp1m_S_accr_rai_sno_warm, mp1m_S_accr_melt_rai_sno,
++      mp1m_S_phase_change_vap_rai, mp1m_S_phase_change_vap_sno,
++      mp1m_S_melt_icl_lcl, mp1m_S_melt_sno_rai,
++    ]
++    period: 10mins
++  - short_name: [
++      mp1mup_S_phase_change_vap_lcl, mp1mup_S_phase_change_vap_icl,
++      mp1mup_S_acnv_lcl_rai, mp1mup_S_acnv_icl_sno,
++      mp1mup_S_accr_lcl_rai, mp1mup_S_accr_lcl_sno_cold, mp1mup_S_accr_lcl_sno_warm,
++      mp1mup_S_accr_melt_lcl_sno,
++      mp1mup_S_accr_icl_rai, mp1mup_S_accr_freeze_icl_rai, mp1mup_S_accr_icl_sno,
++      mp1mup_S_accr_rai_sno_cold, mp1mup_S_accr_rai_sno_warm, mp1mup_S_accr_melt_rai_sno,
++      mp1mup_S_phase_change_vap_rai, mp1mup_S_phase_change_vap_sno,
++      mp1mup_S_melt_icl_lcl, mp1mup_S_melt_sno_rai,
++    ]
++    period: 10mins
++  - short_name: [
++      mp1men_S_phase_change_vap_lcl, mp1men_S_phase_change_vap_icl,
++      mp1men_S_acnv_lcl_rai, mp1men_S_acnv_icl_sno,
++      mp1men_S_accr_lcl_rai, mp1men_S_accr_lcl_sno_cold, mp1men_S_accr_lcl_sno_warm,
++      mp1men_S_accr_melt_lcl_sno,
++      mp1men_S_accr_icl_rai, mp1men_S_accr_freeze_icl_rai, mp1men_S_accr_icl_sno,
++      mp1men_S_accr_rai_sno_cold, mp1men_S_accr_rai_sno_warm, mp1men_S_accr_melt_rai_sno,
++      mp1men_S_phase_change_vap_rai, mp1men_S_phase_change_vap_sno,
++      mp1men_S_melt_icl_lcl, mp1men_S_melt_sno_rai,
++    ]
++    period: 10mins
+ ode_algo: "ARS222"
++
+diff --git a/ClimaAtmos.jl/post_processing/ci_plots.jl b/ClimaAtmos.jl-mod/post_processing/ci_plots.jl
+index a66b4d3..6f6e32f 100644
+--- a/ClimaAtmos.jl/post_processing/ci_plots.jl
++++ b/ClimaAtmos.jl-mod/post_processing/ci_plots.jl
+@@ -190,6 +190,7 @@ function make_plots_generic(
+     summary_files = String[],
+     MAX_NUM_COLS = 1,
+     MAX_NUM_ROWS = min(4, length(vars)),
++    fig_size = nothing,
+     save_jpeg_copy = false,
+     kwargs...,
+ )
+@@ -223,7 +224,7 @@ function make_plots_generic(
+ 
+     # Define fig, grid, and grid_pos, used below. (Needed for scope)
+     function makefig()
+-        fig = CairoMakie.Figure(; size = (900, 300 * MAX_NUM_ROWS))
++        fig = CairoMakie.Figure(; size = something(fig_size, (900, 300 * MAX_NUM_ROWS)))
+         if is_comparison
+             for (col, path) in enumerate(output_path)
+                 # CairoMakie seems to use this Label to determine the width of the figure.
+@@ -1353,6 +1354,40 @@ function plot_edmf_vert_profile!(grid_loc, var_group)
+ end
+ 
+ 
++"""
++    plot_mp1m_row!(grid_loc, row_vars)
++
++Plot a row of 3 mp1m time-height contour panels (grid-mean, updraft,
++environment) with shared symmetric colorbar and divergent RdBu colormap.
++
++`row_vars` is a tuple/vector of 3 OutputVar objects.
++"""
++function plot_mp1m_row!(grid_loc, row_vars)
++    # Compute shared symmetric color range across the row
++    maxabs = maximum(
++        maximum(abs.(v.data)) for v in row_vars;
++        init = eps(Float64),
++    )
++    crange = (-maxabs, maxabs)
++
++    for (col, var) in enumerate(row_vars)
++        gl = grid_loc[1, col] = CairoMakie.GridLayout()
++        viz.plot!(
++            gl,
++            var;
++            more_kwargs = Dict(
++                :axis => ca_kwargs(
++                    title = parse_var_attributes(var),
++                ),
++                :plot => ca_kwargs(
++                    colormap = Makie.Reverse(:RdBu),
++                    colorrange = crange,
++                ),
++            ),
++        )
++    end
++end
++
+ """
+     plot_parsed_attribute_title!(grid_loc, var)
+ 
+@@ -1477,11 +1512,101 @@ function make_plots(
+         MAX_NUM_ROWS = 4,
+     )
+ 
++    summary_files = [tmp_file]
++
++    # Microphysics 1M process tendency plots (grid-mean, updraft, environment)
++    mp1m_vars_zt = []  # time-z fields for contour plots
++    if sim_type isa EDMFColumnPlotsWithPrecip &&
++       !(sim_type isa Val{:prognostic_edmfx_rico_column_2M})
++        mp1m_source_names = [
++            "S_phase_change_vap_lcl", "S_phase_change_vap_icl",
++            "S_acnv_lcl_rai", "S_acnv_icl_sno",
++            "S_accr_lcl_rai", "S_accr_lcl_sno_cold", "S_accr_lcl_sno_warm",
++            "S_accr_melt_lcl_sno",
++            "S_accr_icl_rai", "S_accr_freeze_icl_rai", "S_accr_icl_sno",
++            "S_accr_rai_sno_cold", "S_accr_rai_sno_warm", "S_accr_melt_rai_sno",
++            "S_phase_change_vap_rai", "S_phase_change_vap_sno",
++            "S_melt_icl_lcl", "S_melt_sno_rai",
++        ]
++
++        # Use only the current simulation (not main branch comparison)
++        # since mp1m diagnostics are new and won't exist in older runs.
++        mp1m_simdirs = simdirs[1:1]
++        mp1m_output_paths = output_paths[1:1]
++
++        # Interleave as (grid-mean, updraft, environment) per source term
++        # so each row in the contour plot shows one process across domains
++        mp1m_all_names = vec(
++            ["mp1m_", "mp1mup_", "mp1men_"] .*
++            permutedims(mp1m_source_names),
++        )
++
++        # Load the time-z fields for all mp1m variables
++        mp1m_vars_zt =
++            map_comparison(mp1m_simdirs, mp1m_all_names) do simdir, sn
++                var = get(simdir; short_name = sn, reduction, period)
++                if is_box
++                    var = slice(var, x = 0.0, y = 0.0)
++                end
++                return var
++            end
++
++        # Group as (grid-mean, updraft, environment) triplets for profile plots
++        mp1m_tuples = [
++            ("mp1m_$(s)", "mp1mup_$(s)", "mp1men_$(s)")
++            for s in mp1m_source_names
++        ]
++
++        mp1m_profile_groups =
++            map_comparison(mp1m_simdirs, mp1m_tuples) do simdir, name_tuple
++                vars = map(name_tuple) do sn
++                    var = get(simdir; short_name = sn, reduction, period)
++                    if is_box
++                        var = slice(var, x = 0.0, y = 0.0)
++                    end
++                    return slice(var, time = LAST_SNAP)
++                end
++                return vars
++            end
++
++        mp1m_file = make_plots_generic(
++            mp1m_output_paths,
++            mp1m_profile_groups;
++            output_name = "mp1m_tendencies",
++            plot_fn = plot_edmf_vert_profile!,
++            MAX_NUM_COLS = 2,
++            MAX_NUM_ROWS = 4,
++        )
++        push!(summary_files, mp1m_file)
++
++        # Time-height contour plots for mp1m: 3 columns (gm, up, en) per row
++        # with shared symmetric colorbar per row and divergent colormap.
++        # Group the flat vars into (gm, up, en) triplets per source term.
++        mp1m_row_groups = [
++            (
++                mp1m_vars_zt[(i - 1) * 3 + 1],
++                mp1m_vars_zt[(i - 1) * 3 + 2],
++                mp1m_vars_zt[(i - 1) * 3 + 3],
++            ) for i in 1:length(mp1m_source_names)
++        ]
++        mp1m_zt_file = make_plots_generic(
++            mp1m_output_paths,
++            mp1m_row_groups;
++            output_name = "mp1m_timeseries",
++            plot_fn = plot_mp1m_row!,
++            MAX_NUM_COLS = 1,
++            MAX_NUM_ROWS = 3,
++            fig_size = (1500, 900),
++        )
++        push!(summary_files, mp1m_zt_file)
++    end
++
++    # Time-height contour plots: existing EDMF variables
+     make_plots_generic(
+         output_paths,
+         collect(Iterators.flatten(var_groups_zt)),
+         plot_fn = plot_parsed_attribute_title!,
+-        summary_files = [tmp_file],
++        summary_files = summary_files,
+         MAX_NUM_COLS = 2,
+         MAX_NUM_ROWS = 4,
+     )
+diff --git a/ClimaAtmos.jl/reproducibility_tests/ref_counter.jl b/ClimaAtmos.jl-mod/reproducibility_tests/ref_counter.jl
+index 472d50d..df8f19d 100644
+--- a/ClimaAtmos.jl/reproducibility_tests/ref_counter.jl
++++ b/ClimaAtmos.jl-mod/reproducibility_tests/ref_counter.jl
+@@ -1,4 +1,4 @@
+-351
++352
+ 
+ # **README**
+ #
+@@ -32,6 +32,9 @@
+ # 3) (optional) leave a link to the buildkite run that prompted this ref counter bump.
+ 
+ #=
++352
++- Truncated-Gaussian microphysics and cloud fraction closure.
++
+ 351
+ - Add `@noinline` function barrier for SGS microphysics quadrature to improve
+   GPU occupancy; this shifts codegen enough to affect reproducibility outputs.
 diff --git a/ClimaAtmos.jl/src/cache/microphysics_cache.jl b/ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl
-index 0d1a7f9..98228f9 100644
+index 0d1a7f9..73e5b35 100644
 --- a/ClimaAtmos.jl/src/cache/microphysics_cache.jl
 +++ b/ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl
-@@ -929,9 +929,9 @@ function set_microphysics_tendency_cache!(
+@@ -927,12 +927,14 @@ function set_microphysics_tendency_cache!(
+             ᶜT, cmp, thp, dt, nsubs,
+         )
      else
-         (; ᶜT′T′, ᶜq′q′, ᶜsgs_moments_mp) = p.precomputed
+-        (; ᶜT′T′, ᶜq′q′, ᶜsgs_moments_mp) = p.precomputed
++        (; ᶜT′T′, ᶜq′q′, ᶜsgs_moments) = p.precomputed
          corr_Tq = correlation_Tq(p.params)
 -        @. ᶜmp_tendency = microphysics_tendencies_1m(
 -            BMT.Microphysics1Moment(), sgs_quad, cmp, thp, Y.c.ρ, ᶜT,
 -            ᶜq_tot_nonneg, ᶜq_lcl, ᶜq_icl, ᶜq_rai, ᶜq_sno,
+-            ᶜT′T′, ᶜq′q′, corr_Tq, ᶜsgs_moments_mp, dt, nsubs_quad,
++        α = sgs_variance_fidelity(CAP.cloud_fraction_steepness_scale(p.params))
 +        set_microphysics_quadrature_1m!(
 +            ᶜmp_tendency, BMT.Microphysics1Moment(), sgs_quad, cmp, thp,
 +            Y.c.ρ, ᶜT, ᶜq_tot_nonneg, ᶜq_lcl, ᶜq_icl, ᶜq_rai, ᶜq_sno,
-             ᶜT′T′, ᶜq′q′, corr_Tq, ᶜsgs_moments_mp, dt, nsubs_quad,
++            ᶜT′T′, ᶜq′q′, corr_Tq, ᶜsgs_moments.λ_lagrange, ᶜsgs_moments.mu_S, α,
++            dt, nsubs_quad,
          )
      end
-@@ -969,9 +969,9 @@ function set_microphysics_tendency_cache!(
+ 
+@@ -967,12 +969,14 @@ function set_microphysics_tendency_cache!(
+             dt, nsubs,
+         )
      else
-         (; ᶜT′T′, ᶜq′q′, ᶜsgs_moments_mp) = p.precomputed
+-        (; ᶜT′T′, ᶜq′q′, ᶜsgs_moments_mp) = p.precomputed
++        (; ᶜT′T′, ᶜq′q′, ᶜsgs_moments) = p.precomputed
          corr_Tq = correlation_Tq(p.params)
 -        @. ᶜmp_tendency = microphysics_tendencies_1m(
 -            BMT.Microphysics1Moment(), sgs_quad, cm1, thp, Y.c.ρ, ᶜT,
 -            ᶜq_tot_nonneg, ᶜq_lcl, ᶜq_icl, ᶜq_rai, ᶜq_sno,
+-            ᶜT′T′, ᶜq′q′, corr_Tq, ᶜsgs_moments_mp, dt, nsubs_quad,
++        α = sgs_variance_fidelity(CAP.cloud_fraction_steepness_scale(p.params))
 +        set_microphysics_quadrature_1m!(
 +            ᶜmp_tendency, BMT.Microphysics1Moment(), sgs_quad, cm1, thp,
 +            Y.c.ρ, ᶜT, ᶜq_tot_nonneg, ᶜq_lcl, ᶜq_icl, ᶜq_rai, ᶜq_sno,
-             ᶜT′T′, ᶜq′q′, corr_Tq, ᶜsgs_moments_mp, dt, nsubs_quad,
++            ᶜT′T′, ᶜq′q′, corr_Tq, ᶜsgs_moments.λ_lagrange, ᶜsgs_moments.mu_S, α,
++            dt, nsubs_quad,
          )
      end
-@@ -1021,9 +1021,9 @@ function set_microphysics_tendency_cache!(
+ 
+@@ -1019,12 +1023,14 @@ function set_microphysics_tendency_cache!(
+             ᶜT⁰, cmp, thp, dt, nsubs,
+         )
      else
-         (; ᶜT′T′, ᶜq′q′, ᶜsgs_moments_mp) = p.precomputed
+-        (; ᶜT′T′, ᶜq′q′, ᶜsgs_moments_mp) = p.precomputed
++        (; ᶜT′T′, ᶜq′q′, ᶜsgs_moments) = p.precomputed
          corr_Tq = correlation_Tq(p.params)
 -        @. ᶜmp_tendency⁰ = microphysics_tendencies_1m(
 -            BMT.Microphysics1Moment(), sgs_quad, cmp, thp, ᶜρ⁰, ᶜT⁰,
 -            ᶜq_tot_nonneg⁰, ᶜq_lcl⁰, ᶜq_icl⁰, ᶜq_rai⁰, ᶜq_sno⁰,
+-            ᶜT′T′, ᶜq′q′, corr_Tq, ᶜsgs_moments_mp, dt, nsubs_quad,
++        α = sgs_variance_fidelity(CAP.cloud_fraction_steepness_scale(p.params))
 +        set_microphysics_quadrature_1m!(
 +            ᶜmp_tendency⁰, BMT.Microphysics1Moment(), sgs_quad, cmp, thp,
 +            ᶜρ⁰, ᶜT⁰, ᶜq_tot_nonneg⁰, ᶜq_lcl⁰, ᶜq_icl⁰, ᶜq_rai⁰, ᶜq_sno⁰,
-             ᶜT′T′, ᶜq′q′, corr_Tq, ᶜsgs_moments_mp, dt, nsubs_quad,
++            ᶜT′T′, ᶜq′q′, corr_Tq, ᶜsgs_moments.λ_lagrange, ᶜsgs_moments.mu_S, α,
++            dt, nsubs_quad,
          )
      end
+ 
+diff --git a/ClimaAtmos.jl/src/cache/precomputed_quantities.jl b/ClimaAtmos.jl-mod/src/cache/precomputed_quantities.jl
+index ba55ac7..f682928 100644
+--- a/ClimaAtmos.jl/src/cache/precomputed_quantities.jl
++++ b/ClimaAtmos.jl-mod/src/cache/precomputed_quantities.jl
+@@ -158,22 +158,20 @@ function precomputed_quantities(Y, atmos)
+         atmos.microphysics_model isa
+         Union{NonEquilibriumMicrophysics1M, NonEquilibriumMicrophysics2M} ||
+         atmos.cloud_model isa Union{QuadratureCloud, MLCloud}
+-    # `ᶜsgs_moments_mp` caches the SGS-mean equilibrium cloud condensate
+-    # `(M_l, M_i)` used by the `Microphysics1MEvaluator` shape-function
+-    # partition. It is allocated only for schemes that consume it. The
+-    # `(μ_S, σ_S²)` moments needed by `compute_cloud_fraction_hybrid` are
+-    # computed inline in the cloud-fraction broadcast and never stored.
++    # `ᶜsgs_moments` caches `(mu_S, sigma_S_sq, λ_lagrange)` — the SGS mean saturation
++    # variable, variance, and Lagrange multiplier used by `Microphysics1MEvaluator`.
++    # Allocated only for 1M/2M microphysics schemes.
+     uses_microphysics_quadrature_moments =
+         atmos.microphysics_model isa
+         Union{NonEquilibriumMicrophysics1M, NonEquilibriumMicrophysics2M}
+-    SGSMomentsMPNT = @NamedTuple{M_l::FT, M_i::FT}
++    SGSMomentsNT = @NamedTuple{mu_S::FT, sigma_S_sq::FT, λ_lagrange::FT}
+     covariance_quantities = if uses_sgs_quadrature
+         base = (;
+             ᶜT′T′ = zeros(axes(Y.c)),
+             ᶜq′q′ = zeros(axes(Y.c)),
+         )
+         uses_microphysics_quadrature_moments ?
+-        (; base..., ᶜsgs_moments_mp = similar(Y.c, SGSMomentsMPNT)) :
++        (; base..., ᶜsgs_moments = similar(Y.c, SGSMomentsNT)) :
+         base
+     else
+         (;)
+diff --git a/ClimaAtmos.jl/src/cache/surface_albedo.jl b/ClimaAtmos.jl-mod/src/cache/surface_albedo.jl
+index 64c36f1..3bc91a9 100644
+--- a/ClimaAtmos.jl/src/cache/surface_albedo.jl
++++ b/ClimaAtmos.jl-mod/src/cache/surface_albedo.jl
+@@ -121,9 +121,9 @@ end
+ 
+ Tell the ClimaAtmos to skip setting the surface albedo, as it is handled by the coupler.
+ 
+-When running in a coupled simulation, set the surface albedo to 0.38 at the beginning of the simulation,
+-so the initial callback initialization doesn't lead to NaNs in the radiation model.
+-Subsequently, the surface albedo will be updated by the coupler.
++To avoid NaNs or invalid values in the first radiation call, the coupler retrieves
++the albedo initial conditions from the surface models, and provides these to the
++atmosphere model before stepping.
+ """
+ function set_surface_albedo!(Y, p, t, ::CouplerAlbedo)
+     FT = eltype(Y)
+@@ -131,10 +131,6 @@ function set_surface_albedo!(Y, p, t, ::CouplerAlbedo)
+         # set initial insolation initial conditions
+         !(p.atmos.insolation isa IdealizedInsolation) &&
+             set_insolation_variables!(Y, p, t, p.atmos.insolation)
+-        # set surface albedo to 0.38
+-        @warn "Setting surface albedo to 0.38 at the beginning of the simulation"
+-        p.radiation.rrtmgp_model.direct_sw_surface_albedo .= FT(0.38)
+-        p.radiation.rrtmgp_model.diffuse_sw_surface_albedo .= FT(0.38)
+     else
+         nothing
+     end
+diff --git a/ClimaAtmos.jl/src/diagnostics/diagnostic.jl b/ClimaAtmos.jl-mod/src/diagnostics/diagnostic.jl
+index e18a1c8..50c662a 100644
+--- a/ClimaAtmos.jl/src/diagnostics/diagnostic.jl
++++ b/ClimaAtmos.jl-mod/src/diagnostics/diagnostic.jl
+@@ -100,6 +100,7 @@ include("tracer_diagnostics.jl")
+ include("gravitywave_diagnostics.jl")
+ include("conservation_diagnostics.jl")
+ include("negative_scalars_diagnostics.jl")
++include("microphysics_diagnostics.jl")
+ 
+ # Default diagnostics and higher level interfaces
+ include("default_diagnostics.jl")
+diff --git a/ClimaAtmos.jl-mod/src/diagnostics/microphysics_diagnostics.jl b/ClimaAtmos.jl-mod/src/diagnostics/microphysics_diagnostics.jl
+new file mode 100644
+index 0000000..bb734c9
+--- /dev/null
++++ b/ClimaAtmos.jl-mod/src/diagnostics/microphysics_diagnostics.jl
+@@ -0,0 +1,188 @@
++#=
++This file is included in Diagnostics.jl
++
++Microphysics 1-moment process tendency diagnostics.
++
++Outputs individual source terms from CloudMicrophysics
++`bulk_microphysics_tendencies(InstantaneousVerbose(), ...)` for:
++  - Grid-mean state (prefix: mp1m_)
++  - Updraft state for PrognosticEDMFX (prefix: mp1mup_)
++  - Environment state for PrognosticEDMFX (prefix: mp1men_)
++
++Each diagnostic calls InstantaneousVerbose and extracts a single scalar field
++inside the broadcast, so the result is a proper `Field{FT}` with zero
++intermediate allocations.
++=#
++
++import CloudMicrophysics.BulkMicrophysicsTendencies as BMT
++
++# ---------------------------------------------------------------------------
++# Helper: call InstantaneousVerbose and extract one field by name.
++# Because everything is @inline, the compiler can dead-code-eliminate unused
++# source terms inside the broadcast.
++# ---------------------------------------------------------------------------
++@inline function _mp1m_source_term(
++    ::Val{F}, mp, tps, ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno,
++) where {F}
++    src = BMT.bulk_microphysics_tendencies(
++        BMT.InstantaneousVerbose(), BMT.Microphysics1Moment(),
++        mp, tps, ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno,
++    )
++    return getfield(src, F)
++end
++
++# ---------------------------------------------------------------------------
++# The 18 source terms produced by _microphysics_source_terms.
++# Each entry: (field_symbol, human-readable description)
++# ---------------------------------------------------------------------------
++const MP1M_SOURCE_TERMS = [
++    (:S_phase_change_vap_lcl, "Vapor ↔ cloud liquid phase change"),
++    (:S_phase_change_vap_icl, "Vapor ↔ cloud ice phase change"),
++    (:S_acnv_lcl_rai, "Cloud liquid → rain autoconversion"),
++    (:S_acnv_icl_sno, "Cloud ice → snow autoconversion"),
++    (:S_accr_lcl_rai, "Cloud liquid + rain accretion"),
++    (:S_accr_lcl_sno_cold, "Cloud liquid + snow accretion (cold)"),
++    (:S_accr_lcl_sno_warm, "Cloud liquid + snow accretion (warm)"),
++    (:S_accr_melt_lcl_sno, "Thermal melt of snow by warm cloud liquid"),
++    (:S_accr_icl_rai, "Cloud ice + rain accretion"),
++    (:S_accr_freeze_icl_rai, "Rain frozen in ice-rain collision"),
++    (:S_accr_icl_sno, "Cloud ice + snow accretion"),
++    (:S_accr_rai_sno_cold, "Rain-snow accretion (cold, rain → snow)"),
++    (:S_accr_rai_sno_warm, "Rain-snow accretion (warm, snow → rain)"),
++    (:S_accr_melt_rai_sno, "Thermal melt of snow by warm rain"),
++    (:S_phase_change_vap_rai, "Rain condensation/evaporation"),
++    (:S_phase_change_vap_sno, "Snow deposition/sublimation"),
++    (:S_melt_icl_lcl, "Cloud ice melt → cloud liquid"),
++    (:S_melt_sno_rai, "Snow melt → rain"),
++]
++
++# ---------------------------------------------------------------------------
++# Grid-mean compute function
++# ---------------------------------------------------------------------------
++function compute_mp1m_source(state, cache, ::Val{F}) where {F}
++    cmp = CAP.microphysics_1m_params(cache.params)
++    thp = CAP.thermodynamics_params(cache.params)
++    ᶜρ = state.c.ρ
++    ᶜT = cache.precomputed.ᶜT
++    ᶜq_tot = @. lazy(specific(state.c.ρq_tot, ᶜρ))
++    ᶜq_lcl = @. lazy(specific(state.c.ρq_lcl, ᶜρ))
++    ᶜq_icl = @. lazy(specific(state.c.ρq_icl, ᶜρ))
++    ᶜq_rai = @. lazy(specific(state.c.ρq_rai, ᶜρ))
++    ᶜq_sno = @. lazy(specific(state.c.ρq_sno, ᶜρ))
++    return @. lazy(
++        _mp1m_source_term(
++            Val(F), cmp, thp, ᶜρ, ᶜT, ᶜq_tot, ᶜq_lcl, ᶜq_icl, ᶜq_rai, ᶜq_sno,
++        ),
++    )
++end
++
++# Dispatch: only defined for 1M microphysics
++compute_mp1m_source(state, cache, time, F) =
++    compute_mp1m_source(state, cache, time, F, cache.atmos.microphysics_model)
++compute_mp1m_source(_, _, _, F, model) =
++    error_diagnostic_variable("mp1m_$(F)", model)
++compute_mp1m_source(state, cache, _, F, ::NonEquilibriumMicrophysics1M) =
++    compute_mp1m_source(state, cache, F)
++
++# ---------------------------------------------------------------------------
++# Updraft compute function (PrognosticEDMFX, first subdomain)
++# ---------------------------------------------------------------------------
++function compute_mp1m_source_updraft(state, cache, ::Val{F}) where {F}
++    cmp = CAP.microphysics_1m_params(cache.params)
++    thp = CAP.thermodynamics_params(cache.params)
++    ᶜρʲ = cache.precomputed.ᶜρʲs.:1
++    ᶜTʲ = cache.precomputed.ᶜTʲs.:1
++    ᶜq_totʲ = cache.precomputed.ᶜq_tot_nonnegʲs.:1
++    ᶜq_lclʲ = (state.c.sgsʲs.:1).q_lcl
++    ᶜq_iclʲ = (state.c.sgsʲs.:1).q_icl
++    ᶜq_raiʲ = (state.c.sgsʲs.:1).q_rai
++    ᶜq_snoʲ = (state.c.sgsʲs.:1).q_sno
++    return @. lazy(
++        _mp1m_source_term(
++            Val(F), cmp, thp,
++            ᶜρʲ, ᶜTʲ, ᶜq_totʲ, ᶜq_lclʲ, ᶜq_iclʲ, ᶜq_raiʲ, ᶜq_snoʲ,
++        ),
++    )
++end
++
++# Dispatch: only for 1M + PrognosticEDMFX
++compute_mp1m_source_updraft(state, cache, time, F) =
++    compute_mp1m_source_updraft(
++        state, cache, time, F,
++        cache.atmos.microphysics_model, cache.atmos.turbconv_model,
++    )
++compute_mp1m_source_updraft(_, _, _, F, mp_model, tc_model) =
++    error_diagnostic_variable("mp1mup_$(F)", (mp_model, tc_model))
++compute_mp1m_source_updraft(
++    state, cache, _, F,
++    ::NonEquilibriumMicrophysics1M, ::PrognosticEDMFX,
++) = compute_mp1m_source_updraft(state, cache, F)
++
++# ---------------------------------------------------------------------------
++# Environment compute function (PrognosticEDMFX)
++# ---------------------------------------------------------------------------
++function compute_mp1m_source_env(state, cache, ::Val{F}) where {F}
++    cmp = CAP.microphysics_1m_params(cache.params)
++    thp = CAP.thermodynamics_params(cache.params)
++    (; ᶜT⁰, ᶜp, ᶜq_tot_nonneg⁰, ᶜq_liq⁰, ᶜq_ice⁰) = cache.precomputed
++    ᶜρ⁰ = @. lazy(
++        TD.air_density(thp, ᶜT⁰, ᶜp, ᶜq_tot_nonneg⁰, ᶜq_liq⁰, ᶜq_ice⁰),
++    )
++    ᶜq_lcl⁰ = ᶜspecific_env_value(@name(q_lcl), state, cache)
++    ᶜq_icl⁰ = ᶜspecific_env_value(@name(q_icl), state, cache)
++    ᶜq_rai⁰ = ᶜspecific_env_value(@name(q_rai), state, cache)
++    ᶜq_sno⁰ = ᶜspecific_env_value(@name(q_sno), state, cache)
++    return @. lazy(
++        _mp1m_source_term(
++            Val(F), cmp, thp,
++            ᶜρ⁰, ᶜT⁰, ᶜq_tot_nonneg⁰, ᶜq_lcl⁰, ᶜq_icl⁰, ᶜq_rai⁰, ᶜq_sno⁰,
++        ),
++    )
++end
++
++# Dispatch: only for 1M + PrognosticEDMFX
++compute_mp1m_source_env(state, cache, time, F) =
++    compute_mp1m_source_env(
++        state, cache, time, F,
++        cache.atmos.microphysics_model, cache.atmos.turbconv_model,
++    )
++compute_mp1m_source_env(_, _, _, F, mp_model, tc_model) =
++    error_diagnostic_variable("mp1men_$(F)", (mp_model, tc_model))
++compute_mp1m_source_env(
++    state, cache, _, F,
++    ::NonEquilibriumMicrophysics1M, ::PrognosticEDMFX,
++) = compute_mp1m_source_env(state, cache, F)
++
++# ---------------------------------------------------------------------------
++# Register all diagnostics via loops
++# ---------------------------------------------------------------------------
++
++for (prefix, label, location, compute_fn) in (
++    ("mp1m", "", "grid-mean state", compute_mp1m_source),
++    (
++        "mp1mup",
++        " Updraft",
++        "updraft state (first subdomain)",
++        compute_mp1m_source_updraft,
++    ),
++    (
++        "mp1men",
++        " Environment",
++        "environment state",
++        compute_mp1m_source_env,
++    ),
++)
++    for (field, description) in MP1M_SOURCE_TERMS
++        add_diagnostic_variable!(;
++            short_name = "$(prefix)_$(field)",
++            long_name = "1M Microphysics$(label): $(description)",
++            units = "kg kg^-1 s^-1",
++            comments = "Instantaneous source term $(field) from " *
++                       "bulk_microphysics_tendencies(InstantaneousVerbose()). " *
++                       "Evaluated at $(location).",
++            compute = let F = Val(field), f = compute_fn
++                (state, cache, time) -> f(state, cache, time, F)
++            end,
++        )
++    end
++end
+diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/cloud_fraction.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/cloud_fraction.jl
+index 03c4285..ba3ab0f 100644
+--- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/cloud_fraction.jl
++++ b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/cloud_fraction.jl
+@@ -62,12 +62,10 @@ function set_covariance_cache_and_cloud_fraction!(Y, p)
+     # One Picard step: use the current cloud fraction to update buoyancy
+     # gradient and covariance cache, then recompute cloud fraction.
+     #
+-    # The hybrid cloud fraction reads `(μ_S, σ_S²)` from a Gauss-Hermite
+-    # pre-pass, but those moments are computed inline inside the CF broadcast
+-    # (see `compute_cloud_fraction_hybrid`) — there is no separate
+-    # `set_sgs_moments!` call during Picard. The microphysics-only moments
+-    # `(M_l, M_i)` are written once after Picard converges, in
+-    # `set_sgs_moments_mp!`.
++    # The hybrid cloud fraction fuses the σ_S² quadrature pass inline inside
++    # the CF broadcast (see `_compute_cloud_fraction`) — no separate moments
++    # materialization during Picard. CF, μ_S, and λ are all written once after
++    # Picard converges, in the final `set_sgs_moments_and_cloud_fraction!` call.
+     function picard_step!()
+         @. ᶜlinear_buoygrad = buoyancy_gradients(
+             BuoyGradMean(), # TODO: modify for NonEq + 1M tracers if needed
+@@ -130,11 +128,9 @@ function set_covariance_cache_and_cloud_fraction!(Y, p)
+     )
+     set_covariance_cache!(Y, p, thermo_params)
+ 
+-    # Write the microphysics moments `(M_l, M_i)` once against the post-Aitken
+-    # variance closure. The downstream microphysics tendency reads
+-    # `ᶜsgs_moments_mp` for the shape-function partition. No-op when that
+-    # cache is not allocated (e.g. 0M / dry).
+-    set_sgs_moments_mp!(Y, p)
++    # Final post-Aitken update: one quadrature pass refreshes both CF and the
++    # microphysics SGS moments (μ_S, λ) using the final covariance.
++    set_sgs_moments_and_cloud_fraction!(Y, p)
+ 
+     return nothing
+ end
+@@ -258,351 +254,208 @@ end
+ # SGS Moments — pre-pass quadrature
+ # ============================================================================
+ #
+-# A Gauss-Hermite pass over the SGS PDF (no BMT calls) supplies the moments
+-# consumed by the cloud fraction and microphysics tendency closures. Two
+-# specialized evaluators run separately so each consumer pays for only the
+-# moments it uses:
++# A Gauss-Hermite pass over the SGS PDF computes σ_S² via `_sgs_saturation_moments`,
++# which drives the truncated-Gaussian cloud-fraction and λ_lagrange closures.
+ #
+-#   - `SGSMomentsCFEvaluator` returns `(μ_S, S²)` for the smooth logistic-CDF
+-#     cloud fraction (used inline in the CF broadcast — never materialized
+-#     to a Field).
++# The saturation variable is ALWAYS defined as the linear excess
+ #
+-#   - `SGSMomentsMPEvaluator` returns `(M_l, M_i)` for the
+-#     `Microphysics1MEvaluator` shape-function partition. Cached once per
+-#     time step in `p.precomputed.ᶜsgs_moments_mp`.
++#     S = q_tot − q_sat
+ #
+-# Both consumers share the same SGS PDF, so the closures remain mutually
+-# consistent.
+-
+-"""
+-    SGSMomentsType{FT}
+-
+-NamedTuple type alias for the full per-cell SGS moments NamedTuple returned
+-by [`compute_sgs_moments`](@ref). Field semantics:
+-
+-- `mu_S`: Mean of the saturation variable `S(ξ)` over the SGS PDF.
+-- `sigma_S_sq`: Variance of `S(ξ)` over the SGS PDF.
+-- `M_l`: Mean of the equilibrium cloud-liquid condensate over the SGS PDF
+-  (`⟨max(0, λ·(q_tot_hat − q_sat(T_hat)) − q_rai)⟩`).
+-- `M_i`: Mean of the equilibrium cloud-ice condensate over the SGS PDF.
+-
+-The saturation variable `S` depends on the SGS distribution:
+-- `GaussianSGS`, `GridMeanSGS`: `S = q_tot − q_sat(T)` (linear saturation excess; units of `q`).
+-- `LogNormalSGS`: `S = log(q_tot / q_sat(T))` (dimensionless log-ratio).
+-
+-`M_l` and `M_i` are always in linear units of specific humidity, regardless
+-of the SGS distribution.
+-"""
+-const SGSMomentsType{FT} = @NamedTuple{
+-    mu_S::FT, sigma_S_sq::FT, M_l::FT, M_i::FT,
+-} where {FT}
+-
+-"""
+-    SGSMomentsMPType{FT}
+-
+-NamedTuple type alias for the per-cell SGS microphysics-moments cache used
+-by `Microphysics1MEvaluator`. Fields:
+-
+-- `M_l`: SGS-mean equilibrium cloud-liquid condensate `⟨q_lcl_eq⟩`.
+-- `M_i`: SGS-mean equilibrium cloud-ice condensate `⟨q_icl_eq⟩`.
+-"""
+-const SGSMomentsMPType{FT} = @NamedTuple{M_l::FT, M_i::FT} where {FT}
+-
+-# Linear saturation excess (Gaussian / GridMean SGS distributions)
+-@inline _saturation_variable(
+-    ::Union{GaussianSGS, GridMeanSGS}, q_tot, q_sat, q_min,
+-) = q_tot - q_sat
+-# Log saturation ratio (Lognormal SGS distribution); arguments regularized
+-# at `q_min` to prevent `log(0)` in dry / extreme states.
+-@inline _saturation_variable(::LogNormalSGS, q_tot, q_sat, q_min) =
+-    log(max(q_tot, q_min) / max(q_sat, q_min))
++# regardless of whether the SGS distribution of (T, q_tot) is Gaussian or
++# lognormal.  The distribution type (GaussianSGS / LogNormalSGS) controls only
++# how the quadrature points (T̂, q̂_tot) are sampled from the joint SGS PDF —
++# it does not change the definition of S.  This ensures consistency with the
++# Lagrange-multiplier evaluator, which always uses the centred linear excess
++# S′ = q_tot_hat − q_sat_hat − μ_S.
++#
++# (A lognormal closure for S = log(q_tot/q_sat) has no clean closed-form
++# inversion for the Lagrange multiplier, so the linear S is used universally.)
+ 
+ """
+-    SGSMomentsCFEvaluator(dist, tps, ρ, q_min)
++    SGSMomentsEvaluator(tps, ρ)
+ 
+-GPU-safe functor for the cloud-fraction-only quadrature integrand. Returns
+-`(mu_S = S(ξ), s_sq = S(ξ)²)` at each quadrature point. The CF closure does
+-not need the equilibrium-condensate moments, so this evaluator skips the
+-`(M_l, M_i)` arithmetic entirely.
++GPU-safe functor returning `(mu_S = S(ξ), s_sq = S(ξ)²)` at each quadrature
++point, where S = q_tot_hat − q_sat_hat is the linear saturation excess.
++Used by `_sgs_saturation_moments` to compute μ_S = E[S] and σ_S² = Var[S].
+ """
+-struct SGSMomentsCFEvaluator{D, TPS, FT}
+-    dist::D
++struct SGSMomentsEvaluator{TPS, FT}
+     tps::TPS
+     ρ::FT
+-    q_min::FT
+ end
+ 
+-@inline function (eval::SGSMomentsCFEvaluator)(T_hat, q_tot_hat)
++@inline function (eval::SGSMomentsEvaluator)(T_hat, q_tot_hat)
+     q_sat_hat = TD.q_vap_saturation(eval.tps, T_hat, eval.ρ)
+-    s = _saturation_variable(eval.dist, q_tot_hat, q_sat_hat, eval.q_min)
++    s = q_tot_hat - q_sat_hat
+     return (mu_S = s, s_sq = s * s)
+ end
+ 
+-"""
+-    SGSMomentsMPEvaluator(tps, ρ, λ, q_rai, q_sno)
+-
+-GPU-safe functor for the microphysics-only quadrature integrand. Returns
+-`(M_l, M_i) = (q_lcl_eq(ξ), q_icl_eq(ξ))` at each quadrature point. The
+-partition is linear in the saturation excess (independent of `dist`), so the
+-log-saturation arithmetic is skipped.
+-"""
+-struct SGSMomentsMPEvaluator{TPS, FT}
+-    tps::TPS
+-    ρ::FT
+-    λ::FT
+-    q_rai::FT
+-    q_sno::FT
+-end
+-
+-@inline function (eval::SGSMomentsMPEvaluator)(T_hat, q_tot_hat)
+-    FT = typeof(eval.ρ)
+-    q_sat_hat = TD.q_vap_saturation(eval.tps, T_hat, eval.ρ)
+-    excess = max(zero(FT), q_tot_hat - q_sat_hat)
+-    M_l = max(zero(FT), eval.λ * excess - eval.q_rai)
+-    M_i = max(zero(FT), (one(FT) - eval.λ) * excess - eval.q_sno)
+-    return (; M_l, M_i)
+-end
+ 
+ """
+-    SGSMomentsEvaluator(dist, tps, ρ, λ, q_rai, q_sno, q_min)
++    _sgs_saturation_moments(thp, ρ, T_mean, q_tot_mean, sgs_quad, T′T′, q′q′, corr_Tq)
+ 
+-Combined functor returning all four moment integrands
+-`(mu_S, s_sq, M_l, M_i)` for `compute_sgs_moments`. Retained mainly for the
+-test surface — production paths use the specialized CF or MP evaluators.
+-"""
+-struct SGSMomentsEvaluator{D, TPS, FT}
+-    dist::D
+-    tps::TPS
+-    ρ::FT
+-    λ::FT
+-    q_rai::FT
+-    q_sno::FT
+-    q_min::FT
+-end
++Compute μ_S = E[S] and σ_S² = Var[S] of the linear saturation excess
++S = q_tot − q_sat via a single Gauss-Hermite quadrature pass over the SGS PDF.
+ 
+-@inline function (eval::SGSMomentsEvaluator)(T_hat, q_tot_hat)
+-    FT = typeof(eval.ρ)
+-    q_sat_hat = TD.q_vap_saturation(eval.tps, T_hat, eval.ρ)
+-    s = _saturation_variable(eval.dist, q_tot_hat, q_sat_hat, eval.q_min)
+-    excess = max(zero(FT), q_tot_hat - q_sat_hat)
+-    q_lcl_eq = max(zero(FT), eval.λ * excess - eval.q_rai)
+-    q_icl_eq = max(zero(FT), (one(FT) - eval.λ) * excess - eval.q_sno)
+-    return (mu_S = s, s_sq = s * s, M_l = q_lcl_eq, M_i = q_icl_eq)
+-end
++The SGS distribution type controls how quadrature points are sampled but S is
++always the linear excess (see block comment above).
+ 
++Returns `(; mu_S, sigma_S_sq)`.
+ """
+-    _cf_moments_inline(thp, ρ, T_mean, q_tot_mean, sgs_quad, T′T′, q′q′,
+-                       corr_Tq, q_min)
+-
+-Compute `(mu_S, sigma_S_sq)` via a single quadrature pass over the SGS PDF.
+-Used inline by `compute_cloud_fraction_hybrid` so the CF broadcast fuses the
+-moments calculation with the CDF evaluation into a single GPU kernel and never
+-materializes a moments Field.
+-"""
+-@inline function _cf_moments_inline(
+-    thp, ρ, T_mean, q_tot_mean,
+-    sgs_quad, T′T′, q′q′, corr_Tq, q_min,
+-)
+-    FT = typeof(ρ)
+-    sgs_quad_eff = isnothing(sgs_quad) ? GridMeanSGS() : sgs_quad
+-    dist = sgs_quad_eff isa SGSQuadrature ? sgs_quad_eff.dist : sgs_quad_eff
+-    evaluator = SGSMomentsCFEvaluator(dist, thp, ρ, q_min)
+-    raw = integrate_over_sgs(
+-        evaluator, sgs_quad_eff, q_tot_mean, T_mean, q′q′, T′T′, corr_Tq,
+-    )
+-    sigma_S_sq = max(raw.s_sq - raw.mu_S * raw.mu_S, ϵ_numerics(FT))
+-    return (mu_S = raw.mu_S, sigma_S_sq = sigma_S_sq)
+-end
+-
+-"""
+-    compute_sgs_moments_mp(thp, ρ, T_mean, q_tot_mean,
+-                           q_lcl, q_icl, q_rai, q_sno,
+-                           sgs_quad, T′T′, q′q′, corr_Tq)
+-
+-Compute the microphysics moments `(M_l, M_i)` via one quadrature pass.
+-Linear in the saturation excess, independent of the SGS distribution.
+-Used by [`set_sgs_moments_mp!`](@ref) to populate `p.precomputed.ᶜsgs_moments_mp`
+-once per time step.
+-"""
+-@inline function compute_sgs_moments_mp(
++@inline function _sgs_saturation_moments(
+     thp, ρ, T_mean, q_tot_mean,
+-    q_lcl, q_icl, q_rai, q_sno,
+     sgs_quad, T′T′, q′q′, corr_Tq,
+ )
+     FT = typeof(ρ)
+     sgs_quad_eff = isnothing(sgs_quad) ? GridMeanSGS() : sgs_quad
+-    q_lcl_nn = max(zero(FT), q_lcl)
+-    q_icl_nn = max(zero(FT), q_icl)
+-    q_rai_nn = max(zero(FT), q_rai)
+-    q_sno_nn = max(zero(FT), q_sno)
+-    λ = TD.liquid_fraction(thp, T_mean, q_lcl_nn, q_icl_nn)
+-    evaluator = SGSMomentsMPEvaluator(thp, ρ, λ, q_rai_nn, q_sno_nn)
+-    return integrate_over_sgs(
+-        evaluator, sgs_quad_eff, q_tot_mean, T_mean, q′q′, T′T′, corr_Tq,
+-    )::SGSMomentsMPType{FT}
+-end
+-
+-"""
+-    compute_sgs_moments(thp, ρ, T_mean, q_tot_mean,
+-                          q_lcl, q_icl, q_rai, q_sno,
+-                          sgs_quad, T′T′, q′q′, corr_Tq, q_min)
+-
+-Compute all four SGS moments `(mu_S, sigma_S_sq, M_l, M_i)` via one quadrature
+-pass. Retained as a single building block for tests and external callers;
+-production code uses [`_cf_moments_inline`](@ref) (for the cloud fraction) and
+-[`compute_sgs_moments_mp`](@ref) (for microphysics) instead, so neither pays for
+-unused moments.
+-"""
+-@inline function compute_sgs_moments(
+-    thp, ρ, T_mean, q_tot_mean,
+-    q_lcl, q_icl, q_rai, q_sno,
+-    sgs_quad, T′T′, q′q′, corr_Tq, q_min,
+-)
+-    FT = typeof(ρ)
+-    sgs_quad_eff = isnothing(sgs_quad) ? GridMeanSGS() : sgs_quad
+-    dist = sgs_quad_eff isa SGSQuadrature ? sgs_quad_eff.dist : sgs_quad_eff
+-    q_lcl_nn = max(zero(FT), q_lcl)
+-    q_icl_nn = max(zero(FT), q_icl)
+-    q_rai_nn = max(zero(FT), q_rai)
+-    q_sno_nn = max(zero(FT), q_sno)
+-    λ = TD.liquid_fraction(thp, T_mean, q_lcl_nn, q_icl_nn)
+-    evaluator = SGSMomentsEvaluator(dist, thp, ρ, λ, q_rai_nn, q_sno_nn, q_min)
++    evaluator = SGSMomentsEvaluator(thp, ρ)
+     raw = integrate_over_sgs(
+         evaluator, sgs_quad_eff, q_tot_mean, T_mean, q′q′, T′T′, corr_Tq,
+     )
+-    sigma_S_sq = max(raw.s_sq - raw.mu_S * raw.mu_S, ϵ_numerics(FT))
+-    return (
++    return (;
+         mu_S = raw.mu_S,
+-        sigma_S_sq = sigma_S_sq,
+-        M_l = raw.M_l,
+-        M_i = raw.M_i,
+-    )::SGSMomentsType{FT}
++        sigma_S_sq = max(raw.s_sq - raw.mu_S * raw.mu_S, ϵ_numerics(FT)),
++    )
+ end
+ 
+-
+ # ============================================================================
+-# Cloud Fraction: Hybrid (quadrature-moment + analytic CDF)
++# Cloud Fraction: truncated-Gaussian closure with Lagrange-multiplier inversion
+ # ============================================================================
+ #
+-# Smooth logistic-CDF approximation evaluated against the cached SGS moments
+-# `(μ_S, σ_S²)` produced by `compute_sgs_moments`. The variance and saturation
+-# mean come directly from the Gauss-Hermite quadrature over the same SGS PDF
+-# that microphysics integrates over, giving consistency between the cloud
+-# fraction and the microphysics tendencies by construction. 
++# **Physical model**: the subgrid saturation excess S = q_tot − q_sat is
++# assumed Gaussian: S ~ N(μ_S, σ_S²), with σ_S computed by the pre-pass
++# quadrature.  Working with the centred excess S′ = S − μ_S ~ N(0, σ_S²),
++# we seek a Lagrange multiplier λ that enforces mass conservation:
++#
++#     E[max(0, λ + α·S′)] = q_c,                                     (*)
++#
++# where α = `sgs_variance_fidelity` controls how much of the SGS variance is
++# propagated into the local condensate (currently α = 1).
++#
++# Introducing  z = λ / (α·σ_S)  and  C = q_c / (α·σ_S),
++# the truncated-Gaussian expectation in (*) evaluates to:
++#
++#     C = z·Φ(z) + φ(z),
++#
++# where Φ is the standard normal CDF and φ is its PDF.  The cloud fraction
++# (fraction of the α·S′ PDF above −λ, i.e. fraction with positive shifted excess) is:
++#
++#     CF = P(α·S′ > −λ) = Φ(λ/(α·σ_S)) = Φ(z).
++#
++# Inverting C = z·Φ(z)+φ(z) for z uses Newton iteration on
++# F(z) = z·Φ(z)+φ(z)−C with F′(z) = Φ(z):
++#
++#     z_{n+1} = (C − φ(z_n)) / Φ(z_n).
+ #
+-# Dispatched on the SGS distribution via `_effective_excess_hybrid`:
+-#   - Gaussian/GridMean: linear coords, `Q_eff = q_c + min(0, μ_S)`.
+-#   - Lognormal: log coords, `Q_eff = log(1 + q_c/q_v_sat) + min(0, μ_S)`.
+-# The lognormal branch handles the heavy upper tail of `q_tot` in a
+-# principled way.
++# **Algorithm** (one Newton step with a fitted initial guess):
++# 1. Initial guess:  CF₀ = tanh(1.35·C)  [least-squares fit to exact solution],
++#                    z₀  = Φ⁻¹(CF₀)  via `normal_cdf_inv` (A&S 26.2.22).
++#    The A&S inverse correctly scales as −√(−2 ln CF₀) in the tail, avoiding
++#    the extreme underestimate of the tanh-based inverse that causes divergence.
++# 2. One Newton step:  z₁ = (C − φ(z₀)) / CF₀  (using Φ(z₀) = CF₀).
++# 3. CF = Φ(z₁) via `normal_cdf` (A&S 26.2.17, max error ≈ 7.5×10⁻⁸).
+ 
+ """
+-    compute_cloud_fraction_hybrid(
+-        thermo_params, T, ρ, q_tot, q_liq, q_ice,
+-        moments, cf_guess, cf_steepness_scale, q_min, sgs_dist,
+-    )
++    sgs_variance_fidelity(cf_steepness_coeff)
+ 
+-Compute cloud fraction from cached SGS moments. The variance and mean of
+-the saturation variable are taken from the pre-pass quadrature
+-(`compute_sgs_moments`); only the smooth CDF approximation and the
+-activation factor are evaluated here.
+-
+-# Algorithm
+-1. Activation factor on linear excess from cached moments:
+-   `α = clamp(q_c / √((μ_{lin})_+² + q_min²), 0, 1)` where `μ_{lin}` is
+-   the saturation excess (kg/kg) derived from `μ_S`.
+-2. Effective activation-scaled SGS standard deviation:
+-   `σ_qc = α √(σ_S²)`,
+-   - Gaussian/GridMean (linear coordinates):
+-   `σ_eff = √(σ_qc^2 + c_f (1-c_f) (q_c / c_f - min(0, μ_S) / (1-c_f))^2)`
+-   - Lognormal:
+-   `σ_eff = √(σ_qc^2 + c_f (1-c_f) (log(1 + q_c/q_v_sat) / c_f - min(0, μ_S) / (1-c_f))^2)`
+-3. Effective excess `Q_eff` from cached `μ_S`, dispatched on `sgs_dist`:
+-   - Gaussian/GridMean: `Q_eff = q_c + min(0, μ_S)` (linear coordinates).
+-   - Lognormal: `Q_eff = log(1 + q_c/q_v_sat) + min(0, μ_S)` (log coordinates).
+-4. Cloud fraction via variance-matched logistic CDF
+-   (`erf(x/√2) ≈ tanh((π/(2√3)) x)`):
+-   `c_f = ½ [1 + tanh(coeff · Q_eff / σ_eff)]` with
+-   `coeff = (π/(2√3)) · cf_steepness_scale`.
+-5. Enforce zero cloud fraction when no condensate exists.
++Return the variance fidelity parameter `α = 1 / cf_steepness_coeff`, where
++`cf_steepness_coeff = CAP.cloud_fraction_steepness_scale(params)`.
+ 
+-# Arguments
+-- `thermo_params`: Thermodynamics parameters.
+-- `T`: Grid-mean temperature [K].
+-- `ρ`: Air density [kg/m³].
+-- `q_tot`: Grid-mean total specific humidity [kg/kg].
+-- `q_liq`, `q_ice`: Grid-mean cloud condensate [kg/kg].
+-- `moments`: Cached `SGSMomentsType` `(mu_S, sigma_S_sq, M_l, M_i)`.
+-- `cf_guess`: Previous-step cloud fraction used in the effective variance estimate.
+-- `cf_steepness_scale`: Tunable steepness factor `coeff` (default 1).
+-- `q_min`: Minimum specific humidity threshold [kg/kg].
+-- `sgs_dist`: SGS distribution (`GaussianSGS`, `LogNormalSGS`, `GridMeanSGS`).
++`α` controls how much of the SGS saturation variance enters the local
++condensate computation:
+ 
+-# Returns
+-Cloud fraction ∈ [0, 1].
++    E[max(0, λ + α·S′)] = q_c,
++
++where `S′ = S − μ_S ~ N(0, σ_S²)`.  The effective standard deviation is
++`α·σ_S`, so `C = q_c / (α·σ_S)` and `λ = z·α·σ_S`.
++
++With the default `cf_steepness_coeff = 1` this gives `α = 1` (full variance
++propagation). Increasing the steepness coefficient sharpens the CF transition
++and reduces `α`.
++
++!!! note "Preliminary approximation"
++    This is a first-order approximation that ties `α` to the existing
++    steepness parameter. Future calibrations may replace or extend this
++    relationship to account for the local turbulence state, grid resolution,
++    or other physical controls on subgrid variance propagation.
+ """
+-@inline function compute_cloud_fraction_hybrid(
+-    thermo_params,
+-    T,
+-    ρ,
+-    q_tot,
+-    q_liq,
+-    q_ice,
+-    moments,
+-    cf_guess,
+-    cf_steepness_scale,
+-    q_min,
+-    sgs_dist::AbstractSGSDistribution,
+-)
+-    FT = typeof(T)
++sgs_variance_fidelity(cf_steepness_coeff::FT) where {FT} = one(FT) / cf_steepness_coeff
++
++"""
++    _compute_z(q_c, sigma_S_sq, α)
++
++Compute the normalised threshold `z = λ/(α·σ_S)` that satisfies the
++truncated-Gaussian condensate relation `C = z·Φ(z) + φ(z)`, where
++`C = q_c / (α·σ_S)`, via one Newton step seeded with an analytic initial guess.
++`α` is the variance fidelity parameter from `sgs_variance_fidelity`.
++
++Does not guard against `q_c = 0`. When `q_c = 0`, `C = 0` and the initial
++guess is clamped to `ϵ_numerics(FT)`, causing `z` to become a large negative
++number (not `-Inf`, but sufficiently negative that `Φ(z)` rounds to zero at
++floating-point precision). Use `_compute_cloud_fraction` if an exact hard zero
++is required.
++"""
++@inline function _compute_z(q_c, sigma_S_sq, α)
++    FT = typeof(sigma_S_sq)
++    σ_S = α * sqrt(max(sigma_S_sq, ϵ_numerics(FT)))
++    C = q_c / σ_S
++
++    # 1. Initial guess: CF₀ = tanh(1.35 · C)
++    cf0 = tanh(FT(1.35) * C)
++    # Upper bound must be representably less than 1: ϵ_numerics(FT) = cbrt(floatmin(FT))
++    # is so small that 1 - ϵ_numerics rounds to exactly 1.0 in floating-point, causing
++    # normal_cdf_inv(1) → log(0) → NaN. eps(FT) is the unit-roundoff at 1, so
++    # 1 - eps(FT) is always the largest Float strictly below 1.
++    cf0_safe = clamp(cf0, ϵ_numerics(FT), one(FT) - eps(FT))
++
++    # z₀ = Φ⁻¹(CF₀) via A&S 26.2.22
++    z0 = normal_cdf_inv(cf0_safe)
++
++    # 2. One Newton step: z₁ = (C − φ(z₀)) / Φ(z₀)
++    phi_z0 = exp(-z0 * z0 / 2) / sqrt(FT(2) * FT(π))
++    return (C - phi_z0) / cf0_safe
++end
+ 
+-    q_c = q_liq + q_ice
++"""
++    _compute_cloud_fraction(q_c, sigma_S_sq, α)
+ 
+-    # --- 1. Activation factor: linear excess from cached quadrature moments
+-    # We recover the linear excess (kg/kg) from the distribution-specific μ_S.
+-    q_sat = TD.q_vap_saturation(thermo_params, T, ρ)
+-    linear_mu = _linear_mu(sgs_dist, moments.mu_S, q_sat)
+-    excess_eq = max(zero(FT), linear_mu)
+-    α = min(one(FT), q_c / sqrt(excess_eq * excess_eq + q_min * q_min))
+-
+-    # --- 2. Effective activation-scaled SGS standard deviation
+-    σ_S = sqrt(max(moments.sigma_S_sq, ϵ_numerics(FT)))
+-    σ_qc = α * σ_S
+-    σ_eff = _effective_std_hybrid(σ_qc, cf_guess, q_c, q_sat, moments.mu_S, q_min, sgs_dist)
+-
+-    # --- 3. Effective excess Q_eff in the coordinate of the SGS distribution
+-    Q_eff =
+-        _effective_excess_hybrid(q_c, q_sat, moments.mu_S, q_min, sgs_dist)
+-
+-    # --- 4. Logistic-CDF approximation
+-    coeff = (FT(π) / (FT(2) * sqrt(FT(3)))) * cf_steepness_scale
+-    σ_safe = max(σ_eff, ϵ_numerics(FT))
+-    cf = FT(0.5) * (one(FT) + tanh(coeff * Q_eff / σ_safe))
+-
+-    # --- 5. No condensate → no cloud (branchless) ---
+-    has_cond = TD.has_condensate(thermo_params, q_c)
+-    return ifelse(has_cond, cf, zero(FT))
++Cloud fraction `CF = Φ(z)` where `z` solves the truncated-Gaussian condensate
++relation `q_c/(α·σ_S) = z·Φ(z) + φ(z)`.  Returns exactly `0` when `q_c = 0`.
++`α` is the variance fidelity parameter from `sgs_variance_fidelity`.
++"""
++@inline function _compute_cloud_fraction(q_c, sigma_S_sq, α)
++    FT = typeof(sigma_S_sq)
++    # No condensate → no cloud.
++    q_c > zero(FT) || return zero(FT)
++    return normal_cdf(_compute_z(q_c, sigma_S_sq, α))
+ end
+ 
+-# Recover the linear saturation excess (kg/kg) from the distribution-specific
+-# saturation variable. Used by the hybrid cloud fraction activation factor.
+-@inline _linear_mu(::Union{GaussianSGS, GridMeanSGS}, μ_S, q_sat) = μ_S
+-@inline _linear_mu(::LogNormalSGS, μ_S, q_sat) =
+-    q_sat * (exp(μ_S) - one(typeof(μ_S)))
++"""
++    _cloud_fraction_from_lambda(λ_lagrange, sigma_S_sq, α)
++
++Recover the cloud fraction `CF = Φ(z)` from the stored Lagrange multiplier
++`λ_lagrange = z·α·σ_S` and the SGS variance `sigma_S_sq`, without re-running
++the Newton iteration.  Since `z = λ_lagrange / (α·σ_S)`, this is simply
++`normal_cdf(λ_lagrange / (α·σ_S))`.
++"""
++@inline function _cloud_fraction_from_lambda(λ_lagrange, sigma_S_sq, α)
++    FT = typeof(λ_lagrange)
++    σ_S = α * sqrt(max(sigma_S_sq, ϵ_numerics(FT)))
++    return normal_cdf(λ_lagrange / σ_S)
++end
+ 
+ """
+-    compute_cloud_fraction_hybrid(
++    _compute_cloud_fraction(
+         thermo_params, T, ρ, q_tot, q_liq, q_ice,
+-        sgs_quad, T′T′, q′q′, corr_Tq, cf_guess,
+-        cf_steepness_scale, q_min, sgs_dist,
++        sgs_quad, T′T′, q′q′, corr_Tq, α,
+     )
+ 
+ Fused production overload: compute the hybrid cloud fraction in a single
+-inlined call that runs the `(μ_S, σ_S²)` quadrature pass and the logistic-CDF
+-evaluation in one broadcast kernel. Used by `set_cloud_fraction!(QuadratureCloud)`
+-so the moments are never materialized to a Field.
++inlined call that runs the `σ_S²` quadrature pass and the truncated-Gaussian
++approximate closure in one broadcast kernel. Used by
++`set_cloud_fraction!(QuadratureCloud)` so the moments are never
++materialized to a Field.
+ """
+-@inline function compute_cloud_fraction_hybrid(
++@inline function _compute_cloud_fraction(
+     thermo_params,
+     T,
+     ρ,
+@@ -613,82 +466,81 @@ so the moments are never materialized to a Field.
+     T′T′,
+     q′q′,
+     corr_Tq,
+-    cf_guess,
+-    cf_steepness_scale,
+-    q_min,
+-    sgs_dist::AbstractSGSDistribution,
++    α,
+ )
+-    moments = _cf_moments_inline(
+-        thermo_params, ρ, T, q_tot, sgs_quad, T′T′, q′q′, corr_Tq, q_min,
+-    )
+-    return compute_cloud_fraction_hybrid(
+-        thermo_params, T, ρ, q_tot, q_liq, q_ice, moments,
+-        cf_guess, cf_steepness_scale, q_min, sgs_dist,
++    moments = _sgs_saturation_moments(
++        thermo_params, ρ, T, q_tot, sgs_quad, T′T′, q′q′, corr_Tq,
+     )
++    return _compute_cloud_fraction(q_liq + q_ice, moments.sigma_S_sq, α)
+ end
+ 
+ """
+-    _effective_excess_hybrid(q_c, q_sat, μ_S, q_min, sgs_dist)
++    _compute_sgs_moments(thp, ρ, T, q_tot, q_c, sgs_quad, T′T′, q′q′, corr_Tq, α)
+ 
+-Distribution-specific effective excess `Q_eff` used by the hybrid cloud
+-fraction. Combines the prognostic condensate with the quadrature-derived
+-mean of the saturation variable so that `cf → 0` smoothly in subsaturated
+-states even when a numerical trace of prognostic condensate remains.
++Single quadrature pass returning `(mu_S, sigma_S_sq, λ_lagrange)`:
+ 
+-- `GaussianSGS`, `GridMeanSGS`: linear coordinates,
+-  `Q_eff = q_c + min(0, μ_S)`.
+-- `LogNormalSGS`: log coordinates,
+-  `Q_eff = log(1 + q_c/q_v_sat) + min(0, μ_S)` (regularized at `q_min`).
+-"""
+-@inline _effective_excess_hybrid(
+-    q_c, q_sat, μ_S, q_min, ::Union{GaussianSGS, GridMeanSGS},
+-) = q_c + min(zero(typeof(q_c)), μ_S)
++- `mu_S       = E[S]`: SGS mean saturation variable.
++- `sigma_S_sq = Var[S]`: SGS saturation variance (used to compute CF cheaply).
++- `λ_lagrange = z·α·σ_S`: Lagrange multiplier satisfying `E[max(0, λ + α·S′)] = q_c`.
+ 
+-@inline function _effective_excess_hybrid(
+-    q_c, q_sat, μ_S, q_min, ::LogNormalSGS,
++When `q_c = 0`, `_compute_z` gives a large-negative `z`, so `λ_lagrange` is
++a large-negative multiple of `α·σ_S`, driving the shifted excess to zero.
++"""
++@inline function _compute_sgs_moments(
++    thp, ρ, T, q_tot, q_c,
++    sgs_quad, T′T′, q′q′, corr_Tq, α,
+ )
+-    FT = typeof(q_c)
+-    q_v_sat_safe = max(q_sat, q_min)
+-    return log(FT(1) + q_c / q_v_sat_safe) + min(zero(FT), μ_S)
++    FT = typeof(ρ)
++    moments =
++        _sgs_saturation_moments(thp, ρ, T, q_tot, sgs_quad, T′T′, q′q′, corr_Tq)
++    z = _compute_z(q_c, moments.sigma_S_sq, α)
++    λ_lagrange = z * α * sqrt(max(moments.sigma_S_sq, ϵ_numerics(FT)))
++    return (; moments.mu_S, moments.sigma_S_sq, λ_lagrange)
+ end
+ 
+ """
+-    _effective_std_hybrid(σ_qc, cf, q_c, q_sat, μ_S, q_min, sgs_dist)
+-
+-Distribution-specific effective standard deviation `σ_eff` used by the hybrid
+-cloud fraction. The formulation augments the activation-scaled SGS variance
+-with a between-state variance term arising from the separation between the
+-prognostic condensate contribution and the quadrature-derived saturation-state
+-mean.
+-
+-- Gaussian/GridMean (linear coordinates):
+-`σ_eff = √(σ_qc^2 + c_f (1-c_f) (qc / c_f - min(0, μ_S) / (1-c_f))^2)`
+-- Lognormal:
+-`σ_eff = √(σ_qc^2 + c_f (1-c_f) (log(1 + q_c/q_v_sat) / c_f - min(0, μ_S) / (1-c_f))^2)`
++    set_sgs_moments_and_cloud_fraction!(Y, p)
++
++Final post-Aitken update. No-op when `ᶜsgs_moments` is not allocated (dry / 0M).
++
++Uses ONE quadrature pass via `_compute_sgs_moments` to fill
++`ᶜsgs_moments = (mu_S, sigma_S_sq, λ_lagrange)`, then recovers
++`ᶜcloud_fraction = Φ(λ/(α·σ_S))` cheaply via `_cloud_fraction_from_lambda`
++and applies EDMF updraft weighting.
+ """
+-@inline function _effective_std_hybrid(
+-    σ_qc, cf, q_c, q_sat, μ_S, q_min, ::Union{GaussianSGS, GridMeanSGS},
+-)
+-    FT = typeof(q_c)
+-    # clamp cf between 0.01 and 0.99 to avoid division by small numbers
+-    cf = clamp(cf, FT(0.01), FT(0.99))
+-    return sqrt(σ_qc^2 + cf * (1 - cf) * (q_c / cf - min(zero(FT), μ_S) / (1 - cf))^2)
+-end
++NVTX.@annotate function set_sgs_moments_and_cloud_fraction!(Y, p)
++    hasproperty(p.precomputed, :ᶜsgs_moments) || return nothing
+ 
+-@inline function _effective_std_hybrid(
+-    σ_qc, cf, q_c, q_sat, μ_S, q_min, ::LogNormalSGS,
+-)
+-    FT = typeof(q_c)
+-    # clamp cf between 0.01 and 0.99 to avoid division by small numbers
+-    cf = clamp(cf, FT(0.01), FT(0.99))
+-    q_v_sat_safe = max(q_sat, q_min)
+-    return sqrt(
+-        σ_qc^2 +
+-        cf * (1 - cf) *
+-        (log(FT(1) + q_c / q_v_sat_safe) / cf - min(zero(FT), μ_S) / (1 - cf))^2,
++    thermo_params = CAP.thermodynamics_params(p.params)
++    turbconv_model = p.atmos.turbconv_model
++    microphysics_model = p.atmos.microphysics_model
++
++    ᶜρ_env, ᶜT_mean, ᶜq_mean = _get_env_ρ_T_q(Y, p, thermo_params, turbconv_model)
++    ᶜq_lcl, ᶜq_icl = _get_condensate_means(Y, p, turbconv_model, microphysics_model)
++    sgs_quad = p.atmos.sgs_quadrature
++    corr_Tq = correlation_Tq(p.params)
++    FT = eltype(p.params)
++    α = sgs_variance_fidelity(CAP.cloud_fraction_steepness_scale(p.params))
++    (; ᶜT′T′, ᶜq′q′) = p.precomputed
++
++    # ONE quadrature pass → (mu_S, sigma_S_sq, λ_lagrange).
++    @. p.precomputed.ᶜsgs_moments = _compute_sgs_moments(
++        thermo_params, ᶜρ_env, ᶜT_mean, ᶜq_mean, ᶜq_lcl + ᶜq_icl,
++        $(sgs_quad), ᶜT′T′, ᶜq′q′, corr_Tq, FT(α),
+     )
++    # Cheap: recover CF from stored λ and α·σ_S — no Newton iteration.
++    # This overwrites the Picard iterate with a value consistent with the
++    # final SGS moments, so EDMF weighting must be re-applied here even
++    # though set_cloud_fraction! already applied it during Picard.
++    @. p.precomputed.ᶜcloud_fraction = _cloud_fraction_from_lambda(
++        p.precomputed.ᶜsgs_moments.λ_lagrange,
++        p.precomputed.ᶜsgs_moments.sigma_S_sq,
++        FT(α),
++    )
++    _apply_edmf_cloud_weighting!(Y, p, turbconv_model, thermo_params)
+ end
+ 
++
+ # ============================================================================
+ # Cloud Fraction Dispatch Methods
+ # ============================================================================
+@@ -702,7 +554,7 @@ Dispatches on `microphysics_model` and `cloud_model`:
+ - `DryModel`: Cloud fraction and cloud condensate are zero.
+ - `GridScaleCloud`: Cloud fraction is 1 if grid-scale condensate exists, 0 otherwise.
+ - `QuadratureCloud`: Cloud fraction from the hybrid quadrature-moment formula
+-  (`compute_cloud_fraction_hybrid`).
++  (`_compute_cloud_fraction`).
+ - `MLCloud`: Cloud fraction from neural network.
+ 
+ For EDMF turbulence models, updraft contributions are added to the environment values.
+@@ -744,21 +596,16 @@ NVTX.@annotate function set_cloud_fraction!(
+     ᶜq_lcl, ᶜq_icl = _get_condensate_means(Y, p, turbconv_model, microphysics_model)
+ 
+     sgs_quad = p.atmos.sgs_quadrature
+-    sgs_dist =
+-        isnothing(sgs_quad) ? GaussianSGS() : sgs_quad.dist
+-
+-    cf_steepness_scale = CAP.cloud_fraction_steepness_scale(p.params)
+-    q_min = CAP.q_min(p.params)
+     corr_Tq = correlation_Tq(p.params)
++    FT = eltype(p.params)
++    α = sgs_variance_fidelity(CAP.cloud_fraction_steepness_scale(p.params))
+ 
+     (; ᶜT′T′, ᶜq′q′) = p.precomputed
+-    cf_guess = p.precomputed.ᶜcloud_fraction
+-    # Hybrid cloud fraction: the `(μ_S, σ_S²)` quadrature pass is fused into
+-    # this broadcast kernel via the production `compute_cloud_fraction_hybrid`
+-    # overload, so the moments stay in registers and are never written to a
+-    # Field. The `Microphysics1MEvaluator` consumes a separately-cached
+-    # `(M_l, M_i)` populated once per time step by `set_sgs_moments_mp!`.
+-    @. p.precomputed.ᶜcloud_fraction = compute_cloud_fraction_hybrid(
++
++    # Hybrid cloud fraction: the σ_S² quadrature pass is fused into this
++    # broadcast kernel, so the moments stay in registers and are never written
++    # to a Field.
++    @. p.precomputed.ᶜcloud_fraction = _compute_cloud_fraction(
+         thermo_params,
+         ᶜT_mean,
+         ᶜρ_env,
+@@ -769,10 +616,7 @@ NVTX.@annotate function set_cloud_fraction!(
+         ᶜT′T′,
+         ᶜq′q′,
+         corr_Tq,
+-        cf_guess,
+-        cf_steepness_scale,
+-        q_min,
+-        $(sgs_dist),
++        FT(α),
+     )
+ 
+     _apply_edmf_cloud_weighting!(Y, p, turbconv_model, thermo_params)
+@@ -806,47 +650,6 @@ NVTX.@annotate function set_cloud_fraction!(
+     _apply_edmf_cloud_weighting!(Y, p, turbconv_model, thermo_params)
+ end
+ 
+-"""
+-    set_sgs_moments_mp!(Y, p)
+-
+-Cache the microphysics moments `(M_l, M_i)` into `p.precomputed.ᶜsgs_moments_mp`
+-via one Gauss-Hermite pass over the SGS PDF (no BMT calls). The cached moments
+-are consumed by `Microphysics1MEvaluator` (via `microphysics_tendencies_1m`):
+-the shape-function partition `q_lcl_hat = q_lcl_mean + q_lcl_mean · γ_l ·
+-(q_lcl_eq_hat − M_l)` exactly conserves `⟨q_lcl_hat⟩ = q_lcl_mean` provided
+-`M_l = ⟨q_lcl_eq⟩` over the same PDF.
+-
+-Called once per time step after the Picard-accelerated cloud fraction update
+-in `set_covariance_cache_and_cloud_fraction!`. The cloud-fraction-specific
+-moments `(μ_S, σ_S²)` are computed inline inside the CF broadcast and are
+-never written to a Field, so this function does not compute them.
+-
+-No-op when `ᶜsgs_moments_mp` is not allocated (i.e. configurations without
+-1M / 2M microphysics — 0M and dry).
+-
+-Uses grid-mean `(ρ, T, q_tot, q_rai, q_sno)`; for EDMF configurations this
+-currently uses grid-mean covariances and state. A future refinement could use
+-environment-only covariances and state.
+-"""
+-NVTX.@annotate function set_sgs_moments_mp!(Y, p)
+-    hasproperty(p.precomputed, :ᶜsgs_moments_mp) || return nothing
+-
+-    thermo_params = CAP.thermodynamics_params(p.params)
+-    (; ᶜT, ᶜq_tot_nonneg, ᶜq_liq, ᶜq_ice) = p.precomputed
+-    (; ᶜT′T′, ᶜq′q′, ᶜsgs_moments_mp) = p.precomputed
+-    sgs_quad = p.atmos.sgs_quadrature
+-    corr_Tq = correlation_Tq(p.params)
+-
+-    ᶜq_rai = @. lazy(specific(Y.c.ρq_rai, Y.c.ρ))
+-    ᶜq_sno = @. lazy(specific(Y.c.ρq_sno, Y.c.ρ))
+-    @. ᶜsgs_moments_mp = compute_sgs_moments_mp(
+-        thermo_params, Y.c.ρ, ᶜT, ᶜq_tot_nonneg,
+-        ᶜq_liq, ᶜq_ice, ᶜq_rai, ᶜq_sno,
+-        $(sgs_quad), ᶜT′T′, ᶜq′q′, corr_Tq,
+-    )
+-    return nothing
+-end
+-
+ # ============================================================================
+ # Internal Helper Functions
+ # ============================================================================
 diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
-index 19ade8c..6440ce7 100644
+index 19ade8c..0862835 100644
 --- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
 +++ b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
-@@ -235,8 +235,8 @@ struct Microphysics1MEvaluator{S, MP, TPS, FT, Args <: Tuple}
+@@ -166,40 +166,22 @@ end
+     (eval::Microphysics1MEvaluator)(T_hat, q_tot_hat)
+ 
+ GPU-safe functor for computing 1-moment microphysics tendencies at SGS
+-quadrature points using a **shape-function partition** of cloud condensate.
+-
+-At each quadrature point `(T_hat, q_tot_hat)` sampled from the SGS PDF,
+-the local cloud condensate is constructed as
+-
+-    q_lcl_hat = q_lcl_mean + γ_l · (q_lcl_eq_hat - M_l)
+-
+-where
+-- `q_lcl_eq_hat = max(0, λ·(q_tot_hat − q_sat(T_hat)) − q_rai)` is the
+-  *local* equilibrium cloud liquid at the quadrature point, with `λ` held
+-  fixed at the grid-mean liquid fraction.
+-- `γ_l = min(1, q_lcl_mean ⋅ M_l / (M_scale² + M_l²))` guarantees **exact mass conservation by
+-  construction**: `⟨q_lcl_hat⟩ = q_lcl_mean + γ_l · (⟨q_lcl_eq⟩ - M_l) = q_lcl_mean`.
+-  `M_l = ⟨q_lcl_eq⟩` is the SGS-mean equilibrium liquid moment supplied by
+-  the `compute_sgs_moments` pre-pass.
+-- `M_scale = q_min` sets the blending crossover. In the typical regime
+-  `M_l ≫ q_min`, `γ_l ≈ min(1, q_lcl_mean/M_l)` and `q_lcl_hat ≈ min(1, q_lcl_mean/M_l) · q_lcl_eq_hat`
+-  (pure shape function); in the stale-cloud edge case `M_l → 0` while
+-  `q_lcl_mean > 0`, `γ_l → 0` and `q_lcl_hat → q_lcl_mean` (uniform
+-  fallback). The ice channel is symmetric.
+-
+-The shape-function formulation unifies the cloudy and clear contributions
+-into a single quadrature pass. When `q_lcl_mean ≲ M_l`, the condensate is
+-primarily distributed according to the local equilibrium structure
+-`q_lcl_eq_hat`, so saturated quadrature points receive most of the cloud
+-water while subsaturated points contain little or none. When
+-`q_lcl_mean > M_l`, the clipping `γ_l ≤ 1` limits the shape-function
+-amplitude and the excess condensate is represented as a uniform background
+-offset distributed across all quadrature points. Consequently, saturated
+-points still preferentially carry the equilibrium-shaped condensate
+-component, while subsaturated points retain the uniform remnant, which can
+-evaporate or sublimate against the local subsaturated `q_v_hat`,
+-capturing below-cloud rain evaporation and snow sublimation within the
+-same quadrature integration.
++quadrature points using the truncated-Gaussian Lagrange-multiplier approach.
++
++At each quadrature point `(T_hat, q_tot_hat)`, the local cloud condensate is
++
++    S′_hat        = (q_tot_hat − q_sat(T_hat)) − μ_S
++    shifted_excess = max(0, λ_lagrange + α · S′_hat)
++    q_lcl_hat     = max(0, λ · shifted_excess − q_rai)
++    q_icl_hat     = max(0, (1−λ) · shifted_excess − q_sno)
++
++where `α = sgs_variance_fidelity` controls the variance propagation fraction
++(currently 1), `λ_lagrange` is the Lagrange multiplier satisfying
++`E[max(0, λ + α·S′)] = q_c`, `μ_S = E[S]` centres the excess, and `λ`
++is the thermodynamic liquid fraction held fixed across quadrature points.
++
++Subsaturated quadrature points contribute zero condensate but may still drive
++rain evaporation or snow sublimation against the local `q_v_hat`.
+ 
+ # Arguments
+ - `T_hat`: Temperature at quadrature point [K]
+@@ -217,17 +199,14 @@ struct Microphysics1MEvaluator{S, MP, TPS, FT, Args <: Tuple}
+     mp::MP
+     tps::TPS
+     ρ::FT
+-    # Grid-mean prognostic state (held fixed across quadrature points)
+-    q_lcl_mean::FT
+-    q_icl_mean::FT
++    # Precipitation (held fixed across quadrature points)
+     q_rai::FT
+     q_sno::FT
+-    # Shape-function inputs from the SGS moments pre-pass
+-    λ::FT          # liquid fraction (held fixed across quadrature)
+-    γ_l::FT        # precomputed shape-function coefficient for liquid
+-    M_l::FT        # SGS-mean equilibrium liquid condensate
+-    γ_i::FT        # precomputed shape-function coefficient for ice
+-    M_i::FT        # SGS-mean equilibrium ice condensate
++    # Truncated-Gaussian Lagrange multiplier, μ_S, and liquid fraction
++    λ::FT              # liquid fraction (from thermodynamics, held fixed)
++    λ_lagrange::FT # Lagrange multiplier for centred S′: λ = z·α·σ_S
++    mu_S::FT       # SGS mean saturation variable μ_S = E[S]
++    α::FT          # variance fidelity parameter (from sgs_variance_fidelity)
+     # Numerical parameters
+     dt::FT
+     nsubs::Int
+@@ -235,8 +214,8 @@ struct Microphysics1MEvaluator{S, MP, TPS, FT, Args <: Tuple}
  end
  # `@noinline` here is the SGS quadrature function barrier. The functor body
  # below (saturation, shape-function partition, plus the heavy
@@ -56,7 +1553,146 @@ index 19ade8c..6440ce7 100644
  # `sum_over_quadrature_points`. Without the barrier those N² copies inline
  # into one giant GPU broadcast kernel, pushing register pressure past the
  # 255-reg hard cap and pinning occupancy at 12.5%. Marking the functor
-@@ -370,6 +370,166 @@ end
+@@ -247,15 +226,15 @@ end
+     FT = typeof(eval.ρ)
+     q_tot_hat = max(FT(0), q_tot_hat)
+ 
+-    # Local equilibrium condensate at the quadrature point (same partition
+-    # form as the SGS moments pre-pass, with the prognostic λ held fixed).
++    # Local condensate from the Lagrange-multiplier closure.
++    # The mass conservation equation is E[max(0, λ + α·S′)] = q_c, so the
++    # local shifted excess at each quadrature point is λ + α·S′_hat where
++    # S′_hat = (q_tot_hat − q_sat_hat) − μ_S is the centred saturation excess.
+     q_sat_hat = TD.q_vap_saturation(eval.tps, T_hat, eval.ρ)
+-    excess_hat = max(FT(0), q_tot_hat - q_sat_hat)
+-    q_lcl_eq_hat = max(FT(0), eval.λ * excess_hat - eval.q_rai)
+-    q_icl_eq_hat = max(FT(0), (FT(1) - eval.λ) * excess_hat - eval.q_sno)
+-
+-    q_lcl_hat = eval.q_lcl_mean + eval.γ_l * (q_lcl_eq_hat - eval.M_l)
+-    q_icl_hat = eval.q_icl_mean + eval.γ_i * (q_icl_eq_hat - eval.M_i)
++    S′_hat = q_tot_hat - q_sat_hat - eval.mu_S
++    shifted_excess = max(FT(0), eval.λ_lagrange + eval.α * S′_hat)
++    q_lcl_hat = max(FT(0), eval.λ * shifted_excess - eval.q_rai)
++    q_icl_hat = max(FT(0), (FT(1) - eval.λ) * shifted_excess - eval.q_sno)
+ 
+     return BMT.bulk_microphysics_tendencies(
+         BMT.LinearizedAverage(),
+@@ -270,7 +249,7 @@ end
+     microphysics_tendencies_1m(
+         scheme, sgs_quad, cmp, thp, ρ, T, q_tot,
+         q_lcl, q_icl, q_rai, q_sno, T′T′, q′q′, corr_Tq,
+-        moments, dt, nsubs,
++        λ_lagrange, mu_S, α, dt, nsubs,
+     )
+ 
+ Computes time-averaged 1-moment microphysics tendencies.
+@@ -279,34 +258,37 @@ The 11-argument (no `sgs_quad`) form takes condensate inputs as-is and is
+ used in EDMF updrafts or wherever a grid-mean state is to be evaluated
+ directly (single BMT call, no SGS averaging).
+ 
+-The quadrature form uses a **single quadrature pass with a shape-function
+-partition** of cloud condensate (see [`Microphysics1MEvaluator`](@ref)).
+-At each quadrature point `(T_hat, q_tot_hat)` sampled from the SGS PDF,
+-the local cloud condensate is reconstructed as
+-`q_lcl_hat = q_lcl_mean + γ_l (q_lcl_eq_hat - M_l)`, where `M_l = ⟨q_lcl_eq⟩`
+-is precomputed in the `compute_sgs_moments` pre-pass. This gives **exact mass
+-conservation by construction** and unifies the cloudy and clear regimes into one
+-quadrature: subsaturated quadrature points contribute below-cloud
+-rain evaporation / snow sublimation; saturated points carry the bulk
+-of the cloud condensate and drive autoconversion / accretion.
++The quadrature form integrates over the SGS PDF using the truncated-Gaussian
++Lagrange-multiplier closure (see [`Microphysics1MEvaluator`](@ref)). At each
++quadrature point `(T_hat, q_tot_hat)` the centred saturation excess is
++`S′_hat = (q_tot_hat − q_sat_hat) − μ_S` and the local condensate is
++
++    shifted_excess = max(0, λ_lagrange + α·S′_hat)
++    q_lcl_hat      = max(0, λ · shifted_excess − q_rai)
++    q_icl_hat      = max(0, (1−λ) · shifted_excess − q_sno)
++
++where `λ_lagrange` is pre-computed to satisfy `E[max(0, λ_lagrange + α·S′)] = q_c`
++and `λ` is the thermodynamic liquid fraction held fixed across quadrature points.
++Subsaturated quadrature points contribute below-cloud rain evaporation and snow
++sublimation; saturated points drive autoconversion and accretion.
+ 
+ # Arguments
+ - `scheme`: Microphysics scheme type (from CloudMicrophysics.BulkMicrophysicsTendencies)
+ - `sgs_quad`: SGSQuadrature configuration
+ - `cmp`, `thp`: Microphysics and thermodynamics parameters
+-- `ρ`, `T`: Air density [kg/m³] and temperature [K] (grid-mean)
+-- `q_tot`: Grid-mean total water [kg/kg]
+-- `q_lcl`, `q_icl`: Grid-mean cloud liquid water and cloud ice [kg/kg]
+-- `q_rai`, `q_sno`: Grid-mean rain and snow [kg/kg]
+-- `T′T′`: Variance of temperature ``\\langle T'^2 \\rangle``
+-- `q′q′`: Variance of q_tot ``\\langle q'^2 \\rangle``
+-- `corr_Tq`: Correlation coefficient ρ(T', q') obtained from `correlation_Tq(params)`.
+-- `moments`: Cached `SGSMomentsType` `(mu_S, sigma_S_sq, M_l, M_i)` from
+-  the `compute_sgs_moments` pre-pass. Only `M_l` and `M_i` are used by
+-  the shape-function partition; `mu_S` and `sigma_S_sq` are ignored here.
+-- `args...`: Additional arguments (e.g., N_lcl for 2M)
+-- `dt`: Model timestep [s] (for tendency averaging)
+-- `nsubs`: Number of substeps for computing average tendencies over time
++- `ρ`, `T`: Air density [kg/m³] and temperature [K]
++- `q_tot`: Total water specific humidity [kg/kg]
++- `q_lcl`, `q_icl`: Cloud liquid and cloud ice specific humidity [kg/kg]
++- `q_rai`, `q_sno`: Rain and snow specific humidity [kg/kg]
++- `T′T′`: Temperature variance ``\\langle T'^2 \\rangle``
++- `q′q′`: Total-water variance ``\\langle q'^2 \\rangle``
++- `corr_Tq`: Correlation coefficient ρ(T′, q′) from `correlation_Tq(params)`
++- `λ_lagrange`: Lagrange multiplier `z·α·σ_S` from `ᶜsgs_moments`, pre-computed
++  to enforce mass conservation `E[max(0, λ_lagrange + α·S′)] = q_c`
++- `mu_S`: SGS mean saturation variable `E[S]` from `ᶜsgs_moments`
++- `α`: Variance fidelity parameter from `sgs_variance_fidelity`
++- `dt`: Timestep [s]
++- `nsubs`: Number of substeps for tendency averaging
+ 
+ # Returns
+ NamedTuple with microphysics source terms:
+@@ -328,7 +310,7 @@ end
+ @inline function microphysics_tendencies_1m( #microphysics_tendencies_quadrature_1m
+     scheme, sgs_quad, cmp, thp, ρ, T, q_tot_nonneg,
+     q_lcl, q_icl, q_rai, q_sno, T′T′, q′q′, corr_Tq,
+-    moments, dt, nsubs, args...,
++    λ_lagrange, mu_S, α, dt, nsubs, args...,
+ )
+     FT = typeof(ρ)
+     # Clamp specific humidities to non-negative.
+@@ -337,32 +319,13 @@ end
+     q_rai_nonneg = max(FT(0), q_rai)
+     q_sno_nonneg = max(FT(0), q_sno)
+ 
+-    # Liquid fraction held fixed across quadrature (paper Eq. 3.31). When
+-    # both cloud condensates are zero, `TD.liquid_fraction` falls back to a
+-    # smooth temperature ramp internally.
++    # Liquid fraction held fixed across quadrature.
+     λ = TD.liquid_fraction(thp, T, q_lcl_nonneg, q_icl_nonneg)
+ 
+-    # β-blending crossover scale: when the cached equilibrium moments
+-    # `M_l, M_i` fall below `q_min`, the shape function reverts smoothly
+-    # to a uniform `q_lcl_mean`/`q_icl_mean` fallback (stale-cloud edge
+-    # case). For `M_l ≫ q_min` (typical), β ≈ 0 and the pure shape
+-    # function `q_lcl_hat = (q_lcl_mean/M_l)·q_lcl_eq_hat` applies.
+-    q_min = TD.Parameters.q_min(thp)
+-
+-    # Precompute shape-function coefficients once per grid cell (saving
+-    # divisions and multiplications inside the quadrature loop).
+-    M_l = max(FT(0), moments.M_l)
+-    M_i = max(FT(0), moments.M_i)
+-    M_sq = q_min * q_min
+-    denom_l = M_sq + M_l * M_l
+-    denom_i = M_sq + M_i * M_i
+-    γ_l = min(FT(1), q_lcl_nonneg * M_l / denom_l)
+-    γ_i = min(FT(1), q_icl_nonneg * M_i / denom_i)
+-
+     evaluator = Microphysics1MEvaluator(
+         scheme, cmp, thp, ρ,
+-        q_lcl_nonneg, q_icl_nonneg, q_rai_nonneg, q_sno_nonneg,
+-        λ, γ_l, M_l, γ_i, M_i,
++        q_rai_nonneg, q_sno_nonneg,
++        λ, λ_lagrange, mu_S, α,
+         dt, nsubs, args,
+     )
+     return integrate_over_sgs(
+@@ -370,6 +333,162 @@ end
      )
  end
  
@@ -109,7 +1745,7 @@ index 19ade8c..6440ce7 100644
 +@inline function microphysics_tendencies_1m_at_quad_point(
 +    χ_i, χ_j, scheme, sgs_quad, cmp, thp, ρ, T, q_tot_nonneg,
 +    q_lcl, q_icl, q_rai, q_sno, T′T′, q′q′, corr_Tq,
-+    moments, dt, nsubs, args...,
++    λ_lagrange, mu_S, α, dt, nsubs, args...,
 +)
 +    FT = typeof(ρ)
 +    # Cell-level setup (same as the wrapper). Redundantly computed at each
@@ -119,19 +1755,12 @@ index 19ade8c..6440ce7 100644
 +    q_rai_nonneg = max(FT(0), q_rai)
 +    q_sno_nonneg = max(FT(0), q_sno)
 +
++    # Liquid fraction held fixed across quadrature.
 +    λ = TD.liquid_fraction(thp, T, q_lcl_nonneg, q_icl_nonneg)
-+    q_min = TD.Parameters.q_min(thp)
-+    M_l = max(FT(0), moments.M_l)
-+    M_i = max(FT(0), moments.M_i)
-+    M_sq = q_min * q_min
-+    denom_l = M_sq + M_l * M_l
-+    denom_i = M_sq + M_i * M_i
-+    γ_l = min(FT(1), q_lcl_nonneg * M_l / denom_l)
-+    γ_i = min(FT(1), q_icl_nonneg * M_i / denom_i)
 +
 +    # Physical-point transform built locally (host-side `integrate_over_sgs`
 +    # would normally build this once per cell; here it's rebuilt per
-+    # quadrature point — same cheap cost as λ/γ setup above).
++    # quadrature point — same cheap cost as the cell-level setup above).
 +    σ_q, σ_T, corr = sgs_stddevs_and_correlation(q′q′, T′T′, corr_Tq)
 +    μ_T_p, μ_q_p = promote(T, q_tot_nonneg)
 +    transform = create_physical_transform(
@@ -141,15 +1770,16 @@ index 19ade8c..6440ce7 100644
 +    )
 +    T_hat, q_tot_hat = transform(χ_i, χ_j)
 +
-+    # Local condensate shape-function partition (was the
-+    # `Microphysics1MEvaluator` functor body).
++    # Local condensate from the truncated-Gaussian Lagrange-multiplier closure
++    # (identical to the `Microphysics1MEvaluator` functor body): the centred
++    # saturation excess is S′_hat = (q_tot_hat − q_sat_hat) − μ_S, and the
++    # local shifted excess is max(0, λ_lagrange + α·S′_hat).
 +    q_tot_hat_pos = max(FT(0), q_tot_hat)
 +    q_sat_hat = TD.q_vap_saturation(thp, T_hat, ρ)
-+    excess_hat = max(FT(0), q_tot_hat_pos - q_sat_hat)
-+    q_lcl_eq_hat = max(FT(0), λ * excess_hat - q_rai_nonneg)
-+    q_icl_eq_hat = max(FT(0), (FT(1) - λ) * excess_hat - q_sno_nonneg)
-+    q_lcl_hat = q_lcl_nonneg + γ_l * (q_lcl_eq_hat - M_l)
-+    q_icl_hat = q_icl_nonneg + γ_i * (q_icl_eq_hat - M_i)
++    S′_hat = q_tot_hat_pos - q_sat_hat - mu_S
++    shifted_excess = max(FT(0), λ_lagrange + α * S′_hat)
++    q_lcl_hat = max(FT(0), λ * shifted_excess - q_rai_nonneg)
++    q_icl_hat = max(FT(0), (FT(1) - λ) * shifted_excess - q_sno_nonneg)
 +
 +    # Identical call to the baseline `Microphysics1MEvaluator` functor: the
 +    # `LinearizedAverage` mode + `nsubs` substep loop in
@@ -169,12 +1799,12 @@ index 19ade8c..6440ce7 100644
 +@inline function _accum_microphysics_tendency_1m(
 +    acc, w_ij, χ_i, χ_j, scheme, sgs_quad, cmp, thp, ρ, T, q_tot_nonneg,
 +    q_lcl, q_icl, q_rai, q_sno, T′T′, q′q′, corr_Tq,
-+    moments, dt, nsubs, args...,
++    λ_lagrange, mu_S, α, dt, nsubs, args...,
 +)
 +    contrib = microphysics_tendencies_1m_at_quad_point(
 +        χ_i, χ_j, scheme, sgs_quad, cmp, thp, ρ, T, q_tot_nonneg,
 +        q_lcl, q_icl, q_rai, q_sno, T′T′, q′q′, corr_Tq,
-+        moments, dt, nsubs, args...,
++        λ_lagrange, mu_S, α, dt, nsubs, args...,
 +    )
 +    return (
 +        dq_lcl_dt = acc.dq_lcl_dt + w_ij * contrib.dq_lcl_dt,
@@ -191,7 +1821,8 @@ index 19ade8c..6440ce7 100644
 +@inline function set_microphysics_quadrature_1m!(
 +    ᶜmp_tendency, scheme, sgs_quad, cmp, thp, ρ_field, T_field,
 +    q_tot_field, q_lcl_field, q_icl_field, q_rai_field, q_sno_field,
-+    T′T′_field, q′q′_field, corr_Tq, moments_field, dt, nsubs, args...,
++    T′T′_field, q′q′_field, corr_Tq, λ_lagrange_field, mu_S_field, α,
++    dt, nsubs, args...,
 +)
 +    N = quadrature_order(sgs_quad)
 +    χ = sgs_quad.a
@@ -213,7 +1844,8 @@ index 19ade8c..6440ce7 100644
 +            ᶜmp_tendency, w_ij, χ_i, χ_j, scheme, sgs_quad, cmp, thp,
 +            ρ_field, T_field, q_tot_field,
 +            q_lcl_field, q_icl_field, q_rai_field, q_sno_field,
-+            T′T′_field, q′q′_field, corr_Tq, moments_field, dt, nsubs,
++            T′T′_field, q′q′_field, corr_Tq,
++            λ_lagrange_field, mu_S_field, α, dt, nsubs,
 +            args...,
 +        )
 +    end
@@ -223,3 +1855,1241 @@ index 19ade8c..6440ce7 100644
  ###
  ### 2 Moment Microphysics
  ###
+diff --git a/ClimaAtmos.jl/src/utils/utilities.jl b/ClimaAtmos.jl-mod/src/utils/utilities.jl
+index bcb92a1..8c0e154 100644
+--- a/ClimaAtmos.jl/src/utils/utilities.jl
++++ b/ClimaAtmos.jl-mod/src/utils/utilities.jl
+@@ -656,3 +656,69 @@ function log_context(context)
+         @info "Distributed ClimaAtmos run" device nprocs = ClimaComms.nprocs(context)
+     end
+ end
++
++"""
++    normal_cdf_inv(p)
++
++Approximation of the standard normal quantile function Φ⁻¹(p) using the
++rational approximation of Abramowitz & Stegun (Eq. 26.2.22).
++
++Maximum absolute error ≈ 4.5 × 10⁻⁴ for p ∈ (0, 1).  Uses only `log`,
++`sqrt`, and polynomial arithmetic — no `SpecialFunctions` dependency.
++
++For 0 < p ≤ ½ the approximation is
++
++    t = √(−2 ln p),
++    Φ⁻¹(p) ≈ −(t − (a₀ + a₁t + a₂t²)/(1 + b₁t + b₂t² + b₃t³))
++
++and for p > ½ it uses the antisymmetry Φ⁻¹(p) = −Φ⁻¹(1−p).
++
++Compared with the tanh-based inverse `atanh(2p−1)/coeff_cdf`, this
++correctly captures the Gaussian-tail scaling Φ⁻¹(p) ~ −√(−2 ln p)
++for small p, avoiding the extreme underestimate that causes the Newton
++step to diverge.
++"""
++@inline function normal_cdf_inv(p::FT) where {FT}
++    p_safe = clamp(p, ϵ_numerics(FT), one(FT) - ϵ_numerics(FT))
++    q = min(p_safe, one(FT) - p_safe)   # work in the lower tail
++    t = sqrt(-FT(2) * log(q))
++    num = FT(2.515517) + t * (FT(0.802853) + t * FT(0.010328))
++    den = one(FT) + t * (FT(1.432788) + t * (FT(0.189269) + t * FT(0.001308)))
++    z = t - num / den
++    return ifelse(p_safe < FT(0.5), -z, z)
++end
++
++"""
++    normal_cdf(z)
++
++Accurate approximation of the standard normal CDF Φ(z) using the rational
++approximation of Abramowitz & Stegun (Eq. 26.2.17).
++
++Maximum absolute error ≈ 7.5 × 10⁻⁸ over the full real line.  Uses only
++`exp` and basic arithmetic — no `SpecialFunctions` dependency.
++
++The approximation for z ≥ 0 is
++
++    Φ(z) ≈ 1 − φ(z) · p(t),   t = 1/(1 + 0.2316419 z),
++
++where `p` is a degree-5 polynomial with the A&S coefficients, and
++`Φ(z) = 1 − Φ(−z)` for z < 0.
++"""
++@inline function normal_cdf(z::FT) where {FT}
++    inv_sqrt2pi = one(FT) / sqrt(FT(2) * FT(π))
++    z_abs = abs(z)
++    t = one(FT) / (one(FT) + FT(0.2316419) * z_abs)
++    poly =
++        t * (
++            FT(0.319381530) +
++            t * (
++                FT(-0.356563782) +
++                t * (
++                    FT(1.781477937) +
++                    t * (FT(-1.821255978) + t * FT(1.330274429))
++                )
++            )
++        )
++    q = inv_sqrt2pi * exp(-z_abs * z_abs / 2) * poly
++    return ifelse(z >= zero(FT), one(FT) - q, q)
++end
+diff --git a/ClimaAtmos.jl/test/diagnostics/unit_diagnostics.jl b/ClimaAtmos.jl-mod/test/diagnostics/unit_diagnostics.jl
+index ccbdb33..d19c8a4 100644
+--- a/ClimaAtmos.jl/test/diagnostics/unit_diagnostics.jl
++++ b/ClimaAtmos.jl-mod/test/diagnostics/unit_diagnostics.jl
+@@ -375,6 +375,14 @@ VALID_CASES = [
+     cases(("cdncup", "cdncen", "ncraup", "ncraen"), :m2_pedmfx)...,
+     # VerticalDiffusion, DecayWithHeightDiffusion, EDMF
+     cases(("edt", "evu"), (:vd, :dwh, :m0_pedmfx))...,
++
++    # ---------------------------------------------------------------------------
++    # microphysics_diagnostics.jl
++    # Grid-mean (mp1m_) needs 1M; updraft/environment need 1M + PrognosticEDMFX
++    # ---------------------------------------------------------------------------
++    cases(vec("mp1m_" .* string.(first.(CA.Diagnostics.MP1M_SOURCE_TERMS))), :m1)...,
++    cases(vec("mp1mup_" .* string.(first.(CA.Diagnostics.MP1M_SOURCE_TERMS))), :m1_pedmfx)...,
++    cases(vec("mp1men_" .* string.(first.(CA.Diagnostics.MP1M_SOURCE_TERMS))), :m1_pedmfx)...,
+ ]
+ #! format: on
+ #
+diff --git a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/allocations.jl b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/allocations.jl
+index 4fe3450..48aabb1 100644
+--- a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/allocations.jl
++++ b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/allocations.jl
+@@ -84,23 +84,48 @@ end
+ 
+ # --- Function barrier helpers ---
+ 
+-function _allocs_cloud_fraction_hybrid(thp)
++function _allocs_cloud_fraction_simple()
++    FT = Float64
++    CA._compute_cloud_fraction(FT(1e-3), FT(1e-7), FT(1))
++    return @allocated CA._compute_cloud_fraction(FT(1e-3), FT(1e-7), FT(1))
++end
++
++function _allocs_cloud_fraction_fused(thp, sgs_quad)
+     FT = Float64
+     T = FT(280.0)
+     ρ = FT(1.0)
+-    q_min = FT(1e-10)
+     q_tot = FT(0.011)
+-    moments = (
+-        mu_S = FT(1e-3), sigma_S_sq = FT(1e-7),
+-        M_l = FT(1e-3), M_i = FT(0),
+-    )
+-    CA.compute_cloud_fraction_hybrid(
+-        thp, T, ρ, q_tot, FT(1e-3), FT(0), moments, FT(0), FT(1), q_min,
+-        CA.GaussianSGS(),
++    q_liq = FT(1e-3)
++    q_ice = FT(0)
++    T′T′ = FT(1.0)
++    q′q′ = FT(1e-6)
++    corr_Tq = FT(0)
++    α = FT(1)
++    CA._compute_cloud_fraction(
++        thp,
++        T,
++        ρ,
++        q_tot,
++        q_liq,
++        q_ice,
++        sgs_quad,
++        T′T′,
++        q′q′,
++        corr_Tq,
++        α,
+     )
+-    return @allocated CA.compute_cloud_fraction_hybrid(
+-        thp, T, ρ, q_tot, FT(1e-3), FT(0), moments, FT(0), FT(1), q_min,
+-        CA.GaussianSGS(),
++    return @allocated CA._compute_cloud_fraction(
++        thp,
++        T,
++        ρ,
++        q_tot,
++        q_liq,
++        q_ice,
++        sgs_quad,
++        T′T′,
++        q′q′,
++        corr_Tq,
++        α,
+     )
+ end
+ 
+@@ -200,7 +225,8 @@ end
+         quad = ClimaAtmos.SGSQuadrature(FT; quadrature_order = 3)
+ 
+         # Warm up the barrier functions themselves (JIT)
+-        _allocs_cloud_fraction_hybrid(thp)
++        _allocs_cloud_fraction_simple()
++        _allocs_cloud_fraction_fused(thp, quad)
+         _allocs_coupled_sink()
+         _allocs_bmt_0m(mp, thp)
+         _allocs_energy_helper(thp)
+@@ -208,8 +234,9 @@ end
+         _allocs_sgs_sat_adj(thp, quad)
+         _allocs_integrate_sgs_functor(quad, FT)
+ 
+-        @testset "compute_cloud_fraction_hybrid" begin
+-            @test _allocs_cloud_fraction_hybrid(thp) == 0
++        @testset "_compute_cloud_fraction" begin
++            @test _allocs_cloud_fraction_simple() == 0
++            @test _allocs_cloud_fraction_fused(thp, quad) == 0
+         end
+ 
+         @testset "coupled_sink_limit_factor" begin
+diff --git a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/cloud_fraction.jl b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/cloud_fraction.jl
+index eb199b0..0a68d4d 100644
+--- a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/cloud_fraction.jl
++++ b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/cloud_fraction.jl
+@@ -2,171 +2,65 @@
+ Unit tests for cloud_fraction.jl
+ 
+ Tests cover:
+-1. compute_cloud_fraction_hybrid - hybrid CF using cached SGS moments
++1. `_compute_cloud_fraction(q_c, sigma_S_sq, α)` - truncated-Gaussian CF closure
+ =#
+ 
+ using Test
+ using ClimaAtmos
+ import ClimaAtmos as CA
+ 
+-import Thermodynamics as TD
+-import ClimaParams as CP
+-
+ @testset "Cloud Fraction" begin
+ 
+-    @testset "compute_cloud_fraction_hybrid" begin
++    @testset "`_compute_cloud_fraction`" begin
+         for FT in (Float32, Float64)
+             @testset "FT = $FT" begin
+-                toml_dict = CP.create_toml_dict(FT)
+-                thp = TD.Parameters.ThermodynamicsParameters(toml_dict)
+-                T = FT(280.0)
+-                ρ = FT(1.0)
+-                q_sat = TD.q_vap_saturation(thp, T, ρ)
+-                q_min = FT(1e-10)
+-                cf_guess = FT(1.0)
+-                coeff = FT(1)
+-
+-                # Helper to build a moments NamedTuple of the right type.
+-                make_moments(mu_S, sigma_S_sq, M_l, M_i) =
+-                    (mu_S = FT(mu_S), sigma_S_sq = FT(sigma_S_sq),
+-                        M_l = FT(M_l), M_i = FT(M_i))
+-
+-                for sgs_dist in (CA.GaussianSGS(), CA.LogNormalSGS())
+-                    @testset "No condensate → zero cloud fraction ($sgs_dist)" begin
+-                        # μ_S < 0 (subsaturated) and q_c = 0 → has_condensate
+-                        # gate fires regardless of moments.
+-                        moments = make_moments(-1e-3, 1e-8, 0, 0)
+-                        cf = CA.compute_cloud_fraction_hybrid(
+-                            thp, T, ρ, q_sat - FT(1e-3),
+-                            FT(0), FT(0), moments, cf_guess, coeff, q_min, sgs_dist,
+-                        )
+-                        @test cf == FT(0)
+-                    end
++                α = FT(1)
+ 
+-                    @testset "Liquid condensate, saturated mean → cf > 0 ($sgs_dist)" begin
+-                        excess = FT(1e-3)
+-                        q_tot = q_sat + excess
+-                        mu_S = sgs_dist isa CA.LogNormalSGS ?
+-                               log(q_tot / q_sat) : excess
+-                        moments = make_moments(mu_S, 1e-7, 1e-3, 0)
+-                        cf = CA.compute_cloud_fraction_hybrid(
+-                            thp, T, ρ, q_tot,
+-                            FT(1e-3), FT(0), moments, cf_guess, coeff, q_min, sgs_dist,
+-                        )
+-                        @test FT(0) < cf <= FT(1)
+-                    end
++                @testset "No condensate → zero cloud fraction" begin
++                    cf = CA._compute_cloud_fraction(FT(0), FT(1e-8), α)
++                    @test cf == FT(0)
++                end
+ 
+-                    @testset "Zero variance, condensate present → cf ≈ 1 ($sgs_dist)" begin
+-                        excess = FT(1e-3)
+-                        q_tot = q_sat + excess
+-                        mu_S = sgs_dist isa CA.LogNormalSGS ?
+-                               log(q_tot / q_sat) : excess
+-                        moments = make_moments(mu_S, 0, excess, 0)
+-                        cf = CA.compute_cloud_fraction_hybrid(
+-                            thp, T, ρ, q_tot,
+-                            FT(1e-3), FT(0), moments, cf_guess, coeff, q_min, sgs_dist,
+-                        )
+-                        @test cf > FT(0.99)
+-                    end
++                @testset "Condensate present, nonzero sigma → cf > 0" begin
++                    cf = CA._compute_cloud_fraction(FT(1e-3), FT(1e-7), α)
++                    @test FT(0) < cf <= FT(1)
++                end
+ 
+-                    @testset "Large condensate, small variance → cf ≈ 1 ($sgs_dist)" begin
+-                        excess = FT(1e-2)
+-                        q_tot = q_sat + excess
+-                        mu_S = sgs_dist isa CA.LogNormalSGS ?
+-                               log(q_tot / q_sat) : excess
+-                        moments = make_moments(mu_S, 1e-10, excess, 0)
+-                        cf = CA.compute_cloud_fraction_hybrid(
+-                            thp, T, ρ, q_tot,
+-                            FT(1e-2), FT(0), moments, cf_guess, coeff, q_min, sgs_dist,
+-                        )
+-                        @test cf > FT(0.99)
+-                    end
++                @testset "Zero variance, condensate present → cf ≈ 1" begin
++                    cf = CA._compute_cloud_fraction(FT(1e-3), FT(0), α)
++                    @test cf > FT(0.99)
++                end
+ 
+-                    @testset "Ice condensate → positive cloud fraction ($sgs_dist)" begin
+-                        T_cold = FT(240.0)
+-                        q_sat_cold = TD.q_vap_saturation(thp, T_cold, ρ)
+-                        excess = FT(1e-4)
+-                        q_tot = q_sat_cold + excess
+-                        mu_S =
+-                            sgs_dist isa CA.LogNormalSGS ?
+-                            log(q_tot / q_sat_cold) : excess
+-                        moments = make_moments(mu_S, 1e-9, 0, 1e-3)
+-                        cf = CA.compute_cloud_fraction_hybrid(
+-                            thp, T_cold, ρ, q_tot,
+-                            FT(0), FT(1e-3), moments, cf_guess, coeff, q_min, sgs_dist,
+-                        )
+-                        @test FT(0) < cf <= FT(1)
+-                    end
++                @testset "Large condensate, small variance → cf ≈ 1" begin
++                    cf = CA._compute_cloud_fraction(FT(1e-2), FT(1e-10), α)
++                    @test cf > FT(0.99)
++                end
+ 
+-                    @testset "Type stability ($sgs_dist)" begin
+-                        moments = make_moments(1e-3, 1e-7, 1e-3, 0)
+-                        cf = CA.compute_cloud_fraction_hybrid(
+-                            thp, T, ρ, q_sat + FT(1e-3),
+-                            FT(1e-3), FT(0), moments, cf_guess, coeff, q_min, sgs_dist,
+-                        )
+-                        @test cf isa FT
+-                    end
++                @testset "Type stability" begin
++                    cf = CA._compute_cloud_fraction(FT(1e-3), FT(1e-7), α)
++                    @test cf isa FT
++                end
+ 
+-                    @testset "CF monotone in σ_S² at fixed (q_c, μ_S) ($sgs_dist)" begin
+-                        # Saturated mean (μ_S > 0): as σ_S² grows, cloud
+-                        # fraction approaches 0.5 from above (broader PDF
+-                        # spills more of its mass into the clear branch).
+-                        excess = FT(1e-3)
+-                        q_tot = q_sat + excess
+-                        mu_S = sgs_dist isa CA.LogNormalSGS ?
+-                               log(q_tot / q_sat) : excess
+-                        sig_vals = FT[1e-9, 1e-8, 1e-7, 1e-6]
+-                        cfs = [
+-                            CA.compute_cloud_fraction_hybrid(
+-                                thp, T, ρ, q_tot, FT(1e-3), FT(0),
+-                                make_moments(mu_S, σ², 1e-3, 0),
+-                                cf_guess, coeff, q_min, sgs_dist,
+-                            ) for σ² in sig_vals
+-                        ]
+-                        for i in 2:length(cfs)
+-                            @test cfs[i] <= cfs[i - 1] + FT(1e-6)
+-                        end
++                @testset "CF monotone in σ_S² at fixed q_c" begin
++                    # Broader PDF → more unsaturated points → CF decreases toward 0.5.
++                    cfs = [
++                        CA._compute_cloud_fraction(FT(1e-3), σ², α) for
++                        σ² in FT[1e-9, 1e-8, 1e-7, 1e-6]
++                    ]
++                    for i in 2:length(cfs)
++                        @test cfs[i] <= cfs[i - 1] + FT(1e-6)
+                     end
+                 end
+ 
+-                @testset "GridMeanSGS: degenerate (binary) limit" begin
+-                    # σ_S² → 0, μ_S < 0, q_c > 0 but |μ_S| > q_c → Q_eff < 0 → cf → 0.
+-                    moments = make_moments(-2e-3, 0, 0, 0)
+-                    cf_dry = CA.compute_cloud_fraction_hybrid(
+-                        thp, T, ρ, q_sat - FT(2e-3),
+-                        FT(1e-4), FT(0), moments, FT(0.1), coeff, q_min,
+-                        CA.GridMeanSGS(),
+-                    )
+-                    @test cf_dry < FT(0.05)
+-
+-                    # Saturated, q_c > 0 → Q_eff > 0 → cf → 1.
+-                    moments = make_moments(1e-3, 0, 1e-3, 0)
+-                    cf_wet = CA.compute_cloud_fraction_hybrid(
+-                        thp, T, ρ, q_sat + FT(1e-3),
+-                        FT(1e-3), FT(0), moments, cf_guess, coeff, q_min,
+-                        CA.GridMeanSGS(),
+-                    )
+-                    @test cf_wet > FT(0.99)
++                @testset "Large σ_S², small q_c → cf approaching 0" begin
++                    # C = q_c/(α·σ_S) → 0 ⟹ z → −∞ ⟹ CF = Φ(z) → 0.
++                    cf = CA._compute_cloud_fraction(FT(1e-6), FT(1e-3), α)
++                    @test cf < FT(0.01)
+                 end
+ 
+-                @testset "Gaussian vs Lognormal agree in σ → 0 limit" begin
+-                    # At σ → 0, both distributions collapse to a single-point
+-                    # evaluation; with q_c equal to the linear excess the
+-                    # hybrid CF saturates at 1 in both coordinates.
+-                    excess = FT(2e-3)
+-                    q_tot = q_sat + excess
+-                    moments_g = make_moments(excess, 1e-12, excess, 0)
+-                    moments_ln = make_moments(log(q_tot / q_sat), 1e-12, excess, 0)
+-                    cf_g = CA.compute_cloud_fraction_hybrid(
+-                        thp, T, ρ, q_tot, excess, FT(0),
+-                        moments_g, cf_guess, coeff, q_min, CA.GaussianSGS(),
+-                    )
+-                    cf_ln = CA.compute_cloud_fraction_hybrid(
+-                        thp, T, ρ, q_tot, excess, FT(0),
+-                        moments_ln, cf_guess, coeff, q_min, CA.LogNormalSGS(),
+-                    )
+-                    @test cf_g > FT(0.99)
+-                    @test cf_ln > FT(0.99)
++                @testset "σ_S² → 0 limit → cf ≈ 1 when q_c > 0" begin
++                    cf = CA._compute_cloud_fraction(FT(2e-3), FT(1e-12), α)
++                    @test cf > FT(0.99)
+                 end
+             end
+         end
+diff --git a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/microphysics_wrappers.jl b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/microphysics_wrappers.jl
+index 972bd45..cf0e266 100644
+--- a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/microphysics_wrappers.jl
++++ b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/microphysics_wrappers.jl
+@@ -221,7 +221,7 @@ import ClimaAtmos: limit_sink
+         end
+     end
+ 
+-    @testset "Microphysics1MEvaluator Shape-Function Logic" begin
++    @testset "Microphysics1MEvaluator Lagrange-Multiplier Logic" begin
+         import CloudMicrophysics.Parameters as CMP
+         import CloudMicrophysics.BulkMicrophysicsTendencies as BMT
+         import Thermodynamics as TD
+@@ -237,101 +237,67 @@ import ClimaAtmos: limit_sink
+                 ρ = FT(1.0)
+                 T_mean = FT(280.0)
+                 q_sat_mean = TD.q_vap_saturation(thp, T_mean, ρ)
+-                q_min = FT(1e-10)
+-                nsubs_quad = 1
+-
+-                # Helper to precompute shape-function coefficients from
+-                # (M_l, M_i, q_min), matching the production code in
+-                # microphysics_tendencies_1m.
+-                function _shape_coeffs(M_l, M_i, q_min_val)
+-                    M_sq = q_min_val * q_min_val
+-                    denom_l = M_sq + M_l * M_l
+-                    denom_i = M_sq + M_i * M_i
+-                    return (
+-                        γ_l = M_l / denom_l,
+-                        M_l = M_l,
+-                        γ_i = M_i / denom_i,
+-                        M_i = M_i,
++                q_tot_mean = q_sat_mean + FT(2e-3)
++                # mu_S centres S′: at the grid-mean point S′_hat = 0 by construction.
++                mu_S = q_tot_mean - q_sat_mean
++                dt = FT(60)
++                nsubs = 1
++
++                @testset "Large-negative λ_lagrange → zero shifted excess → no condensate" begin
++                    # λ_lagrange << 0 means even the most saturated quadrature
++                    # point has max(0, λ_lagrange + α·S′_hat) = 0, so BMT
++                    # receives zero cloud condensate (only rain/snow evaporation).
++                    eval_clear = Microphysics1MEvaluator(
++                        BMT.Microphysics1Moment(), mp, thp, ρ,
++                        FT(0), FT(0),           # q_rai, q_sno
++                        FT(1), FT(-1), mu_S, FT(1),  # λ, λ_lagrange, mu_S, α
++                        dt, nsubs, (),
+                     )
+-                end
+-
+-                @testset "Subsaturated mean (no condensate) → q_lcl_hat = 0" begin
+-                    # q_lcl_mean = q_icl_mean = 0 makes the shape-function
+-                    # output identically zero regardless of the equilibrium
+-                    # moments, so BMT is called with no cloud condensate.
+-                    sc = _shape_coeffs(FT(0), FT(0), q_min)
+-                    eval_sub = Microphysics1MEvaluator(
+-                        BMT.Microphysics1Moment(),
+-                        mp, thp, ρ,
+-                        FT(0), FT(0), FT(0), FT(0),  # q_lcl_mean, q_icl_mean, q_rai, q_sno
+-                        FT(1), sc.γ_l, sc.M_l, sc.γ_i, sc.M_i, # λ, γ_l, M_l, γ_i, M_i
+-                        FT(60), nsubs_quad, (),
+-                    )
+-
+-                    q_tot_hat = q_sat_mean + FT(0.001)
+-                    result = eval_sub(T_mean, q_tot_hat)
+-
+-                    res_expected = BMT.bulk_microphysics_tendencies(
++                    # At the grid-mean point S′_hat = 0, so shifted_excess = max(0,-1) = 0.
++                    result = eval_clear(T_mean, q_tot_mean)
++                    ref = BMT.bulk_microphysics_tendencies(
+                         BMT.LinearizedAverage(),
+                         BMT.Microphysics1Moment(), mp, thp, ρ, T_mean,
+-                        q_tot_hat, FT(0), FT(0), FT(0), FT(0), FT(60), nsubs_quad,
++                        q_tot_mean, FT(0), FT(0), FT(0), FT(0), dt, nsubs,
+                     )
+-                    @test result.dq_lcl_dt ≈ res_expected.dq_lcl_dt rtol = FT(1e-4)
+-                    @test result.dq_icl_dt ≈ res_expected.dq_icl_dt rtol = FT(1e-4)
++                    @test result.dq_lcl_dt ≈ ref.dq_lcl_dt rtol = FT(1e-4)
++                    @test result.dq_icl_dt ≈ ref.dq_icl_dt rtol = FT(1e-4)
+                 end
+ 
+-                @testset "Saturated mean at equilibrium → shape-function recovers q_lcl_mean" begin
+-                    # When q_lcl_mean = M_l (current state equals SGS-mean
+-                    # equilibrium condensate), the shape function at the
+-                    # quadrature point (T_mean, q_tot_sat) where
+-                    # q_lcl_eq_hat = M_l reduces to q_lcl_hat = q_lcl_mean.
+-                    q_tot_sat = q_sat_mean + FT(0.002)
+-                    excess_sat = q_tot_sat - q_sat_mean
+-                    q_lcl = excess_sat
+-
+-                    sc = _shape_coeffs(excess_sat, FT(0), q_min)
+-                    eval_sat = Microphysics1MEvaluator(
+-                        BMT.Microphysics1Moment(),
+-                        mp, thp, ρ,
+-                        q_lcl, FT(0), FT(0), FT(0),  # q_lcl_mean, q_icl_mean, q_rai, q_sno
+-                        FT(1), sc.γ_l, sc.M_l, sc.γ_i, sc.M_i, # λ, γ_l, M_l, γ_i, M_i
+-                        FT(60), nsubs_quad, (),
++                @testset "Positive λ_lagrange → condensate at grid-mean point" begin
++                    # At the grid-mean quadrature point S′_hat = 0, so
++                    # shifted_excess = λ_lagrange.  With λ=1 (all liquid) and
++                    # q_rai=0 we get q_lcl_hat = λ_lagrange exactly.
++                    q_c = FT(1e-3)
++                    eval_cloud = Microphysics1MEvaluator(
++                        BMT.Microphysics1Moment(), mp, thp, ρ,
++                        FT(0), FT(0),            # q_rai, q_sno
++                        FT(1), q_c, mu_S, FT(1), # λ, λ_lagrange, mu_S, α
++                        dt, nsubs, (),
+                     )
+-
+-                    # M_l = excess and q_lcl_eq_hat(T_mean, q_tot_sat) = excess
+-                    # so q_lcl_hat = q_lcl_mean exactly.
+-                    result_mean = eval_sat(T_mean, q_tot_sat)
+-                    res_direct = BMT.bulk_microphysics_tendencies(
++                    result = eval_cloud(T_mean, q_tot_mean)
++                    ref = BMT.bulk_microphysics_tendencies(
+                         BMT.LinearizedAverage(),
+                         BMT.Microphysics1Moment(), mp, thp, ρ, T_mean,
+-                        q_tot_sat, q_lcl, FT(0), FT(0), FT(0), FT(60), nsubs_quad,
++                        q_tot_mean, q_c, FT(0), FT(0), FT(0), dt, nsubs,
+                     )
+-                    @test result_mean.dq_lcl_dt ≈ res_direct.dq_lcl_dt rtol = FT(1e-4)
++                    @test result.dq_lcl_dt ≈ ref.dq_lcl_dt rtol = FT(1e-4)
++                    @test result.dq_icl_dt ≈ ref.dq_icl_dt rtol = FT(1e-4)
+                 end
+ 
+-                @testset "Stale-cloud edge case (M_l → 0) → β fallback" begin
+-                    # q_lcl_mean > 0 but M_l ≈ 0 (no equilibrium condensate
+-                    # anywhere in the SGS PDF). γ ≈ 0, so q_lcl_hat ≈ q_lcl_mean
+-                    # — recovering the uniform-condensate fallback.
+-                    q_lcl_stale = FT(1e-4)
+-                    sc = _shape_coeffs(FT(0), FT(0), q_min) # M_l = 0 ⇒ γ = 0
+-                    eval_stale = Microphysics1MEvaluator(
+-                        BMT.Microphysics1Moment(),
+-                        mp, thp, ρ,
+-                        q_lcl_stale, FT(0), FT(0), FT(0),
+-                        FT(1), sc.γ_l, sc.M_l, sc.γ_i, sc.M_i,
+-                        FT(60), nsubs_quad, (),
++                @testset "Output is finite NamedTuple" begin
++                    eval = Microphysics1MEvaluator(
++                        BMT.Microphysics1Moment(), mp, thp, ρ,
++                        FT(0), FT(0),
++                        FT(1), FT(5e-4), mu_S, FT(1),
++                        dt, nsubs, (),
+                     )
+-                    # Subsaturated quadrature point: q_lcl_eq_hat = 0.
+-                    q_tot_dry = q_sat_mean - FT(1e-4)
+-                    result = eval_stale(T_mean, q_tot_dry)
+-                    res_expected = BMT.bulk_microphysics_tendencies(
+-                        BMT.LinearizedAverage(),
+-                        BMT.Microphysics1Moment(), mp, thp, ρ, T_mean,
+-                        q_tot_dry, q_lcl_stale, FT(0), FT(0), FT(0),
+-                        FT(60), nsubs_quad,
+-                    )
+-                    @test result.dq_lcl_dt ≈ res_expected.dq_lcl_dt rtol = FT(1e-3)
++                    result = eval(T_mean, q_tot_mean)
++                    @test result isa NamedTuple
++                    @test isfinite(result.dq_lcl_dt)
++                    @test isfinite(result.dq_icl_dt)
++                    @test isfinite(result.dq_rai_dt)
++                    @test isfinite(result.dq_sno_dt)
+                 end
+             end
+         end
+diff --git a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/sgs_moments.jl b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/sgs_moments.jl
+index 9a39e1e..3dc3672 100644
+--- a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/sgs_moments.jl
++++ b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/sgs_moments.jl
+@@ -1,28 +1,26 @@
+ #=
+-Unit tests for SGS Moments pre-pass (Stage A of the scale-aware unified
+-microphysics framework, see docs/src/sgs_microphysics_redesign.md).
++Unit tests for the SGS quadrature infrastructure.
+ 
+-Tests the SGSMomentsEvaluator functor and the compute_sgs_moments driver,
+-verifying:
+-  - moment finiteness and non-negativity (M_l, M_i ≥ 0; σ_S² ≥ 0)
+-  - high-resolution limit: at σ → 0, moments collapse to grid-mean values
+-  - low-resolution behavior: σ_S² > 0 and M_l grows as the PDF widens
+-  - distribution dispatch: Gaussian uses linear S = q_tot - q_sat; lognormal
+-    uses log S = log(q_tot / q_sat)
+-  - grid-mean fallback: works with GridMeanSGS / nothing
++Tests `SGSMomentsEvaluator` and `_sgs_saturation_moments`, verifying:
++  - S = q_tot − q_sat always, regardless of SGS distribution type
++  - σ_S² ≥ 0 and → 0 in the zero-variance limit (T′T′ = q′q′ = 0)
++  - σ_S² is monotonically increasing with σ_q
++  - grid-mean fallback: nothing and GridMeanSGS give the same result
+ =#
+ 
+ using Test
+ using ClimaAtmos
+ import Thermodynamics as TD
+-import CloudMicrophysics.Parameters as CMP
+ import ClimaParams as CP
+ 
+ const CA = ClimaAtmos
+ 
+ @testset "SGS Moments" begin
+ 
+-    @testset "SGSMomentsEvaluator dispatch and basic properties" begin
++    @testset "SGSMomentsEvaluator: S = q_tot − q_sat for all distribution types" begin
++        # The saturation variable is always the linear excess S = q_tot − q_sat.
++        # The SGS distribution type (Gaussian / lognormal) controls how quadrature
++        # points are sampled, not the definition of S.
+         for FT in (Float32, Float64)
+             @testset "FT = $FT" begin
+                 toml_dict = CP.create_toml_dict(FT)
+@@ -30,58 +28,19 @@ const CA = ClimaAtmos
+                 ρ = FT(1.2)
+                 T_mean = FT(280.0)
+                 q_sat_mean = TD.q_vap_saturation(thp, T_mean, ρ)
+-
+-                # Construct an in-equilibrium grid state
+                 q_tot_mean = q_sat_mean + FT(2e-3)
+-                excess = q_tot_mean - q_sat_mean
+-                λ = FT(1.0)            # warm: pure liquid
+-                q_rai = FT(1e-4)
+-                q_sno = FT(1e-5)
+-                q_min = FT(1e-10)
+-
+-                # Build evaluators for each distribution
+-                eval_g = CA.SGSMomentsEvaluator(
+-                    CA.GaussianSGS(), thp, ρ, λ, q_rai, q_sno, q_min,
+-                )
+-                eval_ln = CA.SGSMomentsEvaluator(
+-                    CA.LogNormalSGS(), thp, ρ, λ, q_rai, q_sno, q_min,
+-                )
+-                eval_gm = CA.SGSMomentsEvaluator(
+-                    CA.GridMeanSGS(), thp, ρ, λ, q_rai, q_sno, q_min,
+-                )
++                expected_S = q_tot_mean - q_sat_mean
+ 
+-                # Evaluate at the grid mean point — should give well-defined results
+-                out_g = eval_g(T_mean, q_tot_mean)
+-                out_ln = eval_ln(T_mean, q_tot_mean)
+-                out_gm = eval_gm(T_mean, q_tot_mean)
++                eval = CA.SGSMomentsEvaluator(thp, ρ)
++                out = eval(T_mean, q_tot_mean)
+ 
+-                # Gaussian / GridMean: S = q_tot - q_sat (linear)
+-                @test out_g.mu_S ≈ excess rtol = FT(1e-5)
+-                @test out_gm.mu_S ≈ excess rtol = FT(1e-5)
+-                # Lognormal: S = log(q_tot / q_sat)
+-                @test out_ln.mu_S ≈ log(q_tot_mean / q_sat_mean) rtol = FT(1e-5)
+-
+-                # M_l and M_i should be non-negative
+-                @test out_g.M_l ≥ 0
+-                @test out_g.M_i ≥ 0
+-                @test out_ln.M_l ≥ 0
+-                @test out_ln.M_i ≥ 0
+-
+-                # When the max(0, ·) clamp does not bind, the equilibrium
+-                # partition is mass-conserving against the saturation excess:
+-                # M_l + q_rai = λ · excess.  Here λ = 1 (pure liquid), so the
+-                # liquid relation holds.  M_i is clamped to zero in this
+-                # pure-liquid case (since (1−λ)·excess = 0 but q_sno > 0).
+-                @test out_g.M_l + q_rai ≈ λ * excess rtol = FT(1e-5)
+-                @test out_g.M_i == FT(0)
++                @test out.mu_S ≈ expected_S rtol = FT(1e-5)
++                @test out.s_sq ≈ expected_S^2 rtol = FT(1e-5)
+             end
+         end
+     end
+ 
+-    @testset "compute_sgs_moments high-resolution limit (σ → 0)" begin
+-        # At zero variance, the quadrature collapses to a single point at the
+-        # grid mean, and moments reduce to: μ_S = S(T_mean, q_tot_mean),
+-        # σ_S² = 0, M_l = q_lcl_eq_at_mean, M_i = q_icl_eq_at_mean.
++    @testset "_sgs_saturation_moments: zero-variance limit (σ_S² → 0)" begin
+         for FT in (Float32, Float64)
+             @testset "FT = $FT" begin
+                 toml_dict = CP.create_toml_dict(FT)
+@@ -90,57 +49,30 @@ const CA = ClimaAtmos
+                 T_mean = FT(280.0)
+                 q_sat_mean = TD.q_vap_saturation(thp, T_mean, ρ)
+                 q_tot_mean = q_sat_mean + FT(2e-3)
+-                q_lcl = FT(1.5e-3)
+-                q_icl = FT(0)
+-                q_rai = FT(1e-4)
+-                q_sno = FT(0)
+-                q_min = FT(1e-10)
+-                T′T′ = FT(0)
+-                q′q′ = FT(0)
+-                corr_Tq = FT(0)
+-
+-                quad_g = CA.SGSQuadrature(
+-                    FT; distribution = CA.GaussianSGS(), quadrature_order = 3,
+-                )
+-                quad_ln = CA.SGSQuadrature(
+-                    FT; distribution = CA.LogNormalSGS(), quadrature_order = 3,
+-                )
+ 
+-                # Gaussian
+-                m_g = CA.compute_sgs_moments(
+-                    thp, ρ, T_mean, q_tot_mean,
+-                    q_lcl, q_icl, q_rai, q_sno,
+-                    quad_g, T′T′, q′q′, corr_Tq, q_min,
++                for quad in (
++                    CA.SGSQuadrature(
++                        FT;
++                        distribution = CA.GaussianSGS(),
++                        quadrature_order = 3,
++                    ),
++                    CA.SGSQuadrature(
++                        FT;
++                        distribution = CA.LogNormalSGS(),
++                        quadrature_order = 3,
++                    ),
+                 )
+-                @test m_g.mu_S ≈ q_tot_mean - q_sat_mean rtol = FT(1e-5)
+-                @test m_g.sigma_S_sq ≥ 0
+-                @test m_g.sigma_S_sq < FT(1e-10)  # essentially zero at σ → 0
+-                # M_l at grid mean: max(0, λ × excess − q_rai)
+-                λ_mean = TD.liquid_fraction(thp, T_mean, q_lcl, q_icl)
+-                excess = q_tot_mean - q_sat_mean
+-                M_l_expected = max(FT(0), λ_mean * excess - q_rai)
+-                @test m_g.M_l ≈ M_l_expected rtol = FT(1e-5)
+-
+-                # Lognormal: same structure but μ_S is log-ratio
+-                m_ln = CA.compute_sgs_moments(
+-                    thp, ρ, T_mean, q_tot_mean,
+-                    q_lcl, q_icl, q_rai, q_sno,
+-                    quad_ln, T′T′, q′q′, corr_Tq, q_min,
+-                )
+-                @test m_ln.mu_S ≈ log(q_tot_mean / q_sat_mean) rtol = FT(1e-5)
+-                @test m_ln.sigma_S_sq ≥ 0
+-                @test m_ln.sigma_S_sq < FT(1e-10)
+-                # M_l does not depend on the SGS distribution choice in the
+-                # σ → 0 limit (single-point evaluation): linear excess used.
+-                @test m_ln.M_l ≈ M_l_expected rtol = FT(1e-5)
++                    mom = CA._sgs_saturation_moments(
++                        thp, ρ, T_mean, q_tot_mean, quad, FT(0), FT(0), FT(0),
++                    )
++                    @test mom.sigma_S_sq ≥ 0
++                    @test mom.sigma_S_sq < FT(1e-10)
++                end
+             end
+         end
+     end
+ 
+-    @testset "compute_sgs_moments low-resolution behavior (σ > 0)" begin
+-        # At nonzero variance, σ_S² should be positive; M_l should generally
+-        # increase with σ because more of the PDF tail extends into the
+-        # saturated regime.
++    @testset "_sgs_saturation_moments: σ_S² increases monotonically with σ_q" begin
+         for FT in (Float32, Float64)
+             @testset "FT = $FT" begin
+                 toml_dict = CP.create_toml_dict(FT)
+@@ -148,45 +80,28 @@ const CA = ClimaAtmos
+                 ρ = FT(1.2)
+                 T_mean = FT(280.0)
+                 q_sat_mean = TD.q_vap_saturation(thp, T_mean, ρ)
+-                q_tot_mean = q_sat_mean - FT(1e-4)  # slightly subsaturated
+-                q_lcl = FT(0)
+-                q_icl = FT(0)
+-                q_rai = FT(0)
+-                q_sno = FT(0)
+-                q_min = FT(1e-10)
+-                corr_Tq = FT(0)
+-
++                q_tot_mean = q_sat_mean - FT(1e-4)
+                 quad = CA.SGSQuadrature(
+-                    FT; distribution = CA.GaussianSGS(), quadrature_order = 3,
++                    FT;
++                    distribution = CA.GaussianSGS(),
++                    quadrature_order = 3,
+                 )
+ 
+-                # Sweep over σ_q
+-                σ_q_vals = FT[1e-4, 5e-4, 1e-3, 2e-3]
+-                M_l_vals = FT[]
+-                for σ_q in σ_q_vals
+-                    q′q′ = σ_q * σ_q
+-                    m = CA.compute_sgs_moments(
+-                        thp, ρ, T_mean, q_tot_mean,
+-                        q_lcl, q_icl, q_rai, q_sno,
+-                        quad, FT(0), q′q′, corr_Tq, q_min,
++                prev = FT(-1)
++                for σ_q in FT[1e-4, 5e-4, 1e-3, 2e-3]
++                    mom = CA._sgs_saturation_moments(
++                        thp, ρ, T_mean, q_tot_mean, quad, FT(0), σ_q^2, FT(0),
+                     )
+-                    @test m.sigma_S_sq ≥ 0
+-                    @test m.M_l ≥ 0
+-                    @test m.M_i ≥ 0
+-                    @test isfinite(m.mu_S)
+-                    @test isfinite(m.sigma_S_sq)
+-                    push!(M_l_vals, m.M_l)
+-                end
+-                # Monotonically nondecreasing as σ grows (more of PDF crosses
+-                # saturation)
+-                for i in 2:length(M_l_vals)
+-                    @test M_l_vals[i] >= M_l_vals[i - 1] - FT(1e-12)
++                    @test mom.sigma_S_sq ≥ 0
++                    @test isfinite(mom.sigma_S_sq)
++                    @test mom.sigma_S_sq > prev
++                    prev = mom.sigma_S_sq
+                 end
+             end
+         end
+     end
+ 
+-    @testset "compute_sgs_moments handles nothing / GridMean SGS" begin
++    @testset "_sgs_saturation_moments: nothing / GridMeanSGS give the same result" begin
+         for FT in (Float32, Float64)
+             @testset "FT = $FT" begin
+                 toml_dict = CP.create_toml_dict(FT)
+@@ -195,74 +110,17 @@ const CA = ClimaAtmos
+                 T_mean = FT(285.0)
+                 q_sat_mean = TD.q_vap_saturation(thp, T_mean, ρ)
+                 q_tot_mean = q_sat_mean + FT(1e-3)
+-                q_lcl = FT(1e-3)
+-                q_icl = FT(0)
+-                q_rai = FT(0)
+-                q_sno = FT(0)
+-                q_min = FT(1e-10)
+ 
+-                # Should not error with nothing
+-                m1 = CA.compute_sgs_moments(
+-                    thp, ρ, T_mean, q_tot_mean,
+-                    q_lcl, q_icl, q_rai, q_sno,
+-                    nothing, FT(1), FT(1e-6), FT(0), q_min,
+-                )
+-                @test isfinite(m1.mu_S)
+-                @test m1.sigma_S_sq ≥ 0
+-                @test m1.M_l ≥ 0
++                m1 = CA._sgs_saturation_moments(thp, ρ, T_mean, q_tot_mean,
++                    nothing, FT(1), FT(1e-6), FT(0))
++                m2 = CA._sgs_saturation_moments(thp, ρ, T_mean, q_tot_mean,
++                    CA.GridMeanSGS(), FT(1), FT(1e-6), FT(0))
+ 
+-                # GridMeanSGS — should give the same as nothing (single-point
+-                # evaluation at the mean)
+-                m2 = CA.compute_sgs_moments(
+-                    thp, ρ, T_mean, q_tot_mean,
+-                    q_lcl, q_icl, q_rai, q_sno,
+-                    CA.GridMeanSGS(), FT(1), FT(1e-6), FT(0), q_min,
+-                )
+-                @test m2.mu_S ≈ m1.mu_S rtol = FT(1e-6)
+-                @test m2.M_l ≈ m1.M_l rtol = FT(1e-6)
++                @test isfinite(m1.sigma_S_sq)
++                @test m1.sigma_S_sq ≥ 0
++                @test m2.sigma_S_sq ≈ m1.sigma_S_sq rtol = FT(1e-6)
+             end
+         end
+     end
+ 
+-    @testset "compute_sgs_moments fully-clear / fully-cloudy limits" begin
+-        for FT in (Float32, Float64)
+-            @testset "FT = $FT" begin
+-                toml_dict = CP.create_toml_dict(FT)
+-                thp = TD.Parameters.ThermodynamicsParameters(toml_dict)
+-                ρ = FT(1.2)
+-                T_mean = FT(280.0)
+-                q_sat_mean = TD.q_vap_saturation(thp, T_mean, ρ)
+-                q_lcl = FT(0)
+-                q_icl = FT(0)
+-                q_rai = FT(0)
+-                q_sno = FT(0)
+-                q_min = FT(1e-10)
+-
+-                quad = CA.SGSQuadrature(
+-                    FT; distribution = CA.GaussianSGS(), quadrature_order = 3,
+-                )
+-
+-                # Deep subsaturation, small σ: M_l should be ≈ 0
+-                m_dry = CA.compute_sgs_moments(
+-                    thp, ρ, T_mean, q_sat_mean - FT(5e-3),
+-                    q_lcl, q_icl, q_rai, q_sno,
+-                    quad, FT(0), FT(1e-8), FT(0), q_min,
+-                )
+-                @test m_dry.M_l < FT(1e-6)
+-                @test m_dry.mu_S < 0
+-
+-                # Deeply saturated, small σ: M_l should be ≈ excess
+-                excess = FT(5e-3)
+-                m_wet = CA.compute_sgs_moments(
+-                    thp, ρ, T_mean, q_sat_mean + excess,
+-                    q_lcl, q_icl, q_rai, q_sno,
+-                    quad, FT(0), FT(1e-8), FT(0), q_min,
+-                )
+-                # λ_at_grid_mean uses (0, 0) condensate → T-ramp fallback
+-                λ_mean = TD.liquid_fraction(thp, T_mean, q_lcl, q_icl)
+-                @test m_wet.M_l ≈ λ_mean * excess rtol = FT(1e-3)
+-                @test m_wet.mu_S > 0
+-            end
+-        end
+-    end
+ end
+diff --git a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/sgs_quadrature.jl b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/sgs_quadrature.jl
+index 2aae3fb..bf29019 100644
+--- a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/sgs_quadrature.jl
++++ b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/sgs_quadrature.jl
+@@ -316,32 +316,24 @@ using ClimaAtmos
+                 tps = TD.Parameters.ThermodynamicsParameters(toml_dict)
+                 mp = CMP.Microphysics1MParams(toml_dict)
+ 
+-                # Grid-mean state at saturation equilibrium. With Stage C the
+-                # shape-function partition recovers the grid-mean state exactly
+-                # at a single quadrature point provided the cached moments
+-                # `(M_l, M_i)` equal the local equilibrium condensate at the
+-                # mean — which we compute below to keep the tests self-contained.
++                # Grid-mean cloudy state. q_rai = q_sno = 0 so that the
++                # 1-point quadrature result matches a direct BMT call exactly
++                # (shifted_excess = λ_lagrange = q_c at the mean point).
+                 ρ = FT(1.2)
+                 T_mean = FT(280.0)
+                 q_lcl_mean = FT(0.0001)
+                 q_icl_mean = FT(0.00005)
+-                q_rai = FT(0.0001)
+-                q_sno = FT(0.00001)
++                q_rai = FT(0)
++                q_sno = FT(0)
+                 q_sat_mean = TD.q_vap_saturation(tps, T_mean, ρ)
+-                q_tot_mean = q_sat_mean + q_lcl_mean + q_icl_mean + q_rai + q_sno
++                q_tot_mean = q_sat_mean + q_lcl_mean + q_icl_mean
+ 
+-                # Cached SGS moments consistent with a 1-point quadrature: at
+-                # the grid mean `(T_mean, q_tot_mean)`, the equilibrium
+-                # partition matches the prognostic condensate exactly, so
+-                # M_l = q_lcl_mean, M_i = q_icl_mean.
++                # Lagrange-multiplier moments: mu_S centres S′ at the grid mean;
++                # λ_lagrange = q_c enforces mass conservation in the σ_S → 0 limit.
+                 λ = TD.liquid_fraction(tps, T_mean, q_lcl_mean, q_icl_mean)
+-                excess_mean = q_tot_mean - q_sat_mean
+-                M_l_eq = max(FT(0), λ * excess_mean - q_rai)
+-                M_i_eq = max(FT(0), (FT(1) - λ) * excess_mean - q_sno)
+-                moments_eq = (
+-                    mu_S = excess_mean, sigma_S_sq = FT(0),
+-                    M_l = M_l_eq, M_i = M_i_eq,
+-                )
++                mu_S = q_tot_mean - q_sat_mean      # E[S] at grid mean
++                λ_lagrange = q_lcl_mean + q_icl_mean # = q_c (σ_S → 0 limit)
++                α = FT(1)
+ 
+                 # Variances and correlation
+                 T′T′ = FT(1.0)
+@@ -353,7 +345,9 @@ using ClimaAtmos
+                 nsubs = 1
+                 nsubs_quad = 1
+ 
+-                # Test 1: Single quadrature point should match grid-mean evaluation
++                # Test 1: Single quadrature point should match grid-mean evaluation.
++                # With 1-point quadrature all weight is at the mean, S′_hat = 0,
++                # so shifted_excess = λ_lagrange = q_c → q_lcl_hat = λ·q_c = q_lcl_mean.
+                 @testset "Single Point = Grid Mean" begin
+                     quad_1pt = ClimaAtmos.SGSQuadrature(
+                         FT;
+@@ -365,7 +359,7 @@ using ClimaAtmos
+                         BMT.Microphysics1Moment(),
+                         quad_1pt, mp, tps, ρ,
+                         T_mean, q_tot_mean, q_lcl_mean, q_icl_mean, q_rai, q_sno,
+-                        T′T′, q′q′, corr_Tq, moments_eq, dt, nsubs_quad,
++                        T′T′, q′q′, corr_Tq, λ_lagrange, mu_S, α, dt, nsubs_quad,
+                     )
+ 
+                     result_direct = BMT.bulk_microphysics_tendencies(
+@@ -381,7 +375,7 @@ using ClimaAtmos
+                     @test result_quad.dq_sno_dt ≈ result_direct.dq_sno_dt rtol = FT(1e-5)
+                 end
+ 
+-                # Test 2: Zero variance should match grid-mean evaluation
++                # Test 2: Zero variance collapses to single-point → same as grid mean.
+                 @testset "Zero Variance = Grid Mean" begin
+                     quad = ClimaAtmos.SGSQuadrature(FT; quadrature_order = 3)
+ 
+@@ -389,7 +383,7 @@ using ClimaAtmos
+                         BMT.Microphysics1Moment(),
+                         quad, mp, tps, ρ,
+                         T_mean, q_tot_mean, q_lcl_mean, q_icl_mean, q_rai, q_sno,
+-                        FT(0), FT(0), FT(0), moments_eq, dt, nsubs_quad,
++                        FT(0), FT(0), FT(0), λ_lagrange, mu_S, α, dt, nsubs_quad,
+                     )
+ 
+                     result_direct = BMT.bulk_microphysics_tendencies(
+@@ -411,7 +405,7 @@ using ClimaAtmos
+                         BMT.Microphysics1Moment(),
+                         quad, mp, tps, ρ,
+                         T_mean, q_tot_mean, q_lcl_mean, q_icl_mean, q_rai, q_sno,
+-                        T′T′, q′q′, corr_Tq, moments_eq, dt, nsubs_quad,
++                        T′T′, q′q′, corr_Tq, λ_lagrange, mu_S, α, dt, nsubs_quad,
+                     )
+ 
+                     @test haskey(result, :dq_lcl_dt)
+@@ -429,14 +423,14 @@ using ClimaAtmos
+                         BMT.Microphysics1Moment(),
+                         quad, mp, tps, ρ,
+                         T_mean, q_tot_mean, q_lcl_mean, q_icl_mean, q_rai, q_sno,
+-                        FT(4.0), FT(1e-5), FT(0.8), moments_eq, dt, nsubs_quad,
++                        FT(4.0), FT(1e-5), FT(0.8), λ_lagrange, mu_S, α, dt, nsubs_quad,
+                     )
+ 
+                     result_no_var = microphysics_tendencies_1m(
+                         BMT.Microphysics1Moment(),
+                         quad, mp, tps, ρ,
+                         T_mean, q_tot_mean, q_lcl_mean, q_icl_mean, q_rai, q_sno,
+-                        FT(0), FT(0), FT(0), moments_eq, dt, nsubs_quad,
++                        FT(0), FT(0), FT(0), λ_lagrange, mu_S, α, dt, nsubs_quad,
+                     )
+ 
+                     @test isfinite(result_var.dq_lcl_dt)
+@@ -502,20 +496,16 @@ using ClimaAtmos
+                 dt = FT(1.0)
+                 nsubs_quad = 1
+ 
+-                # Cached SGS moments consistent with the grid-mean equilibrium.
++                # Lagrange-multiplier moments consistent with the grid-mean state.
+                 q_sat = TD.q_vap_saturation(thp, T, ρ)
+-                λ = TD.liquid_fraction(thp, T, q_liq, q_ice)
+-                excess = max(FT(0), q_tot - q_sat)
+-                M_l = max(FT(0), λ * excess - q_rai)
+-                M_i = max(FT(0), (FT(1) - λ) * excess - q_sno)
+-                moments = (
+-                    mu_S = excess, sigma_S_sq = FT(0), M_l = M_l, M_i = M_i,
+-                )
++                mu_S = max(FT(0), q_tot - q_sat)    # E[S] at grid mean
++                λ_lagrange = q_liq + q_ice           # q_c (σ_S → 0 limit)
++                α = FT(1)
+ 
+                 result = microphysics_tendencies_1m(
+                     BMT.Microphysics1Moment(),
+                     quad, mp, thp, ρ, T, q_tot, q_liq, q_ice, q_rai, q_sno,
+-                    T′T′, q′q′, corr_Tq, moments, dt, nsubs_quad,
++                    T′T′, q′q′, corr_Tq, λ_lagrange, mu_S, α, dt, nsubs_quad,
+                 )
+ 
+                 # Total condensed water tendency
+@@ -574,21 +564,17 @@ using ClimaAtmos
+                 dt = FT(1.0)
+                 nsubs_quad = 1
+ 
+-                # Cached SGS moments (any consistent value works for type test).
++                # Lagrange-multiplier moments (any consistent value works for type test).
+                 q_sat = TD.q_vap_saturation(thp, T, ρ)
+-                λ = TD.liquid_fraction(thp, T, q_liq, q_ice)
+-                excess = max(FT(0), q_tot - q_sat)
+-                moments = (
+-                    mu_S = excess, sigma_S_sq = FT(0),
+-                    M_l = max(FT(0), λ * excess - q_rai),
+-                    M_i = max(FT(0), (FT(1) - λ) * excess - q_sno),
+-                )
++                mu_S = max(FT(0), q_tot - q_sat)
++                λ_lagrange = q_liq + q_ice
++                α = FT(1)
+ 
+                 # Test type stability
+                 result = @inferred microphysics_tendencies_1m(
+                     BMT.Microphysics1Moment(),
+                     quad, mp, thp, ρ, T, q_tot, q_liq, q_ice, q_rai, q_sno,
+-                    T′T′, q′q′, corr_Tq, moments, dt, nsubs_quad,
++                    T′T′, q′q′, corr_Tq, λ_lagrange, mu_S, α, dt, nsubs_quad,
+                 )
+ 
+                 # Verify return type
+@@ -627,27 +613,18 @@ using ClimaAtmos
+ 
+                 # Cached SGS moments consistent with grid mean.
+                 q_sat_mean = TD.q_vap_saturation(thp, T_mean, ρ)
++                q_tot_mean = q_sat_mean + q_lcl_mean + q_icl_mean
+                 λ = TD.liquid_fraction(thp, T_mean, q_lcl_mean, q_icl_mean)
+-                # Use a generic excess for this functor-pattern smoke test.
+-                excess = FT(1e-3)
+-                M_l = max(FT(0), λ * excess - q_rai)
+-                M_i = max(FT(0), (FT(1) - λ) * excess - q_sno)
+-                M_scale = FT(1e-10)
+-
+-                # Precompute shape-function coefficients, matching
+-                # microphysics_tendencies_1m production code.
+-                M_sq = M_scale * M_scale
+-                denom_l = M_sq + M_l * M_l
+-                denom_i = M_sq + M_i * M_i
+-                γ_l = M_l / denom_l
+-                γ_i = M_i / denom_i
+-
+-                # Create evaluator with precomputed shape-function coefficients
++                mu_S = q_tot_mean - q_sat_mean   # grid-mean saturation excess
++                q_c = q_lcl_mean + q_icl_mean
++                λ_lagrange = q_c                  # σ_S → 0 limit: λ ≈ q_c
++
++                # Create evaluator with Lagrange-multiplier closure
+                 evaluator = Microphysics1MEvaluator(
+                     BMT.Microphysics1Moment(),
+                     mp, thp, ρ,
+-                    q_lcl_mean, q_icl_mean, q_rai, q_sno,
+-                    λ, γ_l, M_l, γ_i, M_i,
++                    q_rai, q_sno,
++                    λ, λ_lagrange, mu_S, FT(1),
+                     dt, nsubs_quad,
+                     (),
+                 )
+@@ -688,16 +665,17 @@ using ClimaAtmos
+                 tps = TD.Parameters.ThermodynamicsParameters(toml_dict)
+                 mp = CMP.Microphysics1MParams(toml_dict)
+ 
+-                # Grid-mean state at saturation equilibrium so the in-cloud
+-                # branch (which forces q_v = q_sat) reproduces direct BMT.
++                # Grid-mean cloudy state with no precipitation so that
++                # q_lcl_hat = λ·λ_lagrange = q_liq and the quadrature result
++                # matches a direct BMT call exactly.
+                 ρ = FT(1.2)
+                 T_mean = FT(280.0)
+                 q_liq = FT(0.001)
+                 q_ice = FT(0.0005)
+-                q_rai = FT(0.0002)
+-                q_sno = FT(0.0001)
++                q_rai = FT(0)
++                q_sno = FT(0)
+                 q_sat_mean = TD.q_vap_saturation(tps, T_mean, ρ)
+-                q_tot = q_sat_mean + q_liq + q_ice + q_rai + q_sno
++                q_tot = q_sat_mean + q_liq + q_ice
+ 
+                 # GridMeanSGS inside SGSQuadrature
+                 quad_gm = ClimaAtmos.SGSQuadrature(
+@@ -712,21 +690,19 @@ using ClimaAtmos
+                 dt = FT(1.0)
+                 nsubs_quad = 1
+ 
+-                # Cached SGS moments consistent with the grid-mean equilibrium.
+-                λ_gm = TD.liquid_fraction(tps, T_mean, q_liq, q_ice)
+-                excess_gm = max(FT(0), q_tot - q_sat_mean)
+-                moments_gm = (
+-                    mu_S = excess_gm, sigma_S_sq = FT(0),
+-                    M_l = max(FT(0), λ_gm * excess_gm - q_rai),
+-                    M_i = max(FT(0), (FT(1) - λ_gm) * excess_gm - q_sno),
+-                )
++                # Lagrange-multiplier moments consistent with the grid-mean equilibrium.
++                # q_rai = q_sno = 0 so that shifted_excess = λ_lagrange = q_c at the mean
++                # point, making the quadrature result equal to a direct BMT call.
++                mu_S_gm = max(FT(0), q_tot - q_sat_mean)
++                λ_lagrange_gm = q_liq + q_ice
++                α_gm = FT(1)
+ 
+                 # Quadrature path
+                 result_quad = microphysics_tendencies_1m(
+                     BMT.Microphysics1Moment(),
+                     quad_gm, mp, tps, ρ,
+                     T_mean, q_tot, q_liq, q_ice, q_rai, q_sno,
+-                    T′T′, q′q′, corr_Tq, moments_gm, dt, nsubs_quad,
++                    T′T′, q′q′, corr_Tq, λ_lagrange_gm, mu_S_gm, α_gm, dt, nsubs_quad,
+                 )
+ 
+                 # Direct BMT call
+@@ -821,21 +797,18 @@ using ClimaAtmos
+                     nsubs = 1
+                     nsubs_quad = 1
+ 
+-                    # Cached SGS moments consistent with the grid-mean equilibrium.
+-                    λ_gm = TD.liquid_fraction(thp, T, q_liq, q_ice)
+-                    excess_gm = max(FT(0), q_tot - q_sat_eq)
+-                    moments_gm = (
+-                        mu_S = excess_gm, sigma_S_sq = FT(0),
+-                        M_l = max(FT(0), λ_gm * excess_gm - q_rai),
+-                        M_i = max(FT(0), (FT(1) - λ_gm) * excess_gm - q_sno),
+-                    )
++                    # Lagrange-multiplier moments consistent with the grid-mean equilibrium.
++                    mu_S_gm = max(FT(0), q_tot - q_sat_eq)
++                    λ_lagrange_gm = q_liq + q_ice
++                    α_gm = FT(1)
+ 
+                     # With zero variances, quadrature should match direct BMT
+                     result_quad = ClimaAtmos.microphysics_tendencies_1m(
+                         BMT.Microphysics1Moment(),
+                         quad, mp_1m, thp, ρ, T,
+                         q_tot, q_liq, q_ice, q_rai, q_sno,
+-                        FT(0), FT(0), FT(0), moments_gm, dt, nsubs_quad,
++                        FT(0), FT(0), FT(0), λ_lagrange_gm, mu_S_gm, α_gm, dt,
++                        nsubs_quad,
+                     )
+ 
+                     result_direct = BMT.bulk_microphysics_tendencies(
+@@ -859,7 +832,8 @@ using ClimaAtmos
+                         BMT.Microphysics1Moment(),
+                         quad, mp_1m, thp, ρ, T,
+                         q_tot, q_liq, q_ice, q_rai, q_sno,
+-                        FT(4.0), FT(1e-5), FT(0.6), moments_gm, dt, nsubs_quad,
++                        FT(4.0), FT(1e-5), FT(0.6), λ_lagrange_gm, mu_S_gm, α_gm, dt,
++                        nsubs_quad,
+                     )
+                     for field in (:dq_lcl_dt, :dq_icl_dt, :dq_rai_dt, :dq_sno_dt)
+                         @test isfinite(getfield(result_var, field))
+@@ -912,15 +886,11 @@ using ClimaAtmos
+         nsubs = 1
+         nsubs_quad = 1
+ 
+-        # Cached SGS moments for the perf test (any consistent value works).
++        # Lagrange-multiplier moments for the perf test (any consistent value works).
+         q_sat_perf = TD.q_vap_saturation(thp, T, ρ)
+-        λ_perf = TD.liquid_fraction(thp, T, q_lcl, q_icl)
+-        excess_perf = max(FT(0), q_tot - q_sat_perf)
+-        moments_perf = (
+-            mu_S = excess_perf, sigma_S_sq = FT(0),
+-            M_l = max(FT(0), λ_perf * excess_perf - q_rai),
+-            M_i = max(FT(0), (FT(1) - λ_perf) * excess_perf - q_sno),
+-        )
++        mu_S_perf = max(FT(0), q_tot - q_sat_perf)
++        λ_lagrange_perf = q_lcl + q_icl
++        α_perf = FT(1)
+ 
+         N_warmup = 100
+         N_bench = 10_000
+@@ -1024,14 +994,16 @@ using ClimaAtmos
+                     microphysics_tendencies_1m(
+                         BMT.Microphysics1Moment(), quad, mp_1m, thp, ρ, T,
+                         q_tot, q_lcl, q_icl, q_rai, q_sno,
+-                        T′T′, q′q′, corr_Tq, moments_perf, dt, nsubs_quad,
++                        T′T′, q′q′, corr_Tq, λ_lagrange_perf, mu_S_perf, α_perf, dt,
++                        nsubs_quad,
+                     )
+                 end
+                 t = @elapsed for _ in 1:N_bench
+                     microphysics_tendencies_1m(
+                         BMT.Microphysics1Moment(), quad, mp_1m, thp, ρ, T,
+                         q_tot, q_lcl, q_icl, q_rai, q_sno,
+-                        T′T′, q′q′, corr_Tq, moments_perf, dt, nsubs_quad,
++                        T′T′, q′q′, corr_Tq, λ_lagrange_perf, mu_S_perf, α_perf, dt,
++                        nsubs_quad,
+                     )
+                 end
+                 timings_1m[order] = t
+diff --git a/ClimaAtmos.jl/test/surface_albedo.jl b/ClimaAtmos.jl-mod/test/surface_albedo.jl
+index 319042f..74b34cd 100644
+--- a/ClimaAtmos.jl/test/surface_albedo.jl
++++ b/ClimaAtmos.jl-mod/test/surface_albedo.jl
+@@ -46,15 +46,15 @@ Random.seed!(1234)
+         simulation = ClimaAtmos.get_simulation(config)
+         (; u, p) = simulation.integrator
+ 
+-        # At t=0, should initialize to default (0.38)
++        # At t=0, albedo should be set to NaN
+         ClimaAtmos.set_surface_albedo!(u, p, 0.0, p.atmos.surface_albedo)
+-        @test all(p.radiation.rrtmgp_model.direct_sw_surface_albedo .== FT(0.38))
+-        @test all(p.radiation.rrtmgp_model.diffuse_sw_surface_albedo .== FT(0.38))
++        @test all(isnan.(p.radiation.rrtmgp_model.direct_sw_surface_albedo))
++        @test all(isnan.(p.radiation.rrtmgp_model.diffuse_sw_surface_albedo))
+ 
+-        # At t>0, should remain unchanged (coupler controls updates)
++        # At t>0, albedo should remain unchanged
+         ClimaAtmos.set_surface_albedo!(u, p, 1.0, p.atmos.surface_albedo)
+-        @test all(p.radiation.rrtmgp_model.direct_sw_surface_albedo .== FT(0.38))
+-        @test all(p.radiation.rrtmgp_model.diffuse_sw_surface_albedo .== FT(0.38))
++        @test all(isnan.(p.radiation.rrtmgp_model.direct_sw_surface_albedo))
++        @test all(isnan.(p.radiation.rrtmgp_model.diffuse_sw_surface_albedo))
+     end
+ end
+ 
