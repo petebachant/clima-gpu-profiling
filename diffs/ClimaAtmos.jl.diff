@@ -1,8 +1,31 @@
 diff --git a/ClimaAtmos.jl/.buildkite/coupler_perf/pipeline.yml b/ClimaAtmos.jl-mod/.buildkite/coupler_perf/pipeline.yml
-index cd66b2d..67ecc6a 100644
+index cd66b2d..250be70 100644
 --- a/ClimaAtmos.jl/.buildkite/coupler_perf/pipeline.yml
 +++ b/ClimaAtmos.jl-mod/.buildkite/coupler_perf/pipeline.yml
-@@ -48,7 +48,7 @@ steps:
+@@ -10,7 +10,7 @@ env:
+   GKSwstype: 100
+   SLURM_KILL_BAD_EXIT: 1
+   COUPLER_PATH: ".buildkite/perf/ClimaCoupler.jl"
+-  COUPLER_COMMIT: "44fcb38b98ed31d753c464b54a2b9a910d1aaab9"
++  COUPLER_COMMIT: "d6712ed675f9e3f2819a8245514d1eea593ee4d8"
+   CONFIG_PATH: "$COUPLER_PATH/config/nightly_configs"
+   BENCHMARK_CONFIG_PATH: "$COUPLER_PATH/config/benchmark_configs"
+ 
+@@ -25,10 +25,12 @@ steps:
+       # Update package registry, since dev installs do not do that with a manifest
+       - "julia --project=$COUPLER_PATH/experiments/AMIP/ -e 'using Pkg; Pkg.Registry.update()'"
+       - echo "--- Instantiate AMIP env"
+-      # Instantiate and dev install ClimaCore
++      # Instantiate and dev install ClimaAtmos
+       - "julia --project=$COUPLER_PATH/experiments/AMIP/ -e 'using Pkg; Pkg.instantiate(;verbose=true)'"
+       - 'julia --project=$COUPLER_PATH/experiments/AMIP/ -e ''using Pkg; Pkg.develop(path=".")'''
+       - 'julia --project=$COUPLER_PATH/experiments/AMIP/ -e ''using Pkg; Pkg.add("MPI")'''
++      # Install ClimaCore from main, since that's how the nightly Coupler runs
++      - 'julia --project=$COUPLER_PATH/experiments/AMIP/ -e ''using Pkg; Pkg.add(PackageSpec(name="ClimaCore", rev="main"))'''
+       - "julia --project=$COUPLER_PATH/experiments/AMIP/ -e 'using Pkg; Pkg.precompile()'"
+       - "julia --project=$COUPLER_PATH/experiments/AMIP/ -e 'using Pkg; Pkg.status()'"
+     agents:
+@@ -48,7 +50,7 @@ steps:
      artifact_paths: "output/gpu_amip_progedmf_1M_land_he16/artifacts/*"
      env:
        CLIMACOMMS_DEVICE: "CUDA"
@@ -12,10 +35,10 @@ index cd66b2d..67ecc6a 100644
      agents:
        slurm_gpus_per_task: 1
 diff --git a/ClimaAtmos.jl/src/cache/microphysics_cache.jl b/ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl
-index c1474ae..73e5b35 100644
+index 4eb54ac..efa1477 100644
 --- a/ClimaAtmos.jl/src/cache/microphysics_cache.jl
 +++ b/ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl
-@@ -930,9 +930,9 @@ function set_microphysics_tendency_cache!(
+@@ -931,9 +931,9 @@ function set_microphysics_tendency_cache!(
          (; ᶜT′T′, ᶜq′q′, ᶜsgs_moments) = p.precomputed
          corr_Tq = correlation_Tq(p.params)
          α = sgs_variance_fidelity(CAP.cloud_fraction_steepness_scale(p.params))
@@ -28,7 +51,7 @@ index c1474ae..73e5b35 100644
              ᶜT′T′, ᶜq′q′, corr_Tq, ᶜsgs_moments.λ_lagrange, ᶜsgs_moments.mu_S, α,
              dt, nsubs_quad,
          )
-@@ -972,9 +972,9 @@ function set_microphysics_tendency_cache!(
+@@ -973,9 +973,9 @@ function set_microphysics_tendency_cache!(
          (; ᶜT′T′, ᶜq′q′, ᶜsgs_moments) = p.precomputed
          corr_Tq = correlation_Tq(p.params)
          α = sgs_variance_fidelity(CAP.cloud_fraction_steepness_scale(p.params))
@@ -41,7 +64,7 @@ index c1474ae..73e5b35 100644
              ᶜT′T′, ᶜq′q′, corr_Tq, ᶜsgs_moments.λ_lagrange, ᶜsgs_moments.mu_S, α,
              dt, nsubs_quad,
          )
-@@ -1026,9 +1026,9 @@ function set_microphysics_tendency_cache!(
+@@ -1027,9 +1027,9 @@ function set_microphysics_tendency_cache!(
          (; ᶜT′T′, ᶜq′q′, ᶜsgs_moments) = p.precomputed
          corr_Tq = correlation_Tq(p.params)
          α = sgs_variance_fidelity(CAP.cloud_fraction_steepness_scale(p.params))
@@ -55,10 +78,10 @@ index c1474ae..73e5b35 100644
              dt, nsubs_quad,
          )
 diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
-index 512f354..0862835 100644
+index 50ccc61..589f389 100644
 --- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
 +++ b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
-@@ -214,8 +214,8 @@ struct Microphysics1MEvaluator{S, MP, TPS, FT, Args <: Tuple}
+@@ -224,8 +224,8 @@ struct Microphysics1MEvaluator{S, MP, TPS, FT, Args <: Tuple}
  end
  # `@noinline` here is the SGS quadrature function barrier. The functor body
  # below (saturation, shape-function partition, plus the heavy
@@ -69,7 +92,7 @@ index 512f354..0862835 100644
  # `sum_over_quadrature_points`. Without the barrier those N² copies inline
  # into one giant GPU broadcast kernel, pushing register pressure past the
  # 255-reg hard cap and pinning occupancy at 12.5%. Marking the functor
-@@ -333,6 +333,162 @@ end
+@@ -346,6 +346,162 @@ end
      )
  end
  
