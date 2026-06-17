@@ -23,3 +23,23 @@ for repo in ClimaAtmos.jl ClimaCore.jl ClimaCoupler.jl; do
         git diff --no-index "${base_f}" "${mod_f}" || true
     done <<< "${all_files}" > "diffs/${repo}.diff"
 done
+
+# Diff CloudMicrophysics.jl-mod against the exact version that runs alongside
+# the baseline ClimaAtmos inside the coupler AMIP environment. That version is
+# pinned by `git-tree-sha1` in the baseline coupler's AMIP Manifest, so when the
+# CM submodule is checked out to the matching commit this diff is empty
+# (i.e. CloudMicrophysics has no influence on the experiment).
+CM_MANIFEST="ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml"
+CM_TREE=$(awk '
+    /^\[\[deps\.CloudMicrophysics\]\]/ { f = 1; next }
+    f && /^git-tree-sha1/ { print; exit }
+' "${CM_MANIFEST}" | sed -E 's/.*"([0-9a-f]+)".*/\1/')
+
+if [ -z "${CM_TREE}" ]; then
+    echo "ERROR: could not read CloudMicrophysics git-tree-sha1 from ${CM_MANIFEST}" >&2
+    exit 1
+fi
+
+# `git diff <tree-ish>` compares that tree to the working tree. The tree object
+# is present locally via the registered release commit (e.g. v0.36.0).
+git -C CloudMicrophysics.jl-mod diff "${CM_TREE}" -- . > diffs/CloudMicrophysics.diff || true

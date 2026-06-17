@@ -20,4 +20,5 @@ julia --project="$REPO_ROOT/ClimaCoupler.jl-mod/$JULIA_PROJECT" -e "
     import Pkg
     Pkg.develop(path=\"./ClimaCore.jl-mod\")
     Pkg.develop(path=\"./ClimaAtmos.jl-mod\")
+    Pkg.develop(path=\"./CloudMicrophysics.jl-mod\")
 "
