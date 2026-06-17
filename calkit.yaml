@@ -75,6 +75,7 @@ pipeline:
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
+        - ClimaAtmos.jl-mod/config
       outputs:
         - results/nsys/mod.nsys-rep
         - results/nsys/mod.sqlite
@@ -118,7 +119,7 @@ pipeline:
           storage: git
           delete_before_run: true
     mod-ncu:
-      frozen: true
+      frozen: false
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
@@ -200,6 +201,7 @@ pipeline:
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
         - ClimaAtmos.jl-mod/toml
+        - ClimaAtmos.jl-mod/config
     summarize:
       kind: python-script
       environment: py

@@ -57,8 +57,9 @@ stages:
       --dep ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
       ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
       ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep 
-      .calkit/env-locks/clima --out results/nsys/mod.nsys-rep --out 
-      results/nsys/mod.sqlite -- scripts/run-nsys.sh results/nsys/mod 
+      ClimaAtmos.jl-mod/config --dep .calkit/env-locks/clima --out 
+      results/nsys/mod.nsys-rep --out results/nsys/mod.sqlite -- 
+      scripts/run-nsys.sh results/nsys/mod 
       ClimaCoupler.jl-mod/experiments/AMIP 
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
@@ -72,6 +73,7 @@ stages:
       - ClimaCore.jl-mod/src
       - ClimaCore.jl-mod/lib
       - ClimaAtmos.jl-mod/src
+      - ClimaAtmos.jl-mod/config
       - .calkit/env-locks/clima
     outs:
       - results/nsys/mod.nsys-rep:
@@ -158,7 +160,6 @@ stages:
       - .calkit/scheduler/logs/mod-ncu.out:
           cache: false
           persist: true
-    frozen: true
     desc: Automatically generated from the 'mod-ncu' stage in 
       calkit.yaml. Changes made here will be overwritten.
   amip-baseline:
@@ -203,8 +204,8 @@ stages:
       --dep ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
       ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
       ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep 
-      ClimaAtmos.jl-mod/toml --dep .calkit/env-locks/clima -- 
-      scripts/run-julia-script.sh 
+      ClimaAtmos.jl-mod/toml --dep ClimaAtmos.jl-mod/config --dep 
+      .calkit/env-locks/clima -- scripts/run-julia-script.sh 
       --project=ClimaCoupler.jl-mod/experiments/AMIP 
       ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl 
       --config_file 
@@ -222,6 +223,7 @@ stages:
       - ClimaCore.jl-mod/lib
       - ClimaAtmos.jl-mod/src
       - ClimaAtmos.jl-mod/toml
+      - ClimaAtmos.jl-mod/config
       - .calkit/env-locks/clima
     outs:
       - .calkit/scheduler/logs/amip-mod.out:
