@@ -24,3 +24,21 @@ The general process we follow is:
    greater than 5%, stop and let the user make commits to the submodules,
    push, and run `calkit save` on the repo to push the Nsight reports to the
    cloud for archival.
+
+The `make-diffs` stage collects up all changes across all packages and
+puts them in the `diffs` folder, so it can be archived along with the results.
+
+This history of this repo serves as a record of numerical experiments.
+If we see something interesting we should save it in the history by
+running the pipeline so we ensure it's reproducible.
+
+## Updating ClimaCoupler to reflect the latest `main`
+
+We are running on branches that should be identical to `main` except for the
+changes to their `experiments/AMIP/Manifest-v1.11.toml` files,
+which dev in the local packages in the submodules.
+So we can `cd` into each Coupler submodule and run
+
+```sh
+bash scripts/update-coupler-to-main.sh
+```
