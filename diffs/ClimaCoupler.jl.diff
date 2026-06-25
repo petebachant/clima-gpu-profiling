@@ -1,17 +1,26 @@
 diff --git a/ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml b/ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-index 41b9453..d4aeef4 100644
+index 7fe42d5..0faba50 100644
 --- a/ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
 +++ b/ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-@@ -432,7 +432,7 @@ weakdeps = ["GeoMakie", "Makie"]
+@@ -2,7 +2,7 @@
+ 
+ julia_version = "1.11.5"
+ manifest_format = "2.0"
+-project_hash = "dfd15c05d9130a59234afe3a2c2872f1429ff71a"
++project_hash = "31fca0126c7c1a5dacce047ec63aab12e13b3e03"
+ 
+ [[deps.ADTypes]]
+ git-tree-sha1 = "bbc22a9a08a0ef6460041086d8a7b27940ed4ffd"
+@@ -400,7 +400,7 @@ weakdeps = ["GeoMakie", "Makie"]
  
  [[deps.ClimaAtmos]]
  deps = ["Adapt", "ArgParse", "Artifacts", "AtmosphericProfilesLibrary", "ClimaComms", "ClimaCore", "ClimaDiagnostics", "ClimaInterpolations", "ClimaParams", "ClimaTimeSteppers", "ClimaUtilities", "CloudMicrophysics", "Dates", "Flux", "ForwardDiff", "Insolation", "Interpolations", "JLD2", "LazyArtifacts", "LazyBroadcast", "LinearAlgebra", "Logging", "NCDatasets", "NVTX", "NullBroadcasts", "RRTMGP", "Random", "SparseMatrixColorings", "StaticArrays", "Statistics", "SurfaceFluxes", "Thermodynamics", "UnrolledUtilities", "YAML"]
 -path = "../../../ClimaAtmos.jl"
 +path = "../../../ClimaAtmos.jl-mod"
  uuid = "b2c96348-7fb7-4fe0-8da9-78d88439e717"
- version = "0.39.3"
+ version = "0.40.0"
  
-@@ -465,7 +465,7 @@ weakdeps = ["CUDA", "MPI"]
+@@ -433,7 +433,7 @@ weakdeps = ["CUDA", "MPI"]
  
  [[deps.ClimaCore]]
  deps = ["Adapt", "BandedMatrices", "BlockArrays", "ClimaComms", "ClimaInterpolations", "CubedSphere", "DataStructures", "ForwardDiff", "GaussQuadrature", "GilbertCurves", "HDF5", "InteractiveUtils", "IntervalSets", "KrylovKit", "LLVM", "LazyBroadcast", "LinearAlgebra", "MultiBroadcastFusion", "NVTX", "PkgVersion", "Random", "RecursiveArrayTools", "RootSolvers", "SparseArrays", "StaticArrays", "Statistics", "UnrolledUtilities"]
@@ -20,17 +29,33 @@ index 41b9453..d4aeef4 100644
  uuid = "d414da3d-4745-48bb-8d80-42e94e092884"
  version = "0.14.54"
  weakdeps = ["CUDA", "GPUCompiler", "Krylov"]
-@@ -599,10 +599,10 @@ version = "0.1.29"
-     NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
+@@ -568,7 +568,7 @@ version = "0.1.29"
  
  [[deps.CloudMicrophysics]]
--deps = ["ClimaParams", "DocStringExtensions", "ForwardDiff", "InteractiveUtils", "LazyArtifacts", "LogExpFunctions", "RootSolvers", "SpecialFunctions", "StaticArrays", "Thermodynamics", "UnrolledUtilities"]
+ deps = ["ClimaParams", "DocStringExtensions", "ForwardDiff", "InteractiveUtils", "LazyArtifacts", "LogExpFunctions", "RootSolvers", "SpecialFunctions", "StaticArrays", "Thermodynamics", "UnrolledUtilities"]
 -git-tree-sha1 = "4cc9ecf6f72336e9036ef1a5a7b2c4620d0a6042"
-+deps = ["ClimaParams", "DocStringExtensions", "FastGaussQuadrature", "ForwardDiff", "InteractiveUtils", "LazyArtifacts", "LogExpFunctions", "RootSolvers", "SpecialFunctions", "StaticArrays", "Thermodynamics", "UnrolledUtilities"]
 +path = "../../../CloudMicrophysics.jl-mod"
  uuid = "6a9e3e04-43cd-43ba-94b9-e8782df3c71b"
--version = "0.36.0"
-+version = "0.37.0"
+ version = "0.36.0"
  
-     [deps.CloudMicrophysics.extensions]
-     EmulatorModelsExt = ["DataFrames", "MLJ"]
+diff --git a/ClimaCoupler.jl/experiments/AMIP/Project.toml b/ClimaCoupler.jl-mod/experiments/AMIP/Project.toml
+index 3e87c09..3bf7237 100644
+--- a/ClimaCoupler.jl/experiments/AMIP/Project.toml
++++ b/ClimaCoupler.jl-mod/experiments/AMIP/Project.toml
+@@ -15,6 +15,7 @@ ClimaLand = "08f4d4ce-cf43-44bb-ad95-9d2d5f413532"
+ ClimaParams = "5c42b081-d73a-476f-9059-fd94b934656c"
+ ClimaTimeSteppers = "595c0a79-7f3d-439a-bc5a-b232dc3bde79"
+ ClimaUtilities = "b3f4f4ca-9299-4f7f-bd9b-81e1242a7513"
++CloudMicrophysics = "6a9e3e04-43cd-43ba-94b9-e8782df3c71b"
+ EnsembleKalmanProcesses = "aa8a2aa5-91d8-4396-bcef-d4f2ec43552d"
+ GPUCompiler = "61eb1bfa-7361-4325-ad38-22787b887f55"
+ GeoMakie = "db073c08-6b98-4ee5-b6a4-5efafb3259c6"
+@@ -45,7 +46,7 @@ ClimaUtilities = "0.1"
+ Insolation = "1.1"
+ Interpolations = "0.14, 0.15"
+ MPI = "0.20"
+-NaNStatistics = "< 0.6.57"
+ NVTX = "1"
++NaNStatistics = "< 0.6.57"
+ Poppler_jll = "24"
+ StaticArrays = "1"
