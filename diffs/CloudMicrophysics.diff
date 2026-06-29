@@ -24,6 +24,21 @@ index 50823d85..fc7b5b59 100644
  
          with:
            file: lcov.info
+diff --git a/.github/workflows/docs.yml b/.github/workflows/docs.yml
+index 59720b4b..eabc9af9 100644
+--- a/.github/workflows/docs.yml
++++ b/.github/workflows/docs.yml
+@@ -7,6 +7,10 @@ on:
+     tags: '*'
+   pull_request:
+ 
++concurrency:
++  group: ${{ github.workflow }}-${{ github.ref }}
++  cancel-in-progress: true
++
+ jobs:
+   docbuild:
+     runs-on: ubuntu-latest
 diff --git a/Project.toml b/Project.toml
 index 9349ce92..65b86c20 100644
 --- a/Project.toml
