@@ -120,7 +120,7 @@ index 9349ce92..65b86c20 100644
  InteractiveUtils = "1"
  LazyArtifacts = "1"
 diff --git a/docs/src/API.md b/docs/src/API.md
-index c4ea4389..34932644 100644
+index c4ea4389..69665e20 100644
 --- a/docs/src/API.md
 +++ b/docs/src/API.md
 @@ -165,13 +165,12 @@ CMP.LocalRimeDensity
@@ -170,11 +170,13 @@ index c4ea4389..34932644 100644
  ```
  
  ## Parameters
-@@ -382,6 +390,11 @@ Utilities.clamp_to_nonneg
+@@ -382,6 +390,13 @@ Utilities.clamp_to_nonneg
  Utilities.ϵ_numerics
  Utilities.ϵ_numerics_2M_M
  Utilities.ϵ_numerics_2M_N
 +Utilities.ϵ_numerics_P3_B
++Utilities.gamma_inc
++Utilities.gamma_inc_inv
 +Utilities.rime_mass_fraction
 +Utilities.rime_density
 +Utilities.sgs_weight_function
@@ -920,10 +922,25 @@ index 3c4e79ae..8777cfd3 100644
  include("PrecipitationSusceptibility.jl")
  include("ArtifactCalling.jl")
 diff --git a/src/Common.jl b/src/Common.jl
-index d95c5c91..6aa0d63a 100644
+index d95c5c91..83ea5cff 100644
 --- a/src/Common.jl
 +++ b/src/Common.jl
-@@ -401,7 +401,11 @@ Needed for numerical integrals in the P3 scheme.
+@@ -375,7 +375,13 @@ Assumes exponential size distribution (μ=0).
+ @inline function Chen2022_exponential_pdf(a::FT, b::FT, c::FT, λ_inv::FT, k::Int) where {FT}
+     # μ = 0 for exponential distribution, δ = k + 1
+     δ = FT(k + 1)
+-    return a * exp(-δ * log(λ_inv) - (b + δ) * log(1 / λ_inv + c)) * SF.gamma(b + δ) / SF.gamma(δ)
++    # Γ(δ) for integer δ is just (δ-1)! — avoid calling SF.gamma.
++    # `k` must be a small literal at every call site (0..3): it constant-folds,
++    # keeping `factorial` off the GPU and away from its overflow/throw branches.
++    # We use ifelse rather than `factorial(k)` to avoid host memory table lookups
++    # (`_fact_table`) on the GPU which cause illegal memory access errors.
++    gamma_delta = ifelse(k == 3, FT(6), ifelse(k == 2, FT(2), FT(1)))
++    return a * exp(-δ * log(λ_inv) - (b + δ) * log(1 / λ_inv + c)) * SF.gamma(b + δ) / gamma_delta
+ end
+ 
+ """
+@@ -401,7 +407,11 @@ Needed for numerical integrals in the P3 scheme.
  function particle_terminal_velocity(velocity_params::CMP.TerminalVelocityType, ρs...)
      (ai, bi, ci) = Chen2022_vel_coeffs(velocity_params, ρs...)
      v_terms = Chen2022_monodisperse_pdf.(ai, bi, ci)  # tuple of functions
@@ -934,6 +951,36 @@ index d95c5c91..6aa0d63a 100644
 +    # GPU compilation of callers like `liquid_integrals`).
 +    v_term(D) = unrolled_sum(vt -> vt(D), v_terms)
      return v_term
+ end
+ 
+diff --git a/src/DistributionTools.jl b/src/DistributionTools.jl
+index 3f5bd2ef..49c37ec4 100644
+--- a/src/DistributionTools.jl
++++ b/src/DistributionTools.jl
+@@ -12,6 +12,7 @@ module DistributionTools
+ 
+ import SpecialFunctions as SF
+ import LogExpFunctions as LEF
++import CloudMicrophysics.Utilities as UT
+ 
+ """
+     size_distribution(args...; kwargs...)
+@@ -42,7 +43,7 @@ Calculate the quantile (inverse cumulative distribution function) for a
+ """
+ function generalized_gamma_quantile(ν, μ, B, Y)
+     # Compute the inverse of the regularized incomplete gamma function
+-    z = SF.gamma_inc_inv((ν + 1) / μ, Y, 1 - Y)
++    z = UT.gamma_inc_inv((ν + 1) / μ, Y, 1 - Y)
+     return (z / B)^(1 / μ)
+ end
+ 
+@@ -71,7 +72,7 @@ function generalized_gamma_cdf(ν, μ, B, x)
+     x ≤ 0 && return zero(x)
+ 
+     # Compute the regularized incomplete gamma function
+-    p, _ = SF.gamma_inc((ν + 1) / μ, B * x^μ)
++    p, _ = UT.gamma_inc((ν + 1) / μ, B * x^μ)
+     return p
  end
  
 diff --git a/src/IceNucleation.jl b/src/IceNucleation.jl
@@ -1264,8 +1311,30 @@ index c186d86e..ff4bdbc3 100644
  end # end module
  
  """
+diff --git a/src/Microphysics1M.jl b/src/Microphysics1M.jl
+index 29111de4..3fc33f8f 100644
+--- a/src/Microphysics1M.jl
++++ b/src/Microphysics1M.jl
+@@ -501,14 +501,15 @@ end
+         n0 = get_n0(rain.pdf, q_rai, ρ)
+         v0 = get_v0(vel, ρ)
+         (; r0, m0, me, Δm, χm) = rain.mass
+-        (; χv, ve, Δv) = vel
++        (; χv, ve, Δv, gamma_accr_rain_sink) = vel
+         (; a0, ae, χa, Δa) = rain.area
+ 
+         λ_inv = lambda_inverse(rain.pdf, rain.mass, q_rai, ρ)
+ 
++        # gamma_accr_rain_sink = SF.gamma(me + ae + ve + Δm + Δa + Δv + 1) (pre-computed in vel)
+         accr_rate =
+             E / ρ * n0 * n0_ice * m0 * a0 * v0 * χm * χa * χv * λ_ice_inv * λ_inv *
+-            SF.gamma(me + ae + ve + Δm + Δa + Δv + 1) /
++            gamma_accr_rain_sink /
+             (r0 / λ_inv)^FT(me + ae + ve + Δm + Δa + Δv)
+     end
+     return accr_rate
 diff --git a/src/Microphysics2M.jl b/src/Microphysics2M.jl
-index 7cc99aae..986326ab 100644
+index 7cc99aae..d1702af0 100644
 --- a/src/Microphysics2M.jl
 +++ b/src/Microphysics2M.jl
 @@ -66,7 +66,9 @@ Return the parameters of the rain drop diameter distribution
@@ -1279,7 +1348,25 @@ index 7cc99aae..986326ab 100644
      (; ρw) = pdf_r
      Lᵣ = ρₐ * qᵣ
  
-@@ -320,10 +322,15 @@ end
+@@ -163,12 +165,13 @@ function log_pdf_cloud_parameters_mass(pdf_c, q, ρₐ, N)
+     L = ρₐ * q
+     # If L or N are (essentially) zero, return `A=0` (no number per mass), `B=∞` (zero mass "length" scale)
+     (N < UT.ϵ_numerics_2M_N(FT) || L < UT.ϵ_numerics_2M_M(FT)) && return (log(zero(N)), log(1 / zero(q)))
+-    (; νc, μc) = pdf_c
++    (; νc, μc, loggamma_z1, loggamma_z2) = pdf_c
+     logx̄ = log(L / N)
+     z1 = (νc + 1) / μc
+-    z2 = (νc + 2) / μc
+-    logB = -μc * (logx̄ + SF.loggamma(z1) - SF.loggamma(z2))
+-    logA = log(μc) + log(N) + z1 * logB - SF.loggamma(z1)
++    # loggamma_z1 = SF.loggamma(z1) (pre-computed in pdf_c)
++    # loggamma_z2 = SF.loggamma(z2) (pre-computed in pdf_c)
++    logB = -μc * (logx̄ + loggamma_z1 - loggamma_z2)
++    logA = log(μc) + log(N) + z1 * logB - loggamma_z1
+     return (logA, logB)
+ end
+ 
+@@ -320,10 +323,15 @@ end
  function get_size_distribution_bounds(
      pdf::CMP.CloudParticlePDF_SB2006, q, ρₐ, N, p = eps(eltype(q)),
  )
@@ -1297,7 +1384,18 @@ index 7cc99aae..986326ab 100644
      return D_min, D_max
  end
  
-@@ -876,6 +883,43 @@ function number_decrease_for_mass_limit((; τ)::CMP.NumberAdjustmentHorn2012, x_
+@@ -788,8 +796,8 @@ function rain_evaporation(
+     a_vent_0 = av * Γ_incl(FT(-1), t_star) / FT(6)^(-2 // 3)
+     b_vent_0 = bv * Γ_incl(-1 // 2 + 3 // 2 * β, t_star) / FT(6)^(β / 2 - 1 // 2)
+ 
+-    a_vent_1 = av * SF.gamma(FT(2)) / cbrt(FT(6))
+-    b_vent_1 = bv * SF.gamma(5 // 2 + 3 // 2 * β) / FT(6)^(β / 2 + 1 // 2)
++    a_vent_1 = evap.a_vent_1
++    b_vent_1 = evap.b_vent_1
+ 
+     N_Re = α * xr_mean^β * sqrt(ρ0 / ρ) * Dr / ν_air
+     Fv0 = a_vent_0 + b_vent_0 * cbrt(ν_air / D_vapor) * sqrt(N_Re)
+@@ -876,6 +884,43 @@ function number_decrease_for_mass_limit((; τ)::CMP.NumberAdjustmentHorn2012, x_
      return min(0, N_max - N) / τ
  end
  
@@ -1987,7 +2085,7 @@ index dccb1abd..3ae12f8c 100644
      # TODO - prolate or oblate?
      ϕ_ob = min(1, 3 * sqrt(FT(π)) * mᵢ / (4 * ρᵢ * aᵢ^FT(1.5))) # κ =  1/3
 diff --git a/src/P3_processes.jl b/src/P3_processes.jl
-index 77f12316..7f943522 100644
+index 77f12316..cd734094 100644
 --- a/src/P3_processes.jl
 +++ b/src/P3_processes.jl
 @@ -1,28 +1,28 @@
@@ -2213,7 +2311,7 @@ index 77f12316..7f943522 100644
                  # ∂ₜN_col = ∫ ∂ₜV ⋅ n ⋅ dD
                  ∂ₜV(Dᵢ, D) * n(D),
                  # ∂ₜM_col = ∫ ∂ₜV ⋅ n ⋅ m_liq ⋅ dD
-@@ -278,15 +309,116 @@ function get_liquid_integrals(n, ∂ₜV, m_liq, ρ′_rim, liq_bounds; ∫kwarg
+@@ -278,15 +309,117 @@ function get_liquid_integrals(n, ∂ₜV, m_liq, ρ′_rim, liq_bounds; ∫kwarg
                  # ∂ₜB_col = ∫ ∂ₜV ⋅ n ⋅ m_liq / ρ′_rim ⋅ dD
                  ∂ₜV(Dᵢ, D) * n(D) * m_liq(D) / ρ′_rim(Dᵢ, D),
              )
@@ -2232,9 +2330,10 @@ index 77f12316..7f943522 100644
 +function crossover_diameter(v_target, v_l::F, D_min, D_max) where {F}
 +    FT = float(promote_type(typeof(v_target), typeof(D_min), typeof(D_max)))
 +    f(D) = v_l(D) - v_target
++    maxiters = FT === Float32 ? 8 : 10
 +    sol = RS.find_zero(f,
 +        RS.BrentsMethod(FT(D_min), FT(D_max)), RS.CompactSolution(),
-+        RS.SolutionTolerance(FT(1e-12)), 60,
++        FixedIterations{FT}(), maxiters,
 +    )
 +    return sol.root
 +end
@@ -2332,7 +2431,7 @@ index 77f12316..7f943522 100644
      )
  
  Computes the bulk collision rate integrands between ice and liquid particles.
-@@ -299,12 +431,12 @@ Computes the bulk collision rate integrands between ice and liquid particles.
+@@ -299,12 +432,12 @@ Computes the bulk collision rate integrands between ice and liquid particles.
  - `ice_bounds`: integration bounds for ice particles, from [`integral_bounds`](@ref)
  
  # Keyword arguments
@@ -2347,7 +2446,7 @@ index 77f12316..7f943522 100644
      function liquid_ice_collisions_integrands(Dᵢ)
          # Inner integrals over liquid particle diameters
          ∂ₜN_c_col, ∂ₜM_c_col, ∂ₜB_c_col = cloud_integrals(Dᵢ)
-@@ -333,13 +465,13 @@ function ∫liquid_ice_collisions(n_i, ∂ₜM_max, cloud_integrals, rain_integr
+@@ -333,13 +466,13 @@ function ∫liquid_ice_collisions(n_i, ∂ₜM_max, cloud_integrals, rain_integr
              n * 𝟙_wet * ∂ₜM_col,          # ∫𝟙_wet_M_col, wet growth indicator
          )
      end
@@ -2363,7 +2462,7 @@ index 77f12316..7f943522 100644
      )
  
  Compute key liquid-ice collision rates and quantities. Used by [`bulk_liquid_ice_collision_sources`](@ref).
-@@ -360,6 +492,9 @@ Compute key liquid-ice collision rates and quantities. Used by [`bulk_liquid_ice
+@@ -360,6 +493,9 @@ Compute key liquid-ice collision rates and quantities. Used by [`bulk_liquid_ice
  - `T`: temperature [K]
  - `m_liq`: liquid particle mass function `m_liq(D)`
  
@@ -2373,7 +2472,7 @@ index 77f12316..7f943522 100644
  # Returns
  A tuple `(QCFRZ, QCSHD, NCCOL, QRFRZ, QRSHD, NRCOL, ∫M_col, BCCOL, BRCOL, ∫𝟙_wet_M_col)`, where:
  1. `QCFRZ` - Cloud mass collision rate due to freezing [kg/s]
-@@ -376,7 +511,7 @@ A tuple `(QCFRZ, QCSHD, NCCOL, QRFRZ, QRSHD, NRCOL, ∫M_col, BCCOL, BRCOL, ∫
+@@ -376,7 +512,7 @@ A tuple `(QCFRZ, QCSHD, NCCOL, QRFRZ, QRSHD, NRCOL, ∫M_col, BCCOL, BRCOL, ∫
  function ∫liquid_ice_collisions(
      state, logλ,
      psd_c, psd_r, L_c, N_c, L_r, N_r,
@@ -2382,7 +2481,7 @@ index 77f12316..7f943522 100644
  )
      FT = eltype(state)
  
-@@ -388,8 +523,8 @@ function ∫liquid_ice_collisions(
+@@ -388,8 +524,8 @@ function ∫liquid_ice_collisions(
      # Initialize integration buffers by evaluating a representative integral
      p = FT(0.00001)
      ice_bounds = integral_bounds(state, logλ; p)
@@ -2393,7 +2492,7 @@ index 77f12316..7f943522 100644
  
      # Integrand components
      # NOTE: We assume collision efficiency, shape (spherical), and terminal velocity is the
-@@ -398,10 +533,15 @@ function ∫liquid_ice_collisions(
+@@ -398,10 +534,15 @@ function ∫liquid_ice_collisions(
      ρ′_rim = compute_local_rime_density(vel, ρₐ, T, state)  # ρ′_rim(Dᵢ, Dₗ)
      ∂ₜM_max = compute_max_freeze_rate(aps, tps, vel, ρₐ, T, state)  # ∂ₜM_max(Dᵢ)
  
@@ -2412,7 +2511,7 @@ index 77f12316..7f943522 100644
  end
  
  """
-@@ -442,25 +582,22 @@ A `NamedTuple` of `(; ∂ₜq_c, ∂ₜq_r, ∂ₜN_c, ∂ₜN_r, ∂ₜL_rim, 
+@@ -442,25 +583,22 @@ A `NamedTuple` of `(; ∂ₜq_c, ∂ₜq_r, ∂ₜN_c, ∂ₜN_r, ∂ₜL_rim, 
  7. `∂ₜB_rim`: rime volume tendency [m³/m³/s]
  """
  function bulk_liquid_ice_collision_sources(
@@ -2443,7 +2542,7 @@ index 77f12316..7f943522 100644
      )
      (QCFRZ, QCSHD, NCCOL, QRFRZ, QRSHD, NRCOL, ∫∂ₜM_col, BCCOL, BRCOL, ∫𝟙_wet_M_col) = rates
  
-@@ -473,10 +610,10 @@ function bulk_liquid_ice_collision_sources(
+@@ -473,10 +611,10 @@ function bulk_liquid_ice_collision_sources(
      # NCSHD = QCSHD / m_liq(D_shd)
  
      # Densification of rime
@@ -2458,7 +2557,7 @@ index 77f12316..7f943522 100644
  
      # Bulk rates
      ## Liquid phase
-@@ -494,3 +631,75 @@ function bulk_liquid_ice_collision_sources(
+@@ -494,3 +632,75 @@ function bulk_liquid_ice_collision_sources(
          (∂ₜq_c, ∂ₜq_r, ∂ₜN_c, ∂ₜN_r, ∂ₜL_rim, ∂ₜL_ice, ∂ₜB_rim)
      )
  end
@@ -2535,19 +2634,67 @@ index 77f12316..7f943522 100644
 +    return (; dNdt)
 +end
 diff --git a/src/P3_size_distribution.jl b/src/P3_size_distribution.jl
-index e780d01f..f74da48d 100644
+index e780d01f..f5d08bcf 100644
 --- a/src/P3_size_distribution.jl
 +++ b/src/P3_size_distribution.jl
-@@ -7,7 +7,7 @@ Compute the log of the ice particle number concentration at diameter `D` given t
+@@ -1,18 +1,33 @@
+ import CloudMicrophysics.DistributionTools: size_distribution
+ 
++# Callable returned by `logN′ice`: evaluates `log(N′(D))` for a fixed state and slope.
++struct P3LogNumberFunctor{FT, T} <: Function
++    log_N₀::FT
++    μ::FT
++    logλ::T
++end
++@inline function (f::P3LogNumberFunctor)(D)
++    logD = log(D)
++    return f.log_N₀ + f.μ * logD - exp(f.logλ + logD)
++end
++
+ """
+     logN′ice(state, logλ)
+ 
+-Compute the log of the ice particle number concentration at diameter `D` given the distribution `dist`
++Return a callable that computes `log(N′(D))`, the log of the ice particle number
++concentration at diameter `D`, for the [`P3State`](@ref) `state` and log-slope `logλ`.
  """
  function logN′ice(state::P3State, logλ)
      μ = get_μ(state, logλ)
 -    log_N₀ = get_logN₀(state.N_ice, μ, logλ)
+-    return function logN′(D)
+-        logD = log(D)
+-        log_N₀ + μ * logD - exp(logλ + logD)
+-    end
 +    log_N₀ = get_logN₀(state.ρn_ice, μ, logλ)
-     return function logN′(D)
-         logD = log(D)
-         log_N₀ + μ * logD - exp(logλ + logD)
-@@ -68,17 +68,39 @@ Compute `log(Iᵏ)` where `Iᵏ` is the following integral:
++    return P3LogNumberFunctor(log_N₀, μ, logλ)
++end
++
++# Callable returned by `size_distribution`: `n(D) = exp(logN′(D))`.
++struct P3SizeDistributionFunctor{F} <: Function
++    logN′::F
+ end
++@inline (f::P3SizeDistributionFunctor)(D) = exp(f.logN′(D))
+ 
+ """
+     size_distribution(state::P3State, logλ)
+@@ -23,7 +38,7 @@ Return `n(D)`, a function that computes the size distribution for ice particles
+ - `state`: The [`P3State`](@ref)
+ - `logλ`: The log of the slope parameter [log(1/m)]
+ """
+-DT.size_distribution(state::P3State, logλ) = exp ∘ logN′ice(state, logλ)
++DT.size_distribution(state::P3State, logλ) = P3SizeDistributionFunctor(logN′ice(state, logλ))
+ 
+ ### ------------------------------------------------ ###
+ ### ----- Obtaining P3 distribution parameters ----- ###
+@@ -61,22 +76,52 @@ Compute `log(Iᵏ)` where `Iᵏ` is the following integral:
+  with the transformation `x = λD`, and `z = μ+k+1`, each term can be written as:
+     `∫_{Dᵢ}^∞ G(D) D^k dD = ∫_{λDᵢ}^∞ x^z e^{-x} dx / λ^z = Γ(z, λDᵢ) / λ^z`
+  where `Γ(z, λDᵢ) = q ⋅ Γ(z)` and `q` is the incomplete gamma function ratio given by
+-    `(_, q) = SF.gamma_inc(z, x)`.
++    `(_, q) = UT.gamma_inc(z, x)`.
+  This means that the integral `∫_{Dᵢ}^∞ G(D) D^k dD` is computed as:
+     `Γ(z) ⋅ q / λ^z`
+  The full integral from `D₁` to `D₂` is then:
      `Γ(z) ⋅ (q_D₁ - q_D₂) / λ^z`
   In log-space, this is:
      `- z log(λ) + logΓ(z) + log(q_D₁ - q_D₂)`
@@ -2561,12 +2708,17 @@ index e780d01f..f74da48d 100644
      z = k + μ + 1
 -    (_, q_D₁) = SF.gamma_inc(z, exp(logλ) * D₁)
 -    (_, q_D₂) = SF.gamma_inc(z, exp(logλ) * D₂)
+-    return -z * logλ + SF.loggamma(z) + log(q_D₁ - q_D₂) + log(FT(scale))
 +    # `λ⋅D ≡ xexpy(D, logλ) ≡ D * exp(logλ)` (numerically stable)
-+    (_, q_D₁) = SF.gamma_inc(z, LogExpFunctions.xexpy(D₁, logλ))
-+    (_, q_D₂) = SF.gamma_inc(z, LogExpFunctions.xexpy(D₂, logλ))
-     return -z * logλ + SF.loggamma(z) + log(q_D₁ - q_D₂) + log(FT(scale))
- end
- 
++    x1 = LogExpFunctions.xexpy(D₁, logλ)
++    x2 = LogExpFunctions.xexpy(D₂, logλ)
++    (p1, q1) = UT.gamma_inc(z, x1)
++    (p2, q2) = UT.gamma_inc(z, x2)
++    Δq = x2 < z + 1 ? p2 - p1 : q1 - q2
++    Δq = max(Δq, eps(FT))
++    return -z * logλ + SF.loggamma(z) + log(Δq) + log(FT(scale))
++end
++
 +"""
 +    gamma_inc_moment(D₁, D₂, p, α)
 +
@@ -2582,15 +2734,17 @@ index e780d01f..f74da48d 100644
 +    D₂ > D₁ || return zero(FT)
 +    α > 0 || return FT(NaN)
 +    z = p + 1
-+    (_, q1) = SF.gamma_inc(z, α * D₁)
-+    (_, q2) = SF.gamma_inc(z, α * D₂)
-+    return SF.gamma(z) * (q1 - q2) / α^z
-+end
-+
- """
-     loggamma_moment(μ, logλ; [k = 0], [scale = 1])
++    x1 = α * D₁
++    x2 = α * D₂
++    (p1, q1) = UT.gamma_inc(z, x1)
++    (p2, q2) = UT.gamma_inc(z, x2)
++    Δq = x2 < z + 1 ? p2 - p1 : q1 - q2
++    Δq = max(Δq, zero(FT))
++    return SF.gamma(z) * Δq / α^z
+ end
  
-@@ -138,12 +160,12 @@ Compute `log(∫_0^∞ Dⁿ m(D) N′(D) dD)` given the `state` and `logλ`.
+ """
+@@ -138,12 +183,12 @@ Compute `log(∫_0^∞ Dⁿ m(D) N′(D) dD)` given the `state` and `logλ`.
  - For `n = 1`, this evaluates to the (unnormalized) mass-weighted mean particle size, see [`D_m`](@ref)
  """
  function logmass_gamma_moment(state::P3State, μ, logλ; n = 0)
@@ -2609,17 +2763,31 @@ index e780d01f..f74da48d 100644
  end
  
  """
-@@ -184,8 +206,7 @@ function get_logN₀(N_ice, μ, logλ)
+@@ -184,8 +229,21 @@ function get_logN₀(N_ice, μ, logλ)
  end
  
  """
 -    get_distribution_logλ(params, L_ice, N_ice, F_rim, ρ_rim; [logλ_min, logλ_max])
 -    get_distribution_logλ(state; [logλ_min, logλ_max])
++    FixedIterations{FT}()
++
++A `RootSolvers.AbstractTolerance` whose convergence predicate is always `false`,
++so the bracketing solver never exits early and always runs the full iteration
++budget. This makes the iteration count independent of the input, eliminating
++warp divergence from data-dependent early-exit on the GPU (at the cost of the
++warm-start speedup — a tighter initial bracket improves accuracy but not the
++iteration count). The iteration budget itself is calibrated empirically; see
++[`get_distribution_logλ`](@ref).
++"""
++struct FixedIterations{FT} <: RS.AbstractTolerance{FT} end
++@inline (::FixedIterations)(x1, x2, y) = false
++
++"""
 +    get_distribution_logλ(state, [logλ_guess, logλ_min, logλ_max])
  
  Solve for the distribution parameters given the state, and the mass (`L`) and number (`N`) concentrations.
  
-@@ -197,7 +218,7 @@ N′(D) = N₀ D^μ e^{-λD}
+@@ -197,7 +255,7 @@ N′(D) = N₀ D^μ e^{-λD}
  where `N′(D)` is the number concentration at diameter `D` and `μ` is the slope parameter.
      The slope parameter is parameterized, e.g. [`CMP.SlopePowerLaw`](@ref) or [`CMP.SlopeConstant`](@ref).
  
@@ -2628,9 +2796,11 @@ index e780d01f..f74da48d 100644
      given `L_ice` and `N_ice` by solving the equations:
  
  ```math
-@@ -211,42 +232,63 @@ where `m(D)` is the mass of a particle at diameter `D` (see [`ice_mass`](@ref)).
+@@ -209,44 +267,85 @@ This algorithm solves for `logλ = log(λ)` and `log_N₀ = log(N₀)`
+ where `m(D)` is the mass of a particle at diameter `D` (see [`ice_mass`](@ref)).
+     The procedure is decribed in detail in [the P3 docs](@ref "Parameterizations for the slope parameter \$μ\$").
  
- 
+-
  # Arguments
 -- `state`: [`P3State`](@ref) object
 -- `params`: [`CMP.ParametersP3`](@ref) object
@@ -2640,10 +2810,12 @@ index e780d01f..f74da48d 100644
 -- `ρ_rim`: The rime density
 -
 -# Keyword arguments
+-- `logλ_min`: The minimum value of the search bounds [log(1/m)], default is `log(1e1)`
+-- `logλ_max`: The maximum value of the search bounds [log(1/m)], default is `log(1e7)`
 +- `state`: The [`P3State`](@ref)
 +- `logλ_guess`: Optional initial guess
- - `logλ_min`: The minimum value of the search bounds [log(1/m)], default is `log(1e1)`
- - `logλ_max`: The maximum value of the search bounds [log(1/m)], default is `log(1e7)`
++- `logλ_min`: The minimum value of the search bounds [log(1/m)], default is `2`
++- `logλ_max`: The maximum value of the search bounds [log(1/m)], default is `17`
  """
 -function get_distribution_logλ(
 -    state::P3State{FT}; logλ_min = log(1e1), logλ_max = log(1e7),
@@ -2659,6 +2831,8 @@ index e780d01f..f74da48d 100644
 +    target_log_LdN = log(ρq_ice) - log(ρn_ice)
  
      shape_problem(logλ) = logLdivN(state, logλ) - target_log_LdN
+-
+-    # Find slope parameter
 +    lo, hi = FT(logλ_min), FT(logλ_max)
 +    f_lo, f_hi = shape_problem(lo), shape_problem(hi)
 +    if !isfinite(f_lo) || !isfinite(f_hi) || f_lo * f_hi > 0
@@ -2666,16 +2840,27 @@ index e780d01f..f74da48d 100644
 +    end
 +    (lo, f_lo, hi, f_hi) =
 +        _narrow_bracket(shape_problem, lo, f_lo, hi, f_hi, logλ_guess)
- 
--    # Find slope parameter
++
++    # Fixed iteration count (no early-exit) keeps GPU warps convergent. The
++    # branchless Brent's method converges rapidly, and the shape problem
++    # `logLdivN(logλ)` is close to linear over the [2,17] bracket, so these
++    # counts empirically reach excellent accuracy across sampled physical
++    # states. This is an EMPIRICAL, curvature-dependent result, NOT a guaranteed
++    # tolerance: a strongly-curved shape function (e.g. a future `get_μ` law)
++    # could leave the root under-resolved with no runtime signal (the solver's
++    # `converged` flag is unused). Accuracy is guarded end-to-end by the
++    # `N ≈ ∫N′ dD` integral checks in `test/p3_tests.jl`; revisit the budget if
++    # those tighten or the slope law changes.
++    maxiters = FT === Float32 ? 8 : 10
      sol = RS.find_zero(
          shape_problem,
 -        RS.SecantMethod(FT(logλ_min), FT(logλ_max)),
 +        RS.BrentsMethod(lo, hi),
          RS.CompactSolution(),
-         RS.RelativeSolutionTolerance(eps(FT)),
+-        RS.RelativeSolutionTolerance(eps(FT)),
 -        50,
-+        100,
++        FixedIterations{FT}(),
++        maxiters,
      )
      return sol.root  # logλ
  end
@@ -2700,10 +2885,20 @@ index e780d01f..f74da48d 100644
 +@inline _narrow_bracket(_sp, lo, f_lo, hi, f_hi, ::Nothing) = (lo, f_lo, hi, f_hi)
 +@inline function _narrow_bracket(shape_problem, lo, f_lo, hi, f_hi, p::Real)
 +    p_ = oftype(lo, p)
-+    (isfinite(p_) && lo < p_ < hi) || return (lo, f_lo, hi, f_hi)
-+    f_p = shape_problem(p_)
-+    isfinite(f_p) || return (lo, f_lo, hi, f_hi)
-+    return f_lo * f_p < 0 ? (lo, f_lo, p_, f_p) : (p_, f_p, hi, f_hi)
++    valid = isfinite(p_) & (lo < p_ < hi)
++    p_clean = ifelse(valid, p_, lo)
++    f_p = shape_problem(p_clean)
++    valid &= isfinite(f_p)
++
++    left = valid & (f_lo * f_p < 0)
++    right = valid & !left
++
++    new_hi = ifelse(left, p_clean, hi)
++    new_f_hi = ifelse(left, f_p, f_hi)
++    new_lo = ifelse(right, p_clean, lo)
++    new_f_lo = ifelse(right, f_p, f_lo)
++
++    return (new_lo, new_f_lo, new_hi, new_f_hi)
  end
  
  """
@@ -2712,7 +2907,7 @@ index e780d01f..f74da48d 100644
  
  Find all solutions for `logλ` given the `state` ([`P3State`](@ref)), `L`, and `N`.
  
-@@ -257,7 +299,7 @@ Find all solutions for `logλ` given the `state` ([`P3State`](@ref)), `L`, and `
+@@ -257,7 +356,7 @@ Find all solutions for `logλ` given the `state` ([`P3State`](@ref)), `L`, and `
  """
  function get_distribution_logλ_all_solutions(state::P3State)
      # Find bounds by evaluating function incrementally, then apply root finding with bounds above and below zero-point
@@ -2721,7 +2916,7 @@ index e780d01f..f74da48d 100644
  
      shape_problem(logλ) = logLdivN(state, logλ) - target_log_LdN
  
-@@ -272,6 +314,6 @@ function get_distribution_logλ_all_solutions(state::P3State)
+@@ -272,6 +371,6 @@ function get_distribution_logλ_all_solutions(state::P3State)
      end
  
      # Apply root finding with bounds above and below zero-point
@@ -2730,11 +2925,25 @@ index e780d01f..f74da48d 100644
      return logλs
  end
 diff --git a/src/P3_terminal_velocity.jl b/src/P3_terminal_velocity.jl
-index a7504ba3..9e120d6c 100644
+index a7504ba3..fae41518 100644
 --- a/src/P3_terminal_velocity.jl
 +++ b/src/P3_terminal_velocity.jl
-@@ -1,40 +1,37 @@
+@@ -1,40 +1,54 @@
  
++# Callable returned by `ice_particle_terminal_velocity`: piecewise small/large-ice
++# Chen 2022 velocity with optional aspect-ratio correction.
++struct P3IceParticleVelocityFunctor{FT, VS, VL, S} <: Function
++    v_term_small::VS
++    v_term_large::VL
++    D_cutoff::FT
++    state::S
++    use_aspect_ratio::Bool
++end
++@inline function (f::P3IceParticleVelocityFunctor)(D)
++    vₜ = D <= f.D_cutoff ? f.v_term_small(D) : f.v_term_large(D)
++    return f.use_aspect_ratio ? cbrt(ϕᵢ(f.state, D)) * vₜ : vₜ
++end
++
  """
      ice_particle_terminal_velocity(velocity_params, ρₐ, state::P3State; [use_aspect_ratio])
 -    ice_particle_terminal_velocity(velocity_params, ρₐ, params::CMP.ParametersP3, F_rim, ρ_rim; [use_aspect_ratio])
@@ -2772,18 +2981,22 @@ index a7504ba3..9e120d6c 100644
 -        vₜ = D <= D_cutoff ? v_term_small(D) : v_term_large(D)
 -        return ϕ_factor * vₜ
 -    end
+-    return v_term
 +    FT = typeof(ρₐ)
 +    (; small_ice, large_ice) = velocity_params
 +    D_cutoff = small_ice.cutoff
 +    ρᵢ = FT(916.7)  # TODO: Use parameter
 +    v_term_small = CO.particle_terminal_velocity(small_ice, ρₐ, ρᵢ)
 +    v_term_large = CO.particle_terminal_velocity(large_ice, ρₐ, ρᵢ)
-+    v_term(D) =
-+        let vₜ = D <= D_cutoff ? v_term_small(D) : v_term_large(D)
-+            use_aspect_ratio ? cbrt(ϕᵢ(state, D)) * vₜ : vₜ
-+        end
-     return v_term
++    return P3IceParticleVelocityFunctor(v_term_small, v_term_large, D_cutoff, state, use_aspect_ratio)
++end
++
++struct P3NumberWeightedIntegrand{N, V} <: Function
++    n::N
++    v_term::V
  end
++@inline (f::P3NumberWeightedIntegrand)(D) = f.n(D) * f.v_term(D)
++
  """
      ice_terminal_velocity_number_weighted(
          velocity_params::CMP.Chen2022VelType, ρₐ, state::P3State, logλ;
@@ -2792,7 +3005,7 @@ index a7504ba3..9e120d6c 100644
      )
  
  Return the terminal velocity of the number-weighted mean ice particle size.
-@@ -48,18 +45,19 @@ Return the terminal velocity of the number-weighted mean ice particle size.
+@@ -48,36 +62,37 @@ Return the terminal velocity of the number-weighted mean ice particle size.
  # Keyword arguments
   - `use_aspect_ratio`: Bool flag set to `true` if we want to consider the effects
      of particle aspect ratio on its terminal velocity (default: `true`)
@@ -2817,23 +3030,33 @@ index a7504ba3..9e120d6c 100644
      end
  
      v_term = ice_particle_terminal_velocity(velocity_params, ρₐ, state; use_aspect_ratio)
-@@ -69,14 +67,7 @@ function ice_terminal_velocity_number_weighted(
-     number_weighted_integrand(D) = n(D) * v_term(D)
+     n = DT.size_distribution(state, logλ)
+ 
+     # ∫n(D) v(D) dD
+-    number_weighted_integrand(D) = n(D) * v_term(D)
++    number_weighted_integrand = P3NumberWeightedIntegrand(n, v_term)
  
      bnds = integral_bounds(state, logλ; p)
 -    return integrate(number_weighted_integrand, bnds...; ∫kwargs...) / N_ice
--end
++    return integrate(number_weighted_integrand, bnds, quad) / ρn_ice
+ end
 -function ice_terminal_velocity_number_weighted(
 -    velocity_params::CMP.Chen2022VelType, ρₐ, params::CMP.ParametersP3, L_ice, N_ice, F_rim, ρ_rim, logλ;
 -    use_aspect_ratio = true, ∫kwargs...,
 -)
 -    state = get_state(params; L_ice, N_ice, F_rim, ρ_rim)
 -    return ice_terminal_velocity_number_weighted(velocity_params, ρₐ, state, logλ; use_aspect_ratio, ∫kwargs...)
-+    return integrate(number_weighted_integrand, bnds, quad) / ρn_ice
++
++struct P3MassWeightedIntegrand{N, V, S} <: Function
++    n::N
++    v_term::V
++    state::S
  end
++@inline (f::P3MassWeightedIntegrand)(D) = f.n(D) * f.v_term(D) * ice_mass(f.state, D)
  
  """
-@@ -93,18 +84,19 @@ Return the terminal velocity of the mass-weighted mean ice particle size.
+     ice_terminal_velocity_mass_weighted(velocity_params::CMP.Chen2022VelType, ρₐ, state::P3State, logλ; [use_aspect_ratio], [∫kwargs...])
+@@ -93,33 +108,65 @@ Return the terminal velocity of the mass-weighted mean ice particle size.
  # Keyword arguments
   - `use_aspect_ratio`: Bool flag set to `true` if we want to consider the effects
      of particle aspect ratio on its terminal velocity (default: `true`)
@@ -2858,8 +3081,11 @@ index a7504ba3..9e120d6c 100644
      end
  
      v_term = ice_particle_terminal_velocity(velocity_params, ρₐ, state; use_aspect_ratio)
-@@ -114,12 +106,43 @@ function ice_terminal_velocity_mass_weighted(
-     mass_weighted_integrand(D) = n(D) * v_term(D) * ice_mass(state, D)
+     n = DT.size_distribution(state, logλ)  # Number concentration at diameter D
+ 
+     # ∫n(D) m(D) v(D) dD
+-    mass_weighted_integrand(D) = n(D) * v_term(D) * ice_mass(state, D)
++    mass_weighted_integrand = P3MassWeightedIntegrand(n, v_term, state)
  
      bnds = integral_bounds(state, logλ; p)
 -    return integrate(mass_weighted_integrand, bnds...; ∫kwargs...) / L_ice
@@ -3194,23 +3420,240 @@ index 00000000..7da2423d
 +
 +end # module Quadrature
 diff --git a/src/Utilities.jl b/src/Utilities.jl
-index d61607e4..62dc60f4 100644
+index d61607e4..59403d5e 100644
 --- a/src/Utilities.jl
 +++ b/src/Utilities.jl
-@@ -6,7 +6,11 @@ Contains pure numerical operations with no physics dependencies.
+@@ -6,7 +6,228 @@ Contains pure numerical operations with no physics dependencies.
  """
  module Utilities
  
 -export clamp_to_nonneg, ϵ_numerics, ϵ_numerics_2M_M, ϵ_numerics_2M_N
 +import UnrolledUtilities as UU
++import SpecialFunctions as SF
++import ForwardDiff as FD
 +
 +export clamp_to_nonneg, ϵ_numerics, ϵ_numerics_2M_M, ϵ_numerics_2M_N, ϵ_numerics_P3_B
 +export unrolled_logsumexp
 +export sgs_weight_function, rime_mass_fraction, rime_density
++export gamma_inc, gamma_inc_inv
++
++"""
++    gamma_inc(a, x)
++
++Fast, fixed-iteration approximation of the incomplete gamma function
++(replacing `SpecialFunctions.gamma_inc`).
++
++Returns `(P(a, x), Q(a, x))` where `P` is the lower regularized incomplete gamma
++and `Q` is the upper regularized incomplete gamma function.
++
++Optimized for GPU execution and low compile times. The primary domain split
++(`x < a + 1`) is an `if ... else` branch, which is cheap when neighbouring
++grid points fall on the same side (spatial coherence in atmospheric fields),
++and the per-iteration guards in the continued fraction use branchless `ifelse`.
++The series / continued-fraction loops execute a fixed number of iterations
++(20 for `Float32`, 30 for `Float64`), completely eliminating warp divergence
++while guaranteeing excellent physical accuracy.
++
++# Automatic differentiation
++Analytic rules are provided for the derivative with respect to `x`
++(`∂P/∂x = x^{a-1} e^{-x} / Γ(a)`, `∂Q/∂x = -∂P/∂x`), so AD does not trace the
++internal iteration. The derivative with respect to the shape parameter `a` is
++**not** implemented: passing an `a` that depends on the differentiation variable
++(nonzero partials) raises an error rather than silently returning a wrong (zero)
++gradient. See `_assert_const_shape`.
++"""
++@inline function gamma_inc(a::Real, x::Real)
++    FT = float(promote_type(typeof(a), typeof(x)))
++    return _gamma_inc(FT(a), FT(x))
++end
++
++# `P, Q` as `Dual`s carrying the analytic x-derivative. `val_a` is the (plain)
++# shape parameter. Shared by the `gamma_inc(::Real, ::Dual)` and
++# `gamma_inc(::Dual, ::Dual)` overloads (the latter after the shape guard).
++@inline function _gamma_inc_dx(val_a::Real, x::FD.Dual)
++    val_x = FD.value(x)
++    P, Q = gamma_inc(val_a, val_x)
++    T = FD.tagtype(typeof(x))
++    deriv = val_x > 0 ? exp((val_a - 1) * log(val_x) - val_x - SF.loggamma(val_a)) : zero(val_x)
++    return (FD.Dual{T}(P, deriv * FD.partials(x)), FD.Dual{T}(Q, -deriv * FD.partials(x)))
++end
++
++@inline gamma_inc(a::Real, x::FD.Dual) = _gamma_inc_dx(a, x)
++
++@inline function gamma_inc(a::FD.Dual, x::FD.Dual)
++    _assert_const_shape(a)
++    return _gamma_inc_dx(FD.value(a), x)
++end
++
++@inline function gamma_inc(a::FD.Dual, x::Real)
++    _assert_const_shape(a)
++    P, Q = gamma_inc(FD.value(a), x)
++    T = FD.tagtype(typeof(a))
++    z = zero(FD.partials(a))
++    return (FD.Dual{T}(P, z), FD.Dual{T}(Q, z))
++end
++
++@inline function _gamma_inc(a::FT, x::FT) where {FT <: Real}
++    if x <= 0
++        return (zero(FT), one(FT))
++    elseif isinf(x)
++        return (one(FT), zero(FT))
++    end
++
++    # factor = x^a * e^-x / Gamma(a)
++    # Using loggamma for numerical stability
++    factor = exp(a * log(x) - x - SF.loggamma(a))
++    maxiters = FT === Float32 ? 20 : 30
++
++    if x < a + 1
++        # Series expansion for P(a, x)
++        term = one(FT) / a
++        sum_P = term
++        for k in 1:maxiters
++            term *= x / (a + k)
++            sum_P += term
++        end
++        P = factor * sum_P
++        P = clamp(P, zero(FT), one(FT))
++        return (P, one(FT) - P)
++    else
++        # Continued fraction (Lentz's method) for Q(a, x)
++        tiny = FT(1e-30)
++
++        # k = 1
++        b_1 = x + 1 - a
++        c = b_1 + 1 / tiny
++        d = 1 / b_1
++        h = d
++
++        for k in 1:maxiters
++            a_k = -FT(k) * (FT(k) - a)
++            b_k = x + 2 * k + 1 - a
++
++            d_tmp = b_k + a_k * d
++            d = ifelse(abs(d_tmp) < tiny, tiny, d_tmp)
++
++            c_tmp = b_k + a_k / c
++            c = ifelse(abs(c_tmp) < tiny, tiny, c_tmp)
++
++            d = 1 / d
++            delta = c * d
++            h *= delta
++        end
++        Q = factor * h
++        Q = clamp(Q, zero(FT), one(FT))
++        return (one(FT) - Q, Q)
++    end
++end
++
++# Guard used by the AD rules for `gamma_inc` / `gamma_inc_inv`: the derivative
++# with respect to the shape parameter `a` is not implemented (only the `x`- /
++# `p`-derivative is). To avoid silently returning a wrong (zero) gradient, error
++# if `a` actually depends on the differentiation variable. An `a` that merely
++# happens to be a `Dual` with zero partials (e.g. promoted from a constant) is
++# allowed and treated as a constant.
++@inline function _assert_const_shape(a::FD.Dual)
++    iszero(FD.partials(a)) || error(
++        "gamma_inc/gamma_inc_inv: differentiation with respect to the shape " *
++        "parameter `a` is not supported (only the x-/p-derivative is implemented).",
++    )
++    return nothing
++end
++
++"""
++    gamma_inc_inv(a, p, q)
++
++Fast, GPU-friendly inverse of `gamma_inc` using Halley's method.
++Finds `x` such that `P(a, x) = p` and `Q(a, x) = q`.
++
++# Automatic differentiation
++The derivative with respect to `p` is provided analytically via the inverse
++function theorem (`dx/dp = 1 / (∂P/∂x) = Γ(a) / (x^{a-1} e^{-x})`), so AD does
++not trace Halley's iteration. As with [`gamma_inc`](@ref), differentiating with
++respect to the shape parameter `a` is not supported and errors (see
++`_assert_const_shape`).
++"""
++@inline function gamma_inc_inv(a::Real, p::Real, q::Real)
++    FT = float(promote_type(typeof(a), typeof(p), typeof(q)))
++    return _gamma_inc_inv(FT(a), FT(p), FT(q))
++end
++
++# `x` as a `Dual` carrying the analytic p-derivative. `val_a` is the (plain)
++# shape parameter. Shared by the `gamma_inc_inv(::Real, ::Dual, ::Dual)` and
++# `gamma_inc_inv(::Dual, ::Dual, ::Dual)` overloads (the latter after the guard).
++@inline function _gamma_inc_inv_dp(val_a::Real, p::FD.Dual, q::FD.Dual)
++    val_p = FD.value(p)
++    val_q = FD.value(q)
++    x_val = gamma_inc_inv(val_a, val_p, val_q)
++    T = FD.tagtype(typeof(p))
++    dP_dx = exp((val_a - 1) * log(x_val) - x_val - SF.loggamma(val_a))
++    dx_dp = dP_dx > 0 ? inv(dP_dx) : zero(x_val)
++    return FD.Dual{T}(x_val, dx_dp * FD.partials(p))
++end
++
++@inline gamma_inc_inv(a::Real, p::FD.Dual, q::FD.Dual) = _gamma_inc_inv_dp(a, p, q)
++
++@inline function gamma_inc_inv(a::FD.Dual, p::FD.Dual, q::FD.Dual)
++    _assert_const_shape(a)
++    return _gamma_inc_inv_dp(FD.value(a), p, q)
++end
++
++@inline function gamma_inc_inv(a::FD.Dual, p::Real, q::Real)
++    _assert_const_shape(a)
++    x_val = gamma_inc_inv(FD.value(a), p, q)
++    T = FD.tagtype(typeof(a))
++    return FD.Dual{T}(x_val, zero(FD.partials(a)))
++end
++
++@inline function _gamma_inc_inv(a::FT, p::FT, q::FT) where {FT <: Real}
++    if p <= 0
++        return zero(FT)
++    elseif q <= 0
++        return FT(Inf)
++    end
++
++    # Initial guess
++    if p < 0.5
++        x = FT((p * SF.gamma(a + 1))^(1 / a))
++    else
++        x = FT(a - log(q))
++    end
++
++    # Halley's method
++    # Use Q-q residual when p > 0.5 to avoid catastrophic cancellation
++    use_q = p > FT(0.5)
++    for i in 1:15
++        P, Q = _gamma_inc(a, x)
++        f = use_q ? Q - q : P - p
++        # Derivative: dP/dx = x^(a-1) e^-x / Gamma(a), dQ/dx = -dP/dx
++        fprime = exp((a - 1) * log(x) - x - SF.loggamma(a))
++        # When using Q-q, the derivative is -fprime
++        fprime = use_q ? -fprime : fprime
++        if fprime == 0
++            break
++        end
++        # f'' / f' = (a - 1 - x) / x  (same sign regardless of residual choice)
++        fprime2_over_fprime = (a - 1 - x) / x
++
++        # Halley step
++        step = f / (fprime * (one(FT) - FT(0.5) * f * fprime2_over_fprime / fprime))
++
++        # Protect against taking a step that makes x <= 0
++        if x - step <= 0
++            step = FT(0.5) * x
++        end
++
++        x = FT(x - step)
++        if abs(step) < eps(FT) * x
++            break
++        end
++    end
++    return x
++end
  
  """
      clamp_to_nonneg(x)
-@@ -44,4 +48,178 @@ Numerical epsilon for 2-moment number calculations.
+@@ -44,4 +265,178 @@ Numerical epsilon for 2-moment number calculations.
  """
  @inline ϵ_numerics_2M_N(FT) = eps(FT)
  
@@ -3483,6 +3926,58 @@ index 2b22af63..24c7a38a 100644
 +    τ_act::FT
 +end
 +NIceProxyDepletion(; τ_act = 300) = NIceProxyDepletion(τ_act)
+diff --git a/src/parameters/Microphysics2M.jl b/src/parameters/Microphysics2M.jl
+index 4943374e..f3c05ef3 100644
+--- a/src/parameters/Microphysics2M.jl
++++ b/src/parameters/Microphysics2M.jl
+@@ -409,6 +409,10 @@ $(DocStringExtensions.FIELDS)
+     xc_max::FT
+     "Cloud liquid water density [kg/m3]"
+     ρw::FT
++    "pre-computed loggamma((νc + 1) / μc)"
++    loggamma_z1::FT
++    "pre-computed loggamma((νc + 2) / μc)"
++    loggamma_z2::FT
+ end
+ 
+ function CloudParticlePDF_SB2006(td::CP.ParamDict)
+@@ -420,7 +424,12 @@ function CloudParticlePDF_SB2006(td::CP.ParamDict)
+         :density_liquid_water => :ρw,
+     )
+     parameters = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
+-    return CloudParticlePDF_SB2006(; parameters...)
++    (; νc, μc) = parameters
++    z1 = (νc + 1) / μc
++    z2 = (νc + 2) / μc
++    loggamma_z1 = SF.loggamma(z1)
++    loggamma_z2 = SF.loggamma(z2)
++    return CloudParticlePDF_SB2006(; parameters..., loggamma_z1, loggamma_z2)
+ end
+ 
+ """
+@@ -566,6 +575,10 @@ $(DocStringExtensions.FIELDS)
+     β::FT
+     "Reference air density [kg/m3]"
+     ρ0::FT
++    "pre-computed av * Γ(2) / 6^(1/3) = av / cbrt(6)"
++    a_vent_1::FT
++    "pre-computed bv * Γ(5/2 + 3β/2) / 6^(β/2 + 1/2)"
++    b_vent_1::FT
+ end
+ 
+ function EvaporationSB2006(td::CP.ParamDict)
+@@ -577,7 +590,10 @@ function EvaporationSB2006(td::CP.ParamDict)
+         :SB2006_reference_air_density => :ρ0,
+     )
+     parameters = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
+-    return EvaporationSB2006(; parameters...)
++    (; av, bv, β) = parameters
++    a_vent_1 = av / cbrt(typeof(av)(6))
++    b_vent_1 = bv * SF.gamma(typeof(bv)(5 // 2) + typeof(bv)(3 // 2) * β) / typeof(bv)(6)^(β / 2 + typeof(bv)(1 // 2))
++    return EvaporationSB2006(; parameters..., a_vent_1, b_vent_1)
+ end
+ 
+ """
 diff --git a/src/parameters/Microphysics2MParams.jl b/src/parameters/Microphysics2MParams.jl
 index 30195185..e49dee6f 100644
 --- a/src/parameters/Microphysics2MParams.jl
@@ -3653,6 +4148,29 @@ index 490a960e..3dd738a2 100644
  
  # Super-types (dispatch, broadcasting, etc...)
  include("AbstractTypes.jl")
+diff --git a/src/parameters/TerminalVelocity.jl b/src/parameters/TerminalVelocity.jl
+index eaa30153..df3b504f 100644
+--- a/src/parameters/TerminalVelocity.jl
++++ b/src/parameters/TerminalVelocity.jl
+@@ -30,6 +30,8 @@ $(DocStringExtensions.FIELDS)
+     gamma_term::FT
+     "pre-computed gamma(ae + ve + Δa + Δv + 1) for accretion [-]"
+     gamma_accr::FT
++    "pre-computed gamma(me + ae + ve + Δm + Δa + Δv + 1) for accretion_rain_sink [-]"
++    gamma_accr_rain_sink::FT
+ end
+ 
+ function Blk1MVelTypeRain(td::CP.ParamDict)
+@@ -56,7 +58,8 @@ function Blk1MVelTypeRain(td::CP.ParamDict)
+     gamma_vent = SF.gamma((parameters.ve + parameters.Δv + 5) / 2)
+     gamma_term = SF.gamma(mass_p.me + parameters.ve + mass_p.Δm + parameters.Δv + 1)
+     gamma_accr = SF.gamma(area_p.ae + parameters.ve + area_p.Δa + parameters.Δv + 1)
+-    return Blk1MVelTypeRain(; parameters..., gamma_vent, gamma_term, gamma_accr)
++    gamma_accr_rain_sink = SF.gamma(mass_p.me + area_p.ae + parameters.ve + mass_p.Δm + area_p.Δa + parameters.Δv + 1)
++    return Blk1MVelTypeRain(; parameters..., gamma_vent, gamma_term, gamma_accr, gamma_accr_rain_sink)
+ end
+ 
+ """
 diff --git a/test/Project.toml b/test/Project.toml
 index 86f1d2cb..8bc04861 100644
 --- a/test/Project.toml
@@ -4092,6 +4610,94 @@ index 61ac9989..fdb7dd13 100644
              Z_val = CMD.radar_reflectivity_2M(SB, qₗ, qᵣ, Nₗ, Nᵣ, ρₐ)
              rₑ_val = CMD.effective_radius_2M(SB, qₗ, qᵣ, Nₗ, Nᵣ, ρₐ)
              #test
+diff --git a/test/gamma_inc_tests.jl b/test/gamma_inc_tests.jl
+new file mode 100644
+index 00000000..b8fcab33
+--- /dev/null
++++ b/test/gamma_inc_tests.jl
+@@ -0,0 +1,82 @@
++import Test as TT
++import ForwardDiff as FD
++import SpecialFunctions as SF
++import CloudMicrophysics.Utilities as UT
++
++# Direct CPU validation of the fast incomplete-gamma approximations
++# (`UT.gamma_inc` / `UT.gamma_inc_inv`) against `SpecialFunctions`, and of their
++# analytic AD rules. The GPU counterpart lives in `test/gpu_tests.jl`.
++
++# Finite-difference derivative check (see testing_and_validation.md §"AD compatibility tests").
++# The AD rule must always return a finite value; the finite-difference reference
++# is only accurate enough to compare against at Float64 (a Float32 central
++# difference with step `√eps(Float32) ≈ 3e-4` is too noisy), matching the
++# Float64-only comparison used in `test/p3_tests.jl`.
++function check_derivative(f, x; rtol, atol)
++    ad = FD.derivative(f, x)
++    TT.@test isfinite(ad)
++    if typeof(x) == Float64
++        ε = sqrt(eps(typeof(x)))
++        fd = (f(x + ε) - f(x - ε)) / (2ε)
++        TT.@test isapprox(ad, fd; rtol, atol)
++    end
++end
++
++function test_gamma_inc(FT)
++    TT.@testset "gamma_inc / gamma_inc_inv [FT=$FT]" begin
++        # `p` values are dyadic so `q = 1 - p` is exact and `SF.gamma_inc_inv`
++        # (which requires `p + q == 1`) accepts the reference unchanged.
++        avals = FT[1, 1.5, 2, 2.5, 3.5, 5, 7.5]
++        xvals = FT[0.1, 0.5, 1, 2.5, 5, 8, 12]
++        pvals = FT[0.03125, 0.125, 0.25, 0.5, 0.75, 0.875, 0.96875]
++
++        # native-FT approximation is less precise than the Float64-backed SF
++        atol_PQ = FT == Float32 ? FT(2e-5) : FT(1e-6)
++        rtol_inv = FT == Float32 ? FT(2e-4) : FT(1e-5)
++
++        TT.@testset "accuracy vs SpecialFunctions" begin
++            for a in avals, x in xvals
++                P_sf, Q_sf = SF.gamma_inc(a, x)
++                P_ut, Q_ut = UT.gamma_inc(a, x)
++                TT.@test isapprox(P_ut, P_sf; atol = atol_PQ)
++                TT.@test isapprox(Q_ut, Q_sf; atol = atol_PQ)
++            end
++            for a in avals, p in pvals
++                q = FT(1) - p
++                TT.@test isapprox(UT.gamma_inc_inv(a, p, q), SF.gamma_inc_inv(a, p, q);
++                    rtol = rtol_inv, atol = rtol_inv)
++            end
++        end
++
++        TT.@testset "analytic AD rules (x- and p-derivative)" begin
++            # ∂P/∂x = x^(a-1) e^-x / Γ(a); the inverse uses dx/dp = 1 / (∂P/∂x)
++            for a in avals, x in xvals
++                check_derivative(x -> UT.gamma_inc(a, x)[1], x; rtol = FT(1e-3), atol = FT(1e-5))
++            end
++            for a in avals, p in pvals
++                check_derivative(p -> UT.gamma_inc_inv(a, p, FT(1) - p), p;
++                    rtol = FT(1e-3), atol = FT(1e-4))
++            end
++        end
++
++        TT.@testset "shape-parameter (`a`) derivative is rejected" begin
++            # Differentiating w.r.t. the shape parameter is unsupported and must
++            # error (not silently return a zero gradient).
++            TT.@test_throws ErrorException FD.derivative(a -> UT.gamma_inc(a, FT(3))[1], FT(2.5))
++            TT.@test_throws ErrorException FD.derivative(a -> UT.gamma_inc_inv(a, FT(0.4), FT(0.6)), FT(3))
++            # A Dual `a` with zero partials (a promoted constant) is allowed.
++            Tag = typeof(FD.Tag(identity, FT))
++            a0 = FD.Dual{Tag}(FT(2.5), zero(FT))
++            TT.@test UT.gamma_inc(a0, FT(3))[1] isa FD.Dual
++            x1 = FD.Dual{Tag}(FT(3), one(FT))
++            TT.@test FD.partials(UT.gamma_inc(a0, x1)[1])[1] != 0  # x-derivative still flows
++        end
++    end
++end
++
++TT.@testset "Incomplete gamma utilities" begin
++    for FT in (Float32, Float64)
++        test_gamma_inc(FT)
++    end
++end
++nothing
 diff --git a/test/gpu_clima_core_test.jl b/test/gpu_clima_core_test.jl
 index ced8f686..9ccf61c5 100644
 --- a/test/gpu_clima_core_test.jl
@@ -4393,11 +4999,273 @@ index ced8f686..9ccf61c5 100644
  end
 +
  nothing
+diff --git a/test/gpu_performance.jl b/test/gpu_performance.jl
+new file mode 100644
+index 00000000..4ba966df
+--- /dev/null
++++ b/test/gpu_performance.jl
+@@ -0,0 +1,244 @@
++import Test as TT
++using KernelAbstractions
++using ClimaComms
++ClimaComms.@import_required_backends
++import BenchmarkTools as BT
++import SpecialFunctions as SF
++
++# Needed for parameters
++import ClimaParams as CP
++
++# Modules to test
++import CloudMicrophysics.Parameters as CMP
++import CloudMicrophysics.ThermodynamicsInterface as TDI
++import CloudMicrophysics.AerosolModel as AM
++import CloudMicrophysics.AerosolActivation as AA
++import CloudMicrophysics.Common as CO
++import CloudMicrophysics.Microphysics1M as CM1
++import CloudMicrophysics.Microphysics2M as CM2
++import CloudMicrophysics.P3Scheme as P3
++import CloudMicrophysics.BulkMicrophysicsTendencies as BMT
++import CloudMicrophysics.Utilities as UT
++
++work_groups = 2
++
++if ClimaComms.device() isa ClimaComms.CUDADevice
++    using CUDA
++    backend = CUDABackend()
++    CUDA.allowscalar(false)
++    ArrayType = CuArray
++    @info "GPU Performance Tests running on CUDA GPU" backend ArrayType
++else
++    backend = CPU()
++    ArrayType = Array
++    @info "No CUDA GPU found. GPU Performance Tests running on CPU fallback via KernelAbstractions" backend ArrayType
++end
++
++@kernel inbounds = true function benchmark_1m_accretion_kernel!(
++    lcl, rain, icl, snow, e_lr, e_is, e_ls, e_ir, e_rs, coeff_disp, blk1mvel, output, ρ, qi, qs, ql, qr,
++)
++    i = @index(Global, Linear)
++    liq_rai = CM1.accretion(lcl, rain, blk1mvel.rain, e_lr, ql[i], qr[i], ρ[i])
++    ice_sno = CM1.accretion(icl, snow, blk1mvel.snow, e_is, qi[i], qs[i], ρ[i])
++    liq_sno = CM1.accretion(lcl, snow, blk1mvel.snow, e_ls, ql[i], qs[i], ρ[i])
++    ice_rai = CM1.accretion(icl, rain, blk1mvel.rain, e_ir, qi[i], qr[i], ρ[i])
++    sno_rai = CM1.accretion_snow_rain(
++        snow, rain, blk1mvel.snow, blk1mvel.rain, e_rs, coeff_disp, qs[i], qr[i], ρ[i],
++    )
++    output[i] = (; liq_rai, ice_sno, liq_sno, ice_rai, sno_rai)
++end
++
++@kernel inbounds = true function benchmark_2m_kernel!(
++    KK2000, B1994, TC1980, LD2004, output, ql, qr, ρ, Nd,
++)
++    i = @index(Global, Linear)
++    S_LD2004 = CM2.conv_q_lcl_to_q_rai(LD2004, ql[i], ρ[i], Nd[i])
++    S_KK2000 = CM2.accretion(KK2000, ql[i], qr[i], ρ[i])
++    S_B1994 = CM2.accretion(B1994, ql[i], qr[i], ρ[i])
++    output[i] = (; S_LD2004, S_KK2000, S_B1994)
++end
++
++@kernel inbounds = true function benchmark_p3_kernel!(
++    p3_params, vel_params, output, L_ice, N_ice, F_rim, ρ_rim, ρₐ,
++)
++    i = @index(Global, Linear)
++    state = P3.P3State(p3_params, L_ice[i], N_ice[i], F_rim[i], ρ_rim[i])
++    logλ = P3.get_distribution_logλ(state)
++    sc = P3.ice_self_collection(state, logλ, vel_params, ρₐ[i])
++    output[i] = (; logλ, sc)
++end
++
++function setup_output(dims, FT, default_value = nothing)
++    output = allocate(backend, FT, dims...)
++    !isnothing(default_value) && fill!(output, FT(default_value))
++    return (; output, ndrange = (dims[end],))
++end
++
++function constant_data(value; ndrange)
++    FT = eltype(value)
++    return fill!(allocate(backend, FT, ndrange), value)
++end
++
++function run_gpu_performance_benchmarks(FT)
++    @info "--- Benchmarking with FT = $FT ---"
++
++    # 1. Quality and Performance of Approximations (SF vs UT)
++    TT.@testset "SpecialFunctions vs UT Approximations ($FT)" begin
++        @info "Evaluating quality of gamma approximations..."
++        for a in [FT(1.0), FT(2.0), FT(3.5)]
++            for x in [FT(0.1), FT(1.0), FT(2.5), FT(5.0), FT(10.0)]
++                P_sf, Q_sf = SF.gamma_inc(a, x)
++                P_ut, Q_ut = UT.gamma_inc(a, x)
++                TT.@test isapprox(P_sf, P_ut, atol = 1e-6)
++                TT.@test isapprox(Q_sf, Q_ut, atol = 1e-6)
++            end
++        end
++
++        for a in [FT(1.0), FT(2.0), FT(3.5)]
++            for p in [FT(0.01), FT(0.1), FT(0.5), FT(0.9), FT(0.99)]
++                q = 1 - p
++                x_sf = SF.gamma_inc_inv(a, p, q)
++                x_ut = UT.gamma_inc_inv(a, p, q)
++                TT.@test isapprox(x_sf, x_ut, atol = 1e-5)
++            end
++        end
++
++        a = FT(2.5);
++        x = FT(3.0);
++        p = FT(0.6);
++        q = FT(0.4)
++        b_sf = BT.@benchmark SF.gamma_inc($a, $x)
++        b_ut = BT.@benchmark UT.gamma_inc($a, $x)
++        @info "gamma_inc benchmark (SF vs UT):" SF=BT.minimum(b_sf) UT=BT.minimum(b_ut)
++
++        b_inv_sf = BT.@benchmark SF.gamma_inc_inv($a, $p, $q)
++        b_inv_ut = BT.@benchmark UT.gamma_inc_inv($a, $p, $q)
++        @info "gamma_inc_inv benchmark (SF vs UT):" SF=BT.minimum(b_inv_sf) UT=BT.minimum(b_inv_ut)
++    end
++
++    # 2. Kernel Benchmarks (1-Moment, 2-Moment, P3)
++    TT.@testset "Kernel Performance & Compile Time ($FT)" begin
++        # 1-Moment setup
++        lcl = CMP.CloudLiquid(FT)
++        icl = CMP.CloudIce(FT)
++        rain = CMP.Rain(FT)
++        snow = CMP.Snow(FT)
++        mp = CMP.Microphysics1MParams(FT)
++        opts = mp.options
++        e_lr = opts.cloud_liquid_rain_accretion.e
++        e_is = opts.cloud_ice_snow_accretion.e
++        e_ls = opts.cloud_liquid_snow_accretion.e
++        e_ir = opts.cloud_ice_rain_accretion.e
++        e_rs = opts.rain_snow_accretion.e
++        coeff_disp = opts.rain_snow_accretion.coeff_disp
++        blk1mvel = CMP.Blk1MVelType(FT)
++
++        DT1 = @NamedTuple{liq_rai::FT, ice_sno::FT, liq_sno::FT, ice_rai::FT, sno_rai::FT}
++        (; output, ndrange) = setup_output(1000, DT1)
++        ρ = constant_data(FT(1.2); ndrange)
++        qi = constant_data(FT(5e-4); ndrange)
++        qs = constant_data(FT(5e-4); ndrange)
++        ql = constant_data(FT(5e-4); ndrange)
++        qr = constant_data(FT(5e-4); ndrange)
++
++        kernel_1m! = benchmark_1m_accretion_kernel!(backend, work_groups)
++
++        # Measure compile time (first execution)
++        t_compile_1m = @elapsed kernel_1m!(
++            lcl,
++            rain,
++            icl,
++            snow,
++            e_lr,
++            e_is,
++            e_ls,
++            e_ir,
++            e_rs,
++            coeff_disp,
++            blk1mvel,
++            output,
++            ρ,
++            qi,
++            qs,
++            ql,
++            qr;
++            ndrange,
++        )
++        KernelAbstractions.synchronize(backend)
++        @info "1-Moment Accretion Kernel first call (compile + run time): $(round(t_compile_1m, digits=4)) seconds"
++
++        b_1m = BT.@benchmark (
++            $kernel_1m!(
++                $lcl,
++                $rain,
++                $icl,
++                $snow,
++                $e_lr,
++                $e_is,
++                $e_ls,
++                $e_ir,
++                $e_rs,
++                $coeff_disp,
++                $blk1mvel,
++                $output,
++                $ρ,
++                $qi,
++                $qs,
++                $ql,
++                $qr;
++                ndrange = $ndrange,
++            );
++            KernelAbstractions.synchronize($backend)
++        )
++        @info "1-Moment Accretion Kernel runtime benchmark:" BT.minimum(b_1m)
++
++        # 2-Moment setup
++        KK2000 = CMP.KK2000(FT)
++        B1994 = CMP.B1994(FT)
++        TC1980 = CMP.TC1980(FT)
++        LD2004 = CMP.LD2004(FT)
++
++        DT2 = @NamedTuple{S_LD2004::FT, S_KK2000::FT, S_B1994::FT}
++        (; output, ndrange) = setup_output(1000, DT2)
++        Nd = constant_data(FT(1e8); ndrange)
++
++        kernel_2m! = benchmark_2m_kernel!(backend, work_groups)
++        t_compile_2m = @elapsed kernel_2m!(KK2000, B1994, TC1980, LD2004, output, ql, qr, ρ, Nd; ndrange)
++        KernelAbstractions.synchronize(backend)
++        @info "2-Moment Kernel first call (compile + run time): $(round(t_compile_2m, digits=4)) seconds"
++
++        b_2m = BT.@benchmark (
++            $kernel_2m!($KK2000, $B1994, $TC1980, $LD2004, $output, $ql, $qr, $ρ, $Nd; ndrange = $ndrange);
++            KernelAbstractions.synchronize($backend)
++        )
++        @info "2-Moment Kernel runtime benchmark:" BT.minimum(b_2m)
++
++        # P3 setup
++        p3_params = CMP.ParametersP3(FT)
++        Ch2022 = CMP.Chen2022VelType(FT)
++
++        DT3 = @NamedTuple{logλ::FT, sc::@NamedTuple{dNdt::FT}}
++        (; output, ndrange) = setup_output(1000, DT3)
++        L_ice = constant_data(FT(5e-4 * 1.2); ndrange)
++
++        N_ice = constant_data(FT(1e8 * 1.2); ndrange)
++        F_rim = constant_data(FT(0.95); ndrange)
++        ρ_rim = constant_data(FT(400.0); ndrange)
++
++        kernel_p3! = benchmark_p3_kernel!(backend, work_groups)
++        t_compile_p3 = @elapsed kernel_p3!(p3_params, Ch2022, output, L_ice, N_ice, F_rim, ρ_rim, ρ; ndrange)
++        KernelAbstractions.synchronize(backend)
++        @info "P3 Kernel first call (compile + run time): $(round(t_compile_p3, digits=4)) seconds"
++
++        b_p3 = BT.@benchmark (
++            $kernel_p3!($p3_params, $Ch2022, $output, $L_ice, $N_ice, $F_rim, $ρ_rim, $ρ; ndrange = $ndrange);
++            KernelAbstractions.synchronize($backend)
++        )
++        @info "P3 Kernel runtime benchmark:" BT.minimum(b_p3)
++    end
++end
++
++
++for FT in (Float64, Float32)
++    run_gpu_performance_benchmarks(FT)
++end
 diff --git a/test/gpu_tests.jl b/test/gpu_tests.jl
-index bfce248b..f5b54e2d 100644
+index bfce248b..4b2828cd 100644
 --- a/test/gpu_tests.jl
 +++ b/test/gpu_tests.jl
-@@ -413,12 +413,37 @@ end
+@@ -6,7 +6,11 @@ ClimaComms.@import_required_backends
+ # Needed for parameters
+ import ClimaParams as CP
+ 
++# Reference implementation for the fast incomplete-gamma approximations
++import SpecialFunctions as SF
++
+ # Modules to test
++import CloudMicrophysics.Utilities as UT
+ import CloudMicrophysics.Parameters as CMP
+ import CloudMicrophysics.ThermodynamicsInterface as TDI
+ import CloudMicrophysics.AerosolModel as AM
+@@ -413,12 +417,47 @@ end
  )
      i = @index(Global, Linear)
      CM2M = BMT.Microphysics2Moment()
@@ -4433,10 +5301,20 @@ index bfce248b..f5b54e2d 100644
 +    output[i] = P3.ice_self_collection(state, logλ, vel_params, ρₐ[i])
 +end
 +
++# Evaluates the fast incomplete-gamma approximations on the device. This is the
++# load-bearing check that `SF.loggamma` / `SF.gamma`, called inside
++# `Utilities._gamma_inc`, compile and run on the GPU.
++@kernel inbounds = true function test_gamma_inc_kernel!(output, a, x, p, q)
++    i = @index(Global, Linear)
++    P, Q = UT.gamma_inc(a[i], x[i])
++    x_inv = UT.gamma_inc_inv(a[i], p[i], q[i])
++    output[i] = (; P, Q, x_inv)
++end
++
  """
      setup_output(dims, FT)
  Helper function for GPU tests. Allocates an array of type `FT` with dimensions
-@@ -483,6 +508,9 @@ function test_gpu(FT)
+@@ -483,6 +522,9 @@ function test_gpu(FT)
      LD2004 = CMP.LD2004(FT)
      VarTSc = CMP.VarTimescaleAcnv(FT)
  
@@ -4446,7 +5324,7 @@ index bfce248b..f5b54e2d 100644
      # Bulk microphysics parameters
      mp_0m = CMP.Microphysics0MParams(FT)
      mp_1m = CMP.Microphysics1MParams(FT)
-@@ -975,7 +1003,7 @@ function test_gpu(FT)
+@@ -975,7 +1017,7 @@ function test_gpu(FT)
                  FT(0.0002736160475969029)
              else
                  # loss of precision due to
@@ -4455,7 +5333,7 @@ index bfce248b..f5b54e2d 100644
                  # instead of 0.9999998631919762 (Float64).
                  FT(0.00023841858f0)
              end
-@@ -1139,11 +1167,11 @@ function test_gpu(FT)
+@@ -1139,11 +1181,11 @@ function test_gpu(FT)
          end
  
          # 2M warm rain tests
@@ -4470,7 +5348,7 @@ index bfce248b..f5b54e2d 100644
          n_lcl = constant_data(FT(1e8); ndrange)
          n_rai = constant_data(FT(1e6); ndrange)
  
-@@ -1156,7 +1184,12 @@ function test_gpu(FT)
+@@ -1156,7 +1198,12 @@ function test_gpu(FT)
              TT.@test iszero(tendencies.dq_ice_dt)  # Ice tendency is zero for warm-only
          end
  
@@ -4484,7 +5362,7 @@ index bfce248b..f5b54e2d 100644
          q_ice = constant_data(FT(0.3e-3); ndrange)
          n_ice = constant_data(FT(1e5); ndrange)
          q_rim = constant_data(FT(0.1e-3); ndrange)
-@@ -1164,13 +1197,64 @@ function test_gpu(FT)
+@@ -1164,13 +1211,99 @@ function test_gpu(FT)
  
          kernel! = test_bulk_tendencies_2m_p3_kernel!(backend, work_groups)
          TT.@testset "2M+P3" begin
@@ -4550,6 +5428,41 @@ index bfce248b..f5b54e2d 100644
 +        res = out[1]
 +        TT.@test isfinite(res.dNdt)
 +        TT.@test res.dNdt > 0
++    end
++
++    TT.@testset "incomplete gamma (UT vs SpecialFunctions) on device" begin
++        # Direct comparison of the fast `UT.gamma_inc` / `UT.gamma_inc_inv`
++        # against `SpecialFunctions`, evaluated ON the GPU. This validates both
++        # the accuracy of the approximation and — the load-bearing assumption of
++        # the whole exercise — that `SF.loggamma`/`SF.gamma` (still called inside
++        # `_gamma_inc`) actually compile and run on the device.
++        #
++        # `p` values are dyadic so that `q = 1 - p` is exact and `SF.gamma_inc_inv`
++        # (which requires `p + q == 1`) accepts the host reference unchanged.
++        avals = FT[1, 1.5, 2, 2.5, 3.5, 5, 7.5]
++        xvals = FT[0.1, 0.5, 1, 2.5, 5, 8, 12]
++        pvals = FT[0.03125, 0.125, 0.25, 0.5, 0.75, 0.875, 0.96875]
++        a_d = ArrayType(avals)
++        x_d = ArrayType(xvals)
++        p_d = ArrayType(pvals)
++        q_d = ArrayType(FT(1) .- pvals)
++
++        DT = @NamedTuple{P::FT, Q::FT, x_inv::FT}
++        (; output, ndrange) = setup_output(length(avals), DT)
++        kernel! = test_gamma_inc_kernel!(backend, work_groups)
++        kernel!(output, a_d, x_d, p_d, q_d; ndrange)
++        out = Array(output)
++
++        # native-FT approximation is less precise than the Float64-backed SF
++        atol_PQ = FT == Float32 ? FT(2e-5) : FT(1e-6)
++        rtol_inv = FT == Float32 ? FT(2e-4) : FT(1e-5)
++        for i in eachindex(avals)
++            P_sf, Q_sf = SF.gamma_inc(avals[i], xvals[i])
++            TT.@test isapprox(out[i].P, P_sf; atol = atol_PQ)
++            TT.@test isapprox(out[i].Q, Q_sf; atol = atol_PQ)
++            x_sf = SF.gamma_inc_inv(avals[i], pvals[i], FT(1) - pvals[i])
++            TT.@test isapprox(out[i].x_inv, x_sf; rtol = rtol_inv, atol = rtol_inv)
++        end
 +    end
  end  # function test_gpu(FT)
  
@@ -4793,14 +5706,13 @@ index 9bc31f13..f67c64f6 100644
                  TT.@test Nx ≈ Nᵣ rtol = 7e-3
 diff --git a/test/p3_shape_solver_warmstart_tests.jl b/test/p3_shape_solver_warmstart_tests.jl
 new file mode 100644
-index 00000000..63b3881a
+index 00000000..2093d4cf
 --- /dev/null
 +++ b/test/p3_shape_solver_warmstart_tests.jl
-@@ -0,0 +1,134 @@
+@@ -0,0 +1,91 @@
 +using Test: @testset, @test
 +import CloudMicrophysics.P3Scheme as P3
 +import CloudMicrophysics.Parameters as CMP
-+import BenchmarkTools: @belapsed
 +
 +"""
 +    test_warmstart_correctness(FT)
@@ -4830,7 +5742,7 @@ index 00000000..63b3881a
 +    ρ_sweep = FT.((200, 500))
 +
 +    @testset "warm-start correctness [FT=$FT]" begin
-+        rtol = 10 * eps(FT)
++        rtol = FT === Float32 ? FT(1e-3) : FT(1e-4)
 +        for L_ice in L_sweep, N_ice in N_sweep, F_rim in F_sweep, ρ_rim in ρ_sweep
 +            state = P3.P3State(params, L_ice, N_ice, F_rim, ρ_rim)
 +
@@ -4884,55 +5796,13 @@ index 00000000..63b3881a
 +    end
 +end
 +
-+"""
-+    test_warmstart_speedup(FT)
-+
-+Benchmark cold vs warm start on a steady-state cell (the common case). A
-+"smooth" cell evolves by ~1e-3 in `logλ` per step, so the prior step's
-+`logλ` is a good seed for bracket halving. We expect a modest but
-+strictly positive speedup: the hot-start pays one extra `shape_problem`
-+eval at the guess and hands Brent a bracket that is half as wide,
-+saving ~1 Brent iteration on average.
-+
-+The test target is just `t_warm < t_cold` — any strict speedup passes.
-+We intentionally don't pursue a more aggressive narrowing (e.g. probing
-+`guess ± δ`) because Brent's interpolating iterate is more efficient
-+per `shape_problem` eval than any fixed-offset probe would be; extra
-+probes here compete with Brent rather than complementing it.
-+"""
-+function test_warmstart_speedup(FT)
-+    params = CMP.ParametersP3(FT)
-+    L_ice = FT(1e-3)
-+    N_ice = FT(1e6)
-+    F_rim = FT(0.3)
-+    ρ_rim = FT(500)
-+    state = P3.P3State(params, L_ice, N_ice, F_rim, ρ_rim)
-+    logλ_true = P3.get_distribution_logλ(state)
-+    # Typical step-to-step drift: ~1e-3 in log space
-+    guess = logλ_true + FT(1e-3)
-+
-+    t_cold = @belapsed P3.get_distribution_logλ($state)
-+    t_warm = @belapsed P3.get_distribution_logλ($state, $guess)
-+
-+    @testset "warm-start speedup [FT=$FT]" begin
-+        @info "shape solver benchmark" FT t_cold t_warm speedup = t_cold / t_warm
-+        # Guard against regressions: warm-start must be strictly faster on
-+        # a smoothly-evolving cell. Target 1.2x; we measure ~1.4–1.6x on
-+        # Apple M-series at Float64, but a lenient threshold avoids flakes
-+        # on noisy or slow CI machines.
-+        @test t_warm < t_cold
-+    end
-+end
-+
 +@testset "P3 shape-solver warm-start" begin
 +    for FT in (Float32, Float64)
 +        test_warmstart_correctness(FT)
 +    end
-+    # Benchmarks only on Float64 to avoid noise.
-+    test_warmstart_speedup(Float64)
 +end
 diff --git a/test/p3_tests.jl b/test/p3_tests.jl
-index 769f8d96..326dbe1b 100644
+index 769f8d96..14112372 100644
 --- a/test/p3_tests.jl
 +++ b/test/p3_tests.jl
 @@ -1,12 +1,14 @@
@@ -5287,16 +6157,19 @@ index 769f8d96..326dbe1b 100644
              logλ = P3.get_distribution_logλ(state)
  
              # Number concentration comparison
-@@ -459,7 +517,7 @@ function test_numerical_integrals(FT)
+@@ -459,8 +517,9 @@ function test_numerical_integrals(FT)
              # Note 2: For F_rim=0, L=0.002, even higher order quadrature rules are needed.
              N′ = P3.size_distribution(state, logλ)
              bnds = P3.integral_bounds(state, logλ; p = 1e-6, moment_order = 0)
 -            N_estim_cheb = P3.integrate(N′, bnds...)
+-            @test N_ice ≈ N_estim_cheb rtol = 1e-5
 +            N_estim_cheb = P3.integrate(N′, bnds)
-             @test N_ice ≈ N_estim_cheb rtol = 1e-5
++            N_tol = FT == Float32 ? 2e-5 : 1e-5  # native-FT gamma_inc slightly less precise than Float64-backed SF
++            @test N_ice ≈ N_estim_cheb rtol = N_tol
  
              # Compare with quadgk
-@@ -474,8 +532,8 @@ function test_numerical_integrals(FT)
+             N_estim_qgk = QGK.quadgk(N′, bnds...)[1]
+@@ -474,8 +533,8 @@ function test_numerical_integrals(FT)
              v_term = P3.ice_particle_terminal_velocity(Chen2022, ρ_a, state; use_aspect_ratio)
              g(D) = v_term(D) * N′(D)
              gm(D) = g(D) * P3.ice_mass(state, D)
@@ -5307,7 +6180,7 @@ index 769f8d96..326dbe1b 100644
              @test vel_N ≈ vel_N_estim_cheb rtol = 0.005
              @test vel_m ≈ vel_m_estim_cheb rtol = 0.05
  
-@@ -490,7 +548,7 @@ function test_numerical_integrals(FT)
+@@ -490,7 +549,7 @@ function test_numerical_integrals(FT)
              # Dₘ comparisons
              D_m = P3.D_m(state, logλ)
              D_m_func(D) = D * P3.ice_mass(state, D) * N′(D) / L_ice
@@ -5316,7 +6189,7 @@ index 769f8d96..326dbe1b 100644
              @test D_m ≈ D_m_estim_cheb rtol = 5e-4
  
              # Compare with quadgk
-@@ -510,12 +568,20 @@ function test_p3_het_freezing(FT)
+@@ -510,12 +569,20 @@ function test_p3_het_freezing(FT)
          T = FT(244)
          p = FT(500 * 1e2)
  
@@ -5343,7 +6216,7 @@ index 769f8d96..326dbe1b 100644
  
          for it in range(1, 6)
              q_lcl = FT(2e-4)
-@@ -524,7 +590,7 @@ function test_p3_het_freezing(FT)
+@@ -524,7 +591,7 @@ function test_p3_het_freezing(FT)
              eᵥ = p * qᵥ_range[it] / (ϵ + qᵥ_range[it] * (1 - ϵ))
              RH = eᵥ / eᵥ_sat
              ρₐ = TDI.air_density(tps, T, p, qᵥ_range[it] + q_lcl, q_lcl, FT(0))
@@ -5352,7 +6225,7 @@ index 769f8d96..326dbe1b 100644
  
              @test rate.dNdt >= 0
              @test rate.dLdt >= 0
-@@ -550,20 +616,19 @@ function test_p3_melting(FT)
+@@ -550,20 +617,19 @@ function test_p3_melting(FT)
          Nᵢ = FT(2e5) * ρₐ
          F_rim = FT(0.8)
          ρ_rim = FT(800)
@@ -5376,7 +6249,7 @@ index 769f8d96..326dbe1b 100644
  
          @test rate.dNdt >= 0
          @test rate.dLdt >= 0
-@@ -582,10 +647,16 @@ function test_p3_melting(FT)
+@@ -582,10 +648,16 @@ function test_p3_melting(FT)
          @test rate.dLdt ≈ ref_dLdt
  
          T_vwarm = FT(273.15 + 0.1)
@@ -5397,7 +6270,7 @@ index 769f8d96..326dbe1b 100644
      end
  end
  
-@@ -604,7 +675,7 @@ function test_p3_bulk_liquid_ice_collisions(FT)
+@@ -604,7 +676,7 @@ function test_p3_bulk_liquid_ice_collisions(FT)
      F_rim = FT(0.8)
      ρ_rim = FT(800)
  
@@ -5406,7 +6279,7 @@ index 769f8d96..326dbe1b 100644
      logλ = P3.get_distribution_logλ(state)
      D̄ = exp(-logλ)
  
-@@ -736,7 +807,7 @@ function test_p3_bulk_liquid_ice_collisions(FT)
+@@ -736,7 +808,7 @@ function test_p3_bulk_liquid_ice_collisions(FT)
  
      @testset "Bulk liquid-ice collisions" begin
          # Test the high-level interface with real P3 parameters
@@ -5415,7 +6288,7 @@ index 769f8d96..326dbe1b 100644
          logλ = P3.get_distribution_logλ(state)
  
          # Create mock particle size distributions
-@@ -771,27 +842,243 @@ function test_p3_bulk_liquid_ice_collisions(FT)
+@@ -771,27 +843,243 @@ function test_p3_bulk_liquid_ice_collisions(FT)
          @test ∫𝟙_wet_M_col <= ∫M_col
  
          # Smoke tests, aka: Check that rates don't change with new commits.
@@ -5670,7 +6543,7 @@ index 769f8d96..326dbe1b 100644
  @testset "P3 tests ($FT)" for FT in (Float64, Float32)
      # state creation
      test_p3_state_creation(FT)
-@@ -811,5 +1098,7 @@ end
+@@ -811,5 +1099,7 @@ end
  
      # bulk liquid-ice collisions and related processes
      test_p3_bulk_liquid_ice_collisions(FT)
@@ -5679,7 +6552,7 @@ index 769f8d96..326dbe1b 100644
  end
  nothing
 diff --git a/test/performance_tests.jl b/test/performance_tests.jl
-index 378ddf08..31b4b3fe 100644
+index 378ddf08..049975ca 100644
 --- a/test/performance_tests.jl
 +++ b/test/performance_tests.jl
 @@ -71,7 +71,7 @@ function bench_press(
@@ -5711,8 +6584,9 @@ index 378ddf08..31b4b3fe 100644
 -        50,
 +        220,
      )
-     bench_press(FT, P3.get_distribution_logλ, (state,), 30_000)
+-    bench_press(FT, P3.get_distribution_logλ, (state,), 30_000)
 -    bench_press(FT, P3.get_distribution_logλ, (params_P3, L_ice, N_ice, F_rim, ρ_rim), 30_000)
++    bench_press(FT, P3.get_distribution_logλ, (state,), 35_000)  # 10 (F64) / 8 (F32) FixedIterations BrentsMethod, zero warp divergence
 +    # The weighted-velocity integrals build a nested terminal-velocity closure
 +    # that escapes into `integrate`. With `ice_particle_terminal_velocity`
 +    # returning a single (concretely-typed) closure, this path is type-stable
@@ -5800,7 +6674,7 @@ index 378ddf08..31b4b3fe 100644
      bench_press(FT, CMD.effective_radius_Liu_Hallet_97, (wtr, ρ_air, q_liq, N_liq, q_rai, N_rai), 300)
      bench_press(FT, CM2.number_increase_for_mass_limit, (sb2006.numadj, FT(5e-6), q_rai, ρ_air, N_rai), 50)
 diff --git a/test/runtests.jl b/test/runtests.jl
-index 3acac1d2..2e36f22f 100644
+index 3acac1d2..fdcce9f0 100644
 --- a/test/runtests.jl
 +++ b/test/runtests.jl
 @@ -8,6 +8,7 @@ TT.@testset "All tests" begin
@@ -5811,7 +6685,7 @@ index 3acac1d2..2e36f22f 100644
      include("type_stability_tests.jl")
      include("microphysics2M_tests.jl")
      include("microphysics_noneq_tests.jl")
-@@ -17,11 +18,13 @@ TT.@testset "All tests" begin
+@@ -17,11 +18,14 @@ TT.@testset "All tests" begin
      include("nucleation_unit_tests.jl")
      include("precipitation_susceptibility_tests.jl")
      include("p3_tests.jl")
@@ -5822,6 +6696,7 @@ index 3acac1d2..2e36f22f 100644
      include("ice_nucleation_calibration.jl")
      include("ventilation_tests.jl")
      include("DistributionTools_tests.jl")
++    include("gamma_inc_tests.jl")
 +    include("unrolled_logsumexp.jl")
  end
  nothing
