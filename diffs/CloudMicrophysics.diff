@@ -1,5 +1,227 @@
+diff --git a/Project.toml b/Project.toml
+index 081ea8ba..8256e4ca 100644
+--- a/Project.toml
++++ b/Project.toml
+@@ -1,6 +1,6 @@
+ name = "CloudMicrophysics"
+ uuid = "6a9e3e04-43cd-43ba-94b9-e8782df3c71b"
+-version = "0.37.1"
++version = "0.37.2"
+ authors = ["Climate Modeling Alliance"]
+ 
+ [deps]
+@@ -32,8 +32,8 @@ FastGaussQuadrature = "1"
+ ForwardDiff = "0.10, 1"
+ InteractiveUtils = "1"
+ LazyArtifacts = "1"
+-LogExpFunctions = "0.3.29"
+-MLJ = "0.20"
++LogExpFunctions = "0.3.29, 1.0"
++MLJ = "0.20, 0.23"
+ RootSolvers = "0.3, 0.4, 1"
+ SpecialFunctions = "2.7.1"
+ StaticArrays = "1.9"
+diff --git a/docs/bibliography.bib b/docs/bibliography.bib
+index 6d6b00ce..6a976656 100644
+--- a/docs/bibliography.bib
++++ b/docs/bibliography.bib
+@@ -373,19 +373,6 @@ url  ="http://dx.doi.org/10.1039/C3FD00035D"
+   year = {2016}
+ }
+ 
+-@Article{KnopfAlpert2013,
+-  author = "Knopf, Daniel A. and Alpert, Peter A.",
+-  title  = "A water activity based model of heterogeneous ice nucleation kinetics for freezing of water and aqueous solution droplets",
+-  journal = "Faraday Discuss.",
+-  year = "2013",
+-  volume = "165",
+-  issue = "0",
+-  pages = "513-534",
+-  publisher = "The Royal Society of Chemistry",
+-  doi = "10.1039/C3FD00035D",
+-  url = "http://dx.doi.org/10.1039/C3FD00035D",
+-}
+-
+ @article{Koop2000,
+ author = {Koop, Thomas and Luo, Beiping and Tsias, Athanasios and Peter, Thomas},
+ title = {Water activity as the determinant for homogeneous ice nucleation in aqueous solutions},
+diff --git a/docs/src/guides/Parameters.jl b/docs/src/guides/Parameters.jl
+index b50cae27..cdb2ef3f 100644
+--- a/docs/src/guides/Parameters.jl
++++ b/docs/src/guides/Parameters.jl
+@@ -58,16 +58,16 @@ nothing #hide
+ 
+ # Finally we check the values of the rain autoconversion timescales
+ # and the corresponding rain formation rates.
+-# The autoconversion parameters now live in the option types inside `Microphysics1MParams`.
++# The autoconversion parameters live in `process_params` inside `Microphysics1MParams`.
+ qₗ = FT(1e-3)
+-default_acnv_p = default_mp.options.rain_autoconversion.acnv1M
++default_acnv_p = default_mp.process_params.rain_autoconversion
+ default_acnv = CO.logistic_function_integral(qₗ, default_acnv_p.q_threshold, default_acnv_p.k) / default_acnv_p.τ
+ 
+-overwrite_acnv_p = overwrite_mp.options.rain_autoconversion.acnv1M
++overwrite_acnv_p = overwrite_mp.process_params.rain_autoconversion
+ overwrite_acnv =
+     CO.logistic_function_integral(qₗ, overwrite_acnv_p.q_threshold, overwrite_acnv_p.k) / overwrite_acnv_p.τ
+ 
+-overwrite2_acnv_p = overwrite2_mp.options.rain_autoconversion.acnv1M
++overwrite2_acnv_p = overwrite2_mp.process_params.rain_autoconversion
+ overwrite_acnv2 =
+     CO.logistic_function_integral(qₗ, overwrite2_acnv_p.q_threshold, overwrite2_acnv_p.k) / overwrite2_acnv_p.τ
+ 
+diff --git a/docs/src/guides/SimpleModel.jl b/docs/src/guides/SimpleModel.jl
+index ff279627..508d135c 100644
+--- a/docs/src/guides/SimpleModel.jl
++++ b/docs/src/guides/SimpleModel.jl
+@@ -25,8 +25,8 @@ function rain_formation(dY, Y, p, t)
+     qₗ = Y[1] # Cloud water specific content
+     qᵣ = Y[2] # Rain water specific content
+ 
+-    E = mp.options.cloud_liquid_rain_accretion.e  # Collision efficiency
+-    (; τ, q_threshold, k) = mp.options.rain_autoconversion.acnv1M
++    E = mp.process_params.cloud_liquid_rain_accretion.e  # Collision efficiency
++    (; τ, q_threshold, k) = mp.process_params.rain_autoconversion
+     acnv = CO.logistic_function_integral(qₗ, q_threshold, k) / τ # Rain autoconversion rate
+     accr = CM1.accretion(liquid, rain, v_term.rain, E, qₗ, qᵣ, ρₐ) # Rain accretion rate
+ 
+diff --git a/docs/src/plots/Microphysics1M_plots.jl b/docs/src/plots/Microphysics1M_plots.jl
+index 11cfe3ed..c4128aad 100644
+--- a/docs/src/plots/Microphysics1M_plots.jl
++++ b/docs/src/plots/Microphysics1M_plots.jl
+@@ -69,7 +69,7 @@ T = 273.15
+ fig = MK.Figure()
+ ax = MK.Axis(fig[1, 1]; xlabel = "q_lcl or q_icl [g/kg]", ylabel = "autoconversion rate [1/s]", limits)
+ mp_ss = CMP.Microphysics1MParams(FT;
+-    snow_autoconversion = CMP.WithSupersaturation(ClimaParams.create_toml_dict(FT)),
++    snow_autoconversion = CMP.WithSupersaturation(),
+ )
+ q_icl_to_q_sno_rate = function (T)
+     map(q_icl_range) do q_icl
+diff --git a/docs/src/plots/Microphysics2M_plots.jl b/docs/src/plots/Microphysics2M_plots.jl
+index 4efc06cc..21cc2ec1 100644
+--- a/docs/src/plots/Microphysics2M_plots.jl
++++ b/docs/src/plots/Microphysics2M_plots.jl
+@@ -20,7 +20,7 @@ const SB2006 = CMP.SB2006(FT)
+ 
+ const mp_1m = CMP.Microphysics1MParams(FT)
+ 
+-const E_lcl_rai = mp_1m.options.cloud_liquid_rain_accretion.e
++const E_lcl_rai = mp_1m.process_params.cloud_liquid_rain_accretion.e
+ 
+ const liquid = CMP.CloudLiquid(FT)
+ const rain = CMP.Rain(FT)
+@@ -65,7 +65,7 @@ q_lcl_SB2006 = [
+ ]
+ q_lcl_K1969 = [
+     CM1.conv_q_lcl_to_q_rai(
+-        CMP.Kessler1M(ClimaParams.create_toml_dict(FT)), mp_1m, nothing,
++        CMP.Kessler1M(), mp_1m, nothing,
+         (; q_tot = FT(0), q_lcl = q, q_icl = FT(0), q_rai = FT(0), q_sno = FT(0)),
+         nothing,
+     ) for q in q_lcl_range
+diff --git a/docs/src/plots/NonEqCondEvapRate.jl b/docs/src/plots/NonEqCondEvapRate.jl
+index 3deb9e57..32ff6764 100644
+--- a/docs/src/plots/NonEqCondEvapRate.jl
++++ b/docs/src/plots/NonEqCondEvapRate.jl
+@@ -52,12 +52,13 @@ function generate_cond_evap_rate(::HydrostaticBalance_qₗ_z)
+     dt = 1; title *= "dt=$(dt)s, "
+     τ_relax = 1; title *= "τ_relax=$(τ_relax)s, "
+     cm_params = CM.Parameters.CloudLiquid(FT)
+-    clf = CMP.CloudLiquidFormation(FT(τ_relax))
++    clf = CMP.CloudLiquidFormation()
+ 
+     data = broadcast(qₗ, T) do q_lcl, temp
+         CMNe.conv_q_vap_to_q_lcl(
+             clf,
+-            (; cloud = (; liquid = cm_params)),
++            (; cloud = (; liquid = cm_params),
++                process_params = (; cloud_liquid_formation = (; τ_relax = FT(τ_relax)))),
+             thp,
+             (; q_tot = qₜ, q_lcl, q_icl = qᵢ, q_rai = qᵣ, q_sno = qₛ),
+             (; ρ, T = temp)
+@@ -92,12 +93,13 @@ function generate_cond_evap_rate(::Range_qₗ_T)
+     dt = 1; title *= "dt=$(dt)s, "
+     τ_relax = 1; title *= "τ_relax=$(τ_relax)s, "
+     cm_params = CM.Parameters.CloudLiquid(FT)
+-    clf = CMP.CloudLiquidFormation(FT(τ_relax))
++    clf = CMP.CloudLiquidFormation()
+ 
+     data = broadcast(qₗ, T') do q_lcl, temp
+         CMNe.conv_q_vap_to_q_lcl(
+             clf,
+-            (; cloud = (; liquid = cm_params)),
++            (; cloud = (; liquid = cm_params),
++                process_params = (; cloud_liquid_formation = (; τ_relax = FT(τ_relax)))),
+             thp,
+             (; q_tot = qₜ, q_lcl, q_icl = qᵢ, q_rai = qᵣ, q_sno = qₛ),
+             (; ρ, T = temp)
+diff --git a/docs/src/plots/Thersholds_transitions.jl b/docs/src/plots/Thersholds_transitions.jl
+index 07edc477..d457798a 100644
+--- a/docs/src/plots/Thersholds_transitions.jl
++++ b/docs/src/plots/Thersholds_transitions.jl
+@@ -41,7 +41,7 @@ N_d_range = range(1e7, stop = 1e9, length = 1000)
+ N_d = 1e8
+ 
+ mp = CMP.Microphysics1MParams(CP.create_toml_dict(FT))
+-acnv = mp.options.rain_autoconversion.acnv1M
++acnv = mp.process_params.rain_autoconversion
+ 
+ q_lcl_K1969 = [
+     max(0, q_lcl - acnv.q_threshold) / acnv.τ
+diff --git a/docs/src/plots/plotting_tau_relax_frostenberg.jl b/docs/src/plots/plotting_tau_relax_frostenberg.jl
+index 659db6ac..76f18487 100644
+--- a/docs/src/plots/plotting_tau_relax_frostenberg.jl
++++ b/docs/src/plots/plotting_tau_relax_frostenberg.jl
+@@ -28,7 +28,8 @@ q_icl_labels = ["0", "10⁻⁸", "10⁻⁶", "10⁻⁴", "10⁻²"]
+ import ClimaParams as CP
+ 
+ # Sublimation timescale (constant, from ClimaParams defaults)
+-τ_sub = CMP.ConstantTimescale(CP.create_toml_dict(FT)).τ_relax
++params_1m = CMP.Microphysics1MParams(CP.create_toml_dict(FT))
++τ_sub = params_1m.process_params.cloud_ice_formation.τ_relax
+ 
+ # Compute the effective timescale used in conv_q_vap_to_q_icl:
+ #   T < T_freeze (deposition):  τ_dep × Γᵢ  (Frostenberg τ with thermodynamic correction)
+diff --git a/parcel/ParcelTendencies.jl b/parcel/ParcelTendencies.jl
+index eee3070e..f1eb1248 100644
+--- a/parcel/ParcelTendencies.jl
++++ b/parcel/ParcelTendencies.jl
+@@ -254,11 +254,13 @@ function condensation(params::NonEqCondParams, PSD, state, ρ_air)
+ 
+         qₜ = qᵥ + qₗ + qᵢ
+ 
+-        mp_mock = (; cloud = (; liquid))
++        τ_relax = CMP.Microphysics1MParams(FT).process_params.cloud_liquid_formation.τ_relax
++        mp_mock = (; cloud = (; liquid),
++            process_params = (; cloud_liquid_formation = (; τ_relax)))
+         micro_mock = (; q_tot = qₜ, q_lcl = qₗ, q_icl = qᵢ, q_rai = FT(0), q_sno = FT(0))
+         thermo_mock = (; ρ = ρ_air, T = T)
+         cond_rate = MNE.conv_q_vap_to_q_lcl(
+-            CMP.CloudLiquidFormation(CMP.CP.create_toml_dict(FT)), mp_mock, tps, micro_mock, thermo_mock,
++            CMP.CloudLiquidFormation(), mp_mock, tps, micro_mock, thermo_mock,
+         )
+ 
+         # Using same limiter as ClimaAtmos for now
+@@ -317,11 +319,14 @@ function deposition(params::NonEqDepParams, PSD, state, ρ_air)
+     if qᵥ + qᵢ > FT(0)
+         qₜ = qᵥ + qₗ + qᵢ
+ 
+-        mp_mock = (; cloud = (; ice), frostenberg2023 = ip, air_properties = aps)
++        τ_relax = CMP.Microphysics1MParams(FT).process_params.cloud_ice_formation.τ_relax
++        mp_mock = (; cloud = (; ice), air_properties = aps,
++            process_params = (;
++                cloud_ice_formation = (; τ_relax, frostenberg = ip)))
+         micro_mock = (; q_tot = qₜ, q_lcl = qₗ, q_icl = qᵢ, q_rai = FT(0), q_sno = FT(0))
+         thermo_mock = (; ρ = ρ_air, T = T)
+         dep_rate = MNE.conv_q_vap_to_q_icl(
+-            CMP.TemperatureDependent(CMP.CP.create_toml_dict(FT)), mp_mock, tps, micro_mock, thermo_mock,
++            CMP.TemperatureDependent(), mp_mock, tps, micro_mock, thermo_mock,
+         )
+ 
+         # Using same limiter as ClimaAtmos for now
 diff --git a/src/BulkMicrophysicsTendencies.jl b/src/BulkMicrophysicsTendencies.jl
-index f5ed437d..43aed67d 100644
+index f5ed437d..3927fcc9 100644
 --- a/src/BulkMicrophysicsTendencies.jl
 +++ b/src/BulkMicrophysicsTendencies.jl
 @@ -157,53 +157,48 @@ processes are pre-routed by temperature, so consumers never need `is_warm`.
@@ -84,11 +306,69 @@ index f5ed437d..43aed67d 100644
      ::Microphysics1Moment, mp::CMP.Microphysics1MParams, tps,
      ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno, Δt,
  )
+@@ -718,8 +721,8 @@ Used by both warm-only and warm+ice dispatch methods to reduce code duplication.
+     # --- Condensation of vapor / evaporation of cloud liquid water ---
+     micro_mock = (; q_tot, q_lcl, q_icl = q_ice, q_rai, q_sno = zero(q_ice))
+     thermo_mock = (; ρ, T)
+-    ∂ₜq_lcl_cond = CMNonEq.conv_q_vap_to_q_lcl(
+-        CMP.CloudLiquidFormation(condevap.τ_relax), nothing, tps, micro_mock, thermo_mock,
++    ∂ₜq_lcl_cond = CMNonEq._conv_q_vap_to_q_lcl_const(
++        condevap.τ_relax, tps, micro_mock, thermo_mock,
+     )
+     ∂ₜn_lcl_cond = zero(∂ₜq_lcl_cond)  # neglect number change from condensation/evaporation
+     dq_lcl_dt += ∂ₜq_lcl_cond
+@@ -1026,8 +1029,8 @@ to be non-Nothing, eliminating runtime type checks and dynamic dispatch.
+     # Deposition/sublimation of cloud ice
+     micro_mock = (; q_tot, q_lcl, q_icl = q_ice, q_rai, q_sno = zero(q_ice))
+     thermo_mock = (; ρ, T)
+-    ∂ₜq_ice_dep = CMNonEq.conv_q_vap_to_q_icl(
+-        CMP.ConstantTimescale(subdep.τ_relax), nothing, tps, micro_mock, thermo_mock,
++    ∂ₜq_ice_dep = CMNonEq._conv_q_vap_to_q_icl_const(
++        subdep.τ_relax, tps, micro_mock, thermo_mock,
+     )
+     # No ice deposition above freezing (lack of INPs)
+     ∂ₜq_ice_dep = ifelse(T > tps.T_freeze, min(∂ₜq_ice_dep, zero(T)), ∂ₜq_ice_dep)
 diff --git a/src/Microphysics1M.jl b/src/Microphysics1M.jl
-index b0bfdc64..93413307 100644
+index b0bfdc64..72f0afb5 100644
 --- a/src/Microphysics1M.jl
 +++ b/src/Microphysics1M.jl
-@@ -409,40 +409,37 @@ Harrington et al. (1995) and Kaul et al. (2015).
+@@ -340,7 +340,7 @@ the option stored in `Microphysics1MOptions`.
+ using the prescribed cloud droplet number concentration.
+ 
+ # Arguments
+-- `option`: `nothing`, `Kessler1M(...)`, or `PrescribedNd(...)`
++- `option`: `nothing`, `Kessler1M()`, or `PrescribedNd()`
+ - `mp`: 1-moment microphysics parameters
+ - `tps`: thermodynamics parameters (unused, kept for uniform interface)
+ - `micro`: microphysics state `(; q_tot, q_lcl, q_icl, q_rai, q_sno)`
+@@ -351,15 +351,15 @@ using the prescribed cloud droplet number concentration.
+ """
+ @inline conv_q_lcl_to_q_rai(::Nothing, mp, tps, micro, thermo) = zero(micro.q_lcl)
+ 
+-@inline function conv_q_lcl_to_q_rai(opt::CMP.Kessler1M, mp, tps, micro, thermo)
++@inline function conv_q_lcl_to_q_rai(::CMP.Kessler1M, mp, tps, micro, thermo)
+     q_lcl = micro.q_lcl
+-    (; τ, q_threshold, k) = opt.acnv1M
++    (; τ, q_threshold, k) = mp.process_params.rain_autoconversion
+     return CO.logistic_function_integral(q_lcl, q_threshold, k) / τ
+ end
+ 
+-@inline function conv_q_lcl_to_q_rai(opt::CMP.PrescribedNd, mp, tps, micro, thermo)
++@inline function conv_q_lcl_to_q_rai(::CMP.PrescribedNd, mp, tps, micro, thermo)
+     q_lcl = micro.q_lcl
+-    (; τ, α, Nc) = opt.autoconv
++    (; τ, α, Nc) = mp.process_params.rain_autoconversion
+     return max(0, q_lcl) / (τ * (Nc / 100_000_000)^α)
+ end
+ 
+@@ -403,46 +403,43 @@ for use in simulations without supersaturation (e.g., with saturation adjustment
+ Harrington et al. (1995) and Kaul et al. (2015).
+ 
+ # Arguments
+-- `opt`: `nothing`, `NoSupersaturation(...)`, or `WithSupersaturation(...)`
++- `opt`: `nothing`, `NoSupersaturation()`, or `WithSupersaturation()`
+ - `mp`: 1-moment microphysics parameters
+ - `tps`: thermodynamics parameters
  - `micro`: microphysics state `(; q_tot, q_lcl, q_icl, q_rai, q_sno)`
  - `thermo`: thermodynamic state `(; ρ, T)`
  """
@@ -96,8 +376,9 @@ index b0bfdc64..93413307 100644
 +@inline conv_q_icl_to_q_sno(::Nothing, mp, tps, micro, thermo) = zero(micro.q_icl)
  
 -@inline function conv_q_icl_to_q_sno(opt::CMP.NoSupersaturation, mp, tps, micro, thermo, sd = nothing)
-+@inline function conv_q_icl_to_q_sno(opt::CMP.NoSupersaturation, mp, tps, micro, thermo)
-     (; τ, q_threshold, k) = opt.acnv1M
+-    (; τ, q_threshold, k) = opt.acnv1M
++@inline function conv_q_icl_to_q_sno(::CMP.NoSupersaturation, mp, tps, micro, thermo)
++    (; τ, q_threshold, k) = mp.process_params.snow_autoconversion
      q_icl = micro.q_icl
      return CO.logistic_function_integral(q_icl, q_threshold, k) / τ
  end
@@ -105,10 +386,11 @@ index b0bfdc64..93413307 100644
 -@inline function conv_q_icl_to_q_sno(
 -    opt::CMP.WithSupersaturation, mp, tps, micro, thermo, sd = size_distr_parameters(mp, micro, thermo),
 -)
-+@inline function conv_q_icl_to_q_sno(opt::CMP.WithSupersaturation, mp, tps, micro, thermo)
++@inline function conv_q_icl_to_q_sno(::CMP.WithSupersaturation, mp, tps, micro, thermo)
      (; q_tot, q_lcl, q_icl, q_rai, q_sno) = micro
      (; ρ, T) = thermo
-     r_ice_snow = opt.r_ice_snow
+-    r_ice_snow = opt.r_ice_snow
++    r_ice_snow = mp.process_params.snow_autoconversion.r_ice_snow
      (; pdf, mass) = mp.cloud.ice
      aps = mp.air_properties
      FT = eltype(ρ)
@@ -398,6 +680,15 @@ index b0bfdc64..93413307 100644
  end
  
  """
+@@ -693,7 +627,7 @@ delegate to the corresponding low-level Marshall-Palmer kernels.
+ `nothing` variants return zero without computing anything.
+ 
+ # Arguments
+-- `opt`: accretion option type (carries collision efficiency) or `nothing`
++- `opt`: accretion option type (selects the process) or `nothing`
+ - `mp`: `Microphysics1MParams`
+ - `tps`: thermodynamics parameters
+ - `micro`: microphysics state `(; q_tot, q_lcl, q_icl, q_rai, q_sno)`
 @@ -704,122 +638,43 @@ delegate to the corresponding low-level Marshall-Palmer kernels.
  # differently on it by process. BMT calls accretion() for scalar-result processes
  # and directly destructures for NamedTuple processes. We provide the scalar zero
@@ -413,7 +704,7 @@ index b0bfdc64..93413307 100644
 -    thermo,
 -    sd = size_distr_parameters(mp, micro, thermo),
 -)
-+@inline function accretion(opt::CMP.CloudLiquidRainAccretion, mp, tps, micro, thermo)
++@inline function accretion(::CMP.CloudLiquidRainAccretion, mp, tps, micro, thermo)
      q_lcl = micro.q_lcl
      q_rai = micro.q_rai
      ρ = thermo.ρ
@@ -429,7 +720,7 @@ index b0bfdc64..93413307 100644
 -        sd.v0_rai,
 -        sd.λ_inv_rai,
 -    )
-+    return accretion(mp.cloud.liquid, mp.precip.rain, mp.terminal_velocity.rain, opt.e, q_lcl, q_rai, ρ)
++    return accretion(mp.cloud.liquid, mp.precip.rain, mp.terminal_velocity.rain, mp.process_params.cloud_liquid_rain_accretion.e, q_lcl, q_rai, ρ)
  end
  
 -@inline function accretion(
@@ -440,7 +731,7 @@ index b0bfdc64..93413307 100644
 -    thermo,
 -    sd = size_distr_parameters(mp, micro, thermo),
 -)
-+@inline function accretion(opt::CMP.CloudLiquidSnowAccretion, mp, tps, micro, thermo)
++@inline function accretion(::CMP.CloudLiquidSnowAccretion, mp, tps, micro, thermo)
      q_lcl = micro.q_lcl
      q_sno = micro.q_sno
      ρ = thermo.ρ
@@ -457,7 +748,7 @@ index b0bfdc64..93413307 100644
 -        sd.v0_sno,
 -        sd.λ_inv_sno,
 -    )
-+    S = accretion(mp.cloud.liquid, mp.precip.snow, mp.terminal_velocity.snow, opt.e, q_lcl, q_sno, ρ)
++    S = accretion(mp.cloud.liquid, mp.precip.snow, mp.terminal_velocity.snow, mp.process_params.cloud_liquid_snow_accretion.e, q_lcl, q_sno, ρ)
      α = warm_accretion_melt_factor(tps, T)
      return (; S_accr = S, S_melt = α * S)
  end
@@ -470,7 +761,7 @@ index b0bfdc64..93413307 100644
 -    thermo,
 -    sd = size_distr_parameters(mp, micro, thermo),
 -)
-+@inline function accretion(opt::CMP.CloudIceRainAccretion, mp, tps, micro, thermo)
++@inline function accretion(::CMP.CloudIceRainAccretion, mp, tps, micro, thermo)
      q_icl = micro.q_icl
      q_rai = micro.q_rai
      ρ = thermo.ρ
@@ -486,7 +777,7 @@ index b0bfdc64..93413307 100644
 -        sd.v0_rai,
 -        sd.λ_inv_rai,
 -    )
-+    return accretion(mp.cloud.ice, mp.precip.rain, mp.terminal_velocity.rain, opt.e, q_icl, q_rai, ρ)
++    return accretion(mp.cloud.ice, mp.precip.rain, mp.terminal_velocity.rain, mp.process_params.cloud_ice_rain_accretion.e, q_icl, q_rai, ρ)
  end
  
 -@inline function accretion(
@@ -497,7 +788,7 @@ index b0bfdc64..93413307 100644
 -    thermo,
 -    sd = size_distr_parameters(mp, micro, thermo),
 -)
-+@inline function accretion(opt::CMP.CloudIceSnowAccretion, mp, tps, micro, thermo)
++@inline function accretion(::CMP.CloudIceSnowAccretion, mp, tps, micro, thermo)
      q_icl = micro.q_icl
      q_sno = micro.q_sno
      ρ = thermo.ρ
@@ -513,7 +804,7 @@ index b0bfdc64..93413307 100644
 -        sd.v0_sno,
 -        sd.λ_inv_sno,
 -    )
-+    return accretion(mp.cloud.ice, mp.precip.snow, mp.terminal_velocity.snow, opt.e, q_icl, q_sno, ρ)
++    return accretion(mp.cloud.ice, mp.precip.snow, mp.terminal_velocity.snow, mp.process_params.cloud_ice_snow_accretion.e, q_icl, q_sno, ρ)
  end
  
 -@inline accretion_snow_rain(::Nothing, mp, tps, micro, thermo, sd = nothing) =
@@ -528,11 +819,11 @@ index b0bfdc64..93413307 100644
 -    thermo,
 -    sd = size_distr_parameters(mp, micro, thermo),
 -)
-+@inline function accretion_snow_rain(opt::CMP.RainSnowAccretion, mp, tps, micro, thermo)
++@inline function accretion_snow_rain(::CMP.RainSnowAccretion, mp, tps, micro, thermo)
      q_rai = micro.q_rai
      q_sno = micro.q_sno
      ρ = thermo.ρ
-@@ -827,72 +682,22 @@ end
+@@ -827,72 +682,23 @@ end
      vel = mp.terminal_velocity
      sno = mp.precip.snow
      rai = mp.precip.rain
@@ -570,10 +861,11 @@ index b0bfdc64..93413307 100644
 -        sd.λ_inv_rai,
 -        sd.λ_inv_sno,
 -    )
++    (; e, coeff_disp) = mp.process_params.rain_snow_accretion
 +    # cold arm: snow is collector, rain freezes → snow
-+    S_rai_sno = accretion_snow_rain(sno, rai, vel.snow, vel.rain, opt.e, opt.coeff_disp, q_sno, q_rai, ρ)
++    S_rai_sno = accretion_snow_rain(sno, rai, vel.snow, vel.rain, e, coeff_disp, q_sno, q_rai, ρ)
 +    # warm arm: rain is collector, snow melts → rain
-+    S_sno_rai = accretion_snow_rain(rai, sno, vel.rain, vel.snow, opt.e, opt.coeff_disp, q_rai, q_sno, ρ)
++    S_sno_rai = accretion_snow_rain(rai, sno, vel.rain, vel.snow, e, coeff_disp, q_rai, q_sno, ρ)
      α = warm_accretion_melt_factor(tps, T)
      return (; S_rai_sno, S_sno_rai, S_melt = α * S_rai_sno)
  end
@@ -590,7 +882,7 @@ index b0bfdc64..93413307 100644
 -    thermo,
 -    sd = size_distr_parameters(mp, micro, thermo),
 -)
-+@inline function accretion_rain_sink(opt::CMP.CloudIceRainAccretion, mp, tps, micro, thermo)
++@inline function accretion_rain_sink(::CMP.CloudIceRainAccretion, mp, tps, micro, thermo)
      q_icl = micro.q_icl
      q_rai = micro.q_rai
      ρ = thermo.ρ
@@ -608,11 +900,11 @@ index b0bfdc64..93413307 100644
 -        sd.v0_rai,
 -        sd.λ_inv_rai,
 -    )
-+    return accretion_rain_sink(mp.precip.rain, mp.cloud.ice, mp.terminal_velocity.rain, opt.e, q_icl, q_rai, ρ)
++    return accretion_rain_sink(mp.precip.rain, mp.cloud.ice, mp.terminal_velocity.rain, mp.process_params.cloud_ice_rain_accretion.e, q_icl, q_rai, ρ)
  end
  
  """
-@@ -911,51 +716,45 @@ Only evaporation is considered (sub-saturated over liquid); result is clamped 
+@@ -911,51 +717,45 @@ Only evaporation is considered (sub-saturated over liquid); result is clamped 
  - `micro`: microphysics state `(; q_tot, q_lcl, q_icl, q_rai, q_sno)`
  - `thermo`: thermodynamic state `(; ρ, T)`
  """
@@ -697,7 +989,7 @@ index b0bfdc64..93413307 100644
  end
  
  """
-@@ -973,66 +772,51 @@ Ventilation factor parameterization follows Seifert and Beheng (2006).
+@@ -973,66 +773,51 @@ Ventilation factor parameterization follows Seifert and Beheng (2006).
  - `micro`: microphysics state `(; q_tot, q_lcl, q_icl, q_rai, q_sno)`
  - `thermo`: thermodynamic state `(; ρ, T)`
  """
@@ -797,7 +1089,7 @@ index b0bfdc64..93413307 100644
  end
  
  
-@@ -1049,30 +833,24 @@ Returns the tendency due to cloud ice melt.
+@@ -1049,30 +834,24 @@ Returns the tendency due to cloud ice melt.
  - `micro`: microphysics state `(; q_tot, q_lcl, q_icl, q_rai, q_sno)`
  - `thermo`: thermodynamic state `(; ρ, T)`
  """
@@ -839,7 +1131,7 @@ index b0bfdc64..93413307 100644
  end
  
  """
-@@ -1088,53 +866,47 @@ Returns the tendency due to snow melt.
+@@ -1088,53 +867,47 @@ Returns the tendency due to snow melt.
  - `micro`: microphysics state `(; q_tot, q_lcl, q_icl, q_rai, q_sno)`
  - `thermo`: thermodynamic state `(; ρ, T)`
  """
@@ -920,3 +1212,1006 @@ index b0bfdc64..93413307 100644
  end
  
  end #module Microphysics1M.jl
+diff --git a/src/MicrophysicsNonEq.jl b/src/MicrophysicsNonEq.jl
+index e4619f0c..f1269706 100644
+--- a/src/MicrophysicsNonEq.jl
++++ b/src/MicrophysicsNonEq.jl
+@@ -98,7 +98,7 @@ Morrison & Grabowski (2008), https://doi.org/10.1175/2007JAS2374.1, and
+ Morrison & Milbrandt (2015), https://doi.org/10.1175/JAS-D-14-0065.1.
+ 
+ # Arguments
+-- `opt`: `CloudLiquidFormation(...)` or `nothing` (disabled)
++- `opt`: `CloudLiquidFormation()` or `nothing` (disabled)
+ - `mp`: 1-moment microphysics parameters
+ - `tps`: thermodynamics parameters
+ - `micro`: microphysics state `(; q_tot, q_lcl, q_icl, q_rai, q_sno)`
+@@ -108,11 +108,15 @@ Morrison & Milbrandt (2015), https://doi.org/10.1175/JAS-D-14-0065.1.
+ - Cloud condensate tendency [kg/kg/s]
+ """
+ @inline conv_q_vap_to_q_lcl(::Nothing, mp, tps, micro, thermo) = zero(thermo.T)
+-@inline function conv_q_vap_to_q_lcl(
+-    opt::CMP.CloudLiquidFormation, mp, tps::TDI.PS, micro, thermo)
++@inline conv_q_vap_to_q_lcl(
++    ::CMP.CloudLiquidFormation, mp, tps::TDI.PS, micro, thermo) =
++    _conv_q_vap_to_q_lcl_const(
++        mp.process_params.cloud_liquid_formation.τ_relax, tps, micro, thermo)
++
++# Kernel for `conv_q_vap_to_q_lcl` with a constant relaxation timescale `τ`.
++@inline function _conv_q_vap_to_q_lcl_const(τ, tps::TDI.PS, micro, thermo)
+     (; q_tot, q_lcl, q_icl, q_rai, q_sno) = micro
+     (; ρ, T) = thermo
+-    τ = opt.τ_relax
+ 
+     Rᵥ = TDI.Rᵥ(tps)
+     Lᵥ = TDI.Lᵥ(tps, T)
+@@ -145,7 +149,7 @@ Morrison & Grabowski (2008), https://doi.org/10.1175/2007JAS2374.1, and
+ Morrison & Milbrandt (2015), https://doi.org/10.1175/JAS-D-14-0065.1.
+ 
+ # Arguments
+-- `opt`: `ConstantTimescale(...)`, `TemperatureDependent(...)`, or `nothing` (disabled)
++- `opt`: `ConstantTimescale()`, `TemperatureDependent()`, or `nothing` (disabled)
+ - `mp`: 1-moment microphysics parameters
+ - `tps`: thermodynamics parameters
+ - `micro`: microphysics state `(; q_tot, q_lcl, q_icl, q_rai, q_sno)`
+@@ -155,11 +159,15 @@ Morrison & Milbrandt (2015), https://doi.org/10.1175/JAS-D-14-0065.1.
+ - Cloud condensate tendency [kg/kg/s]
+ """
+ @inline conv_q_vap_to_q_icl(::Nothing, mp, tps, micro, thermo) = zero(thermo.T)
+-@inline function conv_q_vap_to_q_icl(
+-    opt::CMP.ConstantTimescale, mp, tps::TDI.PS, micro, thermo)
++@inline conv_q_vap_to_q_icl(
++    ::CMP.ConstantTimescale, mp, tps::TDI.PS, micro, thermo) =
++    _conv_q_vap_to_q_icl_const(
++        mp.process_params.cloud_ice_formation.τ_relax, tps, micro, thermo)
++
++# Kernel for `conv_q_vap_to_q_icl` with a constant relaxation timescale `τ`
++@inline function _conv_q_vap_to_q_icl_const(τ, tps::TDI.PS, micro, thermo)
+     (; q_tot, q_lcl, q_icl, q_rai, q_sno) = micro
+     (; ρ, T) = thermo
+-    τ = opt.τ_relax
+ 
+     Rᵥ = TDI.Rᵥ(tps)
+     Lₛ = TDI.Lₛ(tps, T)
+@@ -184,11 +192,12 @@ Morrison & Milbrandt (2015), https://doi.org/10.1175/JAS-D-14-0065.1.
+     return ifelse(limiter, zero(tendency), tendency)
+ end
+ @inline function conv_q_vap_to_q_icl(
+-    opt::CMP.TemperatureDependent, mp, tps::TDI.PS, micro, thermo)
++    ::CMP.TemperatureDependent, mp, tps::TDI.PS, micro, thermo)
+     (; q_tot, q_lcl, q_icl, q_rai, q_sno) = micro
+     (; ρ, T) = thermo
+-    τ_sub = opt.τ_relax
+-    τ_dep = τ_relax(mp.cloud.ice, mp.air_properties, opt.frostenberg, q_icl, T)
++    pp = mp.process_params.cloud_ice_formation
++    τ_sub = pp.τ_relax
++    τ_dep = τ_relax(mp.cloud.ice, mp.air_properties, pp.frostenberg, q_icl, T)
+ 
+     Rᵥ = TDI.Rᵥ(tps)
+     Lₛ = TDI.Lₛ(tps, T)
+diff --git a/src/parameters/Microphysics1MOptions.jl b/src/parameters/Microphysics1MOptions.jl
+index f9617ffc..6095be8b 100644
+--- a/src/parameters/Microphysics1MOptions.jl
++++ b/src/parameters/Microphysics1MOptions.jl
+@@ -26,6 +26,10 @@ export Microphysics1MOptions,
+     MicrophysicsOption
+ 
+ Abstract type for all microphysics process options.
++
++Option types are empty singletons that select which variant of a process runs.
++The parameter values a variant needs live in the `process_params` field of
++[`Microphysics1MParams`](@ref), built by [`process_params_for`](@ref).
+ """
+ abstract type MicrophysicsOption end
+ 
+@@ -70,265 +74,131 @@ abstract type SnowDepositionSublimation <: MicrophysicsOption end
+ # ═══════════════════════════════════════════════════════════════════
+ 
+ """
+-    CloudLiquidFormation{FT} <: MicrophysicsOption
++    CloudLiquidFormation <: MicrophysicsOption
+ 
+ Constant relaxation timescale for liquid condensation and evaporation.
+-
+-# Fields
+-$(DocStringExtensions.FIELDS)
++Parameters (`τ_relax`) are stored in `process_params.cloud_liquid_formation` in
++[`Microphysics1MParams`](@ref).
+ """
+-struct CloudLiquidFormation{FT} <: MicrophysicsOption
+-    "condensation/evaporation non-equilibrium relaxation timescale [s]"
+-    τ_relax::FT
+-end
+-
+-function CloudLiquidFormation(td::CP.ParamDict)
+-    name_map = (; :condensation_evaporation_timescale => :τ_relax)
+-    p = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
+-    return CloudLiquidFormation(p.τ_relax)
+-end
++struct CloudLiquidFormation <: MicrophysicsOption end
+ 
+ # ═══════════════════════════════════════════════════════════════════
+ # Cloud ice formation variants
+ # ═══════════════════════════════════════════════════════════════════
+ 
+ """
+-    ConstantTimescale{FT} <: CloudIceFormation
++    ConstantTimescale <: CloudIceFormation
+ 
+ Constant relaxation timescale for ice deposition and sublimation.
+-
+-# Fields
+-$(DocStringExtensions.FIELDS)
++Parameters (`τ_relax`) are stored in `process_params.cloud_ice_formation` in
++[`Microphysics1MParams`](@ref).
+ """
+-struct ConstantTimescale{FT} <: CloudIceFormation
+-    "deposition/sublimation non-equilibrium relaxation timescale [s]"
+-    τ_relax::FT
+-end
+-
+-function ConstantTimescale(td::CP.ParamDict)
+-    name_map = (; :sublimation_deposition_timescale => :τ_relax)
+-    p = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
+-    return ConstantTimescale(p.τ_relax)
+-end
++struct ConstantTimescale <: CloudIceFormation end
+ 
+ """
+-    TemperatureDependent{FT, FR} <: CloudIceFormation
++    TemperatureDependent <: CloudIceFormation
+ 
+ INP-dependent Frostenberg (2023) timescale for deposition,
+-with constant timescale for sublimation.
+-
+-# Fields
+-$(DocStringExtensions.FIELDS)
++with constant timescale for sublimation. Parameters (`τ_relax`, `frostenberg`)
++are stored in `process_params.cloud_ice_formation` in [`Microphysics1MParams`](@ref).
+ """
+-struct TemperatureDependent{FT, FR} <: CloudIceFormation
+-    "sublimation arm: constant relaxation timescale [s]"
+-    τ_relax::FT
+-    "Frostenberg (2023) INP parameters for deposition"
+-    frostenberg::FR
+-end
+-
+-function TemperatureDependent(td::CP.ParamDict)
+-    name_map = (; :sublimation_deposition_timescale => :τ_relax)
+-    p = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
+-    return TemperatureDependent(p.τ_relax, Frostenberg2023(td))
+-end
++struct TemperatureDependent <: CloudIceFormation end
+ 
+ # ═══════════════════════════════════════════════════════════════════
+ # Rain autoconversion variants
+ # ═══════════════════════════════════════════════════════════════════
+ 
+ """
+-    Kessler1M{AC} <: RainAutoconversion
++    Kessler1M <: RainAutoconversion
+ 
+ 1-moment Kessler autoconversion of cloud liquid to rain.
+-
+-# Fields
+-$(DocStringExtensions.FIELDS)
++Parameters (an `Acnv1M` with `τ`, `q_threshold`, `k`) are stored in
++`process_params.rain_autoconversion` in [`Microphysics1MParams`](@ref).
+ """
+-struct Kessler1M{AC} <: RainAutoconversion
+-    "autoconversion parameters (τ, q_threshold, k)"
+-    acnv1M::AC
+-end
+-
+-function Kessler1M(td::CP.ParamDict)
+-    name_map = (;
+-        :rain_autoconversion_timescale => :τ,
+-        :cloud_liquid_water_specific_humidity_autoconversion_threshold => :q_threshold,
+-        :threshold_smooth_transition_steepness => :k,
+-    )
+-    p = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
+-    return Kessler1M(Acnv1M(p.τ, p.q_threshold, p.k))
+-end
++struct Kessler1M <: RainAutoconversion end
+ 
+ """
+-    PrescribedNd{VA} <: RainAutoconversion
++    PrescribedNd <: RainAutoconversion
+ 
+ Variable-timescale autoconversion using prescribed cloud droplet number Nc.
+-
+-# Fields
+-$(DocStringExtensions.FIELDS)
++Parameters (a `VarTimescaleAcnv` with `τ`, `α`, `Nc`) are stored in
++`process_params.rain_autoconversion` in [`Microphysics1MParams`](@ref).
+ """
+-struct PrescribedNd{VA} <: RainAutoconversion
+-    "variable-timescale autoconversion parameters (τ, α, Nc)"
+-    autoconv::VA
+-end
+-
+-function PrescribedNd(td::CP.ParamDict)
+-    return PrescribedNd(VarTimescaleAcnv(td))
+-end
++struct PrescribedNd <: RainAutoconversion end
+ 
+ # ═══════════════════════════════════════════════════════════════════
+ # Snow autoconversion variants
+ # ═══════════════════════════════════════════════════════════════════
+ 
+ """
+-    NoSupersaturation{AC} <: SnowAutoconversion
++    NoSupersaturation <: SnowAutoconversion
+ 
+ Simplified autoconversion of cloud ice to snow without supersaturation dependence.
+-
+-# Fields
+-$(DocStringExtensions.FIELDS)
++Parameters (an `Acnv1M` with `τ`, `q_threshold`, `k`) are stored in
++`process_params.snow_autoconversion` in [`Microphysics1MParams`](@ref).
+ """
+-struct NoSupersaturation{AC} <: SnowAutoconversion
+-    "autoconversion parameters (τ, q_threshold, k)"
+-    acnv1M::AC
+-end
+-
+-function NoSupersaturation(td::CP.ParamDict)
+-    name_map = (;
+-        :snow_autoconversion_timescale => :τ,
+-        :cloud_ice_specific_humidity_autoconversion_threshold => :q_threshold,
+-        :threshold_smooth_transition_steepness => :k,
+-    )
+-    p = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
+-    return NoSupersaturation(Acnv1M(p.τ, p.q_threshold, p.k))
+-end
++struct NoSupersaturation <: SnowAutoconversion end
+ 
+ """
+-    WithSupersaturation{FT} <: SnowAutoconversion
++    WithSupersaturation <: SnowAutoconversion
+ 
+ Harrington/Kaul autoconversion of cloud ice to snow with supersaturation dependence.
+-
+-# Fields
+-$(DocStringExtensions.FIELDS)
++Parameters (`r_ice_snow`) are stored in `process_params.snow_autoconversion` in
++[`Microphysics1MParams`](@ref).
+ """
+-struct WithSupersaturation{FT} <: SnowAutoconversion
+-    "ice-snow threshold radius [m]"
+-    r_ice_snow::FT
+-end
+-
+-function WithSupersaturation(td::CP.ParamDict)
+-    name_map = (; :ice_snow_threshold_radius => :r_ice_snow)
+-    p = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
+-    return WithSupersaturation(p.r_ice_snow)
+-end
++struct WithSupersaturation <: SnowAutoconversion end
+ 
+ # ═══════════════════════════════════════════════════════════════════
+ # Accretion (single variant each → concrete type = process name)
+ # ═══════════════════════════════════════════════════════════════════
+ 
+ """
+-    CloudLiquidRainAccretion{FT} <: MicrophysicsOption
++    CloudLiquidRainAccretion <: MicrophysicsOption
+ 
+ Cloud liquid + rain → rain (Marshall-Palmer kernel).
+-
+-# Fields
+-$(DocStringExtensions.FIELDS)
++Parameters (collision efficiency `e`) are stored in
++`process_params.cloud_liquid_rain_accretion` in [`Microphysics1MParams`](@ref).
+ """
+-struct CloudLiquidRainAccretion{FT} <: MicrophysicsOption
+-    "collision efficiency [-]"
+-    e::FT
+-end
+-
+-function CloudLiquidRainAccretion(td::CP.ParamDict)
+-    name_map = (; :cloud_liquid_rain_collision_efficiency => :e)
+-    p = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
+-    return CloudLiquidRainAccretion(p.e)
+-end
++struct CloudLiquidRainAccretion <: MicrophysicsOption end
+ 
+ """
+-    CloudLiquidSnowAccretion{FT} <: MicrophysicsOption
++    CloudLiquidSnowAccretion <: MicrophysicsOption
+ 
+ Cloud liquid + snow → snow/rain depending on temperature
+ (includes warm-rain melt contribution).
+-
+-# Fields
+-$(DocStringExtensions.FIELDS)
++Parameters (collision efficiency `e`) are stored in
++`process_params.cloud_liquid_snow_accretion` in [`Microphysics1MParams`](@ref).
+ """
+-struct CloudLiquidSnowAccretion{FT} <: MicrophysicsOption
+-    "collision efficiency [-]"
+-    e::FT
+-end
+-
+-function CloudLiquidSnowAccretion(td::CP.ParamDict)
+-    name_map = (; :cloud_liquid_snow_collision_efficiency => :e)
+-    p = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
+-    return CloudLiquidSnowAccretion(p.e)
+-end
++struct CloudLiquidSnowAccretion <: MicrophysicsOption end
+ 
+ """
+-    CloudIceRainAccretion{FT} <: MicrophysicsOption
++    CloudIceRainAccretion <: MicrophysicsOption
+ 
+ Cloud ice + rain → snow (Marshall-Palmer kernel).
+ The coupled rain-sink arm (rain + cloud ice → snow) is toggled automatically.
+-
+-# Fields
+-$(DocStringExtensions.FIELDS)
++Parameters (collision efficiency `e`) are stored in
++`process_params.cloud_ice_rain_accretion` in [`Microphysics1MParams`](@ref).
+ """
+-struct CloudIceRainAccretion{FT} <: MicrophysicsOption
+-    "collision efficiency [-]"
+-    e::FT
+-end
+-
+-function CloudIceRainAccretion(td::CP.ParamDict)
+-    name_map = (; :cloud_ice_rain_collision_efficiency => :e)
+-    p = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
+-    return CloudIceRainAccretion(p.e)
+-end
++struct CloudIceRainAccretion <: MicrophysicsOption end
+ 
+ """
+-    CloudIceSnowAccretion{FT} <: MicrophysicsOption
++    CloudIceSnowAccretion <: MicrophysicsOption
+ 
+ Cloud ice + snow → snow (Marshall-Palmer kernel).
+-
+-# Fields
+-$(DocStringExtensions.FIELDS)
++Parameters (collision efficiency `e`) are stored in
++`process_params.cloud_ice_snow_accretion` in [`Microphysics1MParams`](@ref).
+ """
+-struct CloudIceSnowAccretion{FT} <: MicrophysicsOption
+-    "collision efficiency [-]"
+-    e::FT
+-end
+-
+-function CloudIceSnowAccretion(td::CP.ParamDict)
+-    name_map = (; :cloud_ice_snow_collision_efficiency => :e)
+-    p = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
+-    return CloudIceSnowAccretion(p.e)
+-end
++struct CloudIceSnowAccretion <: MicrophysicsOption end
+ 
+ """
+-    RainSnowAccretion{FT} <: MicrophysicsOption
++    RainSnowAccretion <: MicrophysicsOption
+ 
+ Snow-rain collisions: both temperature pathways
+ (cold: rain→snow, warm: snow→rain) plus thermal melt.
+-
+-# Fields
+-$(DocStringExtensions.FIELDS)
++Parameters (collision efficiency `e`, velocity dispersion `coeff_disp`) are
++stored in `process_params.rain_snow_accretion` in [`Microphysics1MParams`](@ref).
+ """
+-struct RainSnowAccretion{FT} <: MicrophysicsOption
+-    "collision efficiency [-]"
+-    e::FT
+-    "velocity dispersion coefficient [-]"
+-    coeff_disp::FT
+-end
+-
+-function RainSnowAccretion(td::CP.ParamDict)
+-    name_map = (;
+-        :rain_snow_collision_efficiency => :e,
+-        :rain_snow_velocity_dispersion_coefficient => :coeff_disp,
+-    )
+-    p = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
+-    return RainSnowAccretion(p.e, p.coeff_disp)
+-end
++struct RainSnowAccretion <: MicrophysicsOption end
+ 
+ # ═══════════════════════════════════════════════════════════════════
+ # Snow deposition/sublimation variants
+@@ -371,68 +241,156 @@ $(DocStringExtensions.FIELDS)
+ ```julia
+ using CloudMicrophysics.Parameters as CMP
+ 
+-# Default options require TOML dict for parametric types
+-(i.e. for populating the free parameter values)
+-opts = CMP.Microphysics1MOptions(toml_dict)
++# Default options
++opts = CMP.Microphysics1MOptions()
+ 
+ # Disable cloud ice melt and snow melt:
+-opts = CMP.Microphysics1MOptions(toml_dict;
++opts = CMP.Microphysics1MOptions(;
+     cloud_ice_melt = nothing,
+     snow_melt = nothing,
+ )
++
++# Switch rain autoconversion to the prescribed-Nd variant:
++opts = CMP.Microphysics1MOptions(; rain_autoconversion = CMP.PrescribedNd())
+ ```
+ """
+-@kwdef struct Microphysics1MOptions{CLF, CIF, CIM, RA, SA, RCE, SDS, SM, CLRA, CLSA, CIRA, CISA, RSA}
++@kwdef struct Microphysics1MOptions{
++    CLF, CIF, CIM, RA, SA, RCE, SDS, SM, CLRA, CLSA, CIRA, CISA, RSA,
++}
+     "cloud liquid formation option"
+-    cloud_liquid_formation::CLF
++    cloud_liquid_formation::CLF = CloudLiquidFormation()
+     "cloud ice formation option"
+-    cloud_ice_formation::CIF
++    cloud_ice_formation::CIF = ConstantTimescale()
+     "cloud ice melting option"
+-    cloud_ice_melt::CIM
++    cloud_ice_melt::CIM = CloudIceMelt()
+     "rain autoconversion option"
+-    rain_autoconversion::RA
++    rain_autoconversion::RA = Kessler1M()
+     "cloud ice to snow autoconversion option"
+-    snow_autoconversion::SA
++    snow_autoconversion::SA = NoSupersaturation()
+     "rain condensation/evaporation option"
+-    rain_condensation_evaporation::RCE
++    rain_condensation_evaporation::RCE = RainEvaporation()
+     "snow sublimation/deposition option"
+-    snow_deposition_sublimation::SDS
++    snow_deposition_sublimation::SDS = DepositionAndSublimation()
+     "snow melting option"
+-    snow_melt::SM
++    snow_melt::SM = SnowMelt()
+     "cloud liquid + rain accretion option"
+-    cloud_liquid_rain_accretion::CLRA
++    cloud_liquid_rain_accretion::CLRA = CloudLiquidRainAccretion()
+     "cloud liquid + snow accretion option"
+-    cloud_liquid_snow_accretion::CLSA
++    cloud_liquid_snow_accretion::CLSA = CloudLiquidSnowAccretion()
+     "cloud ice + rain accretion option (also toggles rain sink arm)"
+-    cloud_ice_rain_accretion::CIRA
++    cloud_ice_rain_accretion::CIRA = CloudIceRainAccretion()
+     "cloud ice + snow accretion option"
+-    cloud_ice_snow_accretion::CISA
++    cloud_ice_snow_accretion::CISA = CloudIceSnowAccretion()
+     "rain-snow collisions option"
+-    rain_snow_accretion::RSA
++    rain_snow_accretion::RSA = RainSnowAccretion()
+ end
+ 
++# ═══════════════════════════════════════════════════════════════════
++# Process parameters: option → parameter data
++# ═══════════════════════════════════════════════════════════════════
++
++"""
++    process_params_for(option, toml_dict)
++
++Return the parameter data that the selected process `option` needs, read from
++`toml_dict`. Returns `nothing` for disabled processes (`option === nothing`)
++and for options that carry no parameters. The result is stored in the matching
++field of `Microphysics1MParams.process_params` and read back at call time by
++the process's tendency function.
+ """
+-    Microphysics1MOptions(toml_dict::CP.ParamDict; kwargs...)
+-
+-Create a `Microphysics1MOptions` with default options and their parameters populated
+-from the TOML dictionary. Override individual options via keyword arguments.
+-"""
+-function Microphysics1MOptions(toml_dict::CP.ParamDict; kwargs...)
+-    defaults = (;
+-        cloud_liquid_formation = CloudLiquidFormation(toml_dict),
+-        cloud_ice_formation = ConstantTimescale(toml_dict),
+-        cloud_ice_melt = CloudIceMelt(),
+-        rain_autoconversion = Kessler1M(toml_dict),
+-        snow_autoconversion = NoSupersaturation(toml_dict),
+-        rain_condensation_evaporation = RainEvaporation(),
+-        snow_deposition_sublimation = DepositionAndSublimation(),
+-        snow_melt = SnowMelt(),
+-        cloud_liquid_rain_accretion = CloudLiquidRainAccretion(toml_dict),
+-        cloud_liquid_snow_accretion = CloudLiquidSnowAccretion(toml_dict),
+-        cloud_ice_rain_accretion = CloudIceRainAccretion(toml_dict),
+-        cloud_ice_snow_accretion = CloudIceSnowAccretion(toml_dict),
+-        rain_snow_accretion = RainSnowAccretion(toml_dict),
++process_params_for(::Nothing, ::CP.ParamDict) = nothing
++process_params_for(::MicrophysicsOption, ::CP.ParamDict) = nothing
++
++function process_params_for(::CloudLiquidFormation, td::CP.ParamDict)
++    name_map = (; :condensation_evaporation_timescale => :τ_relax)
++    return CP.get_parameter_values(td, name_map, "CloudMicrophysics")
++end
++
++function process_params_for(::ConstantTimescale, td::CP.ParamDict)
++    name_map = (; :sublimation_deposition_timescale => :τ_relax)
++    return CP.get_parameter_values(td, name_map, "CloudMicrophysics")
++end
++
++function process_params_for(::TemperatureDependent, td::CP.ParamDict)
++    name_map = (; :sublimation_deposition_timescale => :τ_relax)
++    p = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
++    return (; τ_relax = p.τ_relax, frostenberg = Frostenberg2023(td))
++end
++
++function process_params_for(::Kessler1M, td::CP.ParamDict)
++    name_map = (;
++        :rain_autoconversion_timescale => :τ,
++        :cloud_liquid_water_specific_humidity_autoconversion_threshold => :q_threshold,
++        :threshold_smooth_transition_steepness => :k,
++    )
++    p = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
++    return Acnv1M(p.τ, p.q_threshold, p.k)
++end
++
++process_params_for(::PrescribedNd, td::CP.ParamDict) = VarTimescaleAcnv(td)
++
++function process_params_for(::NoSupersaturation, td::CP.ParamDict)
++    name_map = (;
++        :snow_autoconversion_timescale => :τ,
++        :cloud_ice_specific_humidity_autoconversion_threshold => :q_threshold,
++        :threshold_smooth_transition_steepness => :k,
++    )
++    p = CP.get_parameter_values(td, name_map, "CloudMicrophysics")
++    return Acnv1M(p.τ, p.q_threshold, p.k)
++end
++
++function process_params_for(::WithSupersaturation, td::CP.ParamDict)
++    name_map = (; :ice_snow_threshold_radius => :r_ice_snow)
++    return CP.get_parameter_values(td, name_map, "CloudMicrophysics")
++end
++
++function process_params_for(::CloudLiquidRainAccretion, td::CP.ParamDict)
++    name_map = (; :cloud_liquid_rain_collision_efficiency => :e)
++    return CP.get_parameter_values(td, name_map, "CloudMicrophysics")
++end
++
++function process_params_for(::CloudLiquidSnowAccretion, td::CP.ParamDict)
++    name_map = (; :cloud_liquid_snow_collision_efficiency => :e)
++    return CP.get_parameter_values(td, name_map, "CloudMicrophysics")
++end
++
++function process_params_for(::CloudIceRainAccretion, td::CP.ParamDict)
++    name_map = (; :cloud_ice_rain_collision_efficiency => :e)
++    return CP.get_parameter_values(td, name_map, "CloudMicrophysics")
++end
++
++function process_params_for(::CloudIceSnowAccretion, td::CP.ParamDict)
++    name_map = (; :cloud_ice_snow_collision_efficiency => :e)
++    return CP.get_parameter_values(td, name_map, "CloudMicrophysics")
++end
++
++function process_params_for(::RainSnowAccretion, td::CP.ParamDict)
++    name_map = (;
++        :rain_snow_collision_efficiency => :e,
++        :rain_snow_velocity_dispersion_coefficient => :coeff_disp,
+     )
+-    merged = merge(defaults, NamedTuple(kwargs))
+-    return Microphysics1MOptions(; merged...)
++    return CP.get_parameter_values(td, name_map, "CloudMicrophysics")
+ end
++
++"""
++    microphysics_1m_process_params(toml_dict, options)
++
++Assemble the `process_params` container for [`Microphysics1MParams`](@ref) by
++mapping each field of `options` through [`process_params_for`](@ref). The result
++mirrors the `options` fields one-to-one.
++"""
++microphysics_1m_process_params(td::CP.ParamDict, o::Microphysics1MOptions) = (;
++    cloud_liquid_formation = process_params_for(o.cloud_liquid_formation, td),
++    cloud_ice_formation = process_params_for(o.cloud_ice_formation, td),
++    cloud_ice_melt = process_params_for(o.cloud_ice_melt, td),
++    rain_autoconversion = process_params_for(o.rain_autoconversion, td),
++    snow_autoconversion = process_params_for(o.snow_autoconversion, td),
++    rain_condensation_evaporation = process_params_for(o.rain_condensation_evaporation, td),
++    snow_deposition_sublimation = process_params_for(o.snow_deposition_sublimation, td),
++    snow_melt = process_params_for(o.snow_melt, td),
++    cloud_liquid_rain_accretion = process_params_for(o.cloud_liquid_rain_accretion, td),
++    cloud_liquid_snow_accretion = process_params_for(o.cloud_liquid_snow_accretion, td),
++    cloud_ice_rain_accretion = process_params_for(o.cloud_ice_rain_accretion, td),
++    cloud_ice_snow_accretion = process_params_for(o.cloud_ice_snow_accretion, td),
++    rain_snow_accretion = process_params_for(o.rain_snow_accretion, td),
++)
+diff --git a/src/parameters/Microphysics1MParams.jl b/src/parameters/Microphysics1MParams.jl
+index 098ce29e..cf1c2512 100644
+--- a/src/parameters/Microphysics1MParams.jl
++++ b/src/parameters/Microphysics1MParams.jl
+@@ -35,17 +35,25 @@ Base.show(io::IO, mime::MIME"text/plain", x::PrecipPhaseParams1M) =
+     ShowMethods.verbose_show_type_and_fields(io, mime, x)
+ 
+ """
+-    Microphysics1MParams{OPT, CP, PP, AP, VL}
++    Microphysics1MParams{OPT, PPR, CP, PP, AP, VL}
+ 
+ Unified parameter container for 1-moment bulk microphysics.
+ 
+-Process-specific parameters (relaxation timescales, autoconversion thresholds,
+-collision efficiencies) live inside the option types in `options`.
+-Shared parameters (particle size distributions, air properties, terminal velocities)
+-are stored directly.
++`options` selects which variant of each process runs. The parameter values each
++selected variant needs live in `process_params`, whose fields mirror `options`
++one-to-one. For example, `options.rain_autoconversion = Kessler1M()` picks the
++Kessler scheme, and its `τ`, threshold, and `k` live in
++`process_params.rain_autoconversion`. Turning a process off with `nothing` (e.g.
++`options.cloud_ice_melt = nothing`) gives it a `nothing` slot in
++`process_params`, as does any option that needs no parameters. Shared parameters
++(particle size distributions, air properties, terminal velocities) are stored
++directly.
+ 
+ # Fields
+-- `options::OPT`: Microphysics1MOptions — process configuration (carries process-specific parameters)
++- `options::OPT`: Microphysics1MOptions — process selection
++- `process_params::PPR`: parameter data for each selected process, mirroring
++  `options` (`nothing` when a process is disabled with `nothing` or needs no
++  parameters)
+ - `cloud::CP`: CloudPhaseParams1M — cloud liquid and ice parameters
+ - `precip::PP`: PrecipPhaseParams1M — rain and snow parameters
+ - `air_properties::AP`: AirProperties — air properties (diffusivities, thermal conductivity)
+@@ -68,13 +76,14 @@ mp = CMP.Microphysics1MParams(Float64)
+ 
+ # Create with temperature-dependent ice formation and cloud ice melt disabled
+ mp = CMP.Microphysics1MParams(Float64;
+-    cloud_ice_formation = CMP.TemperatureDependent(toml_dict),
++    cloud_ice_formation = CMP.TemperatureDependent(),
+     cloud_ice_melt = nothing,
+ )
+ ```
+ """
+-@kwdef struct Microphysics1MParams{OPT, CP, PP, AP, VL} <: ParametersType
++@kwdef struct Microphysics1MParams{OPT, PPR, CP, PP, AP, VL} <: ParametersType
+     options::OPT
++    process_params::PPR
+     cloud::CP
+     precip::PP
+     air_properties::AP
+@@ -93,8 +102,10 @@ Create a `Microphysics1MParams` object from a ClimaParams TOML dictionary.
+ - `options_kwargs...`: Keyword arguments forwarded to `Microphysics1MOptions`
+ """
+ function Microphysics1MParams(toml_dict::CP.ParamDict; options_kwargs...)
++    options = Microphysics1MOptions(; options_kwargs...)
+     return Microphysics1MParams(;
+-        options = Microphysics1MOptions(toml_dict; options_kwargs...),
++        options,
++        process_params = microphysics_1m_process_params(toml_dict, options),
+         cloud = CloudPhaseParams1M(;
+             liquid = CloudLiquid(toml_dict),
+             ice = CloudIce(toml_dict),
+diff --git a/test/bulk_tendencies_tests.jl b/test/bulk_tendencies_tests.jl
+index 9483d6fa..74cb70ed 100644
+--- a/test/bulk_tendencies_tests.jl
++++ b/test/bulk_tendencies_tests.jl
+@@ -129,7 +129,7 @@ function test_bulk_microphysics_1m_tendencies(FT)
+     ice = mp.cloud.ice
+     rain = mp.precip.rain
+     snow = mp.precip.snow
+-    E_lcl_sno = mp.options.cloud_liquid_snow_accretion.e
++    E_lcl_sno = mp.process_params.cloud_liquid_snow_accretion.e
+     aps = mp.air_properties
+     vel = mp.terminal_velocity
+ 
+@@ -237,7 +237,7 @@ function test_bulk_microphysics_1m_tendencies(FT)
+         # Same check as above but using the variable-timescale 2M autoconversion option
+         # (PrescribedNd), which uses the prescribed {τ,α,Nc}.
+         mp_2m = CMP.Microphysics1MParams(FT;
+-            rain_autoconversion = CMP.PrescribedNd(CP.create_toml_dict(FT)),
++            rain_autoconversion = CMP.PrescribedNd(),
+         )
+ 
+         ρ = FT(1.2)
+diff --git a/test/gpu_tests.jl b/test/gpu_tests.jl
+index 0d2e4029..63e8494f 100644
+--- a/test/gpu_tests.jl
++++ b/test/gpu_tests.jl
+@@ -79,12 +79,15 @@ ArrayType = CuArray
+ end
+ 
+ @kernel inbounds = true function test_noneq_micro_kernel!(
+-    lcl, icl, tps, clf, output, ρ, T, qᵥ_sl, qᵢ, qᵢ_s,
++    lcl, icl, tps, clf, τ_relax, output, ρ, T, qᵥ_sl, qᵢ, qᵢ_s,
+ )
+     i = @index(Global, Linear)
+     FT = eltype(tps)
+     q_lcl = q_icl = q_rai = q_sno = FT(0) # set to zero in this test
+-    mp_mock = (; cloud = (; liquid = lcl))
++    mp_mock = (;
++        cloud = (; liquid = lcl),
++        process_params = (; cloud_liquid_formation = (; τ_relax)),
++    )
+     micro_mock = (; q_tot = qᵥ_sl[i], q_lcl, q_icl, q_rai, q_sno)
+     thermo_mock = (; ρ = ρ[i], T = T[i])
+     S_cond = CMN.conv_q_vap_to_q_lcl(
+@@ -506,12 +509,12 @@ function test_gpu(FT)
+     rain = CMP.Rain(FT)
+     snow = CMP.Snow(FT)
+     mp = CMP.Microphysics1MParams(FT)
+-    opts = mp.options
+-    e_lr = opts.cloud_liquid_rain_accretion.e
+-    e_is = opts.cloud_ice_snow_accretion.e
+-    e_ls = opts.cloud_liquid_snow_accretion.e
+-    e_ir = opts.cloud_ice_rain_accretion.e
+-    e_rs = opts.rain_snow_accretion.e
++    pp = mp.process_params
++    e_lr = pp.cloud_liquid_rain_accretion.e
++    e_is = pp.cloud_ice_snow_accretion.e
++    e_ls = pp.cloud_liquid_snow_accretion.e
++    e_ir = pp.cloud_ice_rain_accretion.e
++    e_rs = pp.rain_snow_accretion.e
+ 
+     # Terminal velocity
+     blk1mvel = CMP.Blk1MVelType(FT)
+@@ -535,7 +538,7 @@ function test_gpu(FT)
+     mp_0m = CMP.Microphysics0MParams(FT)
+     mp_1m = CMP.Microphysics1MParams(FT)
+     mp_1m_2M = CMP.Microphysics1MParams(FT;
+-        rain_autoconversion = CMP.PrescribedNd(CP.create_toml_dict(FT)),
++        rain_autoconversion = CMP.PrescribedNd(),
+     )
+     mp_2m_warm = CMP.Microphysics2MParams(FT; with_ice = false)
+     mp_2m_p3 = CMP.Microphysics2MParams(FT; with_ice = true)
+@@ -594,9 +597,10 @@ function test_gpu(FT)
+         qᵢ = ArrayType([FT(0.003)])
+         qᵢ_s = ArrayType([FT(0.002)])
+ 
+-        clf = CMP.CloudLiquidFormation(CP.create_toml_dict(FT))
++        clf = CMP.CloudLiquidFormation()
++        τ_relax = mp_1m.process_params.cloud_liquid_formation.τ_relax
+         kernel! = test_noneq_micro_kernel!(backend, work_groups)
+-        kernel!(lcl, icl, tps, clf, output, ρ, T, qᵥ_sl, qᵢ, qᵢ_s; ndrange)
++        kernel!(lcl, icl, tps, clf, τ_relax, output, ρ, T, qᵥ_sl, qᵢ, qᵢ_s; ndrange)
+         (; S_cond) = Array(output)[1]
+         # test that nonequilibrium cloud formation is callable and returns a reasonable value
+         TT.@test S_cond ≈ FT(3.76347635339803e-5)
+@@ -704,7 +708,7 @@ function test_gpu(FT)
+         ql = ArrayType([FT(0), FT(5e-4)])
+         qr = ArrayType([FT(0), FT(5e-4)])
+ 
+-        coeff_disp = mp.options.rain_snow_accretion.coeff_disp
++        coeff_disp = mp.process_params.rain_snow_accretion.coeff_disp
+         kernel! = test_1_moment_micro_accretion_kernel!(backend, work_groups)
+         kernel!(
+             lcl,
+diff --git a/test/microphysics1M_tests.jl b/test/microphysics1M_tests.jl
+index 6c34c3d7..0876f9ed 100644
+--- a/test/microphysics1M_tests.jl
++++ b/test/microphysics1M_tests.jl
+@@ -198,8 +198,8 @@ function test_microphysics1M(FT)
+ 
+     TT.@testset "RainAutoconversion" begin
+ 
+-        q_lcl_threshold = mp.options.rain_autoconversion.acnv1M.q_threshold
+-        τ_acnv_rai = mp.options.rain_autoconversion.acnv1M.τ
++        q_lcl_threshold = mp.process_params.rain_autoconversion.q_threshold
++        τ_acnv_rai = mp.process_params.rain_autoconversion.τ
+ 
+         micro_s = (; q_tot = FT(0), q_lcl = FT(0.5) * q_lcl_threshold,
+             q_icl = FT(0), q_rai = FT(0), q_sno = FT(0))
+@@ -221,7 +221,7 @@ function test_microphysics1M(FT)
+     TT.@testset "RainAutoconversion2M" begin
+         # Variable-timescale autoconversion (PrescribedNd)
+         mp_2m = CMP.Microphysics1MParams(FT;
+-            rain_autoconversion = CMP.PrescribedNd(CP.create_toml_dict(FT)),
++            rain_autoconversion = CMP.PrescribedNd(),
+         )
+         thermo = (; ρ = FT(1), T = FT(280))
+ 
+@@ -235,8 +235,8 @@ function test_microphysics1M(FT)
+ 
+         # Positive cloud liquid → positive rate
+         q_lcl = FT(2e-3)
+-        N_d = mp_2m.options.rain_autoconversion.autoconv.Nc
+-        (; τ, α) = mp_2m.options.rain_autoconversion.autoconv
++        N_d = mp_2m.process_params.rain_autoconversion.Nc
++        (; τ, α) = mp_2m.process_params.rain_autoconversion
+         micro = (; q_tot = FT(0), q_lcl, q_icl = FT(0), q_rai = FT(0), q_sno = FT(0))
+         rate = CM1.conv_q_lcl_to_q_rai(mp_2m.options.rain_autoconversion, mp_2m, tps, micro, thermo)
+         TT.@test rate > FT(0)
+@@ -260,8 +260,8 @@ function test_microphysics1M(FT)
+ 
+     TT.@testset "SnowAutoconversionNoSupersat" begin
+ 
+-        q_icl_threshold = mp.options.snow_autoconversion.acnv1M.q_threshold
+-        τ_acnv_sno = mp.options.snow_autoconversion.acnv1M.τ
++        q_icl_threshold = mp.process_params.snow_autoconversion.q_threshold
++        τ_acnv_sno = mp.process_params.snow_autoconversion.τ
+ 
+         # Below threshold → rate near zero (uses logistic smoothing)
+         q_icl_small = FT(0.5) * q_icl_threshold
+@@ -290,7 +290,7 @@ function test_microphysics1M(FT)
+ 
+         # Use mp with WithSupersaturation
+         mp_ss = CMP.Microphysics1MParams(FT;
+-            snow_autoconversion = CMP.WithSupersaturation(CP.create_toml_dict(FT)),
++            snow_autoconversion = CMP.WithSupersaturation(),
+         )
+ 
+         # above freezing temperatures -> no snow
+@@ -350,7 +350,7 @@ function test_microphysics1M(FT)
+         q_rain_range = range(FT(1e-8), stop = FT(5e-3), length = 10)
+         ρ_air, q_liq, q_tot = FT(1.2), FT(5e-4), FT(20e-3)
+ 
+-        E_lcl_rai = mp.options.cloud_liquid_rain_accretion.e
++        E_lcl_rai = mp.process_params.cloud_liquid_rain_accretion.e
+         for q_rai in q_rain_range
+             if q_rai > eps(FT)
+                 TT.@test CM1.accretion(
+@@ -388,12 +388,12 @@ function test_microphysics1M(FT)
+         q_liq = FT(5e-4)
+         q_rai = FT(5e-4)
+ 
+-        E_lcl_rai = mp.options.cloud_liquid_rain_accretion.e
+-        E_lcl_sno = mp.options.cloud_liquid_snow_accretion.e
+-        E_icl_rai = mp.options.cloud_ice_rain_accretion.e
+-        E_icl_sno = mp.options.cloud_ice_snow_accretion.e
+-        E_rai_sno = mp.options.rain_snow_accretion.e
+-        coeff_disp = mp.options.rain_snow_accretion.coeff_disp
++        E_lcl_rai = mp.process_params.cloud_liquid_rain_accretion.e
++        E_lcl_sno = mp.process_params.cloud_liquid_snow_accretion.e
++        E_icl_rai = mp.process_params.cloud_ice_rain_accretion.e
++        E_icl_sno = mp.process_params.cloud_ice_snow_accretion.e
++        E_rai_sno = mp.process_params.rain_snow_accretion.e
++        coeff_disp = mp.process_params.rain_snow_accretion.coeff_disp
+ 
+         TT.@test CM1.accretion(
+             liquid,
+diff --git a/test/microphysics_noneq_tests.jl b/test/microphysics_noneq_tests.jl
+index 6b7f7690..fb2f6519 100644
+--- a/test/microphysics_noneq_tests.jl
++++ b/test/microphysics_noneq_tests.jl
+@@ -16,12 +16,10 @@ function test_microphysics_noneq(FT)
+     Ch2022 = CMP.Chen2022VelType(FT)
+ 
+     TT.@testset "τ_relax" begin
+-        # Default τ_relax values come from the option structs
+-        td = ClimaParams.create_toml_dict(FT)
+-        clf = CMP.CloudLiquidFormation(td)
+-        cif = CMP.ConstantTimescale(td)
+-        TT.@test clf.τ_relax ≈ FT(10)
+-        TT.@test cif.τ_relax ≈ FT(10)
++        # Default τ_relax values live in process_params
++        mp = CMP.Microphysics1MParams(FT)
++        TT.@test mp.process_params.cloud_liquid_formation.τ_relax ≈ FT(10)
++        TT.@test mp.process_params.cloud_ice_formation.τ_relax ≈ FT(10)
+     end
+ 
+     TT.@testset "τ_relax Frostenberg" begin
+@@ -49,26 +47,25 @@ function test_microphysics_noneq(FT)
+         qᵥ_si = TDI.p2q(tps, T, ρ, pᵥ_si)
+ 
+         #! format: off
+-        # Test helpers
+-        _conv_lcl(q_tot, q_lcl, q_icl, ρ, T) = CMNe.conv_q_vap_to_q_lcl(
+-            CMP.CloudLiquidFormation(FT(10)),
+-            (; cloud = (; liquid = liquid)),
++        # Test helpers (call the timescale kernels directly with an explicit τ)
++        _conv_lcl(q_tot, q_lcl, q_icl, ρ, T) = CMNe._conv_q_vap_to_q_lcl_const(
++            FT(10),
+             tps,
+             (; q_tot, q_lcl, q_icl, q_rai = FT(0), q_sno = FT(0)),
+             (; ρ, T)
+         )
+ 
+-        _conv_icl(q_tot, q_lcl, q_icl, ρ, T) = CMNe.conv_q_vap_to_q_icl(
+-            CMP.ConstantTimescale(FT(10)),
+-            (; cloud = (; ice = ice)),
++        _conv_icl(q_tot, q_lcl, q_icl, ρ, T) = CMNe._conv_q_vap_to_q_icl_const(
++            FT(10),
+             tps,
+             (; q_tot, q_lcl, q_icl, q_rai = FT(0), q_sno = FT(0)),
+             (; ρ, T)
+         )
+ 
+         _conv_icl_dep(q_tot, q_lcl, q_icl, ρ, T) = CMNe.conv_q_vap_to_q_icl(
+-            CMP.TemperatureDependent(FT(10), frs),
+-            (; cloud = (; ice = ice), air_properties = aps, frostenberg2023 = frs),
++            CMP.TemperatureDependent(),
++            (; cloud = (; ice), air_properties = aps,
++                process_params = (; cloud_ice_formation = (; τ_relax = FT(10), frostenberg = frs))),
+             tps,
+             (; q_tot, q_lcl, q_icl, q_rai = FT(0), q_sno = FT(0)),
+             (; ρ, T)
+@@ -110,38 +107,33 @@ function test_microphysics_noneq(FT)
+ 
+         # --- Asymmetric τ_dep ≠ τ_sub ---
+         # Faster sublimation (smaller τ_relax) should give a larger magnitude sublimation rate
+-        # We test by creating ConstantTimescale options with different τ_relax values
+-        opt_fast = CMP.ConstantTimescale(FT(1))
+-        opt_slow = CMP.ConstantTimescale(FT(100))
+-        
+-        function _conv_icl_custom(opt, q_tot, q_lcl, q_icl, ρ, T)
+-            CMNe.conv_q_vap_to_q_icl(
+-                opt,
+-                (; cloud = (; ice = ice)),
++        # We test by calling the constant-timescale kernel with different τ values
++        function _conv_icl_custom(τ, q_tot, q_lcl, q_icl, ρ, T)
++            CMNe._conv_q_vap_to_q_icl_const(
++                τ,
+                 tps,
+                 (; q_tot, q_lcl, q_icl, q_rai = FT(0), q_sno = FT(0)),
+                 (; ρ, T)
+             )
+         end
+-        sub_fast = _conv_icl_custom(opt_fast, FT(0.5 * qᵥ_si), FT(0), FT(0.001), ρ, T)
+-        sub_slow = _conv_icl_custom(opt_slow, FT(0.5 * qᵥ_si), FT(0), FT(0.001), ρ, T)
++        sub_fast = _conv_icl_custom(FT(1), FT(0.5 * qᵥ_si), FT(0), FT(0.001), ρ, T)
++        sub_slow = _conv_icl_custom(FT(100), FT(0.5 * qᵥ_si), FT(0), FT(0.001), ρ, T)
+         TT.@test sub_fast < sub_slow  # faster sublimation → more negative
+ 
+         # Deposition rate with TemperatureDependent should depend only on τ_dep, not τ_sub
+-        # TemperatureDependent uses opt.τ_relax for sublimation but Frostenberg for deposition
+-        opt_td_fast = CMP.TemperatureDependent(FT(1), frs)
+-        opt_td_slow = CMP.TemperatureDependent(FT(100), frs)
+-        function _conv_icl_dep_custom(opt, q_tot, q_lcl, q_icl, ρ, T)
++        # (τ_sub is only used for sublimation, deposition uses the Frostenberg timescale)
++        function _conv_icl_dep_custom(τ_sub, q_tot, q_lcl, q_icl, ρ, T)
+             CMNe.conv_q_vap_to_q_icl(
+-                opt,
+-                (; cloud = (; ice = ice), air_properties = aps, frostenberg2023 = frs),
++                CMP.TemperatureDependent(),
++                (; cloud = (; ice), air_properties = aps,
++                    process_params = (; cloud_ice_formation = (; τ_relax = τ_sub, frostenberg = frs))),
+                 tps,
+                 (; q_tot, q_lcl, q_icl, q_rai = FT(0), q_sno = FT(0)),
+                 (; ρ, T)
+             )
+         end
+-        dep_a = _conv_icl_dep_custom(opt_td_fast, FT(1.5 * qᵥ_si), FT(0), FT(0), ρ, T)
+-        dep_b = _conv_icl_dep_custom(opt_td_slow, FT(1.5 * qᵥ_si), FT(0), FT(0), ρ, T)
++        dep_a = _conv_icl_dep_custom(FT(1), FT(1.5 * qᵥ_si), FT(0), FT(0), ρ, T)
++        dep_b = _conv_icl_dep_custom(FT(100), FT(1.5 * qᵥ_si), FT(0), FT(0), ρ, T)
+         TT.@test dep_a ≈ dep_b  # τ_sub doesn't affect deposition
+ 
+         #! format: on
+diff --git a/test/performance_tests.jl b/test/performance_tests.jl
+index 2ed7d7d7..eb6724cc 100644
+--- a/test/performance_tests.jl
++++ b/test/performance_tests.jl
+@@ -126,9 +126,9 @@ function benchmark_test(FT)
+     # 1-moment microphysics unified params (both liquid autoconversion flavours)
+     mp_1m = CMP.Microphysics1MParams(FT)
+     mp_1m_2M = CMP.Microphysics1MParams(FT;
+-        rain_autoconversion = CMP.PrescribedNd(CP.create_toml_dict(FT)),
++        rain_autoconversion = CMP.PrescribedNd(),
+     )
+-    E_lcl_rai = mp_1m.options.cloud_liquid_rain_accretion.e
++    E_lcl_rai = mp_1m.process_params.cloud_liquid_rain_accretion.e
+ 
+     ρ_air = FT(1.2)
+     T_air = FT(280)
+@@ -178,7 +178,7 @@ function benchmark_test(FT)
+         (params_P3, L_ice, N_ice, F_rim, ρ_rim),
+         220,
+     )
+-    bench_press(FT, P3.get_distribution_logλ, (state,), 35_000)  # 10 (F64) / 8 (F32) FixedIterations BrentsMethod, zero warp divergence
++    bench_press(FT, P3.get_distribution_logλ, (state,), 100_000)  # 10 (F64) / 8 (F32) FixedIterations BrentsMethod, zero warp divergence
+     # The weighted-velocity integrals build a nested terminal-velocity closure
+     # that escapes into `integrate`. With `ice_particle_terminal_velocity`
+     # returning a single (concretely-typed) closure, this path is type-stable
+@@ -187,7 +187,7 @@ function benchmark_test(FT)
+     bench_press(FT, P3.ice_terminal_velocity_number_weighted, (ch2022, ρ_air, state, logλ), 170_000)
+     bench_press(FT, P3.ice_terminal_velocity_mass_weighted, (ch2022, ρ_air, state, logλ), 200_000)
+     bench_press(FT, P3.integrate, (x -> x^4, FT(0), FT(1)), 7_000)
+-    bench_press(FT, P3.D_m, (state, logλ), 3_000)
++    bench_press(FT, P3.D_m, (state, logλ), 8_000)
+ 
+     @info "P3 Ice Nucleation"
+     bench_press(
+@@ -234,11 +234,14 @@ function benchmark_test(FT)
+     @info "Non-equilibrium Microphysics"
+     bench_press(FT, CMN.τ_relax, (ice, aps, ip_frostenberg, FT(1e-4), FT(250)), 300)
+ 
+-    mp_mock = (; cloud = (; liquid = liquid))
++    mp_mock = (;
++        cloud = (; liquid = liquid),
++        process_params = mp_1m.process_params,
++    )
+     micro_mock = (; q_tot = FT(0.00145), q_lcl = FT(0), q_icl = FT(0), q_rai = FT(0), q_sno = FT(0))
+     thermo_mock = (; ρ = FT(0.8), T = FT(263))
+     bench_press(FT, CMN.conv_q_vap_to_q_lcl,
+-        (CMP.CloudLiquidFormation(CP.create_toml_dict(FT)), mp_mock, tps, micro_mock, thermo_mock), 160)
++        (CMP.CloudLiquidFormation(), mp_mock, tps, micro_mock, thermo_mock), 160)
+ 
+     @info "0-Moment Scheme"
+     bench_press(FT, CM0.remove_precipitation, (p0m, q_liq, q_ice), 12)
