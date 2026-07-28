@@ -4,6 +4,16 @@ title: CliMA GPU profiling
 description: Profiling GPU performance for CliMA.
 git_repo_url: https://github.com/petebachant/clima-gpu-profiling
 
+questions:
+  - question: Can we improve the performance of the flagship AMIP simulation?
+    answer: Probably.
+    evidence:
+      - kind: figure
+        path: figures/sypd-time-series.png
+      - kind: result
+        path: results/summary.json
+        key: speedup_pct
+
 environments:
   clima:
     kind: slurm
@@ -239,3 +249,6 @@ pipeline:
           storage: git
       html_storage: git
       executed_ipynb_storage: git
+
+showcase:
+  - notebook: notebooks/analyze-logs.ipynb
