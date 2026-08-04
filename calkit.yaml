@@ -13,6 +13,26 @@ questions:
       - kind: result
         path: results/summary.json
         key: speedup_pct
+      - kind: table
+        path: results/top-kernels.csv
+        explanation: >-
+          Top 20 GPU kernels by baseline cost, for both cases. Shows the
+          speedup is concentrated in the two set_microphysics_tendency_cache
+          kernels (-54% and -57%) while every other kernel is unchanged
+          within ~1%, so the gain is a real, localized effect rather than
+          run-to-run drift. Registers per thread shows the mechanism where
+          it is visible: the lighter sibling kernel drops 255 -> 146 and
+          gains occupancy, while the hot kernel stays pinned at the 255
+          cap. Spill counts are not in nsys; see results/ncu/ for those.
+
+tables:
+  - path: results/top-kernels.csv
+    title: Top 20 GPU kernels, baseline vs. mod
+    description: >-
+      Per-kernel Nsight Systems aggregates for the top 20 kernels ranked by
+      baseline total time, covering both the baseline and modified runs:
+      invocation counts, total and mean duration, share of total GPU time,
+      registers per thread, and the percent change in total time.
 
 environments:
   clima:
@@ -235,6 +255,9 @@ pipeline:
       inputs:
         - from_stage_outputs: baseline-nsys
         - from_stage_outputs: mod-nsys
+      outputs:
+        - path: results/top-kernels.csv
+          storage: git
       html_storage: git
       executed_ipynb_storage: git
     analyze-logs:
