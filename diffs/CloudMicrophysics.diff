@@ -53,6 +53,2008 @@ index 00000000..f53fd804
 +            sol_res = CA.solve_atmos!(simulation)
 +            sol_res.ret_code == :simulation_crashed &&
 +                error("prognostic_edmfx_trmm_column crashed")'
+diff --git a/docs/dev-guides/.claude/skills/fix-ci/SKILL.md b/docs/dev-guides/.claude/skills/fix-ci/SKILL.md
+new file mode 100644
+index 00000000..ad6ddab8
+--- /dev/null
++++ b/docs/dev-guides/.claude/skills/fix-ci/SKILL.md
+@@ -0,0 +1,355 @@
++---
++name: fix-ci
++description: Fix CI failures and performance regressions for a Julia package PR by iterating - triage the latest CI results, fix one root cause, verify locally, push. Use when a PR's GitHub Actions or Buildkite CI is failing, or when CI jobs run slower than they do on the main branch. Verifies CPU and GPU compilation locally before every push and benchmarks performance-relevant changes against main.
++---
++
++# Fix CI
++
++The loop:
++
++0. At session start: set up CI access (Section 1), verify the local tools
++   (Section 4), and create or re-read the measurement ledger (Section 7).
++1. Triage every failed job of the latest build — Buildkite `hard_failed`
++   steps and failed GitHub Actions checks (Section 2). After the FIRST
++   complete build of the PR, also run the job-time comparison against main
++   (Section 5.2) — do not wait until correctness work is done.
++2. Fix ONE root cause (Sections 3, 6, 8, 9).
++3. Verify the fix locally (Section 4).
++4. If the change is performance-relevant — it touches hot loops, kernels,
++   broadcasting or indexing machinery, type parameters of core structs, or
++   compiler annotations — benchmark against main (Section 5).
++5. Format, commit, push (Section 2).
++6. Repeat until CI is green or you reach a decision only the repository owner
++   can make (Section 3).
++
++## 1. Set up access to CI results before anything else
++
++- **GitHub Actions**: raw job logs require authentication. Check
++  `gh auth status`; if `gh` is missing or logged out, STOP and ask the user to
++  install and authenticate it (`gh auth login`). Then:
++  - Statuses: `gh api repos/<org>/<repo>/commits/<sha>/check-runs`
++  - Logs: `gh api repos/<org>/<repo>/actions/jobs/<job id>/logs`
++    (the check-run id is the job id)
++- **Buildkite** (CliMA's GPU/MPI CI): public, no auth needed. All endpoints
++  return JSON with the header `Accept: application/json`:
++  - Build state: `https://buildkite.com/<org>/<pipeline>/builds/<N>.json`
++  - Steps with outcomes and job ids:
++    `https://buildkite.com/<org>/<pipeline>/builds/<N>/data/steps?exclude_group_steps=true`
++    (each step has `label`, `outcome` — `passed`/`hard_failed`/`soft_failed` —
++    `statistics.latest_job_id`, and `latest_job_started_at`/`finished_at`
++    timestamps for wall-time comparisons)
++  - Job log:
++    `https://buildkite.com/organizations/<org>/pipelines/<pipeline>/builds/<N>/jobs/<job id>/log`
++    (read the `output` field, strip HTML tags, unescape entities)
++  - Job artifacts (e.g. flame graphs): GET
++    `https://buildkite.com/organizations/<org>/pipelines/<pipeline>/builds/<N>/jobs/<job id>/artifacts`,
++    then GET each artifact's `url`.
++- Map a commit to all of its builds (including extra pipelines like an
++  end-to-end performance pipeline) via
++  `gh api repos/<org>/<repo>/commits/<sha>/status` — each status carries a
++  `target_url`. To find a branch's latest build, resolve its head sha first
++  (`gh api repos/<org>/<repo>/commits/<branch> --jq .sha`).
++
++## 2. Run the loop
++
++- Read logs for the *first* error and note which testsets completed; inner
++  `@testset`s print no summary even when they pass — only the top-level one
++  does — so a missing summary does not locate the crash. Cluster failures by
++  root cause before fixing anything; one fix often clears many jobs.
++- Format before every commit with the same JuliaFormatter major version the CI
++  action uses — read the version from the formatting workflow under
++  `.github/workflows/` or the repo's formatter environment.
++- If the pipeline cancels in-flight builds when the branch is pushed (check
++  the pipeline settings, or whether earlier builds show as canceled after
++  pushes), never push while waiting on a diagnostic job's results.
++- For failures that only manifest on CI hardware (runtime GPU errors,
++  segfaults), get a full answer in ONE round with a temporary diagnostic step
++  in `.buildkite/pipeline.yml` marked `soft_fail: true`: run each suspect case
++  via `Distributed.remotecall_eval` on a worker process, catch
++  `ProcessExitedException`, respawn, and print a PASS/CRASH map. Remove
++  temporary steps once the cause is fixed.
++- When new failures appear after your own push, suspect your latest commit
++  first and bisect against the previous build's results. Confirm which commit
++  a "known good" build actually ran (builds map to commits via Section 1)
++  before treating its numbers as a baseline.
++
++## 3. Decide what is a design question and what is a mechanical detail
++
++- Never redesign or bypass a feature the PR exists to introduce just to make
++  a test pass — assume a small bug underneath and find it. Stop and ask the
++  user before changing public APIs, algorithmic behavior, or stated PR goals
++  (including accepting a performance cost inherent to a design choice); do
++  NOT stop for mechanical choices (test tolerances, comment wording, internal
++  helper structure) — pick the option supported by measurements and keep
++  moving.
++- Fix problems at the level where the design lives, in their most general
++  form:
++  - If a validation helper rejects legitimate inputs, generalize the
++    validation; do not switch call sites to an unchecked variant.
++  - When a pattern is justified by measurement, apply it to every sibling
++    call site, not just the one that was measured.
++  - When an operation's result is fixed by its API contract (e.g. an output
++    whose size the contract determines), encode the contract as a dedicated
++    method instead of computing the result generically at runtime, which
++    blocks constant folding.
++  - Prefer facts derived from existing machinery over hand-maintained
++    parallel tables of the same facts — but verify the derivation
++    constant-folds wherever the fact is consumed, including inside kernels.
++  - An `if` on runtime argument properties (which the compiler folds away
++    when the answer is fixed by the argument types) often replaces several
++    methods, eliminating whole classes of method ambiguities; conversely, a
++    `Vararg` method that overlaps a typed method is an ambiguity waiting to
++    happen (constrain the `Vararg` method's leading arguments so the
++    signatures no longer overlap, or split it by argument type).
++- When a test's expectation is wrong rather than the code (stale baselines,
++  `@test_broken` that now passes), update the expectation — but only flip
++  markers that pass in *every* invocation across at least two builds, and use
++  `skip` instead of `broken` when the pass/fail set is unstable.
++
++## 4. Verify locally before pushing; use CI only for what needs hardware
++
++- **The tools.** This skill's folder ships two: `test_compilation.jl` (module
++  `TestCompilation`: `@test_compilation` and `compilation_reports`, which
++  check CPU and GPU compilation without needing a GPU) and `flame_diff.jl`
++  (module `FlameDiff`, flame
++  graph comparison — Section 5.4). Both need an environment with `Adapt`,
++  `CUDA`, `JET`, and `ProfileCanvas`: use the repository's test or benchmark
++  environment if it provides them, otherwise create one once with
++  `julia -e 'using Pkg; Pkg.activate("<scratch>/ci_tools");
++  Pkg.add(["Adapt", "CUDA", "JET", "ProfileCanvas"])'`
++  (`<scratch>` is any writable directory outside the repository).
++- **Verify the tools before trusting any conclusion drawn from them.** Run
++  both test suites to completion —
++  `julia --project=<env> <skill folder>/test_compilation_tests.jl` and
++  `julia --project=<env> <skill folder>/flame_diff_tests.jl` — before the
++  first use of either tool in a session (including any integration tests the
++  suites run against the package). If a tool's own tests fail, fix that
++  first. Separately, the checker's *results* go stale: it runs through the
++  package's `Adapt` rules, broadcasting machinery, and array wrappers, so
++  whenever a commit changes any of those, re-run the compilation checks
++  themselves on the functions you touched — earlier passes no longer count.
++- CPU: run the failing test files directly, matching CI's flags — read the
++  exact `julia` invocation (project environment, `--check-bounds`, threads)
++  from the job's entry in the CI configuration. Also run the relevant files
++  with more than one thread (e.g. `--threads=4`): branches guarded by thread
++  counts never execute in single-threaded runs.
++- GPU without a device: almost everything except runtime errors and *novel*
++  instruction-selection crashes can be checked locally (known crashers are
++  caught by the checker's `:llvm_types` stage).
++  `include("<skill folder>/test_compilation.jl")`
++  and check every function you touched over every kind of argument CI can
++  pass it — plain arrays, unmaterialized broadcast expressions
++  (`Base.Broadcast.Broadcasted`), and any wrapper types the package defines.
++  A fix validated on only one of these is not validated.
++- If a CUDA device IS available locally, iterate on the actual failing GPU
++  tests locally instead.
++- Julia-version-specific failures (e.g. method-ambiguity counts from Aqua)
++  must be reproduced under the same Julia minor version CI uses
++  (`juliaup add <version>`, then `julia +<version> ...`), with the same set of
++  loaded packages as the test process.
++
++## 5. Compare against the main branch
++
++### 5.1 Maintain a main-branch worktree
++
++```
++git worktree add <scratch>/main_wt origin/main
++```
++
++If the test/benchmark environment `Pkg.develop`s the package by relative path
++(common: `path = ".."` in the environment's Manifest), copy that environment's
++`Manifest.toml` into the same relative location inside the worktree (e.g.
++`main_wt/.buildkite/Manifest.toml`) so it resolves against the worktree's own
++source, then run `Pkg.instantiate()` in that environment. Expect a one-time
++precompile.
++
++### 5.2 Compare whole builds job-by-job
++
++Fetch the steps JSON (Section 1) for the latest PR build and the latest main
++build (resolve main's head sha, then its commit status), compute per-job wall
++times from `latest_job_started_at`/`finished_at`, and rank by ratio.
++Interpret with care:
++
++- Job wall time conflates compile time and runtime. Extract logged
++  measurements (`BenchmarkTools` tables, `@time` lines, per-testset times in
++  `Test Summary` lines) to separate them: identical allocation counts with
++  higher times mean pure compute; testset times include compilation.
++- Jobs run with `--check-bounds=yes` amplify per-index overhead and are not
++  comparable to unchecked runs of the same code.
++- A benchmark job whose script changed on the PR is not comparable
++  positionally — align by case labels and problem sizes first.
++- Soft-failed jobs may be pre-existing: diff the soft-fail label sets of the
++  two builds before investigating any of them.
++
++### 5.3 Whole-workload A/B benchmarks, interleaved
++
++Micro-benchmarks cannot catch the type-inference and inlining failures that
++only appear at realistic problem complexity —
++keep at least one whole-workload benchmark in the verification battery (a
++full model step if the repo has one, otherwise its heaviest realistic
++workload). Run it INTERLEAVED (branch, main, branch, main — via the worktree)
++in the same session; never compare a fresh number against one recorded
++earlier. Rerun at least twice; a single elevated run right after heavy
++compilation is usually warmup.
++
++### 5.4 Flame graphs
++
++- Generate a profile as HTML with ProfileCanvas:
++  `import Profile, ProfileCanvas; Profile.@profile <workload>;
++  ProfileCanvas.html_file("flame.html")`. CI flame-graph jobs usually upload
++  the same kind of file as an artifact (Section 1 shows how to download it).
++- Diff two flame graphs with
++  `julia --project=<env> <skill folder>/flame_diff.jl baseline.html
++  candidate.html [TOP_N]` — it prints root sample counts, their ratio, and
++  the frames with the largest self-sample increases and decreases; as a
++  library (`include` + `using .FlameDiff`), `flame_diff` also returns every
++  per-frame row sorted by delta.
++- **Regenerate the flame pair locally before acting on CI frames**: a CI
++  flame may come from an older commit than the code being debugged, and its
++  line numbers or even mechanisms can be stale. Profile the same workload in
++  the PR tree and the main worktree and treat the local pair as ground truth.
++- Self-sample deltas below ~5 are noise. Self counts between same-duration
++  runs are comparable in absolute terms; totals and fractions are not.
++- Read flames mechanistically: self time on a loop-frame line means loop
++  overhead (argument materialization, iteration); equal absolute samples in
++  the data-access leaves with a higher total means the extra time is
++  elsewhere; time under `similar`/allocation frames with unchanged allocation
++  counts means slower construction, not more of it.
++
++### 5.5 Hot-loop IR diagnostics (faster than any profile)
++
++For a hot-loop throughput regression, two cheap checks localize the cause:
++
++- Count vector instructions: `sprint(code_llvm, f, types)` and count matches
++  of `r"<[0-9]+ x double>"` (or `float`). Compare against the equivalent
++  plain-array loop, which should vectorize.
++- Count non-cold `invoke`s in `Base.code_typed(f, types)[1][1].code`
++  statements (ignore `throw`/error paths): any hot-path `invoke` means the
++  inliner bailed and arguments are materialized per call.
++
++Known traps:
++
++- LLVM cannot vectorize a loop over a flattened `CartesianIndices` iterator,
++  whose index increments branch at every dimension boundary. `@simd` fixes it
++  by splitting the innermost dimension into a unit-stride loop — but test
++  with realistic inner trip counts (a length-4 inner loop never vectorizes,
++  which masks any improvement), and `@simd` requires an indexable iterator
++  (`AbstractArray`/ranges) — over other iterators it degrades silently
++  instead of erroring.
++- The compiler silently stops inlining function arguments whose call
++  signatures grow large (a call over a single broadcast inlines; one over a
++  deeply nested broadcast expression may not). Force it with a call-site
++  `@inline f(args...)` wherever the loop body must be fully inlined.
++- Per-point wrapper construction (views, broadcast slices) is free only if it
++  is fully elided; check the typed IR for `%new` of wrapper types surviving
++  in the loop body.
++
++### 5.6 End-to-end performance pipeline
++
++Some CliMA repositories have an end-to-end performance pipeline (e.g. an AMIP
++or flagship-model run reporting SYPD — simulated years per day) that is
++triggered by appending `[perf]` to the commit message. To check whether the
++current repo has one, check the commit status of a recent `[perf]` commit
++(Section 1) or grep the CI configuration. Where it exists, it is the gold
++standard for runtime performance:
++
++- Trigger it EARLY on a performance-relevant PR — it costs one commit-message
++  tag — rather than saving it as a final gate.
++- The job log contains the SYPD measurement and a comparison to the latest
++  stored reference value; other recent builds of the same pipeline show the
++  acceptable range.
++
++### 5.7 Performance-baseline hygiene
++
++- When updating any stored perf baseline (latency thresholds, timing caps),
++  record in the commit message which build/commit produced the new numbers
++  AND how they compare to main. A baseline set mid-PR may have been measured
++  on a state where the code path was not doing its full work — verify the
++  path is exercised end-to-end before trusting a "best ever" number.
++- Fixed absolute deltas across benchmarks of very different sizes indicate
++  fixed per-call overhead (e.g. launch-time work); proportional deltas
++  indicate per-element work. Diagnose accordingly before retuning baselines.
++
++## 6. Isolate low-level issues and fix them robustly
++
++- Chase symptoms down to the single lowest-level function responsible, using
++  JET/`@test_compilation`, then fix that function, not the symptom — e.g.
++  call a branch-free internal instead of an entry point whose unreachable
++  throw branch JET flags, or construct a wrapper explicitly when a library's
++  constructor returns a type inference cannot determine.
++- Using un-exported internals is acceptable when the fix is small, guarded
++  (`@static if isdefined(...)` with a public-API fallback), and documented
++  with the reason.
++- Rules that recur on GPUs: kernel-launched closures may capture only isbits
++  values (derive types from argument types inside the closure, never capture
++  a `Type`); error paths that build strings at runtime cannot compile in
++  kernels (use static messages or move checks to the host); `Adapt` does not
++  descend into `Base.Pair` or unregistered wrappers (write explicit
++  `adapt_structure` rules); partial-rank views/reshapes of device arrays pull
++  in `SignedMultiplicativeInverse` string-throwing constructors (index at
++  full rank).
++
++## 7. Keep hypotheses alive in a ledger; re-test them as the code evolves
++
++- **Maintain a written ledger of measurements and hypotheses; never rely on
++  memory or scrollback.** Keep one untracked Markdown file at the repository
++  root (e.g. `ci_ledger.md` — NOT in a session-specific temp directory, so it
++  survives across sessions; never commit it) with two tables:
++  - *Measurements*: one row per (implementation option, metric) — the
++    commit/diff identifier, the number, what it was measured INTERLEAVED
++    against, and the machine state (load, same-session baseline). Update it
++    after every benchmark or compilation check, and quote numbers only from
++    the ledger.
++  - *Hypotheses*: one row per hypothesis — status (open/confirmed/refuted),
++    the discriminating experiment, and a pointer to the evidence. Mark
++    refuted entries instead of deleting them, so a dead end is not re-derived
++    in a later session. Re-read the ledger at session start and before every
++    re-measurement.
++- Keep several hypotheses alive when debugging: record them, design one
++  experiment that discriminates between them (the CI diagnostic step from
++  Section 2, an A/B worktree benchmark, a JET diff), and re-check the losers
++  later — a wrong hypothesis about one failure may be right about another.
++- After each significant change, re-run the checks that motivated earlier
++  workarounds; delete workarounds whose cause is gone.
++- Fixes stacked while another regression is still present are all suspect:
++  every intermediate measurement is contaminated, so effects get attributed
++  to the wrong edit. Redo the attribution from scratch — construct a
++  minimal baseline containing only the agreed fixes, measure it, then add
++  each candidate edit one at a time (and afterwards remove each retained edit
++  once) with benchmarks and tests after every step. Expect some "necessary"
++  edits to turn out to do nothing; revert those.
++- Never describe a change as restoring previous behavior without diffing the
++  actual git history.
++
++## 8. Compiler annotations conceal as often as they cure
++
++- Before adding `@generated`, `@assume_effects`, `@constprop`, `@inline`, or
++  a `Method.recursion_relation` override, demonstrate the specific compiler
++  failure it is meant to fix (e.g. show that inference gives up ONLY on
++  large, deeply nested expressions); after adding one, re-test the original
++  symptom — if it is still there, the annotation was hiding a structural
++  problem.
++- Prefer optionally-generated functions (`if @generated`) over plain
++  `@generated` when the arguments may not be statically known: plain
++  generated functions infer to `Any` for unknown static parameters.
++- `Base.@assume_effects :foldable` does not guarantee that a call constant-
++  folds in large expressions — verify with the compilation checker's `:kernel`
++  stage when GPU code depends on the fold.
++
++## 9. Downstream breakage from renames and representation changes
++
++- When a PR renames or removes internal names that other packages use, add a
++  `deprecated.jl` to the module with plain `const` aliases (no deprecation
++  warnings), and **export** any alias whose old name was exported. Only alias
++  names whose semantics survived; leaving a changed-meaning name undefined is
++  better than silently resolving it to something subtly different.
++- Find the full list by grepping the depot copies of the downstream packages
++  (`~/.julia/packages/`), including any separately-registered subpackages of
++  this repository, then verify by running the smallest downstream test suite
++  (or at least precompilation of the heaviest downstream package) with the
++  package `Pkg.develop`ed.
++- Classify every downstream failure: (A) fixable here with an alias or
++  method; (B) downstream code depends on a changed internal representation
++  (e.g. it indexes `parent(...)` with the old array shape) — aliases cannot
++  fix this; it needs a downstream release, so report it and move on; (C)
++  pre-existing — confirm by checking the same job on the merge-base commit.
+diff --git a/docs/dev-guides/.claude/skills/fix-ci/flame_diff.jl b/docs/dev-guides/.claude/skills/fix-ci/flame_diff.jl
+new file mode 100644
+index 00000000..2eea6323
+--- /dev/null
++++ b/docs/dev-guides/.claude/skills/fix-ci/flame_diff.jl
+@@ -0,0 +1,183 @@
++"""
++    FlameDiff
++
++Diff two [ProfileCanvas](https://github.com/pfitzseb/ProfileCanvas.jl) flame
++graphs saved as HTML files (for example, the artifacts a CI flame-graph job
++uploads, or files written locally with `ProfileCanvas.html_file`).
++
++Self-sample counts are directly comparable between two profiles of the same
++wall-clock duration; total counts and fractions are not (the total shifts).
++Deltas below about 5 samples are noise.
++
++# As a script
++
++    julia flame_diff.jl BASELINE.html CANDIDATE.html [TOP_N]
++
++prints the total sample counts for both files followed by the `TOP_N` (default
++25) frames with the largest self-sample increases and decreases (candidate
++minus baseline), keyed by `function@file:line`.
++
++# From Julia (e.g. alongside `test_compilation.jl`)
++
++    include("flame_diff.jl")
++    using .FlameDiff
++    rows = flame_diff("baseline.html", "candidate.html")   # prints and returns
++    _, self_counts, total_counts = aggregate_flame(load_flame("candidate.html"))
++
++Produce the input files with ProfileCanvas:
++
++    import Profile, ProfileCanvas
++    Profile.@profile <workload>
++    ProfileCanvas.html_file("flame.html")
++"""
++module FlameDiff
++
++import ProfileCanvas: JSON  # JSON is a dependency of ProfileCanvas
++
++export load_flame, aggregate_flame, flame_diff
++
++# ─── Loading and aggregating ─────────────────────────────────────────────────
++
++"""
++    load_flame(path) -> Dict
++
++Extract and parse the profile tree that ProfileCanvas embeds in an HTML file.
++The result maps the string `"1"` to the root node; each node is a `Dict` with
++keys `"func"`, `"file"`, `"line"`, `"count"`, and `"children"`.
++"""
++function load_flame(path)
++    text = read(path, String)
++    marker = findfirst("new ProfileCanvas.ProfileViewer(", text)
++    isnothing(marker) && error("$path: not a ProfileCanvas HTML file")
++    range = findnext(", {", text, last(marker))
++    isnothing(range) && error("$path: could not find embedded profile data")
++    # last(range) indexes the '{' of ", {"; slice out the balanced object that
++    # follows it (braces only ever appear inside strings that JSON escapes, so
++    # a plain depth count over the bytes is safe) and hand it to JSON.
++    bytes = codeunits(text)
++    depth = 0
++    start = last(range)
++    for stop in start:lastindex(bytes)
++        bytes[stop] == UInt8('{') && (depth += 1)
++        bytes[stop] == UInt8('}') && (depth -= 1) == 0 &&
++            return JSON.parse(text[start:stop])
++    end
++    error("$path: unbalanced braces in embedded profile data")
++end
++
++"""
++    aggregate_flame(tree) -> (root_count, self_counts, total_counts)
++
++Sum self and total sample counts per `function@file:line` frame over the tree
++returned by [`load_flame`](@ref). `self_counts[frame]` is a node's own count
++minus its children's; `total_counts[frame]` counts each frame once per root-to-
++node path that first reaches it, so recursive frames are not double-counted.
++"""
++function aggregate_flame(tree)
++    root = tree["1"]
++    self_counts = Dict{String, Int}()
++    total_counts = Dict{String, Int}()
++    function visit(node, seen)
++        key = string(node["func"], "@", node["file"], ":", node["line"])
++        children = node["children"]
++        child_sum = isempty(children) ? 0 : sum(child -> child["count"], children)
++        self_counts[key] = get(self_counts, key, 0) + node["count"] - child_sum
++        if !(key in seen)
++            total_counts[key] = get(total_counts, key, 0) + node["count"]
++        end
++        deeper = push!(copy(seen), key)
++        for child in children
++            visit(child, deeper)
++        end
++    end
++    visit(root, Set{String}())
++    return root["count"], self_counts, total_counts
++end
++
++# ─── Diffing and reporting ───────────────────────────────────────────────────
++
++const HEADER = string(
++    rpad("frame", 70),
++    " ",
++    lpad("cand", 6),
++    " ",
++    lpad("base", 6),
++    " ",
++    lpad("ctot", 6),
++    " ",
++    lpad("btot", 6),
++)
++
++function print_rows(io, rows)
++    println(io, HEADER)
++    for row in rows
++        println(
++            io,
++            rpad(first(row.frame, 70), 70),
++            " ",
++            lpad(row.cand, 6),
++            " ",
++            lpad(row.base, 6),
++            " ",
++            lpad(row.cand_total, 6),
++            " ",
++            lpad(row.base_total, 6),
++        )
++    end
++end
++
++"""
++    flame_diff(baseline_path, candidate_path; top_n = 25, io = stdout)
++
++Print the total sample counts for both flame graphs and the `top_n` frames
++with the largest self-sample increases and decreases (candidate minus
++baseline). Return the full list of per-frame rows (`NamedTuple`s with fields
++`frame`, `cand`, `base`, `cand_total`, `base_total`, `delta`) sorted by `delta`
++descending, for programmatic use.
++"""
++function flame_diff(baseline_path, candidate_path; top_n = 25, io = stdout)
++    base_root, base_self, base_total = aggregate_flame(load_flame(baseline_path))
++    cand_root, cand_self, cand_total = aggregate_flame(load_flame(candidate_path))
++    println(io, "baseline root samples:  $base_root  ($baseline_path)")
++    println(io, "candidate root samples: $cand_root  ($candidate_path)")
++    base_root > 0 &&
++        println(io, "ratio: ", round(cand_root / base_root; digits = 2))
++
++    frames = union(keys(base_self), keys(cand_self))
++    rows = map(collect(frames)) do frame
++        cand = get(cand_self, frame, 0)
++        base = get(base_self, frame, 0)
++        (;
++            frame,
++            cand,
++            base,
++            cand_total = get(cand_total, frame, 0),
++            base_total = get(base_total, frame, 0),
++            delta = cand - base,
++        )
++    end
++    sort!(rows; by = row -> row.delta, rev = true)
++
++    println(io, "\n=== top $top_n self-sample increases (candidate - baseline) ===")
++    print_rows(io, Iterators.filter(row -> row.delta > 0, first(rows, top_n)))
++    # Decreases: the last top_n rows (most negative) shown most-negative first.
++    println(io, "\n=== top $top_n self-sample decreases ===")
++    print_rows(io, Iterators.filter(row -> row.delta < 0, reverse(last(rows, top_n))))
++    return rows
++end
++
++function main(args)
++    if length(args) < 2
++        println(stderr, "usage: julia flame_diff.jl BASELINE.html CANDIDATE.html [TOP_N]")
++        return
++    end
++    top_n = length(args) >= 3 ? parse(Int, args[3]) : 25
++    flame_diff(args[1], args[2]; top_n)
++    return
++end
++
++end # module FlameDiff
++
++if abspath(PROGRAM_FILE) == @__FILE__
++    FlameDiff.main(ARGS)
++end
+diff --git a/docs/dev-guides/.claude/skills/fix-ci/flame_diff_tests.jl b/docs/dev-guides/.claude/skills/fix-ci/flame_diff_tests.jl
+new file mode 100644
+index 00000000..28e81b29
+--- /dev/null
++++ b/docs/dev-guides/.claude/skills/fix-ci/flame_diff_tests.jl
+@@ -0,0 +1,81 @@
++# Unit tests for flame_diff.jl. Run these to completion before trusting any
++# flame_diff output (see SKILL.md). They use synthetic ProfileCanvas-style
++# HTML fixtures, so no profiling is required.
++
++using Test
++
++include(joinpath(@__DIR__, "flame_diff.jl"))
++using .FlameDiff
++
++# Build a minimal ProfileCanvas-style HTML file around a JSON profile tree.
++function fake_flame_file(tree_json)
++    path = tempname() * ".html"
++    write(
++        path,
++        """
++        <html><body><div id="profiler-container-1"></div><script>
++        const viewer = new ProfileCanvas.ProfileViewer("#profiler-container-1", $tree_json, "Profile");
++        </script></body></html>
++        """,
++    )
++    return path
++end
++
++node(func, file, line, count, children = "[]") = """
++    {"func":"$func","file":"$file","path":"/x/$file","line":$line,
++     "count":$count,"countLabel":null,"flags":0,"children":$children}"""
++
++# root(10) -> work!(6) -> helper(2); root(10) -> ∫apply!(3)
++const BASELINE_TREE = """{"1": $(node("root", "task.jl", 1, 10, "[" *
++    node("work!", "a.jl", 5, 6, "[" * node("helper", "b.jl", 9, 2) * "]") *
++    "," * node("∫apply!", "c.jl", 3, 3) * "]"))}"""
++
++# Same shape, but work! got slower and recursive: work! -> work! -> helper.
++const CANDIDATE_TREE = """{"1": $(node("root", "task.jl", 1, 20, "[" *
++    node("work!", "a.jl", 5, 16, "[" *
++        node("work!", "a.jl", 5, 8, "[" * node("helper", "b.jl", 9, 2) * "]") *
++    "]") * "," * node("∫apply!", "c.jl", 3, 3) * "]"))}"""
++
++@testset "FlameDiff" begin
++    baseline_path = fake_flame_file(BASELINE_TREE)
++    candidate_path = fake_flame_file(CANDIDATE_TREE)
++
++    @testset "load_flame extracts the embedded tree" begin
++        tree = load_flame(baseline_path)
++        @test tree["1"]["func"] == "root"
++        @test tree["1"]["count"] == 10
++        @test length(tree["1"]["children"]) == 2
++        @test_throws ErrorException load_flame(@__FILE__) # not ProfileCanvas
++    end
++
++    @testset "aggregate_flame computes self and total counts" begin
++        root_count, self_counts, total_counts = aggregate_flame(load_flame(baseline_path))
++        @test root_count == 10
++        @test self_counts["root@task.jl:1"] == 10 - 6 - 3
++        @test self_counts["work!@a.jl:5"] == 6 - 2
++        @test self_counts["helper@b.jl:9"] == 2
++        @test self_counts["∫apply!@c.jl:3"] == 3 # UTF-8 frame names survive
++        @test total_counts["work!@a.jl:5"] == 6
++    end
++
++    @testset "recursive frames are not double-counted in totals" begin
++        _, self_counts, total_counts = aggregate_flame(load_flame(candidate_path))
++        @test total_counts["work!@a.jl:5"] == 16 # not 16 + 8
++        @test self_counts["work!@a.jl:5"] == (16 - 8) + (8 - 2)
++    end
++
++    @testset "flame_diff ranks self-sample deltas" begin
++        io = IOBuffer()
++        rows = flame_diff(baseline_path, candidate_path; top_n = 3, io)
++        output = String(take!(io))
++        @test occursin("baseline root samples:  10", output)
++        @test occursin("candidate root samples: 20", output)
++        @test occursin("ratio: 2.0", output)
++        @test issorted(rows; by = row -> row.delta, rev = true)
++        biggest = rows[1]
++        @test biggest.frame == "work!@a.jl:5"
++        @test biggest.delta == 14 - 4
++        @test biggest.base_total == 6 && biggest.cand_total == 16
++        @test rows[end].delta <= 0 # unchanged frames (∫apply!, helper) sort last
++    end
++end
+diff --git a/docs/dev-guides/.claude/skills/fix-ci/test_compilation.jl b/docs/dev-guides/.claude/skills/fix-ci/test_compilation.jl
+new file mode 100644
+index 00000000..e4993df0
+--- /dev/null
++++ b/docs/dev-guides/.claude/skills/fix-ci/test_compilation.jl
+@@ -0,0 +1,959 @@
++"""
++    TestCompilation
++
++Device-free compilation checking for CPU and GPU code paths. No GPU is needed
++for any check in this module (`CUDA.functional()` may be `false`), so tests
++built on it can guarantee GPU compilation without requesting CUDA devices. The
++module is package-independent: it only depends on `Adapt`, `CUDA`, `JET`, and
++`Test`, and every check works on plain Julia functions and `Array`s.
++
++Given a call `f(args...)` with CPU (`Array`-backed) arguments, this module can
++run five analyses:
++
++ 1. `:cpu` — JET's optimization analysis of the call itself, equivalent to
++    `JET.@test_opt f(args...)`: reports every runtime dispatch or optimization
++    failure over the CPU argument types.
++ 2. `:host` — the same JET analysis over the argument types as they would
++    appear on a machine with a GPU. The GPU types are obtained by *inferring*
++    (never executing, so no GPU memory is allocated)
++    `Adapt.adapt(host_array_type, arg)` for each argument, which applies every
++    package's own `Adapt` rules; `Array`s become `CuArray`s and wrapper
++    structures are rebuilt around them. Types with no `Adapt`-visible GPU form
++    (e.g. device singletons) can be swapped with the `type_replacements`
++    keyword. This is what `JET.@test_opt` sees in GPU CI jobs, and it catches
++    host-side instabilities in kernel launch code.
++ 3. `:kernel` — GPU device code analysis, in one of two modes:
++      - *Launch extraction* (used when it applies): the optimized IR of
++        `f(args...)` over the `:host` argument types is searched for
++        `CUDA.cufunction` call sites — the lowered form of `CUDA.@cuda` — by
++        recursively walking `Base.code_typed` results (bounded depth and
++        breadth). Each resolved launch yields the exact kernel function type
++        and device argument types, including closures constructed inside host
++        functions. Each launch is checked for non-isbits kernel arguments
++        (e.g. a closure capturing a `Type`, which only fails at a real
++        launch), then compiled and analyzed as described below.
++      - *Whole-call fallback* (when no launch is resolved from the host IR):
++        the arguments are converted with the same `Adapt`/`CUDA.KernelAdaptor`
++        rules that real kernel launches use (with `Array` leaves standing in
++        for `CuArray`s), and the call itself is treated as a kernel body.
++        This suits functions that dispatch to a device implementation when
++        called on device-converted arguments (e.g. via a scope or device
++        argument), which is also why launch wrappers whose `cufunction` call
++        is dynamic (so the kernel closure type cannot be extracted) fall back
++        to this mode instead of failing: the device code is still covered,
++        though non-isbits closure captures inside such wrappers cannot be
++        detected.
++    In both modes, two analyses run on each kernel signature:
++      - GPUCompiler's LLVM IR validation, which catches `InvalidIRError`s
++        (dynamic dispatch, GPU-illegal operations) at the stage right before
++        the IR would be compiled to PTX; and
++      - JET's optimization analysis over CUDA's device method table, so that
++        device intrinsics like `threadIdx` are not treated as dead code.
++ 4. `:pointers` — a scan of the adapted arguments for host arrays that
++    survived adaptation. A field that remains an `Array` after the
++    `KernelAdaptor` runs corresponds to a host pointer inside a kernel
++    argument on a real GPU, which causes an illegal memory access at runtime
++    (this cannot be caught by compilation alone).
++ 5. `:llvm_types` — a scan of the kernel argument types (both the adapted
++    whole-call arguments and any extracted launch signatures) for Julia types
++    whose LLVM lowering is known to crash the NVPTX backend in the LLVM
++    version Julia ships (`Base.libllvm_version`). Compilation to LLVM IR
++    succeeds for these types, so `:kernel` cannot catch them; on a real GPU
++    machine they segfault LLVM during instruction selection. See
++    [`llvm_type_findings!`](@ref) for the rules and their version gates.
++
++# Usage
++
++    using .TestCompilation
++
++    # In a @testset (with args constructed on the CPU):
++    @test_compilation fill!(data, value)
++    @test_compilation stages = (:cpu, :host) my_solver_step!(state, cache)
++
++    # Programmatically:
++    ok, reports = compilation_reports(fill!, (data, value))
++    ok, reports = compilation_reports(f, args; stages = (:cpu,))
++
++Each entry of `reports` is a [`StageReport`](@ref) whose `show` method prints
++a stage header followed by the underlying findings — JET results are printed
++with JET's own report printer. On failure, [`@test_compilation`](@ref) records
++a single organized report listing each stage's findings, in the same style as
++`JET.@test_opt`.
++
++# Keyword arguments
++
++  - `stages = (:cpu, :host, :kernel, :pointers, :llvm_types)`: which analyses
++    to run.
++  - `host_array_type = CUDA.CuArray`: the array type `Array`s are converted to
++    (via `Adapt`) for the `:host` stage and launch extraction.
++  - `type_replacements = ()`: a tuple of `Pair`s of types applied structurally
++    to the argument types before the `Adapt`-based `:host` conversion; any
++    type parameter `P` with `P <: first(pair)` is replaced by `last(pair)`.
++    Use this for GPU-machine differences `Adapt` cannot express, e.g.
++    `(ClimaComms.AbstractCPUDevice => ClimaComms.CUDADevice,)`.
++  - `host_ignored_modules = default_host_ignored_modules()`: JET
++    `ignored_modules` for the host-side stages (`:cpu` and `:host`).
++  - `kernel_ignored_modules = ()`: JET `ignored_modules` for the `:kernel`
++    stage. Empty by default because device-side code lives in CUDA.jl and must
++    be analyzed, unlike CUDA.jl's intentionally-dynamic host machinery.
++  - `extra_ignored_modules = ()`: appended to both of the above; the simplest
++    way for packages to hide known-dirty frames of their own.
++  - `max_extraction_depth = 10`, `max_extraction_visits = 1000`: bounds on the
++    recursive IR walk used by launch extraction.
++
++All other keyword arguments are forwarded to `JET.report_opt` (e.g.
++`function_filter`).
++"""
++module TestCompilation
++
++import Adapt
++import CUDA
++import JET
++import Test
++
++const CC = Core.Compiler
++# NOTE: not named `GC`: `CUDA.@cuda` expands to an unhygienic `GC.@preserve`,
++# so code that uses both this module and `CUDA.@cuda` must not shadow
++# `Base.GC` with `GPUCompiler`.
++const GPUC = CUDA.GPUCompiler
++
++const DEFAULT_STAGES = (:cpu, :host, :kernel, :pointers, :llvm_types)
++const DEFAULT_STAGES_DOC = "(:cpu, :host, :kernel, :pointers, :llvm_types)"
++
++export compilation_reports, @test_compilation
++
++# ─── Findings and stage reports ──────────────────────────────────────────────
++
++"""
++    Finding(message, [location])
++
++A single non-JET issue: a human-readable (possibly multi-line) `message` and
++an optional `"file:line"` `location`.
++"""
++struct Finding
++    message::String
++    location::Union{Nothing, String}
++end
++Finding(message::AbstractString) = Finding(String(message), nothing)
++
++"""
++    StageReport
++
++One failing analysis from [`compilation_reports`](@ref). Concrete subtypes are
++[`JETStageReport`](@ref) (wraps a `JET.JETCallResult` and prints it with JET's
++own report printer) and [`IssueStageReport`](@ref) (a list of
++[`Finding`](@ref)s). Both print as a stage header followed by the findings,
++with colors when the output supports them.
++"""
++abstract type StageReport end
++
++"A failing JET analysis; `result` is shown with JET's organized report printer."
++struct JETStageReport <: StageReport
++    stage::Symbol
++    label::String
++    result::JET.JETCallResult
++end
++
++"Failing non-JET checks (IR validation, pointer scan, LLVM type rules, ...)."
++struct IssueStageReport <: StageReport
++    stage::Symbol
++    label::String
++    findings::Vector{Finding}
++end
++
++function print_stage_header(io::IO, report::StageReport)
++    printstyled(io, "── [", report.stage, "] "; bold = true, color = :cyan)
++    printstyled(io, report.label; color = :cyan)
++    printstyled(io, " ──"; bold = true, color = :cyan)
++    println(io)
++end
++
++indent_lines(str, indent) =
++    string(indent, replace(rstrip(str, '\n'), '\n' => string('\n', indent)))
++
++function Base.show(io::IO, report::JETStageReport)
++    print_stage_header(io, report)
++    # `repr` with `context = io` preserves color support, like JET's own
++    # `Test` integration does.
++    println(io, indent_lines(repr(report.result; context = io), "  "))
++end
++
++function Base.show(io::IO, report::IssueStageReport)
++    print_stage_header(io, report)
++    for finding in report.findings
++        # The bullet stands in for the first line's indent.
++        message = chopprefix(indent_lines(finding.message, "    "), "    ")
++        print(io, "  • ", message)
++        isnothing(finding.location) ||
++            printstyled(io, " @ ", finding.location; color = :light_black)
++        println(io)
++    end
++end
++
++# ─── Default JET frame filters ───────────────────────────────────────────────
++
++"""
++    default_host_ignored_modules()
++
++JET `ignored_modules` for the host-side stages (`:cpu` and `:host`):
++
++  - `CUDA`: host-side kernel launch machinery (`cufunction` compilation
++    caching, launch configuration, argument conversion) is intentionally
++    dynamic and unavoidably reached by any code that launches kernels.
++  - `GPUCompiler`: the compilation cache lookup on the launch path is dynamic
++    for the same reason.
++  - `Adapt`: `cudaconvert`'s structural conversion of launch arguments runs
++    through `@nospecialize`d generic fallbacks on the host.
++  - `Base.Threads`: task spawning passes through dynamic error paths in
++    `Base.Threads`' internals. Functions parallelized over threads are still
++    fully analyzed, since inference also follows the branch that runs them
++    without spawning tasks.
++
++The `:kernel` stage deliberately ignores nothing by default: device-side code
++(e.g. `CuDeviceArray` indexing) lives in CUDA.jl, so ignoring CUDA frames
++there would hide genuine kernel problems.
++"""
++default_host_ignored_modules() = (
++    JET.AnyFrameModule(CUDA),
++    JET.AnyFrameModule(GPUC),
++    JET.AnyFrameModule(Adapt),
++    JET.AnyFrameModule(Base.Threads),
++)
++
++# ─── Host-side GPU types (for the :host stage and launch extraction) ─────────
++
++# Structurally replace type parameters: any parameter `P` with `P <: from` for
++# some pair `from => to` becomes `to`. Used for GPU-machine differences that
++# Adapt rules cannot express, like CPU device singletons.
++function replace_types(@nospecialize(T), replacements::Tuple)
++    isempty(replacements) && return T
++    T isa Type || return T # non-type parameters (integers, symbols, ...)
++    for (from, to) in replacements
++        T <: from && return to
++    end
++    (T isa DataType && !isempty(T.parameters)) || return T
++    params = map(P -> replace_types(P, replacements), (T.parameters...,))
++    return try
++        T.name.wrapper{params...}
++    catch # inner constructors or parameter constraints can reject the rewrite
++        T
++    end
++end
++
++"""
++    host_type(::Type{T}; host_array_type = CUDA.CuArray, type_replacements = ())
++
++The type a value of type `T` would have on a machine with a GPU: the inferred
++return type of `Adapt.adapt(host_array_type, x)` for `x::T` (after applying
++`type_replacements`; see [`compilation_reports`](@ref)). Inference alone
++computes the converted type, so no GPU memory is ever allocated. The result is
++only useful when it is concrete; a non-concrete result means some `Adapt` rule
++along the way is not inferrable (which [`compilation_reports`](@ref) reports
++as a `:host` finding).
++"""
++function host_type(
++    @nospecialize(T::Type);
++    host_array_type::Type = CUDA.CuArray,
++    type_replacements::Tuple = (),
++)
++    T = replace_types(T, type_replacements)
++    return CC.return_type(Adapt.adapt, Tuple{Type{host_array_type}, T})
++end
++
++# The full call signature over host GPU types, or `nothing` plus findings for
++# every argument (including the function object) whose GPU type cannot be
++# inferred.
++function host_signature(f, args; host_array_type, type_replacements)
++    findings = Finding[]
++    types = map(("f", map(string, 1:length(args))...), (f, args...)) do name, x
++        T = host_type(typeof(x); host_array_type, type_replacements)
++        Base.isdispatchtuple(Tuple{T}) && return T
++        what = name == "f" ? "the function object" : "argument $name"
++        push!(
++            findings,
++            Finding(
++                "the GPU host type of $what (::$(typeof(x))) is not \
++                 inferrable: `Adapt.adapt($host_array_type, ...)` infers as \
++                 `$T`. Make the `Adapt` rules for this type inferrable, or \
++                 map the type directly with the `type_replacements` keyword.",
++            ),
++        )
++        return nothing
++    end
++    return isempty(findings) ? Tuple{types...} : nothing, findings
++end
++
++# ─── Kernel-side argument values (for :kernel, :pointers, and :llvm_types) ───
++
++# Stand-in for CuArray -> CuDeviceArray on the real launch path: a null-pointer
++# CuDeviceArray is a plain isbits struct, so it can be constructed without a
++# GPU, and going through the genuine KernelAdaptor applies every
++# package-specific adapt rule.
++struct KernelArrayStandIn end
++Adapt.adapt_storage(::KernelArrayStandIn, a::Array{T, N}) where {T, N} =
++    CUDA.CuDeviceArray{T, N, CUDA.AS.Global}(
++        reinterpret(Core.LLVMPtr{T, CUDA.AS.Global}, C_NULL),
++        size(a),
++    )
++Adapt.adapt_storage(::KernelArrayStandIn, x) =
++    Adapt.adapt_storage(CUDA.KernelAdaptor(), x)
++
++# Two passes: the first converts Array leaves through the stand-in (structure
++# rules specific to `::CUDA.KernelAdaptor` do not fire, since `to` is the
++# stand-in); the second applies those KernelAdaptor-specific structure rules
++# (Array leaves are already device arrays by then, so none remain to allocate).
++kernel_arguments(args) =
++    map(args) do arg
++        standin = Adapt.adapt(KernelArrayStandIn(), arg)
++        Adapt.adapt(CUDA.KernelAdaptor(), standin)
++    end
++
++# ─── JET over the CUDA device method table (for kernel-side analysis) ────────
++
++# JET's default OptAnalyzer infers with the native method table, where CUDA
++# intrinsics like threadIdx resolve to host definitions that just throw, so
++# every kernel body looks like dead code. This report pass behaves identically
++# to JET's OptAnalysisPass but routes inference through CUDA's device method
++# table (and gets its own analysis cache, since JET caches per report pass).
++struct DeviceOptPass <: JET.ReportPass end
++(::DeviceOptPass)(T::Type{<:JET.InferenceErrorReport}, args...) =
++    JET.OptAnalysisPass()(T, args...)
++method_table_for(::JET.OptAnalysisPass, world::UInt) =
++    CC.InternalMethodTable(world)
++method_table_for(::DeviceOptPass, world::UInt) =
++    GPUC.get_method_table_view(world, CUDA.method_table)
++CC.method_table(analyzer::JET.OptAnalyzer) =
++    method_table_for(JET.ReportPass(analyzer), JET.get_inference_world(analyzer))
++
++function add_jet_report!(reports, stage, label, sig; device = false, jetconfigs...)
++    result =
++        device ?
++        JET.report_opt(sig; report_pass = DeviceOptPass(), jetconfigs...) :
++        JET.report_opt(sig; jetconfigs...)
++    isempty(JET.get_reports(result)) ||
++        push!(reports, JETStageReport(stage, label, result))
++    return reports
++end
++
++# ─── GPUCompiler IR validation (for kernel-side analysis) ────────────────────
++
++const PTX_CAP = v"7.0"
++const PTX_ISA = v"7.8"
++
++# Missing symbols that only resolve during a real kernel launch: libdevice
++# math functions, GPU runtime helpers, and the kernel state intrinsic.
++is_benign_ir_error(e) =
++    e[1] == GPUC.UNKNOWN_FUNCTION &&
++    e[3] isa AbstractString &&
++    (
++        startswith(e[3], "__nv") ||
++        startswith(e[3], "gpu_") ||
++        occursin("state_getter", e[3])
++    )
++
++# The "file:line" of the first backtrace frame with a real location.
++function ir_error_location(backtrace)
++    i = findfirst(frame -> frame.line > 0, backtrace)
++    return isnothing(i) ? nothing : string(backtrace[i].file, ':', backtrace[i].line)
++end
++
++function ir_findings(sig::Type{<:Tuple})
++    config = GPUC.CompilerConfig(
++        GPUC.PTXCompilerTarget(; cap = PTX_CAP, ptx = PTX_ISA),
++        CUDA.CUDACompilerParams(; cap = PTX_CAP, ptx = PTX_ISA);
++        kernel = true,
++        libraries = false,
++        always_inline = true,
++    )
++    (F, arg_types...) = sig.parameters
++    try
++        job = GPUC.CompilerJob(GPUC.methodinstance(F, Tuple{arg_types...}), config)
++        GPUC.JuliaContext() do _
++            GPUC.compile(:llvm, job)
++        end
++        return Finding[]
++    catch e
++        e isa GPUC.KernelError &&
++            return [Finding(string(e.message, isnothing(e.help) ? "" : '\n' * e.help))]
++        e isa GPUC.InvalidIRError || rethrow()
++        errors = unique(
++            map(filter(!is_benign_ir_error, e.errors)) do (kind, bt, meta)
++                (string(kind, isnothing(meta) ? "" : " [$meta]"), ir_error_location(bt))
++            end,
++        )
++        return map(Base.splat(Finding), errors)
++    end
++end
++
++# ─── Kernel launch extraction (compiler introspection over the host IR) ──────
++
++"""
++    KernelLaunchSite
++
++A `CUDA.@cuda`-style launch discovered in host code by
++[`extract_kernel_launches`](@ref): the kernel function type (often a closure
++type constructed inside the host function), the `Tuple` type of the device
++argument types, and the `"file:line"` of the launch when known. A field is
++`nothing` when inference cannot determine it at the launch site (e.g. a
++launch wrapper whose `cufunction` call is behind runtime dispatch); the site
++is [`is_resolved`](@ref) when both types are known.
++"""
++struct KernelLaunchSite
++    kernel_type::Union{Nothing, Type}
++    arg_types::Union{Nothing, Type}
++    location::Union{Nothing, String}
++end
++
++# NOTE: not a constructor method, since the default constructor (which this
++# would tie with in dispatch) must not be bypassed for `Type`-valued inputs.
++function launch_site(@nospecialize(F), @nospecialize(TT), location)
++    kernel_type = F isa Type && Base.isdispatchtuple(Tuple{F}) ? F : nothing
++    arg_types =
++        TT isa DataType && TT <: Tuple && Base.isdispatchtuple(TT) ? TT :
++        nothing
++    return KernelLaunchSite(kernel_type, arg_types, location)
++end
++
++"Whether the launch's full kernel signature is statically known."
++is_resolved(site::KernelLaunchSite) =
++    !isnothing(site.kernel_type) && !isnothing(site.arg_types)
++
++kernel_signature(site::KernelLaunchSite) =
++    Tuple{site.kernel_type, site.arg_types.parameters...}
++
++# `MethodInstance.def` is a `Module` for top-level thunks and a `Method`
++# otherwise.
++definition_module(mi::Core.MethodInstance) =
++    mi.def isa Method ? mi.def.module : mi.def
++
++# Best effort: the statement's own location, else the nearest preceding one,
++# else the enclosing method definition (optimization can drop locations, and
++# Julia versions differ in how `CodeInfo` stores them).
++statement_location(code_info, i) =
++    try
++        j = findprev(!=(0), code_info.codelocs, i)
++        entry = code_info.linetable[isnothing(j) ? 1 : code_info.codelocs[j]]
++        string(entry.file, ':', entry.line)
++    catch
++        nothing
++    end
++
++# The type lattice element of a statement argument in optimized `code_typed`
++# IR. `Expr` arguments (e.g. `:static_parameter`) are not resolved, since
++# `CC.argextype` only accepts them with static-parameter types we do not have.
++argument_lattice_type(code_info, @nospecialize(x)) =
++    x isa Expr ? Any : CC.argextype(x, code_info, CC.VarState[])
++
++# The constant `Type` value of a statement argument, or `nothing`.
++function constant_type(code_info, @nospecialize(x))
++    T = CC.widenconst(argument_lattice_type(code_info, x))
++    return CC.isconstType(T) ? T.parameters[1] : nothing
++end
++
++# `CUDA.@cuda f(args...)` lowers to `kernel = cufunction(cudaconvert(f),
++# Tuple{map(Core.Typeof, map(cudaconvert, args))...}); kernel(args...)`. In
++# optimized IR the `cufunction` call appears either as an `:invoke` whose
++# `specTypes` ends with `..., typeof(cufunction), F, Type{TT}` (possibly
++# behind `Core.kwcall` or the keyword-sorter body when compiler keywords are
++# passed), or — when some part of the call is not inferrable — as a dynamic
++# `:call` with a `cufunction` reference among its first arguments. The kernel
++# signature is `Tuple{F, TT.parameters...}`.
++function match_cufunction(specTypes)
++    specTypes isa DataType || return nothing
++    params = (specTypes.parameters...,)
++    i = findfirst(P -> P === typeof(CUDA.cufunction), params)
++    (isnothing(i) || i == length(params)) && return nothing
++    F = params[i + 1]
++    TT = if i + 1 == length(params)
++        Tuple{} # `cufunction(f)` uses the default argument types
++    else
++        P = params[i + 2]
++        CC.isconstType(P) && P.parameters[1] isa Type ? P.parameters[1] : nothing
++    end
++    return F, TT
++end
++
++function match_cufunction_call(code_info, stmt)
++    args = stmt.args
++    # `cufunction` is the callee, or the callee argument of `Core.kwcall`.
++    i = findfirst(1:min(length(args), 3)) do k
++        value = CC.singleton_type(argument_lattice_type(code_info, args[k]))
++        value === CUDA.cufunction
++    end
++    (isnothing(i) || i == length(args)) && return nothing
++    F = CC.widenconst(argument_lattice_type(code_info, args[i + 1]))
++    TT = i + 1 == length(args) ? Tuple{} : constant_type(code_info, args[i + 2])
++    return F, TT
++end
++
++"""
++    extract_kernel_launches(sig::Type{<:Tuple}; max_depth = 10, max_visits = 1000)
++        -> sites::Vector{KernelLaunchSite}
++
++Find every kernel launch reachable from a call with signature `sig` (over the
++`:host` GPU argument types) by walking the optimized IR from `Base.code_typed`
++and recursing into `:invoke`d callees, up to `max_depth` levels and
++`max_visits` inspected methods. Launches whose kernel function type or
++argument tuple type inference cannot determine (e.g. launch wrappers that
++compute kernel attributes at runtime, such as a kernel-naming keyword that
++makes the `cufunction` call dynamic) are returned as unresolved sites (see
++[`KernelLaunchSite`](@ref)).
++"""
++function extract_kernel_launches(
++    sig::Type{<:Tuple};
++    max_depth::Integer = 10,
++    max_visits::Integer = 1000,
++)
++    sites = KernelLaunchSite[]
++    site_keys = Set{Tuple{Any, Any}}()
++    visited = Set{Type}((sig,))
++    queue = [(sig, 1)]
++    visits = 0
++    while !isempty(queue)
++        (visits += 1) > max_visits && break
++        (signature, depth) = popfirst!(queue)
++        code_infos = try
++            Base.code_typed_by_type(signature; optimize = true)
++        catch
++            continue # uninferrable or ambiguous signatures have no host IR
++        end
++        length(code_infos) == 1 || continue
++        code_info = code_infos[1][1]
++        code_info isa Core.CodeInfo || continue
++        for (i, stmt) in enumerate(code_info.code)
++            if Meta.isexpr(stmt, :invoke) && stmt.args[1] isa Core.MethodInstance
++                callee = stmt.args[1]
++                match = match_cufunction(callee.specTypes)
++                if isnothing(match)
++                    if depth < max_depth &&
++                       Base.moduleroot(definition_module(callee)) !== Core &&
++                       callee.specTypes isa DataType &&
++                       !(callee.specTypes in visited)
++                        push!(visited, callee.specTypes)
++                        push!(queue, (callee.specTypes, depth + 1))
++                    end
++                    continue
++                end
++            elseif Meta.isexpr(stmt, :call)
++                match = match_cufunction_call(code_info, stmt)
++                isnothing(match) && continue
++            else
++                continue
++            end
++            site = launch_site(match..., statement_location(code_info, i))
++            key = (site.kernel_type, site.arg_types)
++            key in site_keys || (push!(site_keys, key); push!(sites, site))
++        end
++    end
++    return sites
++end
++
++# ─── Non-isbits kernel arguments (closure captures at the launch boundary) ───
++
++# Not every type has a definite number of fields (`Type{Float64}` does not).
++definite_fieldcount(@nospecialize(T)) =
++    try
++        fieldcount(T)
++    catch
++        nothing
++    end
++
++# GPUCompiler's internal helper prints one indented line per non-isbits field,
++# recursively ("  .name is of type T which is not isbits."); the fallback only
++# names the immediate non-isbits fields.
++explain_nonisbits(@nospecialize(T)) =
++    isdefined(GPUC, :explain_nonisbits) ? GPUC.explain_nonisbits(T) :
++    join(
++        (
++            "  .$(fieldname(T, i)) is of type $(fieldtype(T, i)) which is not isbits"
++            for i in 1:something(definite_fieldcount(T), 0) if
++            !isbitstype(fieldtype(T, i))
++        ),
++        '\n',
++    )
++
++# Mirrors GPUCompiler's `check_invocation`, which rejects these arguments when
++# a kernel is compiled for a real launch ("passing non-bitstype argument").
++function nonisbits_findings(site::KernelLaunchSite)
++    findings = Finding[]
++    for (i, T) in enumerate((site.kernel_type, site.arg_types.parameters...))
++        (CC.isconstType(T) || isbitstype(T)) && continue
++        definite_fieldcount(T) == 0 && continue # usable by identity
++        what =
++            i == 1 ? "the kernel closure `$T` captures non-isbits values" :
++            "kernel argument $(i - 1) has the non-isbits type `$T`"
++        detail = rstrip(explain_nonisbits(T), '\n')
++        message = string(
++            what,
++            "; a real launch fails with \"passing non-bitstype argument\"",
++            isempty(detail) ? "" : ":\n" * detail,
++        )
++        push!(findings, Finding(message, site.location))
++    end
++    return findings
++end
++
++# ─── LLVM-lowering compatibility of kernel argument types (:llvm_types) ──────
++
++"""
++    llvm_type_findings!(findings, ::Type{T}, path; llvm = Base.libllvm_version)
++
++Append a [`Finding`](@ref) for every field or element of `T` (reached from a
++kernel argument named by `path`) whose LLVM lowering is known to crash the
++NVPTX backend in libLLVM version `llvm`. Each rule is gated on the LLVM
++version that fixed it, so the checks disable themselves on newer Julia:
++
++  - `Int128`/`UInt128` anywhere in a kernel argument's layout (`i128` in a
++    parameter) crashes NVPTX instruction selection before LLVM 20
++    (llvm/llvm-project#49221, llvm/llvm-project#83179).
++  - Homogeneous `NTuple{N, <:VecElement}` SIMD vectors with non-power-of-two
++    length (`<3 x i64>` etc.) crash NVPTX parameter/return lowering before
++    LLVM 19 (llvm/llvm-project#104524).
++  - Fully empty aggregate parameters (`{}`, `[0 x T]`) are an NVPTX fatal
++    error ("Unexpected empty type") until the 2026 fix llvm/llvm-project's
++    PR #207057 (first released in LLVM 23). No rule is emitted for them,
++    because Julia cannot produce such parameters: empty aggregates like
++    `Tuple{}` are ghost types, which GPUCompiler elides as arguments, and
++    Julia's codegen elides zero-size fields inside larger aggregates
++    (verified: a `Tuple{Tuple{}, Float64}` kernel argument lowers to
++    `{ double }`).
++"""
++function llvm_type_findings!(
++    findings::Vector{Finding},
++    @nospecialize(T),
++    path::String;
++    llvm::VersionNumber = Base.libllvm_version,
++    depth::Integer = 1,
++)
++    # `push!` returns `findings`, so `report` can be the branches' return value.
++    report(problem, remedy) = push!(
++        findings,
++        Finding("$path is of type $T: $problem; this Julia ships LLVM $llvm. $remedy"),
++    )
++    depth > 32 && return findings
++    if T isa Union
++        for U in Base.uniontypes(T)
++            llvm_type_findings!(findings, U, path; llvm, depth = depth + 1)
++        end
++        return findings
++    end
++    T isa DataType || return findings
++    (T === Int128 || T === UInt128) && llvm < v"20" &&
++        return report(
++            "an `i128` in a kernel parameter crashes NVPTX instruction selection \
++             before LLVM 20 (llvm/llvm-project#49221, llvm/llvm-project#83179)",
++            "Pass the value as an `NTuple` of smaller integers and reassemble it \
++             inside the kernel.",
++        )
++    if T <: Tuple &&
++       length(T.parameters) > 1 &&
++       !ispow2(length(T.parameters)) &&
++       allequal(T.parameters) &&
++       first(T.parameters) isa DataType &&
++       first(T.parameters) <: VecElement &&
++       llvm < v"19"
++        return report(
++            "a SIMD vector with a non-power-of-two number of elements crashes \
++             NVPTX parameter/return lowering before LLVM 19 \
++             (llvm/llvm-project#104524)",
++            "Pad the vector to a power-of-two length.",
++        )
++    end
++    (isprimitivetype(T) || !isconcretetype(T)) && return findings
++    for i in 1:fieldcount(T)
++        name = T <: Tuple ? "[$i]" : ".$(fieldname(T, i))"
++        llvm_type_findings!(findings, fieldtype(T, i), path * name; llvm, depth = depth + 1)
++    end
++    return findings
++end
++
++function llvm_argument_findings!(findings, arg_types, path_prefix; llvm)
++    for (i, T) in enumerate(arg_types)
++        Base.issingletontype(T) && continue # elided by GPUCompiler, never lowered
++        llvm_type_findings!(findings, T, "$path_prefix[$i]"; llvm)
++    end
++    return findings
++end
++
++# ─── Host pointer scan (for kernel arguments after adaptation) ───────────────
++
++function host_pointer_findings!(findings, x, path)
++    if x isa Array || x isa Ptr
++        push!(
++            findings,
++            Finding(
++                "$path is a host $(typeof(x).name.wrapper), which would cause \
++                 an illegal memory access in a kernel",
++            ),
++        )
++    elseif x isa CUDA.CuDeviceArray
++        return findings
++    elseif !isbits(x) && (isstructtype(typeof(x)) || x isa Tuple)
++        foreach(1:fieldcount(typeof(x))) do i
++            name = x isa Tuple ? "[$i]" : string('.', fieldname(typeof(x), i))
++            isdefined(x, i) &&
++                host_pointer_findings!(findings, getfield(x, i), path * name)
++        end
++    end
++    return findings
++end
++
++# ─── Combined checks ─────────────────────────────────────────────────────────
++
++add_issue_report!(reports, stage::Symbol, label, findings) =
++    isempty(findings) || push!(reports, IssueStageReport(stage, label, findings))
++
++# GPUCompiler IR validation and JET analysis over the device method table, for
++# one kernel signature (an extracted launch or the whole-call fallback).
++function add_kernel_analyses!(reports, sig, label; jetconfigs...)
++    add_issue_report!(
++        reports,
++        :kernel,
++        "GPUCompiler IR validation ($label)",
++        ir_findings(sig),
++    )
++    return add_jet_report!(
++        reports,
++        :kernel,
++        "JET over CUDA's device method table ($label)",
++        sig;
++        device = true,
++        jetconfigs...,
++    )
++end
++
++"""
++    compilation_reports(f, args::Tuple; stages, kwargs...)
++        -> (ok::Bool, reports::Vector{StageReport})
++
++Run the [`TestCompilation`](@ref) analyses of `f(args...)` selected by
++`stages` (any subset of `$(DEFAULT_STAGES_DOC)`; all by default). `ok` is
++`true` when every selected analysis finds no issues, and `reports` contains
++one [`StageReport`](@ref) per failing analysis. See the module docstring for
++the available stages and keyword arguments.
++"""
++function compilation_reports(
++    f,
++    args::Tuple;
++    stages = DEFAULT_STAGES,
++    host_array_type::Type = CUDA.CuArray,
++    type_replacements::Tuple = (),
++    host_ignored_modules = default_host_ignored_modules(),
++    kernel_ignored_modules = (),
++    extra_ignored_modules = (),
++    max_extraction_depth::Integer = 10,
++    max_extraction_visits::Integer = 1000,
++    jetconfigs...,
++)
++    for stage in stages
++        stage in DEFAULT_STAGES ||
++            throw(ArgumentError("unknown stage $stage; expected one of \
++                                 $DEFAULT_STAGES_DOC"))
++    end
++    host_configs = (;
++        ignored_modules = (host_ignored_modules..., extra_ignored_modules...),
++        jetconfigs...,
++    )
++    kernel_configs = (;
++        ignored_modules = (kernel_ignored_modules..., extra_ignored_modules...),
++        jetconfigs...,
++    )
++    reports = StageReport[]
++
++    :cpu in stages && add_jet_report!(
++        reports,
++        :cpu,
++        "JET optimization analysis over CPU argument types",
++        Tuple{typeof(f), map(typeof, args)...};
++        host_configs...,
++    )
++
++    # The GPU-machine call signature, used by :host and by launch extraction.
++    host_sig = nothing
++    if :host in stages || :kernel in stages || :llvm_types in stages
++        host_sig, host_findings =
++            host_signature(f, args; host_array_type, type_replacements)
++        add_issue_report!(
++            reports,
++            # Attribute the failure to the first stage that needs the types.
++            first(filter(in(stages), (:host, :kernel, :llvm_types))),
++            "GPU host argument types (launch extraction skipped)",
++            host_findings,
++        )
++    end
++    :host in stages &&
++        !isnothing(host_sig) &&
++        add_jet_report!(
++            reports,
++            :host,
++            "JET optimization analysis over GPU host argument types",
++            host_sig;
++            host_configs...,
++        )
++
++    (:kernel in stages || :pointers in stages || :llvm_types in stages) ||
++        return isempty(reports), reports
++
++    adapted = kernel_arguments(args)
++
++    if :pointers in stages
++        findings = Finding[]
++        foreach(enumerate(adapted)) do (i, arg)
++            host_pointer_findings!(findings, arg, "args[$i]")
++        end
++        add_issue_report!(reports, :pointers, "host pointers after adaptation", findings)
++    end
++
++    sites =
++        (:kernel in stages || :llvm_types in stages) && !isnothing(host_sig) ?
++        extract_kernel_launches(
++            host_sig;
++            max_depth = max_extraction_depth,
++            max_visits = max_extraction_visits,
++        ) : KernelLaunchSite[]
++    launches = filter(is_resolved, sites)
++
++    if :kernel in stages && isempty(launches)
++        # Whole-call fallback: treat f(adapted args...) as one kernel body.
++        kernel_f = (kernel_args...) -> (f(kernel_args...); nothing)
++        sig = Tuple{typeof(kernel_f), map(typeof, adapted)...}
++        add_kernel_analyses!(reports, sig, "whole call as kernel body"; kernel_configs...)
++    elseif :kernel in stages
++        for (k, site) in enumerate(launches)
++            label = string(
++                "kernel $k: ",
++                site.kernel_type,
++                isnothing(site.location) ? "" : " launched at $(site.location)",
++            )
++            capture_findings = nonisbits_findings(site)
++            if isempty(capture_findings)
++                add_kernel_analyses!(
++                    reports,
++                    kernel_signature(site),
++                    label;
++                    kernel_configs...,
++                )
++            else # the launch (and thus compilation) cannot happen
++                add_issue_report!(
++                    reports,
++                    :kernel,
++                    "launch argument validation ($label)",
++                    capture_findings,
++                )
++            end
++        end
++    end
++
++    if :llvm_types in stages
++        llvm = Base.libllvm_version
++        findings = Finding[]
++        llvm_argument_findings!(findings, map(typeof, adapted), "args"; llvm)
++        # Unresolved sites with known argument types still contribute here.
++        for (k, site) in enumerate(sites)
++            isnothing(site.kernel_type) ||
++                llvm_type_findings!(findings, site.kernel_type, "kernel $k closure"; llvm)
++            isnothing(site.arg_types) || llvm_argument_findings!(
++                findings,
++                (site.arg_types.parameters...,),
++                "kernel $k args";
++                llvm,
++            )
++        end
++        unique!(finding -> finding.message, findings)
++        add_issue_report!(
++            reports,
++            :llvm_types,
++            "LLVM lowering of kernel argument types (libLLVM $llvm)",
++            findings,
++        )
++    end
++
++    return isempty(reports), reports
++end
++
++# ─── Test integration ────────────────────────────────────────────────────────
++
++"""
++    CompilationTestFailure
++
++The `Test.Result` recorded by a failing [`@test_compilation`](@ref), holding
++every failing [`StageReport`](@ref). Its `show` method prints one organized,
++color-coded report in the style of `JET.@test_opt` failures: the source
++location and tested expression, then each stage's findings under a stage
++header (JET results are printed with JET's own report printer).
++"""
++struct CompilationTestFailure <: Test.Result
++    orig_expr::Expr
++    source::LineNumberNode
++    reports::Vector{StageReport}
++end
++
++function Base.show(io::IO, t::CompilationTestFailure)
++    printstyled(io, "Compilation test failed"; bold = true, color = Base.error_color())
++    print(io, " at ")
++    printstyled(io, something(t.source.file, :none), ":", t.source.line, "\n"; bold = true)
++    println(io, "  Expression: ", t.orig_expr)
++    for report in t.reports
++        println(io, indent_lines(sprint(show, report; context = io), "  "))
++    end
++end
++
++function Test.record(::Test.FallbackTestSet, t::CompilationTestFailure)
++    println(t)
++    throw(Test.FallbackTestSetException("There was an error during testing"))
++end
++
++function Test.record(ts::Test.DefaultTestSet, t::CompilationTestFailure)
++    if Test.TESTSET_PRINT_ENABLE[]
++        printstyled(ts.description, ": "; color = :white)
++        print(t)
++        println()
++    end
++    # Convert to `Fail` so that test summarization works correctly (the same
++    # approach as JET's `Test.record(::DefaultTestSet, ::JETTestFailure)`).
++    push!(ts.results, Test.Fail(:test_compilation, t.orig_expr, nothing, nothing, t.source))
++    return t
++end
++
++"""
++    @test_compilation [stages = ...] [kwarg = ...] f(args...)
++
++Assert that `f(args...)` passes the selected [`compilation_reports`](@ref)
++analyses, recording the result in the enclosing `Test` test set. On failure,
++one [`CompilationTestFailure`](@ref) is recorded, which prints an organized
++report of every failing stage's findings.
++
++    @test_compilation fill!(data, value)
++    @test_compilation stages = (:cpu, :host) my_solver_step!(state, cache)
++"""
++macro test_compilation(args...)
++    call = args[end]
++    kwargs = map(args[1:(end - 1)]) do kwarg
++        @assert Meta.isexpr(kwarg, :(=), 2) "expected keyword arguments before the call"
++        Expr(:kw, kwarg.args[1], esc(kwarg.args[2]))
++    end
++    @assert Meta.isexpr(call, :call) "expected a function call as the last argument"
++    f = esc(call.args[1])
++    call_args = map(esc, call.args[2:end])
++    orig_expr = QuoteNode(
++        Expr(:macrocall, Symbol("@test_compilation"), nothing, args...),
++    )
++    source = QuoteNode(__source__)
++    return quote
++        testres = try
++            (ok, reports) =
++                compilation_reports($f, ($(call_args...),); $(kwargs...))
++            if ok
++                Test.Pass(:test_compilation, $orig_expr, nothing, nothing, $source)
++            else
++                CompilationTestFailure($orig_expr, $source, reports)
++            end
++        catch err
++            err isa InterruptException && rethrow()
++            Test.Error(:test_error, $orig_expr, err, Base.current_exceptions(), $source)
++        end
++        Test.record(Test.get_testset(), testres)
++    end
++end
++
++end # module TestCompilation
+diff --git a/docs/dev-guides/.claude/skills/fix-ci/test_compilation_tests.jl b/docs/dev-guides/.claude/skills/fix-ci/test_compilation_tests.jl
+new file mode 100644
+index 00000000..d61f47f9
+--- /dev/null
++++ b/docs/dev-guides/.claude/skills/fix-ci/test_compilation_tests.jl
+@@ -0,0 +1,381 @@
++using Test
++import Adapt
++import CUDA
++import JET
++
++include(joinpath(@__DIR__, "test_compilation.jl"))
++using .TestCompilation
++using .TestCompilation: CompilationTestFailure, Finding, IssueStageReport, JETStageReport
++
++const FT = Float64
++
++# Stable on every stage: no indexing (scalar indexing of host CuArrays is
++# dynamic in GPUArraysCore), no throw paths with runtime-computed arguments.
++check_length(a) = (length(a) == typemax(Int) && error("too long"); nothing)
++
++# Stable everywhere except when `a` is a host CuArray (the `:host` stage), so
++# it is checked with `stages` that exclude `:host`.
++function stable_fill!(a, v)
++    for i in eachindex(a)
++        @inbounds a[i] = v
++    end
++    return nothing
++end
++
++# Genuinely unstable on the CPU: JET-opt flags the dynamic `+`.
++unstable_getindex(r) = (r[] + 1; nothing)
++
++# Stable over Array but not over CuArray: GPUArrays turns contiguous views of
++# CuArrays into derived CuArrays, whose type is not inferrable, so calling any
++# function on such a view requires runtime dispatch. The instability lives in
++# CUDA.jl frames, which the `:host` stage ignores by default.
++derived_view(array) = (isempty(view(array, 1:2)); nothing)
++
++# The hidden value type makes fill! dispatch dynamically in the kernel body.
++hidden_value_fill!(a, v) = (fill!(a, Base.inferencebarrier(v)); nothing)
++
++# A struct with an array field but no adapt rule: the array survives
++# adaptation, which would be an illegal host pointer inside a kernel.
++struct MissingAdaptRule
++    values::Vector{FT}
++end
++
++# A struct whose adapt rule hides the converted type from inference, so its
++# GPU host type cannot be computed.
++struct NotInferrableAdapt
++    values::Vector{FT}
++end
++Adapt.adapt_structure(to, x::NotInferrableAdapt) =
++    Base.inferencebarrier(NotInferrableAdapt(Adapt.adapt(to, x.values)))
++
++# Host functions that launch kernels via CUDA.@cuda (only ever inferred by the
++# tests, never executed, so no GPU is needed). The bad one's kernel closure
++# captures a `Type`, which is not isbits, so only a real launch would crash —
++# no stage other than the launch-extraction check can see it.
++good_launcher!(x) = (kern = y -> nothing; CUDA.@cuda kern(x); nothing)
++function bad_launcher!(x)
++    T = eltype(x)
++    kern = y -> (Base.donotdelete(T); nothing)
++    CUDA.@cuda kern(x)
++    return nothing
++end
++deep_launcher!(x) = (good_launcher!(x); nothing) # launch below the entry point
++function unstable_kernel_launcher!(x)
++    kern = y -> (@inbounds y[1] = Base.inferencebarrier(one(FT)); nothing)
++    CUDA.@cuda kern(x)
++    return nothing
++end
++
++do_nothing(x) = nothing
++
++# Dummy singleton types for the type_replacements keyword.
++abstract type AbstractDummyDevice end
++struct DummyCPUDevice <: AbstractDummyDevice end
++struct DummyGPUDevice <: AbstractDummyDevice end
++struct DeviceHolder{D}
++    device::D
++end
++
++host_cuarray(T, N) = CUDA.CuArray{T, N, CUDA.DeviceMemory}
++
++# Assert that the selected stages pass, logging any reports for debugging.
++function check_passes(f, args; kwargs...)
++    ok, reports = compilation_reports(f, args; kwargs...)
++    isempty(reports) || @info "unexpected reports" reports
++    @test ok
++end
++
++# Assert that the selected stages fail; return the reports for further checks.
++function failing_reports(f, args; kwargs...)
++    ok, reports = compilation_reports(f, args; kwargs...)
++    @test !ok
++    return reports
++end
++
++@testset "TestCompilation" begin
++    @testset "all stages pass for a stable call" begin
++        check_passes(check_length, (zeros(FT, 4),))
++        @test_compilation check_length(zeros(FT, 4))
++        @test_compilation stages = (:cpu, :kernel, :pointers, :llvm_types) stable_fill!(
++            zeros(FT, 4),
++            one(FT),
++        )
++    end
++
++    @testset "cpu stage matches JET.@test_opt" begin
++        reports = failing_reports(unstable_getindex, (Ref{Any}(1),); stages = (:cpu,))
++        @test all(r -> r.stage == :cpu && r isa JETStageReport, reports)
++        @test !isempty(JET.get_reports(reports[1].result))
++    end
++
++    @testset "host stage catches CuArray-only instability" begin
++        array = zeros(FT, 4)
++        check_passes(derived_view, (array,); stages = (:cpu,), host_ignored_modules = ())
++        reports = failing_reports(
++            derived_view,
++            (array,);
++            stages = (:host,),
++            host_ignored_modules = (),
++        )
++        @test all(r -> r.stage == :host, reports)
++        # The default ignored modules hide the CUDA-internal instability.
++        check_passes(derived_view, (array,); stages = (:host,))
++    end
++
++    @testset "host types are computed by Adapt inference" begin
++        @test TestCompilation.host_type(Vector{FT}) == host_cuarray(FT, 1)
++        @test TestCompilation.host_type(Matrix{Int}) == host_cuarray(Int, 2)
++        @test TestCompilation.host_type(FT) == FT
++        # Wrappers are converted through their own adapt rules.
++        @test TestCompilation.host_type(Tuple{Vector{FT}, Int}) ==
++              Tuple{host_cuarray(FT, 1), Int}
++        # The host_array_type hook overrides the conversion target.
++        @test TestCompilation.host_type(Vector{FT}; host_array_type = Array) ==
++              Vector{FT}
++    end
++
++    @testset "type_replacements swaps device singletons" begin
++        replacements = (AbstractDummyDevice => DummyGPUDevice,)
++        @test TestCompilation.host_type(
++            DummyCPUDevice;
++            type_replacements = replacements,
++        ) == DummyGPUDevice
++        # Replacements apply structurally, inside type parameters.
++        @test TestCompilation.host_type(
++            DeviceHolder{DummyCPUDevice};
++            type_replacements = replacements,
++        ) == DeviceHolder{DummyGPUDevice}
++    end
++
++    @testset "host stage reports non-inferrable GPU types" begin
++        holder = NotInferrableAdapt(zeros(FT, 2))
++        report = only(failing_reports(do_nothing, (holder,); stages = (:host,)))
++        @test report isa IssueStageReport && report.stage == :host
++        @test occursin("not inferrable", report.findings[1].message)
++        @test occursin("NotInferrableAdapt", report.findings[1].message)
++    end
++
++    @testset "kernel stage catches device-incompatible calls" begin
++        args = (zeros(FT, 4), one(FT))
++        reports = failing_reports(hidden_value_fill!, args; stages = (:kernel,))
++        @test all(r -> r.stage == :kernel, reports)
++        messages = sprint.(show, reports)
++        # NOTE: `occursin(x)` curries the haystack, not the needle.
++        @test any(m -> occursin("whole call as kernel body", m), messages)
++        @test any(m -> occursin("dynamic", m), messages)
++    end
++
++    @testset "pointer stage catches arrays that Adapt leaves on the host" begin
++        holder = MissingAdaptRule(zeros(FT, 3))
++        reports = failing_reports(do_nothing, (holder,); stages = (:pointers,))
++        @test reports[1] isa IssueStageReport && reports[1].stage == :pointers
++        @test occursin(".values", reports[1].findings[1].message)
++
++        # Plain arrays are converted to device arrays by the stand-in rule.
++        check_passes(do_nothing, (zeros(FT, 3),); stages = (:pointers,))
++    end
++
++    @testset "kernel argument conversion" begin
++        adapted = TestCompilation.kernel_arguments((zeros(FT, 2, 3),))[1]
++        @test adapted isa CUDA.CuDeviceArray{FT, 2}
++        @test size(adapted) == (2, 3)
++    end
++
++    @testset "kernel launch extraction" begin
++        sig = Tuple{typeof(good_launcher!), host_cuarray(FT, 1)}
++        sites = TestCompilation.extract_kernel_launches(sig)
++        @test length(sites) == 1
++        @test TestCompilation.is_resolved(sites[1])
++        @test sites[1].kernel_type <: Function
++        @test sites[1].arg_types == Tuple{CUDA.CuDeviceVector{FT, 1}}
++        @test occursin("test_compilation_tests.jl", sites[1].location)
++
++        # Launches are found through intermediate host functions.
++        deep_sig = Tuple{typeof(deep_launcher!), host_cuarray(FT, 1)}
++        deep_sites = TestCompilation.extract_kernel_launches(deep_sig)
++        @test length(deep_sites) == 1
++        @test deep_sites[1].kernel_type == sites[1].kernel_type
++
++        # Functions that launch nothing have no launch sites.
++        @test isempty(
++            TestCompilation.extract_kernel_launches(
++                Tuple{typeof(check_length), host_cuarray(FT, 1)},
++            ),
++        )
++    end
++
++    @testset "launch-boundary closure captures are detected" begin
++        # The good twin passes: its kernel closure captures nothing. This also
++        # shows that the extracted launch replaces the whole-call analysis,
++        # which would reject good_launcher!'s own launch machinery.
++        check_passes(good_launcher!, (zeros(FT, 4),))
++        @test_compilation good_launcher!(zeros(FT, 4))
++
++        reports = failing_reports(bad_launcher!, (zeros(FT, 4),); stages = (:kernel,))
++        @test reports[1] isa IssueStageReport && reports[1].stage == :kernel
++        message = reports[1].findings[1].message
++        @test occursin("captures non-isbits", message)
++        @test occursin("Type{$FT}", message) # the offending field type
++        @test occursin("non-bitstype argument", message)
++    end
++
++    @testset "extracted kernel bodies are compiled and JET-analyzed" begin
++        args = (zeros(FT, 4),)
++        reports = failing_reports(unstable_kernel_launcher!, args; stages = (:kernel,))
++        labels = [r.label for r in reports]
++        # The failures are attributed to the extracted kernel, not the host.
++        @test any(l -> occursin("kernel 1", l), labels)
++        @test any(l -> occursin("IR validation", l), labels)
++        @test any(l -> occursin("device method table", l), labels)
++    end
++
++    @testset "llvm_types stage" begin
++        llvm_findings(T; llvm) =
++            TestCompilation.llvm_type_findings!(Finding[], T, "args[1]"; llvm)
++
++        # Int128/UInt128 in a kernel parameter: fixed in LLVM 20.
++        for T in (Int128, UInt128, Tuple{UInt128, FT}, @NamedTuple{a::Int128})
++            @test !isempty(llvm_findings(T; llvm = v"15"))
++            @test isempty(llvm_findings(T; llvm = v"20"))
++        end
++        message = llvm_findings(Tuple{FT, UInt128}; llvm = v"15")[1].message
++        @test occursin("args[1][2]", message)
++        @test occursin("llvm/llvm-project#49221", message)
++
++        # Non-power-of-two SIMD vectors: fixed in LLVM 19.
++        V3 = NTuple{3, Core.VecElement{FT}}
++        V4 = NTuple{4, Core.VecElement{FT}}
++        @test !isempty(llvm_findings(V3; llvm = v"18"))
++        @test occursin(
++            "llvm/llvm-project#104524",
++            llvm_findings(V3; llvm = v"18")[1].message,
++        )
++        @test isempty(llvm_findings(V3; llvm = v"19"))
++        @test isempty(llvm_findings(V4; llvm = v"18"))
++        @test isempty(llvm_findings(FT; llvm = v"15"))
++
++        # The stage itself runs on the adapted kernel argument types, gated on
++        # the LLVM version that ships with this Julia.
++        int128_args = (fill(UInt128(0), 4), UInt128(1))
++        if Base.libllvm_version < v"20"
++            reports = failing_reports(stable_fill!, int128_args; stages = (:llvm_types,))
++            @test reports[1] isa IssueStageReport && reports[1].stage == :llvm_types
++            @test occursin("args[2]", reports[1].findings[1].message)
++        else
++            check_passes(stable_fill!, int128_args; stages = (:llvm_types,))
++        end
++        check_passes(stable_fill!, (zeros(FT, 4), one(FT)); stages = (:llvm_types,))
++    end
++
++    @testset "unknown stages are rejected" begin
++        @test_throws ArgumentError compilation_reports(
++            do_nothing,
++            (1,);
++            stages = (:ptx,),
++        )
++    end
++
++    @testset "JET-style failure output" begin
++        reports = failing_reports(unstable_getindex, (Ref{Any}(1),); stages = (:cpu,))
++        str = sprint(show, reports[1])
++        @test occursin("── [cpu]", str) # stage header
++        @test occursin("runtime dispatch", str) # JET's own report printer
++        color_str = sprint(show, reports[1]; context = :color => true)
++        @test occursin("\e[", color_str) # color codes when supported
++
++        # A failing @test_compilation records one organized report.
++        old_print_enable = Test.TESTSET_PRINT_ENABLE[]
++        Test.TESTSET_PRINT_ENABLE[] = false
++        inner_testset = Test.DefaultTestSet("inner")
++        Test.push_testset(inner_testset)
++        local testres
++        try
++            testres =
++                @test_compilation stages = (:cpu,) unstable_getindex(Ref{Any}(1))
++        finally
++            Test.pop_testset()
++            Test.TESTSET_PRINT_ENABLE[] = old_print_enable
++        end
++        @test testres isa CompilationTestFailure
++        @test length(inner_testset.results) == 1
++        @test inner_testset.results[1] isa Test.Fail
++        failure_str = sprint(show, testres)
++        @test occursin("Compilation test failed", failure_str)
++        @test occursin("@test_compilation", failure_str)
++        @test occursin("unstable_getindex", failure_str)
++        @test occursin("── [cpu]", failure_str)
++
++        # A passing @test_compilation records a Pass.
++        pass_testset = Test.DefaultTestSet("inner pass")
++        Test.push_testset(pass_testset)
++        try
++            @test_compilation stages = (:cpu,) check_length(zeros(FT, 2))
++        finally
++            Test.pop_testset()
++        end
++        @test pass_testset.n_passed == 1
++    end
++end
++
++# =============================================================================
++# ClimaCore integration (everything above runs without ClimaCore; this section
++# is skipped automatically in environments that do not provide ClimaCore)
++# =============================================================================
++
++if isnothing(Base.find_package("ClimaCore"))
++    @info "Skipping ClimaCore integration tests (ClimaCore not in environment)"
++else
++
++    import ClimaCore
++    import ClimaCore: DataLayouts
++    import ClimaComms
++
++    if !isdefined(DataLayouts, :DataScope)
++        @info "Skipping ClimaCore integration tests (they require the unified \
++               DataLayouts API, which this version of ClimaCore does not have)"
++    else
++
++        @testset "ClimaCore integration" begin
++            data = DataLayouts.VIJFH{FT, 3, 4, 4, nothing}(Array{FT}, 5)
++
++            @testset "host types through ClimaCore's adapt rules" begin
++                HT = TestCompilation.host_type(typeof(data))
++                @test isconcretetype(HT)
++                @test HT <: DataLayouts.DataLayout
++                @test HT.parameters[end] <: CUDA.CuArray{FT, 5}
++                # The scope is recomputed by ClimaCore's own adapt rules.
++                @test HT.parameters[end - 1] !== typeof(DataLayouts.DataScope(data))
++            end
++
++            @testset "device singleton replacement" begin
++                @test TestCompilation.host_type(
++                    ClimaComms.CPUSingleThreaded;
++                    type_replacements = (
++                        ClimaComms.AbstractCPUDevice => ClimaComms.CUDADevice,
++                    ),
++                ) == ClimaComms.CUDADevice
++            end
++
++            @testset "all stages pass for a DataLayout call" begin
++                check_passes(fill!, (data, one(FT)))
++                @test_compilation fill!(data, one(FT))
++            end
++
++            @testset "kernel stage catches device-incompatible calls" begin
++                reports = failing_reports(
++                    hidden_value_fill!,
++                    (data, one(FT));
++                    stages = (:kernel,),
++                )
++                @test all(r -> r.stage == :kernel, reports)
++            end
++
++            @testset "kernel argument conversion applies ClimaCore adapt rules" begin
++                adapted = TestCompilation.kernel_arguments((data,))[1]
++                @test parent(adapted) isa CUDA.CuDeviceArray{FT, 5}
++                check_passes(do_nothing, (data,); stages = (:pointers,))
++            end
++        end
++
++    end # unified DataLayouts API guard
++end # ClimaCore integration guard
+diff --git a/docs/dev-guides/templates/update_dev_guides.yml.template b/docs/dev-guides/templates/update_dev_guides.yml.template
+index a2568bed..62ca5add 100644
+--- a/docs/dev-guides/templates/update_dev_guides.yml.template
++++ b/docs/dev-guides/templates/update_dev_guides.yml.template
+@@ -36,7 +36,7 @@ jobs:
+       contents: write
+       pull-requests: write
+     steps:
+-      - uses: actions/checkout@v4
++      - uses: actions/checkout@v7
+         with:
+           fetch-depth: 0  # Full history is required for subtree pull
+ 
 diff --git a/src/BulkMicrophysicsTendencies.jl b/src/BulkMicrophysicsTendencies.jl
 index 105ecdd8..96f8e6e9 100644
 --- a/src/BulkMicrophysicsTendencies.jl
