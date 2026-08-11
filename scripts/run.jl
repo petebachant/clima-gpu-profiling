@@ -1,20 +1,6 @@
 # Run the benchmark
 import CUDA
 
-# Loading this package makes its precompiled ClimaCore specializations available,
-# which is the whole point of it -- the cache is only consulted for code that is
-# actually loaded. Measured in isolation: first call to the warmed operator set
-# drops 10.2 s -> 1.8 s, grid construction 45.4 s -> 32.4 s.
-#
-# It deliberately does not depend on ClimaAtmos or CloudMicrophysics, so editing
-# those does not invalidate it. Set AMIPWARMUP_SKIP=1 to build it without the
-# workload. Guarded so a broken warmup degrades to "slow", never "job fails".
-try
-    @eval import AMIPWarmup
-catch err
-    @warn "AMIPWarmup unavailable; continuing without warm caches" err
-end
-
 # Figure out which project is currently activated and include the setup
 # script
 project_dir = dirname(Base.active_project())

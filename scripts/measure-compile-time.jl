@@ -95,7 +95,17 @@ if WARMUP
         @eval import AMIPWarmup
         @info "AMIPWarmup loaded"
     catch err
-        @warn "AMIPWarmup requested but unavailable" err
+        # HARD failure, deliberately. Warning and continuing would run the
+        # warmup arm with no warmup, making it identical to the control -- a
+        # null result that looks like a measurement and would overwrite real
+        # evidence with it. The wiring exists only at tag
+        # compile-time-warmup-ab; on any other rev this is expected to fail.
+        error("""
+        --warmup yes was requested but AMIPWarmup could not be loaded, so this
+        arm would silently be identical to the control. Run this stage from tag
+        compile-time-warmup-ab, where AMIPWarmup is dev'd into both AMIP
+        environments. Underlying error: $(sprint(showerror, err))
+        """)
     end
 end
 
