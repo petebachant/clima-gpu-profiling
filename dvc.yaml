@@ -123,7 +123,6 @@ stages:
       - .calkit/scheduler/logs/baseline-ncu.out:
           cache: false
           persist: true
-    frozen: true
     desc: Automatically generated from the 'baseline-ncu' stage in 
       calkit.yaml. Changes made here will be overwritten.
   mod-ncu:
@@ -163,7 +162,6 @@ stages:
       - .calkit/scheduler/logs/mod-ncu.out:
           cache: false
           persist: true
-    frozen: true
     desc: Automatically generated from the 'mod-ncu' stage in 
       calkit.yaml. Changes made here will be overwritten.
   amip-baseline:
@@ -274,6 +272,24 @@ stages:
           cache: false
     desc: Automatically generated from the 'compare-kernels' stage in 
       calkit.yaml. Changes made here will be overwritten.
+  export-kernel-resources:
+    cmd: calkit xenv -n py --no-check -- python 
+      scripts/export-kernel-resources.py
+    deps:
+      - scripts/export-kernel-resources.py
+      - .calkit/env-locks/py
+      - results/ncu/baseline.ncu-rep
+      - results/ncu/baseline-details.csv
+      - .calkit/scheduler/logs/baseline-ncu.out
+      - results/ncu/mod.ncu-rep
+      - results/ncu/mod-details.csv
+      - .calkit/scheduler/logs/mod-ncu.out
+    outs:
+      - results/kernel-resources.csv:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'export-kernel-resources' 
+      stage in calkit.yaml. Changes made here will be overwritten.
   compile-time-study:
     cmd: calkit scheduler batch --name compile-time-study 
       --environment clima --dep scripts/measure-compile-time.jl --dep 

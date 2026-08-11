@@ -186,6 +186,23 @@ tables:
       invocation counts, total and mean duration, share of total GPU time,
       registers per thread, and the percent change in total time.
 
+  - path: results/kernel-resources.csv
+    title: Per-kernel register, spill, and occupancy stats
+    description: >-
+      Nsight Compute resource metrics for the profiled microphysics kernels,
+      baseline vs. mod: registers per thread, register spilling (requests and
+      the share of memory traffic they cost), stack frame, and achieved vs.
+      theoretical occupancy.
+
+      This exists because the nsys table above cannot show the mechanism behind
+      the headline speedup. The hot kernel can sit pinned at the 255-register
+      cap in BOTH cases, so by the columns nsys collects nothing changed at all,
+      while its total time falls by half. Registers at the cap is not the same
+      thing as spilling, and nsys does not collect spill metrics -- only Nsight
+      Compute does. Specific figures are deliberately left to the table rather
+      than quoted here, so this description cannot go stale against the data it
+      describes.
+
 environments:
   clima:
     kind: slurm
@@ -264,7 +281,6 @@ pipeline:
         - results/nsys/mod.nsys-rep
         - results/nsys/mod.sqlite
     baseline-ncu:
-      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
@@ -303,7 +319,6 @@ pipeline:
           storage: git
           delete_before_run: true
     mod-ncu:
-      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
@@ -412,6 +427,18 @@ pipeline:
           storage: git
       html_storage: git
       executed_ipynb_storage: git
+    export-kernel-resources:
+      kind: python-script
+      environment: py
+      script_path: scripts/export-kernel-resources.py
+      # Reads the CSVs Nsight Compute already exported, so this needs no GPU and
+      # is not frozen alongside the ncu stages that produce them.
+      inputs:
+        - from_stage_outputs: baseline-ncu
+        - from_stage_outputs: mod-ncu
+      outputs:
+        - path: results/kernel-resources.csv
+          storage: git
     compile-time-study:
       kind: shell-script
       environment: clima
