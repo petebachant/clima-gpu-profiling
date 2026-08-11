@@ -110,6 +110,10 @@ questions:
                                                   # coupler submodules
         calkit run compile-time-study
 
+      On main the stage is marked `frozen: true`, so `calkit run` leaves it and
+      its result alone; at the tag it is not frozen and runs normally, which is
+      what makes the recipe above work.
+
       Rewinding this clone in place is the supported path. The coupler manifests
       record AMIPWarmup by ABSOLUTE path
       (/home/pbachant/calkit/clima-gpu-profiling/AMIPWarmup), so in a worktree
@@ -412,6 +416,15 @@ pipeline:
       kind: shell-script
       environment: clima
       script_path: scripts/run-compile-study.sh
+      # Frozen: this stage answered its question and must not re-run here. Its
+      # warmup arm needs AMIPWarmup dev'd into the AMIP environments, which
+      # exists only at tag compile-time-warmup-ab -- the wiring cost a measured
+      # 5.1% and was reverted. Re-running on this rev would produce a warmup arm
+      # with no warmup, i.e. two identical arms overwriting the evidence with a
+      # result that looks like a measurement. (measure-compile-time.jl also
+      # fails hard in that case; this keeps `calkit run` from reaching it.)
+      # To re-evaluate, check out the tag and run it there.
+      frozen: true
       # Two full setup+JIT phases in one job (~32 min each), so the default 120
       # min from the clima environment is not enough. `env_default_options`
       # defaults to `replace`, so --gpus=1 must be restated here.
