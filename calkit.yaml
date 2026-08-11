@@ -25,6 +25,83 @@ questions:
           gains occupancy, while the hot kernel stays pinned at the 255
           cap. Spill counts are not in nsys; see results/ncu/ for those.
 
+  - question: >-
+      How much of a GPU profiling job is compilation rather than computation,
+      and how much of it is recoverable between jobs by enabling GPUCompiler's
+      on-disk kernel cache?
+    hypothesis: >-
+      Most of a profiling job is compilation, and a large share of that is GPU
+      kernel compilation that is currently thrown away at process exit. An
+      nsys stage takes ~40 minutes to produce ~1.8 s of measured stepping (30
+      coupler steps of NVTX-ranged time), and of the remainder only ~112 s is
+      Pkg.precompile and ~2 s is nsys post-processing. Julia caches host native
+      code across processes via pkgimages, but GPU kernels are compiled by
+      GPUCompiler at run time and discarded unless its `disk_cache` preference
+      is set -- and it defaults to "false" and is unset in every environment
+      here. If that accounts for a large fraction of the ~34 minutes of setup
+      and first-call compilation, enabling the cache should cut it sharply on
+      any job whose kernels have not changed, because the cache is keyed on the
+      CodeInstance and CompilerConfig and so invalidates only what changed.
+    answer: >-
+      Compilation is ~88% of the job, and it is host-side Julia JIT, not GPU
+      kernel compilation. Across all three phases the split was near-identical
+      (1715/1942 s, 1662/1885 s, 1679/1899 s = 88.3/88.2/88.4%), for a job that
+      yields 0.6 s of steady-state stepping.
+
+      GPUCompiler's on-disk kernel cache is NOT the lever, for a stronger reason
+      than the timings alone show. The cache_warm phase was 2.2% faster than
+      cache_off, but cache_cold -- which does strictly more work, populating the
+      cache -- was faster than both, so that spread is noise. Follow-up
+      diagnosis found the cache writes nothing at all: with the preference set,
+      GPUCompiler.disk_cache_enabled() correctly returns true, yet compiling a
+      kernel leaves 0 files in disk_cache_path(). The feature is a no-op in this
+      stack (Julia 1.11.5 / CUDA.jl Wfi8S / GPUCompiler Yuvf5), so enabling it
+      cannot help regardless of how much GPU compilation there is. Two candidate
+      causes are visible in GPUCompiler's `actual_compilation` -- a `nothing`
+      CodeInstance bypasses both the disk read and the write, or `cache_file`
+      bails on its build-id sentinel -- but which one applies is not established.
+
+      So the remaining levers are host-side: PrecompileTools workloads in the
+      CliMA packages, or iterating on a reduced-resolution config so setup and
+      JIT shrink with it. Note this study measures a workload the disk cache
+      never acted on; it does not measure how large the GPU-compilation share
+      would be if the cache worked.
+    evidence:
+      - kind: result
+        path: results/compile-time/compile-time.toml
+        key: cache_off.totals.wall_s
+        explanation: >-
+          Status quo. Wall time for code loading, simulation construction, and
+          two steps with the disk cache explicitly disabled and cleared, so a
+          cache left behind by earlier work cannot flatter the baseline.
+      - kind: result
+        path: results/compile-time/compile-time.toml
+        key: cache_warm.totals.wall_s
+        explanation: >-
+          The payoff. Same workload with the disk cache enabled and already
+          populated by the preceding cache_cold phase. The difference against
+          cache_off is the per-job wall time recoverable by turning the cache
+          on. All three phases run in one SLURM job on one GPU so the
+          comparison is not confounded by node or device variance.
+      - kind: result
+        path: results/compile-time/compile-time.toml
+        key: cache_off.totals.host_compile_s
+        explanation: >-
+          Host-side JIT only, from Julia's own `@timed` compile_time
+          accounting. GPU kernel compilation is not counted here because
+          GPUCompiler runs outside that accounting, which is exactly why the
+          GPU share must be inferred from the cache_off/cache_warm wall delta
+          rather than measured directly. Splitting the two matters for what to
+          do next: host-dominated points at PrecompileTools workloads in the
+          CliMA packages, GPU-dominated points at the disk cache.
+      - kind: result
+        path: results/compile-time/compile-time.toml
+        key: cache_off.second_step.wall_s
+        explanation: >-
+          Steady-state cost of one step once everything is compiled, which
+          bounds how much of the first step was genuinely compute rather than
+          compilation.
+
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod
@@ -260,6 +337,37 @@ pipeline:
           storage: git
       html_storage: git
       executed_ipynb_storage: git
+    compile-time-study:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-compile-study.sh
+      # Three full setup+JIT phases in one job, so the default 120 min from the
+      # clima environment is not enough. `env_default_options` defaults to
+      # `replace`, so --gpus=1 must be restated here.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=300
+      args:
+        - ClimaCoupler.jl-mod/experiments/AMIP
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - results/compile-time/compile-time.toml
+      inputs:
+        - scripts/measure-compile-time.jl
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaCore.jl-mod/lib
+        - ClimaAtmos.jl-mod/src
+        - CloudMicrophysics.jl-mod/src
+      outputs:
+        # Small TOML that answers the question directly -- keep it in Git so the
+        # evidence is readable without a `calkit pull`.
+        - path: results/compile-time/compile-time.toml
+          storage: git
     analyze-logs:
       kind: jupyter-notebook
       notebook_path: notebooks/analyze-logs.ipynb

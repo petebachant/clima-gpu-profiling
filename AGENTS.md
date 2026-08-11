@@ -25,6 +25,49 @@ The general process we follow is:
    push, and run `calkit save` on the repo to push the Nsight reports to the
    cloud for archival.
 
+## Never touch a GPU without reserving one
+
+`clima` is a shared machine. Never run anything that uses a GPU on the login
+node or outside a scheduler reservation. Reserve one first with `srun`:
+
+```sh
+srun-gpu   # alias for: srun --gpus=1 --mpi=none --time=180 --pty bash
+```
+
+This applies to everything, not just the pipeline: quick kernel benchmarks,
+`CUDA.jl` sanity checks, package test suites, and one-off scripts all need a
+reservation. The Calkit pipeline stages already reserve their own GPUs through
+the `clima` SLURM environment, so `calkit run` is fine as-is.
+
+### GPU 5 is bad — avoid it
+
+`clima` is one node with 8 A100s. GPU 5 is currently faulty and must not be
+used. SLURM has no "allocate any GPU except N" flag, so `scripts/gpu-guard.sh`
+handles it from inside the job: SLURM sets `CUDA_VISIBLE_DEVICES` /
+`SLURM_STEP_GPUS` to the *global* device index, so the guard checks that index
+and calls `scontrol requeue` if it landed on a bad one. It is sourced at the top
+of `run-nsys.sh`, `run-ncu.sh`, and `run-julia-script.sh`.
+
+For interactive work, check what you were given and drop the allocation if it is
+GPU 5:
+
+```sh
+srun-gpu
+echo $CUDA_VISIBLE_DEVICES   # exit and re-run srun-gpu if this is 5
+```
+
+The proper fix needs a cluster admin, since `/etc/slurm/gres.conf` is root-owned:
+change `File=/dev/nvidia[0-7]` to `File=/dev/nvidia[0-4,6-7]` and run
+`scontrol reconfigure`.
+
+Once the hardware is fixed, turn the guard off by setting `BAD_GPUS=""` in
+`scripts/gpu-guard.sh` — and **do not delete the `source` block from the run
+scripts**. `gpu-guard.sh` is deliberately not a stage dependency, so editing the
+bad-GPU list invalidates nothing. But `run-nsys.sh`, `run-ncu.sh`, and
+`run-julia-script.sh` *are* dependencies of the profiling stages, so removing the
+block from them would invalidate every stage and force hours of re-profiling for
+no scientific reason.
+
 The `make-diffs` stage collects up all changes across all packages and
 puts them in the `diffs` folder, so it can be archived along with the results.
 
