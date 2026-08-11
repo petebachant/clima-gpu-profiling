@@ -3077,10 +3077,10 @@ index 3c6ed27f..61a2ab7e 100644
  end #module Microphysics1M.jl
 diff --git a/test/gpu_kernel_resources.jl b/test/gpu_kernel_resources.jl
 new file mode 100644
-index 00000000..5277b939
+index 00000000..3a3275d1
 --- /dev/null
 +++ b/test/gpu_kernel_resources.jl
-@@ -0,0 +1,243 @@
+@@ -0,0 +1,328 @@
 +#=
 +Static GPU kernel-resource regression tests.
 +
@@ -3128,8 +3128,10 @@ index 00000000..5277b939
 +The numbers below are for `TARGET_ARCH` and were measured with the CUDA version
 +recorded in `BASELINE_CUDA`. Pinning the architecture removes GPU-to-GPU
 +variation but not toolkit variation: a different ptxas can still allocate
-+differently, so on a mismatched CUDA version the test reports and skips rather
-+than failing on a difference it cannot attribute.
++differently. On a mismatched CUDA version the test warns but STILL GATES --
++skipping there is how this file once ran zero assertions on CI while reporting
++success. A toolkit-caused difference then surfaces as a failure carrying both
++numbers, which is diagnosable.
 +
 +Run with:
 +    CLIMACOMMS_DEVICE=CUDA julia --project=test test/gpu_kernel_resources.jl
@@ -3205,9 +3207,56 @@ index 00000000..5277b939
 +
 +# --- Measurement -------------------------------------------------------------
 +
-+find_ptxas() = Sys.which("ptxas")
++# PTX ISA versions to fall back through, newest first, when the default choice is
++# rejected. Only used on toolchain mismatch; see `target_resources`. Floor is 7.0:
++# sm_80 was introduced in PTX ISA 7.0, and ptxas rejects `-arch=sm_80` outright
++# for anything older (verified: 6.5 and 6.2 both fail).
++const PTX_ISA_FALLBACKS = [v"8.5", v"8.3", v"8.2", v"8.0", v"7.8", v"7.5", v"7.0"]
++
++"""
++    find_ptxas()
++
++Prefer the `ptxas` CUDA.jl itself uses. It must match the PTX ISA that
++`code_ptx` emits, and a `ptxas` found on PATH need not: on a CI agent whose
++system CUDA was older than CUDA.jl's runtime, `Sys.which("ptxas")` produced
++
++    fatal : Unsupported .version 8.7; current version is '8.2'
++
++for every kernel, which silently reduced this whole file to a no-op.
++"""
++function find_ptxas()
++    for f in (() -> only(CUDA.ptxas().exec), () -> Sys.which("ptxas"))
++        p = try
++            f()
++        catch
++            nothing
++        end
++        p !== nothing && isfile(p) && return p
++    end
++    return nothing
++end
 +
 +grab(re, s) = (m = match(re, s); m === nothing ? -1 : parse(Int, m[1]))
++
++"""
++    emit_and_assemble(ptxas, kernel, tt; ptx)
++
++Emit PTX for `TARGET_CAP` and run `ptxas`. Returns `(ok, log)`.
++"""
++function emit_and_assemble(ptxas, kernel, tt; ptx = nothing)
++    io = IOBuffer()
++    kwargs = (; cap = TARGET_CAP, kernel = true, dump_module = true)
++    # `dump_module = true` is load-bearing; see the header note.
++    CUDA.code_ptx(io, kernel, tt; (ptx === nothing ? kwargs : (; kwargs..., ptx))...)
++    ptx_file = tempname() * ".ptx"
++    write(ptx_file, String(take!(io)))
++
++    out = IOBuffer()
++    err = IOBuffer()
++    cmd = `$ptxas -arch=$TARGET_ARCH -v -o $(tempname()).cubin $ptx_file`
++    proc = run(pipeline(ignorestatus(cmd); stdout = out, stderr = err))
++    return success(proc), String(take!(err)) * String(take!(out))
++end
 +
 +"""
 +    target_resources(kernel, args...)
@@ -3223,19 +3272,49 @@ index 00000000..5277b939
 +    gargs = map(CUDA.cudaconvert, args)
 +    tt = Tuple{map(Core.Typeof, gargs)...}
 +
-+    io = IOBuffer()
-+    # `dump_module = true` is load-bearing; see the header note.
-+    CUDA.code_ptx(io, kernel, tt; cap = TARGET_CAP, kernel = true,
-+        dump_module = true)
-+    ptx_file = tempname() * ".ptx"
-+    write(ptx_file, String(take!(io)))
++    ok, log = emit_and_assemble(ptxas, kernel, tt)
 +
-+    out = IOBuffer()
-+    err = IOBuffer()
-+    cmd = `$ptxas -arch=$TARGET_ARCH -v -o $(tempname()).cubin $ptx_file`
-+    proc = run(pipeline(ignorestatus(cmd); stdout = out, stderr = err))
-+    log = String(take!(err)) * String(take!(out))
-+    if !success(proc)
++    # CUDA.jl stamps the PTX ISA from the *runtime*, which can outrun the `ptxas`
++    # binary actually available: a CI agent with a 12.8 runtime reported
++    #   "Unsupported .version 8.7; current version is '8.2'"
++    # so re-emit lower. Naming the exact ISA ptxas reported is not enough --
++    # `code_ptx` rejects any ISA newer than *LLVM* supports ("Requested PTX ISA
++    # 8.2 is not supported by LLVM 16.0.6"), and neither ceiling is queryable
++    # without reaching into CUDA.jl internals. So walk candidates downwards and
++    # take the first that clears both.
++    #
++    # This does not change the generated code. CUDA.jl always has LLVM emit at
++    # LLVM's own highest ISA (`llvm_ptx = maximum(llvm_ptxs)`, independent of the
++    # request) and only rewrites the `.version` directive afterwards. Lowering
++    # the request therefore changes one line of text, not a single instruction --
++    # and `-arch` still pins the architecture, so these stay sm_80 numbers.
++    # Measured on an A100 with CUDA 13.0: the 1M Float64 kernel gives 158
++    # registers / 240 B stack at the default ISA and identically at 7.8, 7.5 and
++    # 7.0. (On Julia 1.11's LLVM 16.0.6 the ceiling is 7.8, so that is where CI
++    # lands.)
++    if !ok
++        m = match(r"current version is '(\d+\.\d+)'", log)
++        ceiling = m === nothing ? nothing : VersionNumber(m.captures[1])
++        # NB: not named `isa` -- that is an infix operator, so `@info "..." isa`
++        # followed by `break` parses as the single expression
++        # `@info "..." isa break`, swallowing the loop exit into the log call.
++        for isa_ver in PTX_ISA_FALLBACKS
++            ceiling !== nothing && isa_ver > ceiling && continue
++            try
++                ok, log = emit_and_assemble(ptxas, kernel, tt; ptx = isa_ver)
++            catch err
++                # LLVM cannot target this ISA; try an older one.
++                @debug "PTX ISA $isa_ver unavailable" err
++                continue
++            end
++            if ok
++                @info "Re-emitted at a lower PTX ISA (codegen unchanged)" isa_ver
++                break
++            end
++        end
++    end
++
++    if !ok
 +        @warn "ptxas failed; cannot measure $TARGET_ARCH resources" log
 +        return nothing
 +    end
@@ -3253,7 +3332,11 @@ index 00000000..5277b939
 +function check(name, key, kernel, args...)
 +    res = target_resources(kernel, args...)
 +    if res === nothing
-+        @warn "Skipping $name: could not compile for $TARGET_ARCH (ptxas missing?)"
++        # Deliberately a failure, not a skip. An earlier version warned and
++        # returned, so a broken toolchain produced "0 tests, all passed" -- a
++        # gate that silently protects nothing is worse than one that complains.
++        @error "Could not measure $TARGET_ARCH resources for $name; see ptxas log above"
++        TT.@test false
 +        return nothing
 +    end
 +    ref = BASELINES[key]
@@ -3265,14 +3348,16 @@ index 00000000..5277b939
 +      spill       = $(res.spill_stores) st / $(res.spill_loads) ld bytes
 +    """
 +
-+    if !toolkit_matches()
-+        @warn """
-+        CUDA $(CUDA.runtime_version()) differs from the CUDA $(BASELINE_CUDA) the
-+        baselines were measured with; reporting only. Re-measure and update
-+        BASELINES (and BASELINE_CUDA) if this toolkit is the new normal.
-+        """ kernel = name
-+        return nothing
-+    end
++    # A differing CUDA version is noted but does NOT disable the gate. Skipping
++    # here is how this file previously ran zero assertions on CI (whose CUDA is
++    # 12.8 against baselines measured on 13.0) while still reporting success.
++    # If a toolkit really does allocate differently, that surfaces as a failure
++    # carrying both numbers, which is diagnosable; silence is not.
++    toolkit_matches() || @warn """
++    CUDA $(CUDA.runtime_version()) differs from CUDA $(BASELINE_CUDA), which the
++    baselines were measured with. Still gating. If this fails on registers only
++    and the delta is small, re-measure on this toolkit and add a baseline set.
++    """ kernel = name
 +
 +    TT.@test res.registers <= ref.registers + REG_SLACK
 +    TT.@test res.stack_frame <= ref.stack_frame + STACK_SLACK
