@@ -30,6 +30,7 @@ function argval(flag, default = nothing)
     return ARGS[i + 1]
 end
 
+const WARMUP = argval("--warmup", "no") in ("1", "true", "yes")
 const CONFIG_FILE = argval("--config_file")
 const LABEL = argval("--label", "unlabeled")
 const OUT_PATH = argval("--out", "compile-time.toml")
@@ -85,6 +86,19 @@ function disk_cache_setting()
     return string(get(get(prefs, "GPUCompiler", Dict()), "disk_cache", "false"))
 end
 
+# Load the warm cache before anything else, when this phase asks for it. The
+# cache is only consulted for code that is actually loaded, so importing here is
+# what makes the A/B meaningful: both phases run identical code, and the only
+# difference is whether the precompiled ClimaCore specializations are available.
+if WARMUP
+    try
+        @eval import AMIPWarmup
+        @info "AMIPWarmup loaded"
+    catch err
+        @warn "AMIPWarmup requested but unavailable" err
+    end
+end
+
 # Collected up front so any problem here surfaces immediately rather than after
 # the workload has already burned the phase.
 const ENV_INFO = environment_info()
@@ -133,6 +147,7 @@ total_host_compile =
 
 record = Dict{String, Any}(
     "label" => LABEL,
+    "warmup" => WARMUP,
     "disk_cache" => disk_cache_setting(),
     "config_file" => CONFIG_FILE,
     "environment" => ENV_INFO,

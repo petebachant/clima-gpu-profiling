@@ -2,21 +2,27 @@
 #SBATCH --gpus=1
 #
 # Compile-time study: how much of a profiling job is compilation, and how much of
-# that is recoverable by GPUCompiler's on-disk kernel cache?
+# it can be cached across jobs?
 #
-# Three phases, all in ONE job on ONE GPU so the comparison is not confounded by
-# node or device variance:
+# Two phases, in ONE job on ONE GPU so the comparison is not confounded by node
+# or device variance:
 #
-#   1. cache_off   -- status quo (disk_cache unset, GPUCompiler's default)
-#   2. cache_cold  -- disk cache enabled, empty: populates it
-#   3. cache_warm  -- disk cache enabled, populated: the payoff
+#   1. warmup_off -- status quo
+#   2. warmup_on  -- identical code, but `import AMIPWarmup` first, making its
+#                    precompiled ClimaCore specializations available
 #
-# (1 - 3) is the wall time recoverable per job by enabling the cache.
+# (1 - 2) is the wall time recoverable per job by loading the warmup package.
 #
-# Note on instrumentation: GPUCompiler's `compile_hook` cannot be used to count
-# kernels here. Setting it forces recompilation and skips the disk-cache lookup
-# entirely (see `actual_compilation` in GPUCompiler/src/execution.jl), so it
-# would destroy the very effect being measured. Hence wall-clock deltas.
+# HISTORY -- this study previously A/B'd GPUCompiler's `disk_cache` preference.
+# That was measured and abandoned: the preference is honoured
+# (`disk_cache_enabled()` flips true) but GPUCompiler writes nothing, leaving 0
+# files in `disk_cache_path()`. It is a no-op in this stack (Julia 1.11.5 /
+# CUDA.jl Wfi8S / GPUCompiler Yuvf5), so the three-phase cache experiment could
+# not answer anything. What survived it: ~88% of a job is host-side Julia JIT,
+# which is what AMIPWarmup targets.
+#
+# Isolated measurement of the warmup, before wiring it in: first call to the
+# warmed operator set 10.2 s -> 1.8 s, grid construction 45.4 s -> 32.4 s.
 
 set -u
 
@@ -45,73 +51,16 @@ module load climacommon/2025_05_15
 export CLIMACOMMS_DEVICE=CUDA
 export JULIA_LOAD_PATH=@:@stdlib
 
-PREFS="$PROJECT_DIR/LocalPreferences.toml"
-PREFS_BACKUP="${PREFS}.compile-study-backup"
-
-# The disk cache is toggled by writing GPUCompiler's preference into the AMIP
-# environment. That environment is shared with the profiling stages, so the
-# original state is restored on exit -- otherwise this study would silently
-# change how every later nsys run compiles.
-#
-# Snapshot ONCE, before anything is modified. Backing up inside the toggle would
-# capture an already-modified file (or, on the first call, delete a pre-existing
-# file before it was ever saved).
-if [ -f "$PREFS" ]; then
-    HAD_PREFS=1
-    cp -f "$PREFS" "$PREFS_BACKUP"
-else
-    HAD_PREFS=0
-fi
-
-restore_prefs() {
-    if [ "$HAD_PREFS" = "1" ]; then
-        cp -f "$PREFS_BACKUP" "$PREFS"
-    else
-        rm -f "$PREFS"
-    fi
-}
-trap 'restore_prefs; rm -f "$PREFS_BACKUP"' EXIT
-
-set_disk_cache() {
-    local state=$1
-    # Always rebuild from the pristine snapshot so repeated toggles cannot drift.
-    restore_prefs
-    # GPUCompiler UUID 61eb1bfa-7361-4325-ad38-22787b887f55
-    python3 - "$PREFS" "$state" <<'PY'
-import sys, os
-path, state = sys.argv[1], sys.argv[2]
-lines = []
-if os.path.exists(path):
-    keep, skip = [], False
-    for ln in open(path):
-        if ln.strip().startswith("["):
-            skip = ln.strip() == "[GPUCompiler]"
-        if not skip:
-            keep.append(ln)
-    lines = keep
-lines.append(f'\n[GPUCompiler]\ndisk_cache = "{state}"\n')
-open(path, "w").write("".join(lines))
-PY
-    echo "--- LocalPreferences.toml now:"
-    cat "$PREFS"
-}
-
-clear_disk_cache() {
-    # Scratch space, not ~/.julia/compiled: GPUCompiler stores kernel objects via
-    # @get_scratch!("disk_cache").
-    find "$HOME/.julia/scratchspaces" -maxdepth 3 -type d -name disk_cache \
-        -exec rm -rf {} + 2>/dev/null
-    echo "--- cleared GPUCompiler disk cache"
-}
-
 run_phase() {
     local label=$1
+    local warmup=$2
     echo
-    echo "==================== phase: $label ===================="
+    echo "==================== phase: $label (warmup=$warmup) ===================="
     date -u +"start %Y-%m-%dT%H:%M:%SZ"
     local t0=$SECONDS
     julia --project="$PROJECT_DIR" scripts/measure-compile-time.jl \
-        --config_file "$CONFIG_FILE" --label "$label" --out "$OUT_TOML"
+        --config_file "$CONFIG_FILE" --label "$label" --warmup "$warmup" \
+        --out "$OUT_TOML"
     local rc=$?
     echo "phase $label wall: $((SECONDS - t0)) s (exit $rc)"
     return $rc
@@ -121,22 +70,12 @@ mkdir -p "$(dirname "$OUT_TOML")"
 rm -f "$OUT_TOML"
 
 echo "=============== instantiate ==============="
+# AMIPWarmup's precompilation runs its workload here, once, and is then reused by
+# both phases -- so this cost is paid regardless and does not bias the A/B.
 julia --project="$PROJECT_DIR" -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(); using CUDA; CUDA.precompile_runtime()'
 
-# Phase 1: status quo. Cache explicitly off and cleared, so a cache left behind
-# by earlier work cannot flatter the baseline.
-clear_disk_cache
-set_disk_cache false
-run_phase cache_off || exit 1
-
-# Phase 2: enable and populate.
-set_disk_cache true
-clear_disk_cache
-run_phase cache_cold || exit 1
-
-# Phase 3: same settings, cache now warm. The delta against phase 1 is the
-# recoverable compilation time.
-run_phase cache_warm || exit 1
+run_phase warmup_off no || exit 1
+run_phase warmup_on yes || exit 1
 
 echo
 echo "==================== summary ===================="

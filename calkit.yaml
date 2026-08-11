@@ -27,11 +27,13 @@ questions:
 
   - question: >-
       How much of a GPU profiling job is compilation rather than computation,
-      and how much of it is recoverable between jobs by enabling GPUCompiler's
-      on-disk kernel cache?
+      and can any caching strategy recover it between jobs?
     hypothesis: >-
-      Most of a profiling job is compilation, and a large share of that is GPU
-      kernel compilation that is currently thrown away at process exit. An
+      Two successive hypotheses, both recorded here because both were tested and
+      both failed.
+
+      (1) Disk cache. Most of a profiling job is compilation, and a large share
+      of that is GPU kernel compilation thrown away at process exit. An
       nsys stage takes ~40 minutes to produce ~1.8 s of measured stepping (30
       coupler steps of NVTX-ranged time), and of the remainder only ~112 s is
       Pkg.precompile and ~2 s is nsys post-processing. Julia caches host native
@@ -42,65 +44,134 @@ questions:
       and first-call compilation, enabling the cache should cut it sharply on
       any job whose kernels have not changed, because the cache is keyed on the
       CodeInstance and CompilerConfig and so invalidates only what changed.
+
+      (2) Warmup package. Given (1) failed and the cost turned out to be
+      host-side JIT, a local package (AMIPWarmup) carrying a PrecompileTools
+      workload should recover it. Julia caches native code into a *package's*
+      precompile image, and the AMIP experiment is a script, so none of that
+      work is kept today. A --trace-compile of a real job shows 89.4% of
+      runtime-compiled methods involve ClimaCore (ClimaAtmos 0.8%,
+      CloudMicrophysics 0.4%), so a workload building an AMIP-shaped ClimaCore
+      grid and exercising its operators should cover the bulk of it -- while
+      depending on neither package under active edit here, so ordinary work does
+      not invalidate the cache.
     answer: >-
-      Compilation is ~88% of the job, and it is host-side Julia JIT, not GPU
-      kernel compilation. Across all three phases the split was near-identical
-      (1715/1942 s, 1662/1885 s, 1679/1899 s = 88.3/88.2/88.4%), for a job that
-      yields 0.6 s of steady-state stepping.
+      Compilation is ~88% of the job and it is host-side Julia JIT, not GPU
+      kernel compilation. That share is highly reproducible: 88.3/88.2/88.4%
+      across the three disk-cache phases and 88.6/88.7% across the two warmup
+      phases, for a job that yields 0.6 s of steady-state stepping.
 
-      GPUCompiler's on-disk kernel cache is NOT the lever, for a stronger reason
-      than the timings alone show. The cache_warm phase was 2.2% faster than
-      cache_off, but cache_cold -- which does strictly more work, populating the
-      cache -- was faster than both, so that spread is noise. Follow-up
-      diagnosis found the cache writes nothing at all: with the preference set,
-      GPUCompiler.disk_cache_enabled() correctly returns true, yet compiling a
-      kernel leaves 0 files in disk_cache_path(). The feature is a no-op in this
-      stack (Julia 1.11.5 / CUDA.jl Wfi8S / GPUCompiler Yuvf5), so enabling it
-      cannot help regardless of how much GPU compilation there is. Two candidate
-      causes are visible in GPUCompiler's `actual_compilation` -- a `nothing`
-      CodeInstance bypasses both the disk read and the write, or `cache_file`
-      bails on its build-id sentinel -- but which one applies is not established.
+      Neither caching strategy recovered any of it.
 
-      So the remaining levers are host-side: PrecompileTools workloads in the
-      CliMA packages, or iterating on a reduced-resolution config so setup and
-      JIT shrink with it. Note this study measures a workload the disk cache
-      never acted on; it does not measure how large the GPU-compilation share
-      would be if the cache worked.
+      (1) GPUCompiler's on-disk kernel cache is a no-op in this stack. The
+      cache_warm phase was 2.2% faster than cache_off, but cache_cold -- which
+      does strictly more work, populating the cache -- was faster than both, so
+      that spread is noise. Direct diagnosis then showed why: with the
+      preference set, GPUCompiler.disk_cache_enabled() correctly returns true,
+      yet compiling a kernel leaves 0 files in disk_cache_path(). It cannot help
+      regardless of how much GPU compilation exists (Julia 1.11.5 / CUDA.jl
+      Wfi8S / GPUCompiler Yuvf5). Two candidate causes are visible in
+      GPUCompiler's `actual_compilation` -- a `nothing` CodeInstance bypasses
+      both the disk read and the write, or `cache_file` bails on its build-id
+      sentinel -- but which applies is not established.
+
+      (2) The AMIPWarmup PrecompileTools package made the job SLOWER: 1930.8 s
+      with it against 1836.4 s without, +94.4 s (+5.1%), both phases in one job
+      on one GPU (device 4), with "AMIPWarmup loaded" confirming the arm was
+      real. The penalty sits in CoupledSimulation (+78.6 s), precisely the phase
+      it was built to speed up. This was not a null result but a negative one.
+
+      The package does work in isolation -- loading it cuts an equivalent grid
+      build 45.4 -> 32.4 s and a first operator call 10.2 -> 1.8 s -- which is
+      the trap: ~21 s of provable saving is ~1% of a 1836 s job, so the ceiling
+      was inside the noise before the package was ever built. Doing that
+      arithmetic first would have been cheaper than the experiment. Why loading
+      it costs 94 s rather than saving 21 is not established; the leading
+      candidate is invalidation, since AMIPWarmup is precompiled against
+      ClimaCore alone and the coupler then loads packages that add methods to
+      it, discarding the cached code while still paying to load it.
+
+      What remains, none yet tested: reduced-resolution configs so setup and JIT
+      shrink together (attacks the 88% directly rather than caching it); a
+      PrecompileTools workload inside ClimaAtmos/ClimaCore themselves, where it
+      is not exposed to cross-package invalidation; or accepting the cycle time
+      and batching experiments. Caching the compile work from outside the
+      package stack has now failed twice, in two different ways.
+
+      REPRODUCING THIS RESULT. The measurement depends on state that is reverted
+      immediately after it was taken: AMIPWarmup is dev'd into both AMIP
+      environments and imported by scripts/run.jl, and keeping that wiring would
+      impose a measured ~5% penalty on every future profiling job. The state is
+      therefore frozen at the git tag `compile-time-warmup-ab`, which is
+      the only rev where this stage's inputs exist. To re-evaluate:
+
+        git checkout compile-time-warmup-ab
+        git submodule update --init --recursive   # the wiring lives in the
+                                                  # coupler submodules
+        calkit run compile-time-study
+
+      Rewinding this clone in place is the supported path. The coupler manifests
+      record AMIPWarmup by ABSOLUTE path
+      (/home/pbachant/calkit/clima-gpu-profiling/AMIPWarmup), so in a worktree
+      checked out elsewhere that entry resolves back to the original clone rather
+      than to the worktree's own copy -- re-point it with
+      Pkg.develop(path="<worktree>/AMIPWarmup") in both experiments/AMIP
+      environments before running, or the run either fails in instantiate or
+      silently measures whichever AMIPWarmup happens to sit at the old path.
+
+      At this rev the four profiling stages (baseline-nsys, mod-nsys,
+      amip-baseline, amip-mod) are intentionally stale. The wiring under test is
+      an input to all four, and it was never run through them precisely because
+      this result says it should not be. Their evidence belongs to the SYPD
+      question above and to the revs that answered it, not to this one.
     evidence:
       - kind: result
         path: results/compile-time/compile-time.toml
-        key: cache_off.totals.wall_s
+        key: warmup_off.totals.wall_s
         explanation: >-
-          Status quo. Wall time for code loading, simulation construction, and
-          two steps with the disk cache explicitly disabled and cleared, so a
-          cache left behind by earlier work cannot flatter the baseline.
+          Frozen at git tag `compile-time-warmup-ab`; see the answer for
+          how to re-run it, and note that the state it measures does not exist on
+          main by design.
+
+          Status quo, and the reference the whole study rests on. Wall time for
+          code loading, simulation construction, and two steps without the
+          warmup package. Lands within ~5% of the same measurement taken
+          standalone weeks earlier, so the harness is measuring the same job it
+          did before.
       - kind: result
         path: results/compile-time/compile-time.toml
-        key: cache_warm.totals.wall_s
+        key: warmup_on.totals.wall_s
         explanation: >-
-          The payoff. Same workload with the disk cache enabled and already
-          populated by the preceding cache_cold phase. The difference against
-          cache_off is the per-job wall time recoverable by turning the cache
-          on. All three phases run in one SLURM job on one GPU so the
-          comparison is not confounded by node or device variance.
+          The test. Identical code and config, with AMIPWarmup imported first so
+          its precompiled ClimaCore specializations are available. Higher than
+          warmup_off, which is the negative result. Both phases run in one SLURM
+          job on one GPU so the comparison is not confounded by node or device
+          variance, and warmup_on runs second -- the ordering that would flatter
+          it, if anything, via warmed filesystem caches.
       - kind: result
         path: results/compile-time/compile-time.toml
-        key: cache_off.totals.host_compile_s
+        key: warmup_on.coupled_simulation.wall_s
         explanation: >-
-          Host-side JIT only, from Julia's own `@timed` compile_time
-          accounting. GPU kernel compilation is not counted here because
-          GPUCompiler runs outside that accounting, which is exactly why the
-          GPU share must be inferred from the cache_off/cache_warm wall delta
-          rather than measured directly. Splitting the two matters for what to
-          do next: host-dominated points at PrecompileTools workloads in the
-          CliMA packages, GPU-dominated points at the disk cache.
+          Where the penalty is. Simulation construction is 78.6 s of the 94.4 s
+          regression and is the phase AMIPWarmup targets, so the cost is not
+          merely the price of loading an extra package -- it lands inside the
+          work that was supposed to get cheaper.
       - kind: result
         path: results/compile-time/compile-time.toml
-        key: cache_off.second_step.wall_s
+        key: warmup_off.totals.host_compile_s
         explanation: >-
-          Steady-state cost of one step once everything is compiled, which
-          bounds how much of the first step was genuinely compute rather than
-          compilation.
+          Host-side JIT only, from Julia's own `@timed` compile_time accounting;
+          1628.0 s of the 1836.4 s job. GPU kernel compilation is NOT counted
+          here because GPUCompiler runs outside that accounting. This is what
+          establishes the cost as host-side and so rules out the entire class of
+          GPU-kernel-caching fixes, independently of the disk cache being broken.
+      - kind: result
+        path: results/compile-time/compile-time.toml
+        key: warmup_off.second_step.wall_s
+        explanation: >-
+          Steady-state cost of one step once everything is compiled. Bounds how
+          much of the first step was genuinely compute rather than compilation,
+          and is the 0.6 s that the surrounding ~1836 s exists to produce.
 
 tables:
   - path: results/top-kernels.csv
@@ -341,9 +412,9 @@ pipeline:
       kind: shell-script
       environment: clima
       script_path: scripts/run-compile-study.sh
-      # Three full setup+JIT phases in one job, so the default 120 min from the
-      # clima environment is not enough. `env_default_options` defaults to
-      # `replace`, so --gpus=1 must be restated here.
+      # Two full setup+JIT phases in one job (~32 min each), so the default 120
+      # min from the clima environment is not enough. `env_default_options`
+      # defaults to `replace`, so --gpus=1 must be restated here.
       scheduler:
         options:
           - --gpus=1

@@ -1,0 +1,27 @@
+name = "AMIPWarmup"
+uuid = "6f3a6b1e-2c4d-4b7a-9e3f-1d8c5a2b7e40"
+authors = ["Pete Bachant <petebachant@gmail.com>"]
+version = "0.1.0"
+
+# DEPENDENCY POLICY -- read before adding anything here.
+#
+# This package exists to cache native code across jobs via PrecompileTools. A
+# package's precompilation is invalidated whenever any of its dependencies
+# changes, so every dep listed here is a package whose edits will force this
+# workload to re-run.
+#
+# ClimaAtmos and CloudMicrophysics are the packages under active development in
+# this project, so they are DELIBERATELY ABSENT. Adding either would invalidate
+# this cache on every experiment edit and defeat the entire purpose.
+#
+# This is possible because ClimaCoupler itself depends on neither -- the AMIP
+# experiment project depends on ClimaCoupler and ClimaAtmos separately, and the
+# coupler is generic over component simulations.
+[deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+ClimaComms = "3a4d1b5c-c61d-41fd-a00a-5873ba7a1b0d"
+ClimaCore = "d414da3d-4745-48bb-8d80-42e94e092884"
+PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
+
+[compat]
+julia = "1.11"
