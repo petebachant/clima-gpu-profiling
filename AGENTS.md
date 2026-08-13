@@ -39,6 +39,11 @@ This applies to everything, not just the pipeline: quick kernel benchmarks,
 reservation. The Calkit pipeline stages already reserve their own GPUs through
 the `clima` SLURM environment, so `calkit run` is fine as-is.
 
+## `clima` is a shared single node cluster
+
+We should usually only have one job in the queue during working hours,
+when other typically need it, so we don't back things up behind us.
+
 ### GPU 5 is bad — avoid it
 
 `clima` is one node with 8 A100s. GPU 5 is currently faulty and must not be
