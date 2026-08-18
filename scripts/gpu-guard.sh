@@ -18,7 +18,17 @@
 # Once that lands, BAD_GPUS below can go back to empty.
 
 # Space- or comma-separated list of bad global GPU indices.
-BAD_GPUS="${BAD_GPUS:-5}"
+# Disabled 2026-08-13: GPU 5 is healthy again (0 uncorrected ECC errors, in
+# normal use). SLURM still advertises all 8 GPUs and gres.conf still reads
+# File=/dev/nvidia[0-7], so nothing stops a job landing on it -- the guard is
+# simply no longer needed. Re-arm by listing indices here again.
+#
+# Deliberately emptied rather than deleted. This file is sourced by
+# run-nsys.sh, run-ncu.sh, and run-julia-script.sh, which refuse to run if it
+# is missing; and those three scripts ARE stage dependencies, so editing them
+# would invalidate every profiling stage. This file is not a dependency, so
+# emptying the list costs nothing.
+BAD_GPUS=""
 
 # Give up after this many requeues so a fully bad node can't loop forever.
 GPU_GUARD_MAX_RETRIES="${GPU_GUARD_MAX_RETRIES:-8}"

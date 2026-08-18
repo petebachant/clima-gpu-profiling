@@ -173,7 +173,10 @@ stages:
       ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep 
       ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib 
       --dep ClimaAtmos.jl/src --dep ClimaAtmos.jl/toml --dep 
-      .calkit/env-locks/clima -- scripts/run-julia-script.sh 
+      .calkit/env-locks/clima --option --gpus=1 --option --time=120 
+      --option 
+      --export=ALL,CLIMA_CHECK_REGISTER_PRESSURE=warn,CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=true
+      -- scripts/run-julia-script.sh 
       --project=ClimaCoupler.jl/experiments/AMIP 
       ClimaCoupler.jl/experiments/AMIP/run_simulation.jl --config_file
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -207,8 +210,10 @@ stages:
       ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
       ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep 
       ClimaAtmos.jl-mod/toml --dep ClimaAtmos.jl-mod/config --dep 
-      CloudMicrophysics.jl-mod/src --dep .calkit/env-locks/clima -- 
-      scripts/run-julia-script.sh 
+      CloudMicrophysics.jl-mod/src --dep .calkit/env-locks/clima 
+      --option --gpus=1 --option --time=120 --option 
+      --export=ALL,CLIMA_CHECK_REGISTER_PRESSURE=warn,CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=true
+      -- scripts/run-julia-script.sh 
       --project=ClimaCoupler.jl-mod/experiments/AMIP 
       ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl 
       --config_file 

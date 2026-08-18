@@ -361,6 +361,21 @@ pipeline:
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
+      # Turn on ClimaCore's register-pressure diagnostic for this stage only.
+      # Setting it in run-julia-script.sh instead would invalidate amip-mod too,
+      # costing a full re-run for a change that does not affect it (the check
+      # lives in ClimaCore.jl, and ClimaCore.jl-mod does not have it).
+      # `env_default_options` defaults to `replace`, so the clima environment's
+      # --gpus=1 and --time=120 must be restated here.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=120
+          # Kernel naming is what makes the diagnostic actionable -- without it
+          # the warning reads `#kernel_function#NN` and cannot tell you which
+          # broadcast is spilling. run-nsys.sh and run-ncu.sh export this, but
+          # run-julia-script.sh (which this stage uses) does not.
+          - --export=ALL,CLIMA_CHECK_REGISTER_PRESSURE=warn,CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=true
       args:
         - --project=ClimaCoupler.jl/experiments/AMIP
         - ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
@@ -383,6 +398,13 @@ pipeline:
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
+      # Same register-pressure diagnostic as amip-baseline. Both arms must have
+      # it on, or the mod arm's silence would only mean the check was disabled.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=120
+          - --export=ALL,CLIMA_CHECK_REGISTER_PRESSURE=warn,CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=true
       args:
         - --project=ClimaCoupler.jl-mod/experiments/AMIP
         - ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl

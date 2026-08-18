@@ -44,10 +44,16 @@ the `clima` SLURM environment, so `calkit run` is fine as-is.
 We should usually only have one job in the queue during working hours,
 when other typically need it, so we don't back things up behind us.
 
-### GPU 5 is bad — avoid it
+### GPU 5 was bad — guard now disabled (2026-08-13)
 
-`clima` is one node with 8 A100s. GPU 5 is currently faulty and must not be
-used. SLURM has no "allocate any GPU except N" flag, so `scripts/gpu-guard.sh`
+`clima` is one node with 8 A100s. GPU 5 was faulty; as of 2026-08-13 it reports
+0 uncorrected ECC errors and is in normal use, so `BAD_GPUS` is now empty and
+the guard is inert. Note SLURM never stopped offering it: `gres.conf` still
+reads `File=/dev/nvidia[0-7]`. To re-arm, list the bad indices in
+`scripts/gpu-guard.sh` — nothing else needs to change.
+
+Historical detail follows. SLURM has no "allocate any GPU except N" flag,
+so `scripts/gpu-guard.sh`
 handles it from inside the job: SLURM sets `CUDA_VISIBLE_DEVICES` /
 `SLURM_STEP_GPUS` to the *global* device index, so the guard checks that index
 and calls `scontrol requeue` if it landed on a bad one. It is sourced at the top
