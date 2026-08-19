@@ -261,6 +261,24 @@ pipeline:
       kind: shell-script
       environment: clima
       script_path: scripts/run-nsys.sh
+      # Occupancy experiment. set_microphysics_tendency_cache sits at the 255
+      # register cap, which fits exactly one 256-thread block per SM on an A100
+      # (8 warps, 12.5% occupancy). Nsight Compute shows it issue-starved rather
+      # than bandwidth-bound -- 31% issue slots busy, 68% of cycles with no
+      # eligible warp, DRAM at 8% -- so the bottleneck is too few resident warps,
+      # not memory traffic. Capping registers at 128 fits a second block and
+      # doubles resident warps, paying for it in spill to a memory system that is
+      # almost idle. The cap binds only kernels above it.
+      #
+      # Paired with the register check at the same limit so the log reports how
+      # much spill each capped kernel actually took on, alongside the per-kernel
+      # timings nsys collects. `env_default_options` defaults to `replace`, so the
+      # clima environment's --gpus=1 and --time=120 must be restated here.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=120
+          - --export=ALL,CLIMA_MAX_REGISTERS_PER_THREAD=128,CLIMA_CHECK_REGISTER_PRESSURE=warn,CLIMA_REGISTER_PRESSURE_CHECK_LIMIT=128
       args:
         - results/nsys/mod
         - ClimaCoupler.jl-mod/experiments/AMIP
@@ -322,6 +340,14 @@ pipeline:
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
+      # Same 128-register cap as mod-nsys, so the occupancy and spill this stage
+      # measures describe the build that mod-nsys timed. `env_default_options`
+      # defaults to `replace`, so --gpus=1 and --time=120 must be restated.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=120
+          - --export=ALL,CLIMA_MAX_REGISTERS_PER_THREAD=128
       args:
         - results/ncu/mod
         # Line-number-agnostic so the filter survives edits above the
@@ -363,8 +389,9 @@ pipeline:
       script_path: scripts/run-julia-script.sh
       # Turn on ClimaCore's register-pressure diagnostic for this stage only.
       # Setting it in run-julia-script.sh instead would invalidate amip-mod too,
-      # costing a full re-run for a change that does not affect it (the check
-      # lives in ClimaCore.jl, and ClimaCore.jl-mod does not have it).
+      # costing a full re-run of a stage this does not affect. Both ClimaCore
+      # submodules carry the check, so both arms report and the mod arm's
+      # silence means "no spill" rather than "check absent".
       # `env_default_options` defaults to `replace`, so the clima environment's
       # --gpus=1 and --time=120 must be restated here.
       scheduler:
@@ -404,7 +431,7 @@ pipeline:
         options:
           - --gpus=1
           - --time=120
-          - --export=ALL,CLIMA_CHECK_REGISTER_PRESSURE=warn,CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=true
+          - --export=ALL,CLIMA_MAX_REGISTERS_PER_THREAD=128,CLIMA_REGISTER_PRESSURE_CHECK_LIMIT=128,CLIMA_CHECK_REGISTER_PRESSURE=warn,CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=true
       args:
         - --project=ClimaCoupler.jl-mod/experiments/AMIP
         - ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
