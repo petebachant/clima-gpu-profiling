@@ -1,6 +1,6 @@
 {
   "superproject": {
-    "sha": "04dd377671b4c15b71be27fdeee10b16ec86771f",
+    "sha": "f9f249fec145c91efd5410963cf6e95baa486d97",
     "dirty": true
   },
   "submodules": {
@@ -11,7 +11,7 @@
       "dirty_files": []
     },
     "ClimaCoupler.jl-mod": {
-      "sha": "0bbe94c97768bc3cdf72f0bbb4aca8a8b17492d8",
+      "sha": "1c1d60f4645959fe6271f7f0eba82bc840f79568",
       "ref": "pb/prof-mod",
       "dirty": false,
       "dirty_files": []
@@ -23,8 +23,8 @@
       "dirty_files": []
     },
     "ClimaCore.jl-mod": {
-      "sha": "32722103f2e6f87f39614ddab87fb4ba93ca21cd",
-      "ref": "main",
+      "sha": "00d18bc9c7306a1ec5e57057df6d707d3abb7644",
+      "ref": "pb/reg-press",
       "dirty": false,
       "dirty_files": []
     },
@@ -41,8 +41,8 @@
       "dirty_files": []
     },
     "CloudMicrophysics.jl-mod": {
-      "sha": "48a4129f1377c03227c9f01bcbb62b46cc2e792f",
-      "ref": "pb/1m-spill",
+      "sha": "68007fb109c74c2f75be050db636f86359d98462",
+      "ref": "exp/2026-08-20-baseline-main-null-test",
       "dirty": false,
       "dirty_files": []
     }
@@ -499,8 +499,7 @@
       "dev": [
         "ClimaAtmos",
         "ClimaCore",
-        "ClimaCoupler",
-        "CloudMicrophysics"
+        "ClimaCoupler"
       ],
       "pinned": {
         "ADTypes": "1.23.0",
@@ -561,6 +560,7 @@
         "ClimaParams": "1.1.4",
         "ClimaTimeSteppers": "0.10.6",
         "ClimaUtilities": "0.1.31",
+        "CloudMicrophysics": "0.38.1",
         "CodeTracking": "3.0.2",
         "CodecBzip2": "0.8.5",
         "CodecZlib": "0.7.9",
@@ -943,11 +943,23 @@
       }
     }
   },
-  "declared_env": {},
-  "diff_digest": "abb8ee9ceb5211ce",
+  "declared_env": {
+    "mod-nsys": {
+      "CLIMA_MAX_REGISTERS_PER_THREAD": "auto"
+    },
+    "mod-ncu": {
+      "CLIMA_MAX_REGISTERS_PER_THREAD": "auto"
+    },
+    "amip-mod": {
+      "CLIMA_MAX_REGISTERS_PER_THREAD": "auto",
+      "CLIMA_CHECK_REGISTER_PRESSURE": "warn",
+      "CLIMA_REGISTER_PRESSURE_CHECK_LIMIT": "128",
+      "CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE": "true"
+    }
+  },
+  "diff_digest": "d7988b9132837f41",
   "arms_differ_in": [
-    "ClimaCoupler.jl-mod",
-    "CloudMicrophysics.jl-mod",
-    "dev-package-set"
+    "ClimaCore.jl-mod",
+    "ClimaCoupler.jl-mod"
   ]
 }
