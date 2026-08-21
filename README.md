@@ -102,6 +102,63 @@ Run `bash scripts/show-submodule-status.sh` to see current statuses.
 
 ## Experiment results
 
+The complete, machine-generated record lives in
+[`experiments.md`](experiments.md) (and `experiments.csv`, which is the evidence
+table shown on calkit.io). It is built from `exp/*` git tags:
+
+```sh
+python3 scripts/build-experiment-index.py
+```
+
+Every row is read out of git at the tagged commit, so the index is derived
+rather than maintained and cannot drift from what was actually recorded.
+
+### Recording an experiment
+
+1. Run the pipeline (`calkit run`). The `record-treatment` stage writes
+   `results/treatment.json`, capturing what actually reached the run: submodule
+   SHAs and refs, which packages each arm `dev`s, whether any tree was dirty,
+   the `CLIMA_*` variables the stages export, and a digest of `diffs/`. This is
+   the difference between "which commit" and "what ran" -- a submodule can be
+   checked out and have no effect at all if it is not `dev`'d.
+2. `calkit save -am "<description, including the hashes under test>"`.
+3. Tag it, in the super-repo **and in each submodule whose commit the experiment
+   uses**:
+
+   ```sh
+   git tag -a exp/<slug> -m "<description>"
+   git -C <submodule> tag -a exp/<slug> -m "<description>" && git -C <submodule> push origin exp/<slug>
+   ```
+
+   Tagging the submodules is not bookkeeping. The super-repo pins submodule
+   commits that live on `pb/*` branches; if such a branch is force-pushed or
+   deleted, the pinned commit becomes unreachable and the experiment stops being
+   reproducible even though git still "records" it. A tag keeps it alive.
+4. Regenerate the index and commit it.
+
+### Reproducing an experiment
+
+```sh
+git checkout <commit>
+git submodule update --init --recursive
+calkit run
+```
+
+### Interpreting a result
+
+`speedup_pct` is `(mod - baseline) / mod` in SYPD. The floor for calling a
+result real is set by the *null tests* in the index -- runs where both arms were
+byte-identical. Those have come in between -0.43% and +0.21%, so differences of
+a few tenths of a percent are measurable and anything above ~1% is unambiguous.
+Note that the baseline itself drifts substantially with upstream (SYPD has
+ranged 0.26 to 0.32 over this project), so `speedup_pct` is only meaningful
+against its own run's baseline, never across rows.
+
+### Earlier qualitative notes
+
+Hand-maintained, predating the generated index; kept because the change
+summaries are not recoverable from the pipeline outputs.
+
 | Commit (super-repo) | Change summary | Result |
 |---------------------|----------------|--------|
 | `130baab` |  | Occupancy for `run_field_matrix_solver` increased and reduced registers per thread but slowed down overall. |

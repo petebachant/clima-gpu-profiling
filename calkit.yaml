@@ -16,14 +16,55 @@ questions:
       - kind: table
         path: results/top-kernels.csv
         explanation: >-
-          Top 20 GPU kernels by baseline cost, for both cases. Shows the
-          speedup is concentrated in the two set_microphysics_tendency_cache
-          kernels (-54% and -57%) while every other kernel is unchanged
-          within ~1%, so the gain is a real, localized effect rather than
-          run-to-run drift. Registers per thread shows the mechanism where
-          it is visible: the lighter sibling kernel drops 255 -> 146 and
-          gains occupancy, while the hot kernel stays pinned at the 255
-          cap. Spill counts are not in nsys; see results/ncu/ for those.
+          Top 20 GPU kernels by baseline cost, for both cases. In this
+          revision the two arms are identical: every package is on main and
+          CloudMicrophysics is the version the Coupler manifest pins, with no
+          local modifications anywhere. It is therefore a null test, and the
+          kernel-by-kernel spread measures run-to-run variation rather than
+          any treatment -- the reference the earlier CloudMicrophysics
+          (~5%) and ClimaCore register-cap (~0.1% alone, ~9% combined)
+          results should be judged against. Spill counts are not in nsys;
+          see results/ncu/ for those.
+
+  - question: >-
+      Which changes actually improve AMIP performance, by how much, and how do
+      we know a result is real rather than run-to-run variation?
+    answer: >-
+      Two changes have produced real gains, and they are complements rather than
+      alternatives. The CloudMicrophysics register-pressure work is worth ~5% on
+      its own: it removes the spilling in the hot
+      set_microphysics_tendency_cache kernel. ClimaCore's automatic per-kernel
+      register cap is worth ~0.1% on its own -- indistinguishable from zero --
+      because with stock CloudMicrophysics that kernel already spills at its
+      natural register count, so the cap declines to touch it. Together they are
+      worth ~9%: the CloudMicrophysics change creates the register headroom, and
+      the ClimaCore cap converts it into occupancy. Neither substitutes for the
+      other, and the combination beats the sum of the parts.
+
+      The noise floor is much tighter than previously assumed. Four runs in
+      which both arms were byte-identical (null tests) landed at -0.43%, -0.09%,
+      -0.06% and +0.21%, so run-to-run variation is a few tenths of a percent,
+      not the +/-2% this project worked to for months. Differences of ~0.5% are
+      therefore measurable, and results in that range should no longer be
+      dismissed as noise.
+    evidence:
+      - kind: table
+        path: experiments.csv
+        explanation: >-
+          Every recorded experiment in this project's history, generated from
+          `exp/*` git tags by scripts/build-experiment-index.py. Each row is read
+          out of git at the tagged commit rather than maintained by hand, so the
+          index cannot drift from what was recorded, and any row can be
+          reproduced with `git checkout <commit> && git submodule update
+          --init --recursive && calkit run`. The `treatment` column comes from
+          results/treatment.json, which records what actually reached the run --
+          which packages each arm dev'd, whether any tree was dirty -- rather
+          than what a commit message claims. Rows marked "null test (arms
+          identical)" are the noise-floor measurements; rows marked
+          "unrecorded" predate that file.
+      - kind: result
+        path: results/summary.json
+        key: speedup_pct
 
   - question: >-
       How much of a GPU profiling job is compilation rather than computation,
@@ -221,6 +262,26 @@ environments:
 
 pipeline:
   stages:
+    record-treatment:
+      kind: python-script
+      environment: py
+      script_path: scripts/record-treatment.py
+      # What actually ran, as opposed to what a commit message says ran. A
+      # superproject commit pins every submodule SHA, but not whether a package
+      # was dev'd into the AMIP environments (a submodule can be checked out and
+      # irrelevant), nor whether a tree was dirty, nor which CLIMA_* variables
+      # the stages exported. Each of those has changed the meaning of a result
+      # in this project at least once.
+      #
+      # Depends on diffs/ rather than the submodules directly, so it re-runs
+      # after make-diffs has observed the same state, and cannot disagree with
+      # the archived diff.
+      inputs:
+        - from_stage_outputs: make-diffs
+        - calkit.yaml
+      outputs:
+        - path: results/treatment.json
+          storage: git
     make-diffs:
       kind: shell-script
       environment: _system
@@ -261,24 +322,6 @@ pipeline:
       kind: shell-script
       environment: clima
       script_path: scripts/run-nsys.sh
-      # Occupancy experiment. set_microphysics_tendency_cache sits at the 255
-      # register cap, which fits exactly one 256-thread block per SM on an A100
-      # (8 warps, 12.5% occupancy). Nsight Compute shows it issue-starved rather
-      # than bandwidth-bound -- 31% issue slots busy, 68% of cycles with no
-      # eligible warp, DRAM at 8% -- so the bottleneck is too few resident warps,
-      # not memory traffic. Capping registers at 128 fits a second block and
-      # doubles resident warps, paying for it in spill to a memory system that is
-      # almost idle. The cap binds only kernels above it.
-      #
-      # Paired with the register check at the same limit so the log reports how
-      # much spill each capped kernel actually took on, alongside the per-kernel
-      # timings nsys collects. `env_default_options` defaults to `replace`, so the
-      # clima environment's --gpus=1 and --time=120 must be restated here.
-      scheduler:
-        options:
-          - --gpus=1
-          - --time=120
-          - --export=ALL,CLIMA_MAX_REGISTERS_PER_THREAD=128,CLIMA_CHECK_REGISTER_PRESSURE=warn,CLIMA_REGISTER_PRESSURE_CHECK_LIMIT=128
       args:
         - results/nsys/mod
         - ClimaCoupler.jl-mod/experiments/AMIP
@@ -294,7 +337,6 @@ pipeline:
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
         - ClimaAtmos.jl-mod/config
-        - CloudMicrophysics.jl-mod/src
       outputs:
         - results/nsys/mod.nsys-rep
         - results/nsys/mod.sqlite
@@ -340,14 +382,6 @@ pipeline:
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
-      # Same 128-register cap as mod-nsys, so the occupancy and spill this stage
-      # measures describe the build that mod-nsys timed. `env_default_options`
-      # defaults to `replace`, so --gpus=1 and --time=120 must be restated.
-      scheduler:
-        options:
-          - --gpus=1
-          - --time=120
-          - --export=ALL,CLIMA_MAX_REGISTERS_PER_THREAD=128
       args:
         - results/ncu/mod
         # Line-number-agnostic so the filter survives edits above the
@@ -377,7 +411,6 @@ pipeline:
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
-        - CloudMicrophysics.jl-mod/src
       outputs:
         - results/ncu/mod.ncu-rep
         - path: results/ncu/mod-details.csv
@@ -387,22 +420,6 @@ pipeline:
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
-      # Turn on ClimaCore's register-pressure diagnostic for this stage only.
-      # Setting it in run-julia-script.sh instead would invalidate amip-mod too,
-      # costing a full re-run of a stage this does not affect. Both ClimaCore
-      # submodules carry the check, so both arms report and the mod arm's
-      # silence means "no spill" rather than "check absent".
-      # `env_default_options` defaults to `replace`, so the clima environment's
-      # --gpus=1 and --time=120 must be restated here.
-      scheduler:
-        options:
-          - --gpus=1
-          - --time=120
-          # Kernel naming is what makes the diagnostic actionable -- without it
-          # the warning reads `#kernel_function#NN` and cannot tell you which
-          # broadcast is spilling. run-nsys.sh and run-ncu.sh export this, but
-          # run-julia-script.sh (which this stage uses) does not.
-          - --export=ALL,CLIMA_CHECK_REGISTER_PRESSURE=warn,CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=true
       args:
         - --project=ClimaCoupler.jl/experiments/AMIP
         - ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
@@ -425,13 +442,6 @@ pipeline:
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
-      # Same register-pressure diagnostic as amip-baseline. Both arms must have
-      # it on, or the mod arm's silence would only mean the check was disabled.
-      scheduler:
-        options:
-          - --gpus=1
-          - --time=120
-          - --export=ALL,CLIMA_MAX_REGISTERS_PER_THREAD=128,CLIMA_REGISTER_PRESSURE_CHECK_LIMIT=128,CLIMA_CHECK_REGISTER_PRESSURE=warn,CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=true
       args:
         - --project=ClimaCoupler.jl-mod/experiments/AMIP
         - ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
@@ -451,7 +461,6 @@ pipeline:
         - ClimaAtmos.jl-mod/src
         - ClimaAtmos.jl-mod/toml
         - ClimaAtmos.jl-mod/config
-        - CloudMicrophysics.jl-mod/src
     summarize:
       kind: python-script
       environment: py
@@ -522,7 +531,6 @@ pipeline:
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
-        - CloudMicrophysics.jl-mod/src
       outputs:
         # Small TOML that answers the question directly -- keep it in Git so the
         # evidence is readable without a `calkit pull`.

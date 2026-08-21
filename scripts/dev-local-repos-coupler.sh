@@ -20,5 +20,9 @@ julia --project="$REPO_ROOT/ClimaCoupler.jl-mod/$JULIA_PROJECT" -e "
     import Pkg
     Pkg.develop(path=\"./ClimaCore.jl-mod\")
     Pkg.develop(path=\"./ClimaAtmos.jl-mod\")
-    Pkg.develop(path=\"./CloudMicrophysics.jl-mod\")
 "
+# CloudMicrophysics is deliberately NOT dev'd: both arms take the version the
+# Coupler manifest pins, so ClimaCore is the only difference between them. That
+# isolates the ClimaCore register-cap work from the CloudMicrophysics
+# register-pressure changes, which were previously measured together. Restore
+# the `Pkg.develop(path="./CloudMicrophysics.jl-mod")` line to assess CM again.
