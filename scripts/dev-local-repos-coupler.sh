@@ -20,6 +20,7 @@ julia --project="$REPO_ROOT/ClimaCoupler.jl-mod/$JULIA_PROJECT" -e "
     import Pkg
     Pkg.develop(path=\"./ClimaCore.jl-mod\")
     Pkg.develop(path=\"./ClimaAtmos.jl-mod\")
+    Pkg.develop(path=\"./CloudMicrophysics.jl-mod\")
 "
 # Comment out the CloudMicrophysics line to take the Coupler-pinned version in
 # both arms instead, which isolates whatever else differs. Whether a package is
