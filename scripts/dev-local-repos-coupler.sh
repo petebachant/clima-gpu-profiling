@@ -20,9 +20,9 @@ julia --project="$REPO_ROOT/ClimaCoupler.jl-mod/$JULIA_PROJECT" -e "
     import Pkg
     Pkg.develop(path=\"./ClimaCore.jl-mod\")
     Pkg.develop(path=\"./ClimaAtmos.jl-mod\")
+    Pkg.develop(path=\"./CloudMicrophysics.jl-mod\")
 "
-# CloudMicrophysics is deliberately NOT dev'd: both arms take the version the
-# Coupler manifest pins, so ClimaCore is the only difference between them. That
-# isolates the ClimaCore register-cap work from the CloudMicrophysics
-# register-pressure changes, which were previously measured together. Restore
-# the `Pkg.develop(path="./CloudMicrophysics.jl-mod")` line to assess CM again.
+# Comment out the CloudMicrophysics line to take the Coupler-pinned version in
+# both arms instead, which isolates whatever else differs. Whether a package is
+# dev'd here -- not merely checked out -- is what decides if the submodule
+# reaches the run; results/treatment.json records the answer per run.
