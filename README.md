@@ -126,8 +126,13 @@ rather than maintained and cannot drift from what was actually recorded.
    uses**:
 
    ```sh
-   git tag -a exp/<slug> -m "<description>"
-   git -C <submodule> tag -a exp/<slug> -m "<description>" && git -C <submodule> push origin exp/<slug>
+   git tag -a exp/<slug> -m "<description>" && git push origin exp/<slug>
+   # non-mod submodules
+   git -C ClimaCore.jl tag -a exp/<slug> -m "..." && git -C ClimaCore.jl push origin exp/<slug>
+   # -mod submodules need their own tag name: a submodule and its `-mod`
+   # sibling are two clones of the SAME remote, so one tag name cannot point at
+   # two different commits. Pushing the second one is rejected.
+   git -C ClimaCore.jl-mod tag -a exp/<slug>-mod -m "..." && git -C ClimaCore.jl-mod push origin exp/<slug>-mod
    ```
 
    Tagging the submodules is not bookkeeping. The super-repo pins submodule
