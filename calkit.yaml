@@ -329,7 +329,7 @@ pipeline:
         options:
           - --gpus=1
           - --time=120
-          - --export=ALL,CLIMA_MAX_REGISTERS_PER_THREAD=auto
+          - --export=ALL,CLIMA_MAX_REGISTERS_PER_THREAD=auto,CLIMA_REGISTER_CAP_SPILL_BUDGET=1024
       args:
         - results/nsys/mod
         - ClimaCoupler.jl-mod/experiments/AMIP
@@ -345,7 +345,6 @@ pipeline:
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
         - ClimaAtmos.jl-mod/config
-        - CloudMicrophysics.jl-mod/src
       outputs:
         - results/nsys/mod.nsys-rep
         - results/nsys/mod.sqlite
@@ -398,7 +397,7 @@ pipeline:
         options:
           - --gpus=1
           - --time=120
-          - --export=ALL,CLIMA_MAX_REGISTERS_PER_THREAD=auto
+          - --export=ALL,CLIMA_MAX_REGISTERS_PER_THREAD=auto,CLIMA_REGISTER_CAP_SPILL_BUDGET=1024
       args:
         - results/ncu/mod
         # Line-number-agnostic so the filter survives edits above the
@@ -428,7 +427,6 @@ pipeline:
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
-        - CloudMicrophysics.jl-mod/src
       outputs:
         - results/ncu/mod.ncu-rep
         - path: results/ncu/mod-details.csv
@@ -467,7 +465,7 @@ pipeline:
         options:
           - --gpus=1
           - --time=120
-          - --export=ALL,CLIMA_MAX_REGISTERS_PER_THREAD=auto,CLIMA_CHECK_REGISTER_PRESSURE=warn,CLIMA_REGISTER_PRESSURE_CHECK_LIMIT=128,CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=true
+          - --export=ALL,CLIMA_MAX_REGISTERS_PER_THREAD=auto,CLIMA_REGISTER_CAP_SPILL_BUDGET=1024,CLIMA_CHECK_REGISTER_PRESSURE=warn,CLIMA_REGISTER_PRESSURE_CHECK_LIMIT=128,CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=true
       args:
         - --project=ClimaCoupler.jl-mod/experiments/AMIP
         - ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
@@ -486,7 +484,6 @@ pipeline:
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
         - ClimaAtmos.jl-mod/toml
-        - CloudMicrophysics.jl-mod/src
         - ClimaAtmos.jl-mod/config
     summarize:
       kind: python-script

@@ -76,3 +76,5 @@ calkit run
 | 2026-08-12-rerun-against-atmos-main | 2026-08-12 | unrecorded | 6.130 | 0.30166 | 0.32136 | bf1726aea | Rerun against atmos main |
 | 2026-08-20-baseline-main-null-test | 2026-08-20 | null test (arms identical) | 0.207 | 0.26969 | 0.27025 | a479c9c9f | Clean baseline: all packages on main, arms byte-identical (null test, 0.207%) |
 | 2026-08-21-cm-only | 2026-08-21 | ClimaCoupler, CloudMicrophysics, dev-package-set | 1.107 | 0.26969 | 0.27271 | f9f249fec | CloudMicrophysics pb/1m-spill only (ClimaCore+Atmos main both arms): 1.107% |
+| 2026-08-21-core-regcap-only | 2026-08-21 | ClimaCore, ClimaCoupler (register cap: auto) | 0.433 | 0.26969 | 0.27086 | 97b97fb47 | ClimaCore pb/reg-press auto register cap only (CM pinned, Atmos main): 0.433% |
+| 2026-08-21-cm-and-core | 2026-08-21 | ClimaCore, ClimaCoupler, CloudMicrophysics, dev-package-set (register cap: auto) | 2.372 | 0.26969 | 0.27624 | 5abf37aaa | CloudMicrophysics pb/1m-spill + ClimaCore auto register cap: 2.372% (superadditive) |
