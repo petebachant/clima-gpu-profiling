@@ -78,3 +78,4 @@ calkit run
 | 2026-08-21-cm-only | 2026-08-21 | ClimaCoupler, CloudMicrophysics, dev-package-set | 1.107 | 0.26969 | 0.27271 | f9f249fec | CloudMicrophysics pb/1m-spill only (ClimaCore+Atmos main both arms): 1.107% |
 | 2026-08-21-core-regcap-only | 2026-08-21 | ClimaCore, ClimaCoupler (register cap: auto) | 0.433 | 0.26969 | 0.27086 | 97b97fb47 | ClimaCore pb/reg-press auto register cap only (CM pinned, Atmos main): 0.433% |
 | 2026-08-21-cm-and-core | 2026-08-21 | ClimaCore, ClimaCoupler, CloudMicrophysics, dev-package-set (register cap: auto) | 2.372 | 0.26969 | 0.27624 | 5abf37aaa | CloudMicrophysics pb/1m-spill + ClimaCore auto register cap: 2.372% (superadditive) |
+| 2026-08-22-spill-budget-1024 | 2026-08-22 | ClimaCore, ClimaCoupler (register cap: auto) | -5.514 | 0.26969 | 0.25559 | eb8f05dd8 | Raising the cap spill budget to 1024 B drives L1013 to 64 regs: -5.514% |
