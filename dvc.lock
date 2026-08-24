@@ -1302,3 +1302,29 @@ stages:
       hash: md5
       md5: 16870f01319c579da8bce4e1ab064dbc
       size: 30938
+  build-experiment-index:
+    cmd: calkit xenv -n py --no-check -- python 
+      scripts/build-experiment-index.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: cd569ef50836446fc837bb706d220836.dir
+      size: 2090
+      nfiles: 2
+    - path: results/summary.json
+      hash: md5
+      md5: 0932c9fc32018beb045122ea24a8ae78
+      size: 542
+    - path: scripts/build-experiment-index.py
+      hash: md5
+      md5: ee384ece8f69f9e84865e1db5dc4517c
+      size: 5280
+    outs:
+    - path: experiments.csv
+      hash: md5
+      md5: f3fb694df10f93cefaa103edc1a1ffe9
+      size: 8785
+    - path: experiments.md
+      hash: md5
+      md5: 855f3f5a81e9286ed1c34bd8e683708f
+      size: 10750

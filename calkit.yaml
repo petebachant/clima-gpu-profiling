@@ -557,6 +557,24 @@ pipeline:
         # evidence is readable without a `calkit pull`.
         - path: results/compile-time/compile-time.toml
           storage: git
+    build-experiment-index:
+      kind: python-script
+      environment: py
+      script_path: scripts/build-experiment-index.py
+      # Generated rather than hand-maintained, so the index cannot drift from
+      # what was recorded: every row is read out of git at its `exp/*` tag.
+      #
+      # Depends on results/summary.json because that is what changes when a new
+      # experiment is produced. Git tags are not files, so DVC cannot watch them
+      # directly -- which is also why an experiment's own row appears only after
+      # the tag is created and this stage is re-run.
+      inputs:
+        - results/summary.json
+      outputs:
+        - path: experiments.md
+          storage: git
+        - path: experiments.csv
+          storage: git
     analyze-logs:
       kind: jupyter-notebook
       notebook_path: notebooks/analyze-logs.ipynb
