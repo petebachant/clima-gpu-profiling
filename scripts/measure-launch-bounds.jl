@@ -106,9 +106,14 @@ for (_, e) in kernels
     e["mean_ms"] = 1000 * e["total_s"] / max(e["calls"], 1)
 end
 
-# What ClimaCore decided for every kernel it considered, so an accepted and a
-# rejected annotation can be told apart without re-deriving them.
-decisions = map(CUDAExt.launch_bounds_report()) do d
+# What ClimaCore decided for the kernels it could actually act on, so an
+# accepted and a rejected annotation can be told apart without re-deriving them.
+# Kernels already at or above the target are counted rather than listed: they are
+# ~98% of the report and nothing was decided about them, and this file is kept in
+# Git precisely so it stays readable.
+all_decisions = CUDAExt.launch_bounds_report()
+candidates = filter(d -> d.unbounded_warps < d.target_warps, all_decisions)
+decisions = map(candidates) do d
     Dict{String, Any}(
         "kernel" => string(d.kernel),
         "applied" => !isnothing(d.bounds),
@@ -126,6 +131,8 @@ phase = Dict{String, Any}(
     "target_warps_per_sm" => TARGET,
     "spill_budget_bytes" => BUDGET,
     "calls" => N_CALLS,
+    "kernels_considered" => length(all_decisions),
+    "kernels_already_at_target" => length(all_decisions) - length(candidates),
     "kernels" => kernels,
     "decisions" => decisions,
 )
