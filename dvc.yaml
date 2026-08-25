@@ -1,6 +1,6 @@
 stages:
   record-treatment:
-    cmd: calkit xenv -n py --no-check -- python 
+    cmd: calkit xenv -n py --no-check -- python
       scripts/record-treatment.py
     deps:
       - scripts/record-treatment.py
@@ -28,19 +28,19 @@ stages:
       - diffs:
           cache: false
           persist: false
-    desc: Automatically generated from the 'make-diffs' stage in 
+    desc: Automatically generated from the 'make-diffs' stage in
       calkit.yaml. Changes made here will be overwritten.
   baseline-nsys:
-    cmd: calkit scheduler batch --name baseline-nsys --environment 
-      clima --dep scripts/run.jl --dep ClimaCoupler.jl/src --dep 
+    cmd: calkit scheduler batch --name baseline-nsys --environment
+      clima --dep scripts/run.jl --dep ClimaCoupler.jl/src --dep
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
-      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep 
-      ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib 
-      --dep ClimaAtmos.jl/src --dep .calkit/env-locks/clima --out 
-      results/nsys/baseline.nsys-rep --out 
-      results/nsys/baseline.sqlite -- scripts/run-nsys.sh 
-      results/nsys/baseline ClimaCoupler.jl/experiments/AMIP 
+      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep
+      ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib
+      --dep ClimaAtmos.jl/src --dep .calkit/env-locks/clima --out
+      results/nsys/baseline.nsys-rep --out
+      results/nsys/baseline.sqlite -- scripts/run-nsys.sh
+      results/nsys/baseline ClimaCoupler.jl/experiments/AMIP
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
       - scripts/run-nsys.sh
@@ -62,20 +62,20 @@ stages:
       - .calkit/scheduler/logs/baseline-nsys.out:
           cache: false
           persist: true
-    desc: Automatically generated from the 'baseline-nsys' stage in 
+    desc: Automatically generated from the 'baseline-nsys' stage in
       calkit.yaml. Changes made here will be overwritten.
   mod-nsys:
-    cmd: calkit scheduler batch --name mod-nsys --environment clima 
-      --dep scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
+    cmd: calkit scheduler batch --name mod-nsys --environment clima
+      --dep scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml 
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
       --dep ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
-      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
-      ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep 
-      ClimaAtmos.jl-mod/config --dep .calkit/env-locks/clima --out 
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
+      ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep
+      ClimaAtmos.jl-mod/config --dep .calkit/env-locks/clima --out
       results/nsys/mod.nsys-rep --out results/nsys/mod.sqlite --option
-      --gpus=1 --option --time=120 -- scripts/run-nsys.sh 
-      results/nsys/mod ClimaCoupler.jl-mod/experiments/AMIP 
+      --gpus=1 --option --time=120 -- scripts/run-nsys.sh
+      results/nsys/mod ClimaCoupler.jl-mod/experiments/AMIP
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
       - scripts/run-nsys.sh
@@ -98,21 +98,21 @@ stages:
       - .calkit/scheduler/logs/mod-nsys.out:
           cache: false
           persist: true
-    desc: Automatically generated from the 'mod-nsys' stage in 
+    desc: Automatically generated from the 'mod-nsys' stage in
       calkit.yaml. Changes made here will be overwritten.
   baseline-ncu:
-    cmd: calkit scheduler batch --name baseline-ncu --environment 
-      clima --dep scripts/run.jl --dep ClimaCoupler.jl/src --dep 
+    cmd: calkit scheduler batch --name baseline-ncu --environment
+      clima --dep scripts/run.jl --dep ClimaCoupler.jl/src --dep
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
-      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep 
-      ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib 
-      --dep ClimaAtmos.jl/src --dep .calkit/env-locks/clima --out 
-      results/ncu/baseline.ncu-rep --out 
-      results/ncu/baseline-details.csv -- scripts/run-ncu.sh 
-      results/ncu/baseline --kernel-name 
+      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep
+      ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib
+      --dep ClimaAtmos.jl/src --dep .calkit/env-locks/clima --out
+      results/ncu/baseline.ncu-rep --out
+      results/ncu/baseline-details.csv -- scripts/run-ncu.sh
+      results/ncu/baseline --kernel-name
       regex:set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L[0-9]+
-      --project ClimaCoupler.jl/experiments/AMIP --config 
+      --project ClimaCoupler.jl/experiments/AMIP --config
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --launch-skip 3 --launch-count 6
     deps:
@@ -136,21 +136,22 @@ stages:
       - .calkit/scheduler/logs/baseline-ncu.out:
           cache: false
           persist: true
-    desc: Automatically generated from the 'baseline-ncu' stage in 
+    frozen: true
+    desc: Automatically generated from the 'baseline-ncu' stage in
       calkit.yaml. Changes made here will be overwritten.
   mod-ncu:
-    cmd: calkit scheduler batch --name mod-ncu --environment clima 
-      --dep scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
+    cmd: calkit scheduler batch --name mod-ncu --environment clima
+      --dep scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml 
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
       --dep ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
-      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
-      ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep 
-      .calkit/env-locks/clima --out results/ncu/mod.ncu-rep --out 
-      results/ncu/mod-details.csv --option --gpus=1 --option 
-      --time=120 -- scripts/run-ncu.sh results/ncu/mod --kernel-name 
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
+      ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep
+      .calkit/env-locks/clima --out results/ncu/mod.ncu-rep --out
+      results/ncu/mod-details.csv --option --gpus=1 --option
+      --time=120 -- scripts/run-ncu.sh results/ncu/mod --kernel-name
       regex:set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L[0-9]+
-      --project ClimaCoupler.jl-mod/experiments/AMIP --config 
+      --project ClimaCoupler.jl-mod/experiments/AMIP --config
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --launch-skip 3 --launch-count 6
     deps:
@@ -174,19 +175,20 @@ stages:
       - .calkit/scheduler/logs/mod-ncu.out:
           cache: false
           persist: true
-    desc: Automatically generated from the 'mod-ncu' stage in 
+    frozen: true
+    desc: Automatically generated from the 'mod-ncu' stage in
       calkit.yaml. Changes made here will be overwritten.
   amip-baseline:
-    cmd: calkit scheduler batch --name amip-baseline --environment 
-      clima --dep ClimaCoupler.jl/experiments/AMIP/run_simulation.jl 
-      --dep ClimaCoupler.jl/src --dep 
+    cmd: calkit scheduler batch --name amip-baseline --environment
+      clima --dep ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
+      --dep ClimaCoupler.jl/src --dep
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
-      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep 
-      ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib 
-      --dep ClimaAtmos.jl/src --dep ClimaAtmos.jl/toml --dep 
-      .calkit/env-locks/clima -- scripts/run-julia-script.sh 
-      --project=ClimaCoupler.jl/experiments/AMIP 
+      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep
+      ClimaCore.jl/ext --dep ClimaCore.jl/src --dep ClimaCore.jl/lib
+      --dep ClimaAtmos.jl/src --dep ClimaAtmos.jl/toml --dep
+      .calkit/env-locks/clima -- scripts/run-julia-script.sh
+      --project=ClimaCoupler.jl/experiments/AMIP
       ClimaCoupler.jl/experiments/AMIP/run_simulation.jl --config_file
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --job_id gpu_amip_progedmf_1M_land_he16_baseline
@@ -207,23 +209,23 @@ stages:
       - .calkit/scheduler/logs/amip-baseline.out:
           cache: false
           persist: true
-    desc: Automatically generated from the 'amip-baseline' stage in 
+    desc: Automatically generated from the 'amip-baseline' stage in
       calkit.yaml. Changes made here will be overwritten.
   amip-mod:
-    cmd: calkit scheduler batch --name amip-mod --environment clima 
-      --dep ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl 
-      --dep ClimaCoupler.jl-mod/src --dep 
+    cmd: calkit scheduler batch --name amip-mod --environment clima
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
+      --dep ClimaCoupler.jl-mod/src --dep
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml 
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
       --dep ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
-      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
-      ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep 
-      ClimaAtmos.jl-mod/toml --dep ClimaAtmos.jl-mod/config --dep 
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
+      ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep
+      ClimaAtmos.jl-mod/toml --dep ClimaAtmos.jl-mod/config --dep
       .calkit/env-locks/clima --option --gpus=1 --option --time=120 --
-      scripts/run-julia-script.sh 
-      --project=ClimaCoupler.jl-mod/experiments/AMIP 
-      ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl 
-      --config_file 
+      scripts/run-julia-script.sh
+      --project=ClimaCoupler.jl-mod/experiments/AMIP
+      ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
+      --config_file
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --job_id gpu_amip_progedmf_1M_land_he16_mod
     deps:
@@ -244,7 +246,7 @@ stages:
       - .calkit/scheduler/logs/amip-mod.out:
           cache: false
           persist: true
-    desc: Automatically generated from the 'amip-mod' stage in 
+    desc: Automatically generated from the 'amip-mod' stage in
       calkit.yaml. Changes made here will be overwritten.
   summarize:
     cmd: calkit xenv -n py --no-check -- python scripts/summarize.py
@@ -259,10 +261,10 @@ stages:
       - results/summary.json:
           cache: false
           persist: false
-    desc: Automatically generated from the 'summarize' stage in 
+    desc: Automatically generated from the 'summarize' stage in
       calkit.yaml. Changes made here will be overwritten.
   compare-kernels:
-    cmd: calkit nb execute --environment py --no-check --to html 
+    cmd: calkit nb execute --environment py --no-check --to html
       "notebooks/compare-kernels.ipynb"
     deps:
       - .calkit/notebooks/cleaned/notebooks/compare-kernels.ipynb
@@ -281,10 +283,10 @@ stages:
           cache: false
       - .calkit/notebooks/html/notebooks/compare-kernels.html:
           cache: false
-    desc: Automatically generated from the 'compare-kernels' stage in 
+    desc: Automatically generated from the 'compare-kernels' stage in
       calkit.yaml. Changes made here will be overwritten.
   export-kernel-resources:
-    cmd: calkit xenv -n py --no-check -- python 
+    cmd: calkit xenv -n py --no-check -- python
       scripts/export-kernel-resources.py
     deps:
       - scripts/export-kernel-resources.py
@@ -299,21 +301,57 @@ stages:
       - results/kernel-resources.csv:
           cache: false
           persist: false
-    desc: Automatically generated from the 'export-kernel-resources' 
+    desc: Automatically generated from the 'export-kernel-resources'
       stage in calkit.yaml. Changes made here will be overwritten.
-  compile-time-study:
-    cmd: calkit scheduler batch --name compile-time-study 
-      --environment clima --dep scripts/measure-compile-time.jl --dep 
-      ClimaCoupler.jl-mod/src --dep 
+  launch-bounds-study:
+    cmd: calkit scheduler batch --name launch-bounds-study
+      --environment clima --dep scripts/measure-launch-bounds.jl --dep
+      ClimaCoupler.jl-mod/src --dep
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml 
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
       --dep ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
-      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
-      ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep 
-      .calkit/env-locks/clima --out 
-      results/compile-time/compile-time.toml --option --gpus=1 
-      --option --time=300 -- scripts/run-compile-study.sh 
-      ClimaCoupler.jl-mod/experiments/AMIP 
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
+      ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep
+      .calkit/env-locks/clima --out
+      results/launch-bounds/launch-bounds.toml --option --gpus=1
+      --option --time=300 -- scripts/run-launch-bounds-study.sh
+      ClimaCoupler.jl-mod/experiments/AMIP
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      results/launch-bounds/launch-bounds.toml
+    deps:
+      - scripts/run-launch-bounds-study.sh
+      - scripts/measure-launch-bounds.jl
+      - ClimaCoupler.jl-mod/src
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCore.jl-mod/ext
+      - ClimaCore.jl-mod/src
+      - ClimaCore.jl-mod/lib
+      - ClimaAtmos.jl-mod/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/launch-bounds/launch-bounds.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/launch-bounds-study.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'launch-bounds-study' stage
+      in calkit.yaml. Changes made here will be overwritten.
+  compile-time-study:
+    cmd: calkit scheduler batch --name compile-time-study
+      --environment clima --dep scripts/measure-compile-time.jl --dep
+      ClimaCoupler.jl-mod/src --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
+      ClimaCore.jl-mod/lib --dep ClimaAtmos.jl-mod/src --dep
+      .calkit/env-locks/clima --out
+      results/compile-time/compile-time.toml --option --gpus=1
+      --option --time=300 -- scripts/run-compile-study.sh
+      ClimaCoupler.jl-mod/experiments/AMIP
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       results/compile-time/compile-time.toml
     deps:
@@ -336,10 +374,10 @@ stages:
           cache: false
           persist: true
     frozen: true
-    desc: Automatically generated from the 'compile-time-study' stage 
+    desc: Automatically generated from the 'compile-time-study' stage
       in calkit.yaml. Changes made here will be overwritten.
   build-experiment-index:
-    cmd: calkit xenv -n py --no-check -- python 
+    cmd: calkit xenv -n py --no-check -- python
       scripts/build-experiment-index.py
     deps:
       - scripts/build-experiment-index.py
@@ -352,10 +390,10 @@ stages:
       - experiments.csv:
           cache: false
           persist: false
-    desc: Automatically generated from the 'build-experiment-index' 
+    desc: Automatically generated from the 'build-experiment-index'
       stage in calkit.yaml. Changes made here will be overwritten.
   analyze-logs:
-    cmd: calkit nb execute --environment py --no-check --to html 
+    cmd: calkit nb execute --environment py --no-check --to html
       "notebooks/analyze-logs.ipynb"
     deps:
       - .calkit/notebooks/cleaned/notebooks/analyze-logs.ipynb
@@ -370,5 +408,5 @@ stages:
           cache: false
       - .calkit/notebooks/html/notebooks/analyze-logs.html:
           cache: false
-    desc: Automatically generated from the 'analyze-logs' stage in 
+    desc: Automatically generated from the 'analyze-logs' stage in
       calkit.yaml. Changes made here will be overwritten.

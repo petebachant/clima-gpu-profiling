@@ -16,15 +16,14 @@ questions:
       - kind: table
         path: results/top-kernels.csv
         explanation: >-
-          Top 20 GPU kernels by baseline cost, for both cases. In this
-          revision the two arms are identical: every package is on main and
-          CloudMicrophysics is the version the Coupler manifest pins, with no
-          local modifications anywhere. It is therefore a null test, and the
-          kernel-by-kernel spread measures run-to-run variation rather than
-          any treatment -- the reference the earlier CloudMicrophysics
-          (~5%) and ClimaCore register-cap (~0.1% alone, ~9% combined)
-          results should be judged against. Spill counts are not in nsys;
-          see results/ncu/ for those.
+          Top 20 GPU kernels by baseline cost, for both arms of whichever
+          revision produced it. What the two arms actually were is recorded per
+          run in results/treatment.json rather than here, so this description
+          cannot go stale against the data: on a null-test revision the
+          kernel-by-kernel spread measures run-to-run variation, and on a
+          treatment revision it measures the treatment. Spill counts are not
+          collected by nsys; see results/kernel-resources.csv and results/ncu/
+          for those.
 
   - question: >-
       Which changes actually improve AMIP performance, by how much, and how do
@@ -47,6 +46,8 @@ questions:
       not the +/-2% this project worked to for months. Differences of ~0.5% are
       therefore measurable, and results in that range should no longer be
       dismissed as noise.
+    # Long-form account of this answer; the entrypoint stays short.
+    explanation: docs/learnings.md
     evidence:
       - kind: table
         path: experiments.csv
@@ -65,6 +66,126 @@ questions:
       - kind: result
         path: results/summary.json
         key: speedup_pct
+
+  - question: >-
+      What actually limits the hot SGS-quadrature microphysics kernel -- the
+      largest single kernel at ~16% of GPU time -- and which of the available
+      levers can move it?
+    answer: >-
+      It is latency-bound at 12.5% occupancy, held there by register pressure,
+      and NOT by any of the things the usual GPU playbook targets: DRAM sits at
+      4.7%, there are ~1.55M independent points, and no pipe exceeds ~27%. The
+      dominant stall is fixed-latency execution dependency (42% of the cycles
+      between issued instructions) and IPC is 1.34 of 4.
+
+      The ~250 registers are ONE CloudMicrophysics evaluation, not quadrature
+      scaffolding: the unfused single-call kernel uses 246 registers against the
+      nine-point kernel's 255, so the `@noinline` barrier is holding and the
+      scaffolding costs 9 registers. On sm_80 the occupancy steps are 255 -> 8
+      warps/SM, 168 -> 12, 128 -> 16, so nothing saving 9 registers can move
+      occupancy.
+
+      The lever that works is asking ptxas for an occupancy target via
+      `__launch_bounds__` rather than capping registers with `maxregs`: a hard
+      cap makes it spill whatever does not fit, which is why the earlier
+      register-cap experiments landed at +0.43% and -5.51%. Measured at a 12
+      warps/SM target, the single-call kernel goes 246 -> 168 registers, 8 -> 12
+      warps/SM for +88 bytes of spill, and -22% in time; total CUDA kernel time
+      falls 2.11%.
+
+      OCCUPANCY IS A DEAD END FOR THE HOT KERNEL ITSELF. ptxas can reach 168
+      registers on it, but only at +344 bytes of spill, and it then runs 17.5%
+      SLOWER (31.63 vs 26.92 ms). The spill-growth guard that rejects it is
+      therefore load-bearing: unguarded, the change is net negative, since the
+      hot kernel is 16% of GPU time against the 2.3% that benefits.
+
+      AND THE GAIN DOES NOT REACH SYPD. The same treatment measured -0.016% end
+      to end -- indistinguishable from zero -- because the benchmark's measured
+      window is short and dominated by first-call compilation, so a change that
+      only makes compiled kernels faster has little room to show. A tight noise
+      floor is not the same as sensitivity. To move SYPD by 5% requires removing
+      WORK, not rescheduling it; the binding constraint is 9 quadrature points x
+      2 substeps = 18 CloudMicrophysics evaluations per grid point per call,
+      which is a modelling choice rather than a compiler outcome.
+
+      docs/learnings.md carries the rest: the cost model that splits the kernel
+      into ~52% fixed and ~48% substep work, the decompositions that were
+      measured and rejected (splitting per quadrature point, fusing the scratch
+      fields, unrolling the quadrature loop), why fast math is excluded on
+      reproducibility rather than performance grounds, the host-side launch
+      overhead that a first implementation of this mechanism introduced, and the
+      ranked list of remaining levers.
+    # Long-form account of this answer; the entrypoint stays short.
+    explanation: docs/learnings.md
+    evidence:
+      - kind: table
+        path: results/kernel-resources.csv
+        explanation: >-
+          Registers, spill requests and their share of memory traffic, stack
+          frame, block-limit-registers, and achieved vs theoretical occupancy
+          for the profiled microphysics kernels. This is what establishes the
+          kernel as register-limited rather than memory-limited, and the
+          register figures are what the occupancy-step arithmetic above is
+          computed from. Pipe utilisation and stall-reason breakdowns are not in
+          this table; they come from the full Nsight Compute report, exported
+          via `ncu --import results/ncu/baseline.ncu-rep --page raw --csv`.
+
+          STALE BY DESIGN. The ncu stages that produce this are frozen because
+          they cost more than the rest of the pipeline combined, so this table
+          describes whichever revision last ran them -- not necessarily the
+          current arms. results/treatment.json at that revision records which
+          those were. It is cited here for the CHARACTERISATION of the hot
+          kernel (register-limited, ~12.5% occupancy, spilling at the 255-register
+          cap), which is a property of the baseline kernel and has been stable
+          across revisions; it is NOT evidence for any particular treatment's
+          effect. Unfreeze both ncu stages together when a claim needs measured
+          spill or achieved occupancy for the current arms.
+      - kind: table
+        path: results/top-kernels.csv
+        explanation: >-
+          Supplies the comparison that pins the register cost on
+          CloudMicrophysics rather than on the quadrature: the single-call
+          updraft kernel and the nine-point environment kernel appear as
+          separate rows with their own register counts and total times, so
+          per-evaluation cost can be read off both. Figures are deliberately not
+          quoted in this description so it cannot go stale against the data.
+      - kind: result
+        path: results/launch-bounds/launch-bounds.toml
+        key: off.kernels.L1013.mean_ms
+        explanation: >-
+          The reference every other phase is read against: the hot
+          SGS-quadrature kernel with launch bounds disabled, which is what the
+          baseline arm runs. Measured in its own process, so the configuration
+          is set at ClimaCore load time exactly as a real run sets it.
+      - kind: result
+        path: results/launch-bounds/launch-bounds.toml
+        key: unguarded.kernels.L1013.mean_ms
+        explanation: >-
+          The counterfactual, and the reason this stage exists. With the spill
+          budget loosened until the annotation is accepted, L1013 reaches 168
+          registers and 12 warps/SM and gets SLOWER. A rejected configuration
+          never appears in an ordinary profiling run, so without this phase the
+          spill guard would look like an arbitrary constant instead of the part
+          that keeps the change from being net negative. Compare against
+          off.kernels.L1013.mean_ms.
+      - kind: result
+        path: results/launch-bounds/launch-bounds.toml
+        key: guarded.kernels.L970.mean_ms
+        explanation: >-
+          The gain, in the shipped configuration: the single-call microphysics
+          kernel annotated at 12 warps/SM for a small spill cost. Compare
+          against off.kernels.L970.mean_ms. The `guarded.decisions` array in the
+          same file records, per kernel, the registers and occupancy with and
+          without the annotation, the spill growth, and whether it was accepted
+          -- which is what distinguishes this kernel's outcome from L1013's.
+      - kind: result
+        path: results/summary.json
+        key: speedup_pct
+        explanation: >-
+          The pipeline-level number this kernel work has to show up in
+          eventually. Kernel times are not SYPD: this stage establishes the
+          mechanism, and only the profiling and AMIP stages can say what it is
+          worth end to end.
 
   - question: >-
       How much of a GPU profiling job is compilation rather than computation,
@@ -348,6 +469,22 @@ pipeline:
         - results/nsys/mod.nsys-rep
         - results/nsys/mod.sqlite
     baseline-ncu:
+      # Frozen: ncu is the most expensive thing in this pipeline by a wide
+      # margin -- ~1h20m to ~1h40m per arm against ~45-55 min for an nsys or
+      # AMIP stage, so the two ncu stages alone are over half the pipeline's
+      # cluster time. Most treatments do not need it. nsys already reports
+      # registers per thread per kernel (see results/top-kernels.csv), and the
+      # launch-bounds-study stage records registers, target occupancy and spill
+      # growth directly from the CUDA profiler. What ONLY ncu provides is
+      # measured spill traffic, stack frame, achieved-vs-theoretical occupancy
+      # and stall reasons.
+      #
+      # Unfreeze deliberately, for a treatment whose claim actually rests on
+      # those: set `frozen: false` here and in the sibling ncu stage (both, so
+      # the two arms describe the same revision), run `calkit run`, then freeze
+      # again. results/treatment.json records which arms the current evidence
+      # describes.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
@@ -386,6 +523,22 @@ pipeline:
           storage: git
           delete_before_run: true
     mod-ncu:
+      # Frozen: ncu is the most expensive thing in this pipeline by a wide
+      # margin -- ~1h20m to ~1h40m per arm against ~45-55 min for an nsys or
+      # AMIP stage, so the two ncu stages alone are over half the pipeline's
+      # cluster time. Most treatments do not need it. nsys already reports
+      # registers per thread per kernel (see results/top-kernels.csv), and the
+      # launch-bounds-study stage records registers, target occupancy and spill
+      # growth directly from the CUDA profiler. What ONLY ncu provides is
+      # measured spill traffic, stack frame, achieved-vs-theoretical occupancy
+      # and stall reasons.
+      #
+      # Unfreeze deliberately, for a treatment whose claim actually rests on
+      # those: set `frozen: false` here and in the sibling ncu stage (both, so
+      # the two arms describe the same revision), run `calkit run`, then freeze
+      # again. results/treatment.json records which arms the current evidence
+      # describes.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
@@ -518,6 +671,37 @@ pipeline:
       outputs:
         - path: results/kernel-resources.csv
           storage: git
+    launch-bounds-study:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-launch-bounds-study.sh
+      # Three full setup+JIT phases in one job, so the clima environment's
+      # default 120 min is not enough. `env_default_options` defaults to
+      # `replace`, so --gpus=1 must be restated here.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=300
+      args:
+        - ClimaCoupler.jl-mod/experiments/AMIP
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - results/launch-bounds/launch-bounds.toml
+      inputs:
+        - scripts/measure-launch-bounds.jl
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaCore.jl-mod/lib
+        - ClimaAtmos.jl-mod/src
+      outputs:
+        # Small TOML that answers the question directly -- keep it in Git so the
+        # evidence is readable without a `calkit pull`.
+        - path: results/launch-bounds/launch-bounds.toml
+          storage: git
+
     compile-time-study:
       kind: shell-script
       environment: clima
