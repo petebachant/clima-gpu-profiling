@@ -1437,9 +1437,10 @@ stages:
     cmd: calkit scheduler batch --name cm-registers --environment clima --dep 
       scripts/measure-cm-registers.jl --dep 
       ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
-      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out 
-      results/cm-registers.toml --option --gpus=1 --option --time=40 -- 
-      scripts/run-cm-registers.sh ClimaCoupler.jl-mod/experiments/AMIP
+      ClimaAtmos.jl-mod/src --dep ClimaCore.jl-mod/ext --dep 
+      .calkit/env-locks/clima --out results/cm-registers.toml --option --gpus=1 
+      --option --time=40 -- scripts/run-cm-registers.sh 
+      ClimaCoupler.jl-mod/experiments/AMIP
     deps:
     - path: .calkit/env-locks/clima
       hash: md5
@@ -1451,14 +1452,19 @@ stages:
       md5: 967da63c55ed8c8f6027b0e37304331a.dir
       size: 2138540
       nfiles: 160
+    - path: ClimaCore.jl-mod/ext
+      hash: md5
+      md5: d0d9eb2e1aa515bca1cdb1521c0dae48.dir
+      size: 180135
+      nfiles: 21
     - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
       hash: md5
       md5: df04c82596623455bbcd3ed87ce2ff33
       size: 122455
     - path: scripts/measure-cm-registers.jl
       hash: md5
-      md5: 9e0151dcf63f5e5a0ae117f2caa96337
-      size: 4003
+      md5: a61bfd09d0e502572a71b77bc5dbc72b
+      size: 6579
     - path: scripts/run-cm-registers.sh
       hash: md5
       md5: 5961cbdd6a2177aa55168acdfa4dc1e0
@@ -1467,9 +1473,9 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/cm-registers.out
       hash: md5
-      md5: 376093ede2b201910264ba034eea7dde
-      size: 2150
+      md5: 70a1adafc10df36e57d64aed162ffcf6
+      size: 4880
     - path: results/cm-registers.toml
       hash: md5
-      md5: 8d742815cfa84ddbb3a642186b47905b
-      size: 679
+      md5: 78ca5ea307ff601e8decaed42c0be698
+      size: 963

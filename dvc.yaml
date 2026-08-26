@@ -307,15 +307,16 @@ stages:
     cmd: calkit scheduler batch --name cm-registers --environment
       clima --dep scripts/measure-cm-registers.jl --dep
       ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
-      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
-      results/cm-registers.toml --option --gpus=1 --option --time=40
-      -- scripts/run-cm-registers.sh
+      ClimaAtmos.jl-mod/src --dep ClimaCore.jl-mod/ext --dep
+      .calkit/env-locks/clima --out results/cm-registers.toml --option
+      --gpus=1 --option --time=40 -- scripts/run-cm-registers.sh
       ClimaCoupler.jl-mod/experiments/AMIP
     deps:
       - scripts/run-cm-registers.sh
       - scripts/measure-cm-registers.jl
       - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
       - ClimaAtmos.jl-mod/src
+      - ClimaCore.jl-mod/ext
       - .calkit/env-locks/clima
     outs:
       - results/cm-registers.toml:

@@ -163,6 +163,57 @@ and concluded the GPU was ~50% idle when the timeline says ~31%. The union is
 also the figure to hand anyone working on fusion: their change should move
 launches and idle, not necessarily kernel time.
 
+## 2c. Where the hot kernel's registers actually go
+
+Measured by the `cm-registers` stage, which compiles each layer and reads its
+register count rather than running a simulation. Two halves: CloudMicrophysics on
+its own, and the ClimaCore broadcast it runs inside, on the real AMIP layout.
+
+| layer | registers | warps/SM |
+|---|---|---|
+| CM source terms only | 32 | 16 |
+| CM + aggregate | 48 | 16 |
+| CM one linearized implicit step | 58 | 16 |
+| **CM full `LinearizedAverage`** (nsub 1/2/3) | **163** | 12 |
+| ClimaCore bare broadcast, 3 fields in | 50 | 16 |
+| ClimaCore broadcast, 7 fields in | 48 | 16 |
+| **+ 4-field NamedTuple out** | **68** | 16 |
+| **+ the microphysics call** | **255** (capped) | 8 |
+
+Reading, in order of what it overturns:
+
+**Field count is free.** Going from three input fields to seven costs −2
+registers: reads stream through rather than being held. So none of the gap
+between a standalone evaluation and the real kernel is field access, which is
+what one would naturally assume it to be.
+
+**The substep count is free.** 163 registers at `nsub` = 1, 2 and 3 alike, so
+`microphysics_n_substeps_quadrature` buys accuracy at the cost of time but not of
+occupancy.
+
+**The framework costs 68 registers** — 48 for ClimaCore's broadcast and indexing
+machinery, plus 20 to hold four output accumulators live. Worth noting the bare
+broadcast floor of 48 exceeds CloudMicrophysics' entire source-terms layer at 32.
+
+**But the physics still dominates: roughly 70/30.** The parts sum to 68 + 163 =
+231 against an observed 255, and 255 is the hardware ceiling, so the true demand
+is higher still — consistent with the real kernel's 2208-byte stack frame and 21%
+spill overhead. An intermediate reading of this data, that the register problem
+was mostly framework rather than physics, was wrong: it came from differencing
+246 − 163 = 83 before the framework had been measured directly.
+
+**Consequence.** Reaching 168 registers, the next occupancy step, means cutting
+roughly 63 from a demand of at least 231. Neither lever is obviously enough
+alone, but they are additive: trim the 20-register NamedTuple output *and* bring
+CloudMicrophysics from 163 toward ~120, and the kernel crosses into 12 warps/SM,
+at which point the launch-bounds mechanism converts it with no further work. That
+is the same superadditive structure `experiments.csv` recorded for `cm-and-core`.
+
+**Method note.** Pass parameter structs as kernel *arguments*. As `const`
+globals the compiler folds their fields and reports 101 instead of 163 for the
+full evaluation — understating pressure by 62 registers, enough to invert a
+conclusion.
+
 ## 3. What has worked
 
 | change | effect | notes |

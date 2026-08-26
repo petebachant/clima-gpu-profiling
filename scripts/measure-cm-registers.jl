@@ -66,6 +66,60 @@ for (nm, body) in layers
 end
 
 # Record for the pipeline: these numbers are cited by the kernel-limits question.
+# ---------------------------------------------------------------------------
+# Second half: the ClimaCore side. A standalone CloudMicrophysics evaluation is
+# only part of the hot kernel's register demand; the rest is the broadcast it
+# runs inside. Build up through the layers on the real AMIP data layout so each
+# delta names its own cost.
+#
+# Register counts come from ClimaCore's launch-bounds decision record, which
+# stores the unbounded count for every kernel it compiles. That machinery only
+# exists on the -mod branch, so this half is skipped elsewhere.
+import ClimaComms
+import ClimaCore
+import ClimaCore.DataLayouts: VIJFH
+ClimaComms.@import_required_backends
+
+const Ext = Base.get_extension(ClimaCore, :ClimaCoreCUDAExt)
+mknt4(a, b, c, d) = (dq_lcl_dt = a, dq_icl_dt = b, dq_rai_dt = c, dq_sno_dt = d)
+
+if isnothing(Ext) || !isdefined(Ext, :LAUNCH_BOUNDS_CACHE)
+    @info "ClimaCore lacks the launch-bounds record; skipping the broadcast layers"
+else
+    AT = ClimaComms.array_type(ClimaComms.device()){FT}
+    # AMIP he16: 6*16*16 = 1536 elements, 4x4 nodes, 63 levels.
+    Nv, Nij, Nh = 63, 4, 1536
+    sc() = VIJFH{FT, Nv, Nij, Nij, nothing}(AT, Nh)
+    NTT = @NamedTuple{dq_lcl_dt::FT, dq_icl_dt::FT, dq_rai_dt::FT, dq_sno_dt::FT}
+    ρf, qt, ql, qi, qr, qs, Tf = ntuple(_ -> sc(), 7)
+    parent(ρf) .= FT(0.9); parent(Tf) .= FT(275); parent(qt) .= FT(8e-3)
+    parent(ql) .= FT(3e-4); parent(qi) .= FT(5e-5)
+    parent(qr) .= FT(2e-4); parent(qs) .= FT(3e-5)
+    outs = sc()
+    outnt = VIJFH{NTT, Nv, Nij, Nij, nothing}(AT, Nh)
+
+    bcast_layers = [
+        ("A bare broadcast (3 in, 1 out)", () -> @. outs = ρf + qt * Tf),
+        ("B 7 fields in, 1 out", () -> @. outs = ρf + qt + ql + qi + qr + qs + Tf),
+        ("C 7 in, NamedTuple out",
+         () -> @. outnt = mknt4(ρf + qt, ql + qi, qr + qs, Tf)),
+        ("D microphysics_tendencies_1m",
+         () -> @. outnt = ClimaAtmos.microphysics_tendencies_1m(
+             ρf, qt, ql, qi, qr, qs, Tf, MP, TPS, DT, 2)),
+    ]
+    println("\n=== ClimaCore broadcast layers, AMIP layout ===")
+    println(rpad("layer", 34), rpad("regs", 7), "warps/SM")
+    for (nm, f) in bcast_layers
+        before = Set(keys(Ext.LAUNCH_BOUNDS_CACHE))
+        f()
+        CUDA.synchronize()
+        fresh = [d for (k, d) in Ext.LAUNCH_BOUNDS_CACHE if !(k in before)]
+        r = isempty(fresh) ? -1 : maximum(d.unbounded_regs for d in fresh)
+        println(rpad(nm, 34), rpad(r, 7), r > 0 ? string(warps(r)) : "?")
+        r > 0 && (results[nm] = Dict("registers" => r, "warps_per_sm" => warps(r)))
+    end
+end
+
 # TOML, not JSON: TOML is stdlib and JSON is not a dependency of the AMIP
 # project. Matches the other small evidence artifacts in results/.
 import TOML

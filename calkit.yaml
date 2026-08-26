@@ -711,8 +711,9 @@ pipeline:
       environment: clima
       script_path: scripts/run-cm-registers.sh
       # Minutes, not an hour: compiles kernels and reads register counts rather
-      # than running a simulation. Answers where the hot kernel's registers go --
-      # the microphysics itself, or the framework wrapped around it.
+      # than running a simulation. Answers where the hot kernel's registers go,
+      # in two halves -- the CloudMicrophysics evaluation on its own, and the
+      # ClimaCore broadcast layers it runs inside.
       scheduler:
         options:
           - --gpus=1
@@ -723,6 +724,7 @@ pipeline:
         - scripts/measure-cm-registers.jl
         - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
         - ClimaAtmos.jl-mod/src
+        - ClimaCore.jl-mod/ext
       outputs:
         - path: results/cm-registers.toml
           storage: git

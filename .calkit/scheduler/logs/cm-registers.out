@@ -29,6 +29,50 @@ Loading climacommon/2025_05_15
 │ 
 │ In any other case, please file an issue.
 └ @ CUDA ~/.julia/packages/CUDA/Il00B/src/initialization.jl:198
+Precompiling ClimaAtmos...
+   9995.6 ms  ✓ ClimaCore
+   4723.2 ms  ✓ ClimaCore → KrylovExt
+   4680.0 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreExt
+   5278.3 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreNCDatasetsExt
+   6547.4 ms  ✓ ClimaDiagnostics
+   8649.8 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreInterpolationsExt
+  26974.5 ms  ✓ ClimaAtmos
+  7 dependencies successfully precompiled in 51 seconds. 281 already precompiled.
+Precompiling ClimaCoreCUDAExt...
+Info Given ClimaCoreCUDAExt was explicitly requested, output will be shown live [0K
+[0K┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
+[0K│ This may cause errors.
+[0K│ 
+[0K│ If you're running under a profiler, this situation is expected. Otherwise,
+[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
+[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+[0K│ 
+[0K│ In any other case, please file an issue.
+[0K└ @ CUDA ~/.julia/packages/CUDA/Il00B/src/initialization.jl:198
+[0K┌ Warning: CUDA runtime library `libnvJitLink.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libnvJitLink.so.13`.
+[0K│ This may cause errors.
+[0K│ 
+[0K│ If you're running under a profiler, this situation is expected. Otherwise,
+[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
+[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+[0K│ 
+[0K│ In any other case, please file an issue.
+[0K└ @ CUDA ~/.julia/packages/CUDA/Il00B/src/initialization.jl:198
+[0K┌ Warning: CUDA runtime library `libcusparse.so.12` was loaded from a system path, `/usr/local/cuda/lib64/libcusparse.so.12`.
+[0K│ This may cause errors.
+[0K│ 
+[0K│ If you're running under a profiler, this situation is expected. Otherwise,
+[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
+[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+[0K│ 
+[0K│ In any other case, please file an issue.
+[0K└ @ CUDA ~/.julia/packages/CUDA/Il00B/src/initialization.jl:198
+   7087.2 ms  ✓ ClimaCore → ClimaCoreCUDAExt
+  1 dependency successfully precompiled in 9 seconds. 172 already precompiled.
+  1 dependency had output during precompilation:
+┌ ClimaCore → ClimaCoreCUDAExt
+│  [Output was shown above]
+└  
 
 === registers, params passed as RUNTIME kernel arguments ===
 layer                           regs   local B  warps/SM
@@ -38,5 +82,12 @@ one linearized implicit step    58     32       16
 LinearizedAverage nsub=1        163    32       12
 LinearizedAverage nsub=2        163    32       12
 LinearizedAverage nsub=3        163    32       12
+
+=== ClimaCore broadcast layers, AMIP layout ===
+layer                             regs   warps/SM
+A bare broadcast (3 in, 1 out)    50     16
+B 7 fields in, 1 out              48     16
+C 7 in, NamedTuple out            68     16
+D microphysics_tendencies_1m      255    8
 
 BISECT DONE
