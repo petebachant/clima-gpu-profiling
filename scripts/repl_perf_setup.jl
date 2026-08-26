@@ -71,9 +71,12 @@ const PERF_CONFIG =
 
 # Build the coupled simulation and take a few warmup steps so JIT/kernel caches
 # settle (matches scripts/run.jl).
+# Warmup step count is overridable: each first step costs many minutes of JIT,
+# and a diagnostic that only needs a realistic state does not need three of them.
+const N_WARMUP = parse(Int, get(ENV, "PERF_WARMUP_STEPS", "3"))
 cs = CoupledSimulation(PERF_CONFIG)
-for i in 1:3
-    @info "warmup step $i / 3"
+for i in 1:N_WARMUP
+    @info "warmup step $i / $N_WARMUP"
     ClimaCoupler.SimCoordinator.step!(cs)
 end
 

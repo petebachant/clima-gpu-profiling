@@ -1,0 +1,31 @@
+note = "params passed as runtime kernel arguments; as const globals the compiler folds their fields and reports 101 instead of 163 for LinearizedAverage"
+
+[layers."+ aggregate (Instantaneous)"]
+local_bytes = 32
+registers = 48
+warps_per_sm = 16
+
+[layers."LinearizedAverage nsub=1"]
+local_bytes = 32
+registers = 163
+warps_per_sm = 12
+
+[layers."LinearizedAverage nsub=2"]
+local_bytes = 32
+registers = 163
+warps_per_sm = 12
+
+[layers."LinearizedAverage nsub=3"]
+local_bytes = 32
+registers = 163
+warps_per_sm = 12
+
+[layers."one linearized implicit step"]
+local_bytes = 32
+registers = 58
+warps_per_sm = 16
+
+[layers."source terms only"]
+local_bytes = 32
+registers = 32
+warps_per_sm = 16

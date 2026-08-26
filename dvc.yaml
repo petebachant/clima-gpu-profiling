@@ -303,6 +303,44 @@ stages:
           persist: false
     desc: Automatically generated from the 'export-kernel-resources'
       stage in calkit.yaml. Changes made here will be overwritten.
+  cm-registers:
+    cmd: calkit scheduler batch --name cm-registers --environment
+      clima --dep scripts/measure-cm-registers.jl --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
+      results/cm-registers.toml --option --gpus=1 --option --time=40
+      -- scripts/run-cm-registers.sh
+      ClimaCoupler.jl-mod/experiments/AMIP
+    deps:
+      - scripts/run-cm-registers.sh
+      - scripts/measure-cm-registers.jl
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaAtmos.jl-mod/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/cm-registers.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/cm-registers.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'cm-registers' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  kernel-population:
+    cmd: calkit xenv -n py --no-check -- python
+      scripts/analyze-kernel-population.py
+    deps:
+      - scripts/analyze-kernel-population.py
+      - scripts/analyze-kernel-population.py
+      - results/nsys/baseline.sqlite
+      - results/nsys/mod.sqlite
+      - .calkit/env-locks/py
+    outs:
+      - results/kernel-population.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'kernel-population' stage
+      in calkit.yaml. Changes made here will be overwritten.
   launch-bounds-study:
     cmd: calkit scheduler batch --name launch-bounds-study
       --environment clima --dep scripts/measure-launch-bounds.jl --dep

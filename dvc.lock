@@ -628,16 +628,16 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/mod-nsys.out
       hash: md5
-      md5: c635f51833b1bc06a416793d1ad6d84b
-      size: 136122
+      md5: 3451fee2cd1b7a82a1a97a028a9aa2e9
+      size: 200424
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: d44505100dde554f6684908d327712db
-      size: 20916975
+      md5: 5a5da45641c4bf855c604c4dba286ece
+      size: 20942562
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 20d24529dc11acf005688d137a0ce63b
-      size: 41889792
+      md5: dc57e04eaaca9b5c69ea9cab1d424a62
+      size: 41951232
   mod-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep -t sqlite
       -o results/nsys/mod.sqlite"'
@@ -1403,3 +1403,73 @@ stages:
       hash: md5
       md5: dc76e0a0f2bcfa95dc933d427e937caf
       size: 17925
+  kernel-population:
+    cmd: calkit xenv -n py --no-check -- python 
+      scripts/analyze-kernel-population.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: cd569ef50836446fc837bb706d220836.dir
+      size: 2090
+      nfiles: 2
+    - path: results/nsys/baseline.sqlite
+      hash: md5
+      md5: 2797fbe017814fe4108b6c85ceec6e03
+      size: 42123264
+    - path: results/nsys/mod.sqlite
+      hash: md5
+      md5: dc57e04eaaca9b5c69ea9cab1d424a62
+      size: 41951232
+    - path: scripts/analyze-kernel-population.py
+      hash: md5
+      md5: a90f5891b670fdab9de976867aaa6f86
+      size: 5305
+    - path: scripts/analyze-kernel-population.py
+      hash: md5
+      md5: a90f5891b670fdab9de976867aaa6f86
+      size: 5305
+    outs:
+    - path: results/kernel-population.json
+      hash: md5
+      md5: 8a030a70a83e1cf3c17b7f3f54fd058c
+      size: 8735
+  cm-registers:
+    cmd: calkit scheduler batch --name cm-registers --environment clima --dep 
+      scripts/measure-cm-registers.jl --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out 
+      results/cm-registers.toml --option --gpus=1 --option --time=40 -- 
+      scripts/run-cm-registers.sh ClimaCoupler.jl-mod/experiments/AMIP
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: 967da63c55ed8c8f6027b0e37304331a.dir
+      size: 2138540
+      nfiles: 160
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: df04c82596623455bbcd3ed87ce2ff33
+      size: 122455
+    - path: scripts/measure-cm-registers.jl
+      hash: md5
+      md5: 9e0151dcf63f5e5a0ae117f2caa96337
+      size: 4003
+    - path: scripts/run-cm-registers.sh
+      hash: md5
+      md5: 5961cbdd6a2177aa55168acdfa4dc1e0
+      size: 718
+      isexec: true
+    outs:
+    - path: .calkit/scheduler/logs/cm-registers.out
+      hash: md5
+      md5: 376093ede2b201910264ba034eea7dde
+      size: 2150
+    - path: results/cm-registers.toml
+      hash: md5
+      md5: 8d742815cfa84ddbb3a642186b47905b
+      size: 679
