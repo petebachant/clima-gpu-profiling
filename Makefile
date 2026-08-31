@@ -8,3 +8,8 @@ srun-nb:
 .PHONY: repl
 repl:
 	bash scripts/init-repl.sh
+
+.PHONY: submodule-status
+submodule-status:
+	@git fetch --recurse-submodules
+	@bash scripts/show-submodule-status.sh
