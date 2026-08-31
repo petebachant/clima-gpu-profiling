@@ -15,11 +15,15 @@ julia --project="$REPO_ROOT/ClimaCoupler.jl/$JULIA_PROJECT" -e "
     Pkg.develop(path=\"./ClimaAtmos.jl\")
 "
 
-# Do the same for ClimaCoupler.jl-mod for the -mod suffix submodules
+# Do the same for ClimaCoupler.jl-mod for the -mod suffix submodules.
+# CloudMicrophysics.jl-mod carries the pb/1m-spill guarded 1M process rates; it is
+# the only package that differs between the two arms, so it is dev'd here and not
+# in the baseline above.
 julia --project="$REPO_ROOT/ClimaCoupler.jl-mod/$JULIA_PROJECT" -e "
     import Pkg
     Pkg.develop(path=\"./ClimaCore.jl-mod\")
     Pkg.develop(path=\"./ClimaAtmos.jl-mod\")
+    Pkg.develop(path=\"./CloudMicrophysics.jl-mod\")
 "
 # Comment out the CloudMicrophysics line to take the Coupler-pinned version in
 # both arms instead, which isolates whatever else differs. Whether a package is

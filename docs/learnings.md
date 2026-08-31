@@ -41,6 +41,23 @@ They are not comparable, and confusing them will make a treatment look like it
 moved the baseline when it did not. `summarize.py` reports the nsys number
 separately as `nsys_speedup_pct`; treat it as a leading indicator only.
 
+### Three different numbers are all "the hot kernel's duration"
+
+The same L1013 kernel is timed by three instruments, and they do not agree
+because they are not measuring the same thing:
+
+| number | source | what it is |
+|---|---|---|
+| **26.29 ms** | `results/top-kernels.csv` | nsys mean over the profiled AMIP run |
+| **30.86 ms** | `results/ncu/*-details.csv` | Nsight Compute `Duration`, inflated by ncu's serialization and replay |
+| **26.00 ms** | `results/launch-bounds/launch-bounds.toml` | the `launch-bounds-study` harness, 50 calls in its own process |
+
+Never build a ratio out of two of them. Doing exactly that — dividing a scratch
+total from one instrument by an ncu duration from another — is what produced the
+understated 0.76% figure that §4 used to carry. Within a section, pick one
+instrument and stay on it: §2's cost model is nsys throughout, §4's launch-bounds
+comparisons are `launch-bounds.toml` throughout.
+
 ### A tight noise floor is not the same as sensitivity
 
 Four null tests (byte-identical arms) landed at −0.43%, −0.09%, −0.06% and
@@ -169,6 +186,19 @@ Measured by the `cm-registers` stage, which compiles each layer and reads its
 register count rather than running a simulation. Two halves: CloudMicrophysics on
 its own, and the ClimaCore broadcast it runs inside, on the real AMIP layout.
 
+**Revision, because this stage is cheap and therefore not frozen.** The table
+below is CloudMicrophysics.jl-mod at `48a4129f` with ClimaCore.jl-mod on
+`pb/launch-bounds`. The broadcast half is read out of
+`ClimaCoreCUDAExt.LAUNCH_BOUNDS_CACHE` and exists only on that branch — with
+upstream ClimaCore the stage logs "ClimaCore lacks the launch-bounds record;
+skipping the broadcast layers" and writes a *partial* file rather than failing.
+A 2026-08-31 run with CloudMicrophysics 12 commits further along (`cbfc5954`)
+and ClimaCore back on main produced exactly that: LinearizedAverage at 112
+registers / 480 B local instead of 163 / 32 B, and no A–D rows. Two variables
+moved at once, so it is a confounded measurement of a different revision pair,
+not a correction to this one. Always check for the A–D keys before reading a
+comparison out of `results/cm-registers.toml`.
+
 | layer | registers | warps/SM |
 |---|---|---|
 | CM source terms only | 32 | 16 |
@@ -258,11 +288,43 @@ so the ceiling was inside the noise before the package was written. Doing that
 arithmetic first would have been cheaper than the experiment.
 
 **Forcing launch bounds on the hot kernel** — ptxas *can* reach 168 registers and
-12 warps/SM, but it costs +344 bytes of spill and the kernel runs **31.63 ms
-against 26.92 ms, 17.5% slower**. Occupancy on this kernel is not reachable by
-codegen alone. The spill-growth guard that rejects it is load-bearing: without
-it the change is net negative, since the hot kernel is 16% of GPU time against
-the 2.3% of the kernel that benefits.
+12 warps/SM, but it costs +344 bytes of spill per thread and the kernel runs
+**31.33 ms against 26.00 ms, 20.5% slower**
+(`unguarded.kernels.L1013.mean_ms` against `off.kernels.L1013.mean_ms`).
+Occupancy on this kernel is not reachable by codegen alone. The spill-growth
+guard that rejects it is load-bearing: without it the change is net negative,
+since the hot kernel is 16% of GPU time against the 2.3% of the kernel that
+benefits.
+
+Note that it is the *guard* that declines, not the kernel that fails. Of the two
+rejection conditions in `uncached_launch_bounds`, the occupancy check passes —
+the recorded decision has `bounded_regs = 168`, `bounded_warps = 12`,
+`target_warps = 12` — and it is the spill check that fires, 344 bytes against a
+256-byte budget. Saying the kernel "cannot reach 12 warps/SM" gets the mechanism
+backwards and has already misled one reading of this file.
+
+The reason it cannot afford the trade is that it had no slack left. ptxas can
+meet a register target by rematerializing and rescheduling (nearly free) or by
+spilling (costly), and prefers the first; L1013's demand is at least 231
+registers, it is already pinned at the 255 ceiling, and it is already spilling
+(2208-byte stack frame, 21.15% spill request overhead), so the whole reduction
+comes out as new spill. The decision table shows that as a gradient — how far
+above 168 a kernel starts predicts what reaching it costs:
+
+| unbounded registers | spill growth | annotated |
+|---|---|---|
+| 255, 255, 255, 254 | 384, 344, 344, 336 B | **no** |
+| 254, 234 | 192, 240 B | yes |
+| 246 | 88 B | yes |
+| 214, 202 | 56, 32 B | yes |
+| 201, 196, 187, 173 | **0 B** | yes |
+
+Everything starting at 201 or below reaches 12 warps/SM for free. All four
+rejections are at 254–255, and the hot kernel is the worst case in the run. The
+mechanism works best exactly where it matters least, which is why the treatment
+nets out at −2.11% kernel time and a SYPD null. It also sharpens §6 item 5: if
+one CloudMicrophysics evaluation brought the kernel's natural demand to ~200, it
+would land in the free-of-charge band and convert with no spill at all.
 
 **Point-level early-outs underdeliver because of warp divergence.** A warp
 covers 32 grid points and pays for the slowest of them, so a per-point skip only
@@ -287,9 +349,15 @@ one full CloudMicrophysics evaluation at ~246 registers, so every one of them
 runs at the same 8 warps/SM.
 
 **Fusing the environment scratch fields back into one point body** — the five
-scratch kernels total **234 µs against the hot kernel's 30.86 ms, 0.76%**, and
-fusing them would raise its register pressure. `foreach_point` is what the `@.`
-broadcast already lowers to, so writing it explicitly changes syntax, not codegen.
+scratch kernels total **219 µs against the hot kernel's 26.00 ms, 0.84%**, and
+all seven materialization kernels (those five plus `ᶜλ⁰` and `ᶜmu_S⁰`) total
+277 µs, 1.07%. Fusing them would raise the hot kernel's register pressure to
+save that. `foreach_point` is what the `@.` broadcast already lowers to, so
+writing it explicitly changes syntax, not codegen. Both figures are
+`off.kernels.*.mean_ms` from `launch-bounds.toml`, so numerator and denominator
+come from the same instrument; an earlier version of this entry divided a
+scratch total by the *ncu* duration of L1013 (30.86 ms) and understated the
+share.
 
 **Unrolling the quadrature loop** — the comment in `sum_over_quadrature_points`
 saying loops beat `ntuple` for register reuse is still correct. Sweeping a
@@ -339,7 +407,7 @@ dangerous to over-trust.
 **Measure the counterfactual, not just the shipped configuration.** The spill
 budget that gates launch bounds was originally a guessed constant, and it
 silently rejected the most expensive kernel in the run. Only by loosening it
-until the kernel was accepted did we learn the guard was right (+17.5% slower)
+until the kernel was accepted did we learn the guard was right (+20.5% slower)
 rather than arbitrary. A rejected configuration never appears in an ordinary
 run, which is why `launch-bounds-study` measures one deliberately.
 

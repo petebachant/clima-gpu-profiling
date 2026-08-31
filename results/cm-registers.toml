@@ -2,46 +2,30 @@ note = "params passed as runtime kernel arguments; as const globals the compiler
 
 [layers."+ aggregate (Instantaneous)"]
 local_bytes = 32
-registers = 48
+registers = 60
 warps_per_sm = 16
-
-[layers."A bare broadcast (3 in, 1 out)"]
-registers = 50
-warps_per_sm = 16
-
-[layers."B 7 fields in, 1 out"]
-registers = 48
-warps_per_sm = 16
-
-[layers."C 7 in, NamedTuple out"]
-registers = 68
-warps_per_sm = 16
-
-[layers."D microphysics_tendencies_1m"]
-registers = 255
-warps_per_sm = 8
 
 [layers."LinearizedAverage nsub=1"]
-local_bytes = 32
-registers = 163
-warps_per_sm = 12
+local_bytes = 480
+registers = 112
+warps_per_sm = 16
 
 [layers."LinearizedAverage nsub=2"]
-local_bytes = 32
-registers = 163
-warps_per_sm = 12
+local_bytes = 480
+registers = 112
+warps_per_sm = 16
 
 [layers."LinearizedAverage nsub=3"]
-local_bytes = 32
-registers = 163
-warps_per_sm = 12
+local_bytes = 480
+registers = 112
+warps_per_sm = 16
 
 [layers."one linearized implicit step"]
-local_bytes = 32
-registers = 58
+local_bytes = 480
+registers = 100
 warps_per_sm = 16
 
 [layers."source terms only"]
 local_bytes = 32
-registers = 32
+registers = 44
 warps_per_sm = 16
