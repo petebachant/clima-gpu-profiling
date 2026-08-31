@@ -84,16 +84,27 @@ questions:
       one. On sm_80 the occupancy steps are 255 -> 8 warps/SM, 168 -> 12,
       128 -> 16, so nothing saving 9 registers can move occupancy.
 
-      Where the 246 DO come from is open, and an earlier reading of that same
-      comparison -- that they are one indivisible CloudMicrophysics evaluation --
-      is not supported by it: 246-vs-255 separates the quadrature loop from
-      everything else, not the physics from the framework. Compiling the layers
-      of one 1M evaluation standalone puts the source terms at 32 registers, one
-      linearized implicit step at 58, and the full LinearizedAverage at 101 --
-      independent of the substep count. If that survives passing the parameter
-      structs as runtime arguments rather than constants, then most of the 246 is
-      framework rather than physics, which would move this from a
-      CloudMicrophysics problem to a ClimaCore one.
+      Where the 246 come from has been measured layer by layer, and the answer is
+      roughly 70/30 physics to framework. Compiling one 1M evaluation standalone
+      puts the source terms at 32 registers, one linearized implicit step at 58,
+      and the full LinearizedAverage at 163 -- independent of the substep count.
+      Compiling ClimaCore's broadcast over the same AMIP layout puts the
+      framework at 68: 48 for the broadcast and indexing machinery, plus 20 to
+      hold the four output accumulators live. Field count is free (three inputs
+      to seven costs -2 registers), so none of the gap is field access.
+
+      TWO EARLIER READINGS OF THIS WERE WRONG AND ARE RECORDED SO THEY ARE NOT
+      REDISCOVERED. That the 246 are one indivisible CloudMicrophysics
+      evaluation: not supported, since 246-vs-255 separates the quadrature loop
+      from everything else, not the physics from the framework. And that most of
+      the 246 is framework rather than physics: that came from reading
+      LinearizedAverage as 101 registers and differencing. 101 is an artifact of
+      passing the parameter structs as `const` globals, which lets the compiler
+      fold their fields; passed as runtime kernel arguments, as a real kernel
+      does, the same evaluation is 163. Measuring the framework directly at 68
+      rather than by subtraction settles it the other way. 68 + 163 = 231 against
+      an observed 255, and 255 is the hardware ceiling, so true demand is higher
+      still -- consistent with the 2208-byte stack frame and 21% spill overhead.
 
       The lever that works is asking ptxas for an occupancy target via
       `__launch_bounds__` rather than capping registers with `maxregs`: a hard
@@ -118,6 +129,29 @@ questions:
       2 substeps = 18 CloudMicrophysics evaluations per grid point per call,
       which is a modelling choice rather than a compiler outcome.
 
+      THE MECHANISM IS NOT DISCARDED, IT IS WAITING ON A SUBSTRATE. What is dead
+      is occupancy on L1013 at its present register demand, not the occupancy
+      machinery: the study's decision table shows it correctly accepting 9 of 13
+      candidate kernels and rejecting the 4 that would spill, so it is already
+      converting headroom wherever headroom exists. Its value is conditional and
+      superadditive, the same shape experiments.csv recorded for the earlier
+      pair (ClimaCore register cap alone +0.433%, CloudMicrophysics alone
+      +1.107%, together +2.372%): bring one CloudMicrophysics evaluation from
+      163 registers to under 168 including the 68-register framework, and this
+      mechanism converts L1013 from 8 to 12 warps/SM with no further work.
+      Judged on its own it is worth ~2% of kernel time and nothing on SYPD;
+      judged as the converter for the register work in `docs/learnings.md`
+      section 6, it is the part that is already written and measured.
+
+      IT IS WRITTEN, NOT MERGED. The mechanism is ClimaCore PR 2601, two commits
+      on branch `pb/launch-bounds`, and as of 2026-08-31 it is not an ancestor of
+      `ClimaCore.jl-mod` HEAD -- both ClimaCore arms sit at the same upstream
+      commit, so the working tree carries no ClimaCore treatment. Re-pointing the
+      mod arm at that branch is a prerequisite for the lever above, not something
+      that comes free with it. The experiment is reproducible either way:
+      `exp/2026-08-24-launch-bounds` pins the commit, and results/treatment.json
+      there records the exact branch and SHA that reached the run.
+
       docs/learnings.md carries the rest: the cost model that splits the kernel
       into ~52% fixed and ~48% substep work, the decompositions that were
       measured and rejected (splitting per quadrature point, fusing the scratch
@@ -134,15 +168,25 @@ questions:
         explanation: >-
           A full 1M CloudMicrophysics evaluation compiles to 163 registers -- 12
           warps/SM, i.e. it clears the 168 threshold on its own -- against the
-          246 of the real single-call kernel. So roughly 83 registers come from
-          outside CloudMicrophysics: the ClimaAtmos evaluator, the quadrature
-          accumulators, and ClimaCore's broadcast and data-layout access. Not all
-          of that is waste, since the real kernel genuinely reads about twelve
-          fields that this one does not. The layer breakdown (source terms 32,
-          one linearized implicit step 58) also shows the substep count is free:
-          163 at nsub 1, 2 and 3 alike, so microphysics_n_substeps_quadrature
-          costs time but not occupancy. Regenerated by the `cm-registers` stage
-          in minutes rather than the ~45 an AMIP stage takes.
+          246 of the real single-call kernel. The same file measures the
+          framework side DIRECTLY rather than by differencing, which is what
+          makes this table decisive: a bare ClimaCore broadcast over the AMIP
+          layout is 48 registers, and adding the four-field NamedTuple output
+          brings it to 68. So the split is 163 physics to 68 framework, and the
+          physics dominates. Deriving the framework as 246 - 163 = 83 instead
+          would be reading a residual that also contains whatever the real
+          kernel's extra field reads and evaluator cost, and an earlier reading
+          along those lines inverted the conclusion. The layer breakdown (source
+          terms 32, one linearized implicit step 58) also shows the substep count
+          is free: 163 at nsub 1, 2 and 3 alike, so
+          microphysics_n_substeps_quadrature costs time but not occupancy.
+
+          METHOD NOTE, and the reason the `note` key sits in this file: pass the
+          parameter structs as kernel ARGUMENTS. As `const` globals the compiler
+          folds their fields and reports 101 instead of 163 -- understating
+          pressure by 62 registers, which is enough to invert a conclusion, and
+          did. Regenerated by the `cm-registers` stage in minutes rather than the
+          ~45 an AMIP stage takes.
       - kind: result
         path: results/kernel-population.json
         key: baseline.gpu_idle_pct

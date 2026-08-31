@@ -221,12 +221,19 @@ conclusion.
 | CloudMicrophysics register/spill work | ~5% SYPD alone | removes spilling in the hot kernel |
 | ClimaCore automatic register cap | ~0.1% alone, ~9% combined | needs CM's headroom first; **superadditive** |
 | Clear-air early-out (ClimaAtmos) | +1.79% SYPD, kernel −21.5% | skips clear, subsaturated, precipitation-free quadrature points |
-| Launch bounds (ClimaCore) | kernel −2.11%, **SYPD null** | see §4 |
+| Launch bounds (ClimaCore) | kernel −2.11%, **SYPD null** | `exp/2026-08-24-launch-bounds`; accepts 9 of 13 candidates, wins −22.4% on L970, correctly rejects L1013. See §4 and §6.5 |
 
 The superadditivity is the important pattern: the register cap was worth nothing
 on its own because the kernel already spilled at its natural register count, and
 worth a great deal once CloudMicrophysics had created headroom. Expect
 occupancy-side and work-side changes to multiply, not add.
+
+Launch bounds belongs in this table rather than the next one, and the distinction
+is worth stating plainly because it has been misread once already: what §4
+records as a failure is *forcing the annotation onto L1013*, which the shipped
+guard refuses to do. The mechanism itself does what it was built to do — it just
+has little to convert until CloudMicrophysics frees registers, so its measured
+end-to-end effect today is a null rather than a loss.
 
 ## 4. What has not worked, and why
 
@@ -365,11 +372,21 @@ Ordered by preference — ClimaCore first, then ClimaAtmos, then CloudMicrophysi
    removes the quadrature entirely, but is a reformulation of the
    ClimaAtmos/CloudMicrophysics interface rather than a local edit.
 5. **Reduce one CloudMicrophysics evaluation below 168 registers.** Least
-   preferred layer, highest leverage: the launch-bounds machinery is already
-   merged, so this would immediately convert the hot kernel from 8 to 12
+   preferred layer, highest leverage: the launch-bounds machinery is *written*
+   and measured, so this would immediately convert the hot kernel from 8 to 12
    warps/SM. Expect superadditivity, as with the earlier CM + register-cap pair.
    To find where the 246 registers go, bisect with temporary returns partway
    through the evaluation and watch `CUDA.registers` spike.
+
+   **It is written, not merged, and not currently in either arm.** The mechanism
+   lives on `ClimaCore.jl-mod` branch `pb/launch-bounds` (ClimaCore PR 2601) as
+   two commits — `5428c6e2c` "Target occupancy with `__launch_bounds__` instead
+   of a register cap" and `45bf1792c` "Key the launch-bounds cache on types, not
+   on the compiled kernel" — on top of `505982708`. As of 2026-08-31 that branch
+   is not an ancestor of `ClimaCore.jl-mod` HEAD (`74b837bfc`, on `main`), and
+   both ClimaCore arms sit at the same commit, so the working tree carries no
+   ClimaCore treatment at all. Re-pointing the mod arm at `pb/launch-bounds` is a
+   prerequisite for this lever, not something that comes for free with it.
 
 Splitting by *process* is the one live decomposition, but only in the variant
 that materialises per-quadrature-point state into scratch first (~223 MB, cheap
