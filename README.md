@@ -1,6 +1,7 @@
 # CliMA GPU profiling
 
-Profiling GPU performance for CliMA.
+Profiling GPU performance for CliMA and tracking results of code change
+experiments.
 
 ## Getting started
 

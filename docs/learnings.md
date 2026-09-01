@@ -187,7 +187,7 @@ register count rather than running a simulation. Two halves: CloudMicrophysics o
 its own, and the ClimaCore broadcast it runs inside, on the real AMIP layout.
 
 **Revision, because this stage is cheap and therefore not frozen.** The table
-below is CloudMicrophysics.jl-mod at `48a4129f` with ClimaCore.jl-mod on
+below is CloudMicrophysics.jl-mod at `68007fb10` with ClimaCore.jl-mod on
 `pb/launch-bounds`. The broadcast half is read out of
 `ClimaCoreCUDAExt.LAUNCH_BOUNDS_CACHE` and exists only on that branch — with
 upstream ClimaCore the stage logs "ClimaCore lacks the launch-bounds record;
@@ -252,6 +252,53 @@ conclusion.
 | ClimaCore automatic register cap | ~0.1% alone, ~9% combined | needs CM's headroom first; **superadditive** |
 | Clear-air early-out (ClimaAtmos) | +1.79% SYPD, kernel −21.5% | skips clear, subsaturated, precipitation-free quadrature points |
 | Launch bounds (ClimaCore) | kernel −2.11%, **SYPD null** | `exp/2026-08-24-launch-bounds`; accepts 9 of 13 candidates, wins −22.4% on L970, correctly rejects L1013. See §4 and §6.5 |
+| **Source-term/linearize fusion (CloudMicrophysics)** | **+1.87% SYPD**, kernel −5.37%, L1013 −27.2% | `exp/2026-09-01-cm-fuse`, CM `pb/1m-spill-fuse`. Combined with the `sd` rematerialization already on `pb/1m-spill`. See §3a |
+
+### 3a. The fusion result, and the two things it overturned
+
+`pb/1m-spill-fuse` (CM `2d583673`) folds each 1M source term into the
+linearization accumulators at its point of computation instead of materializing
+all eighteen first — bit-for-bit, since each accumulator still receives its
+contributions in `_linearize`'s order. Measured against a baseline whose
+ClimaAtmos and ClimaCore are byte-identical, so the delta is CloudMicrophysics
+alone:
+
+| | baseline | mod | Δ |
+|---|---|---|---|
+| AMIP SYPD | 0.27079 | 0.27596 | **+1.87%** |
+| total GPU kernel time | 1685.0 ms | 1594.4 ms | −5.37% |
+| hot kernel L1013 | 279.2 ms | 203.4 ms | **−27.2%** |
+| updraft kernel L970 | 37.6 ms | 26.3 ms | −30.2% |
+| launches | 31,180 | 31,180 | 0.00% |
+
+Every other top-ten kernel moved by ≤0.11% and the launch count is identical to
+the unit, so the isolation is clean.
+
+**The nsys screen was sign-wrong, not merely noisy.** Its estimated SYPD read
+the mod arm as 3–4% *slower* (0.3579/0.3650 against 0.3738/0.3737), and
+`nsys_speedup_pct` recorded −1.12% against the AMIP stage's +1.87%. The process
+in `AGENTS.md` — profile with `mod-nsys`, and only continue to the full pipeline
+if `estimated_sypd` is significantly higher — would have discarded this change.
+§1 called that figure a leading indicator; it is now demonstrated that it can
+invert on a real effect. **Do not use it as a stop rule.** Its value is
+diagnostic (per-kernel times, launch counts), not directional.
+
+**Standalone register counts do not predict the real kernel.** The
+`cm-registers` stage measures a `LinearizedAverage` compiled on its own. With
+the fusion it reports **116 registers / 536 B local**, *worse* than the 112 /
+480 without it — while the real kernel got 27% faster. The reason is that the
+standalone layer is a small function where the allocator has room, whereas the
+fusion's benefit is specifically about liveness at the source-terms/linearize
+boundary inside a 255-register kernel carrying nine quadrature points. Use
+`cm-registers` to decompose *where* registers go, not to predict whether a
+change will help.
+
+**And the conversion ratio is the reusable number.** −5.37% GPU kernel time
+bought +1.87% SYPD: about 35% pass-through. Launch bounds got −2.11% → −0.016%,
+essentially zero. The difference is that this removed *work* rather than
+rescheduling it, which is what §1 predicted would be required. Use ~1/3
+pass-through as the estimator for a work-removing change, and ~0 for a
+rescheduling one.
 
 The superadditivity is the important pattern: the register cap was worth nothing
 on its own because the kernel already spilled at its natural register count, and
@@ -445,6 +492,66 @@ Ordered by preference — ClimaCore first, then ClimaAtmos, then CloudMicrophysi
    warps/SM. Expect superadditivity, as with the earlier CM + register-cap pair.
    To find where the 246 registers go, bisect with temporary returns partway
    through the evaluation and watch `CUDA.registers` spike.
+
+   **The target is ~133, not ~100.** Subtracting the 68-register framework from
+   the 168 threshold gives 100, which is probably unreachable. But the
+   launch-bounds decision table shows kernels *entering* at ≤201 registers reach
+   12 warps/SM for **zero** bytes of spill, and the hot kernel's true demand is
+   ~231 (163 CM + 68 framework). So the ask is ~30 registers, not ~63. That is
+   the difference between "probably impossible" and "plausible", and it is the
+   number to aim at.
+
+   **Three CloudMicrophysics techniques exist, and they are orthogonal.** All
+   three trade the idle resource (ALU at 26%, DRAM at 4.7%) for the exhausted
+   one (registers), which is why they read as pessimizations anywhere that is
+   not register-bound — worth stating in any PR description, since upstream's
+   instinct is the opposite.
+
+   - **Rematerialize** — `pb/1m-spill`. Removes the hoisted
+     `sd = CM1.size_distr_parameters(...)` (λ⁻¹, n₀, v₀ for rain/snow/ice,
+     pow/exp-heavy) that main computes once and threads through ~10 of the 18
+     process calls, so each process recomputes what it needs instead of holding
+     it live across the whole evaluation. Measured **+1.107%**
+     (`2026-08-21-cm-only`).
+   - **Fuse** — `pb/fuse-source`, commit `e619a1eb`. `_linearize` is already an
+     accumulator over 13 values (M11…M44, e1, e2, e4) consuming each `src.S_*`
+     in turn, so the 18 source terms exist as a batch only because they are
+     produced in one function and consumed in the next. `_fused_linearize`
+     folds each source term into its M/e accumulators at its point of
+     computation, cutting peak liveness from ~18 src + 13 accumulators to ~13
+     plus the term in hand. It is bit-for-bit: each accumulator receives its
+     contributions in `_linearize`'s statement order, so only *when* each term
+     is computed moves — no sum is reassociated. Measured **+3.299%**
+     (`2026-07-06-run-with-cm-b8de82423fe-fuse-source`), the largest recorded
+     CM-side number, though on a 2026-07 baseline (0.26113) not directly
+     comparable to the August runs. That branch also hoists `p_vs_liq` /
+     `p_vs_ice` (the two saturation vapor pressures, a log + exp each) into the
+     processes that need them — the *opposite* direction from `pb/1m-spill`,
+     and consistent with it: hoist what is expensive to compute and cheap to
+     hold, rematerialize what is cheap to compute and expensive to hold.
+
+   **Combined on `pb/1m-spill-fuse` (2026-08-31), not yet measured.**
+   `_fused_linearize` ported onto the current `pb/1m-spill` tip, transcribed
+   statement-for-statement from *today's* `_linearize` rather than merged from
+   the July branch (which predates the `options`→`processes` rename and the `sd`
+   hoist). The `p_vs_liq`/`p_vs_ice` hoist is deliberately NOT included, so the
+   fusion can be attributed on its own; it touches three more files and is the
+   obvious follow-up. Bit-for-bit equivalence verified on CPU over 520,000
+   accumulator comparisons in Float32 and Float64, including the negative-input
+   clamping paths, and pinned by a new test in `test/bulk_tendencies_tests.jl`
+   so the fused and unfused implementations cannot silently diverge —
+   `_microphysics_source_terms` + `_linearize` remain as the tested reference
+   for the `Instantaneous` paths.
+
+   **Check the current tip before building on it.** `pb/1m-spill` at
+   `cbfc59545` ("Merge main into pb/1m-spill; re-apply 1M guards on the new rate
+   API") measures 112 registers with **480 bytes** of local memory, against
+   `68007fb10`'s 163 registers with **32 bytes**. Registers fell 31% while local
+   memory rose 15×: the branch is now spilling its way down rather than fitting,
+   which is the opposite of what it exists to do. Re-measure both revisions
+   before reopening — `cm-registers` runs in minutes — and record `local_bytes`
+   alongside `registers` every time, because a falling register count with
+   rising local memory reads as progress if you only look at one column.
 
    **It is written, not merged, and not currently in either arm.** The mechanism
    lives on `ClimaCore.jl-mod` branch `pb/launch-bounds` (ClimaCore PR 2601) as

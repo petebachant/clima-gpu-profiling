@@ -46,6 +46,28 @@ questions:
       not the +/-2% this project worked to for months. Differences of ~0.5% are
       therefore measurable, and results in that range should no longer be
       dismissed as noise.
+
+      A third change now joins them, and it is the first to attack WORK rather
+      than occupancy. Fusing the 1M source-term evaluation into the
+      linearization (CloudMicrophysics `pb/1m-spill-fuse`,
+      `exp/2026-09-01-cm-fuse`) is worth +1.87% SYPD: total GPU kernel time
+      -5.37%, the hot SGS-quadrature kernel -27.2%, launch count unchanged to
+      the unit and every other top-ten kernel within 0.11%. It folds each source
+      term into the accumulators at its point of computation instead of
+      materializing all eighteen first, and is bit-for-bit identical because
+      each accumulator still receives its contributions in the same order.
+
+      THE NSYS SCREEN WAS SIGN-WRONG ON THIS ONE. Its estimated SYPD read the
+      mod arm as 3-4% SLOWER, and `nsys_speedup_pct` recorded -1.12% against the
+      AMIP stage's +1.87%. The documented process -- profile with mod-nsys and
+      only continue if estimated_sypd is significantly higher -- would have
+      discarded a real +1.87%. Treat that figure as diagnostic (per-kernel
+      times, launch counts), never as a stop rule.
+
+      The conversion ratio is the number worth carrying forward: -5.37% kernel
+      time bought +1.87% SYPD, about 35% pass-through, against roughly 0% for
+      launch bounds (-2.11% -> -0.016%). Work removal converts; rescheduling
+      does not.
     # Long-form account of this answer; the entrypoint stays short.
     explanation: docs/learnings.md
     evidence:
@@ -86,7 +108,7 @@ questions:
 
       Where the 246 come from has been measured layer by layer, and the answer is
       roughly 70/30 physics to framework. The figures below are for
-      CloudMicrophysics.jl-mod at 48a4129f with ClimaCore.jl-mod on
+      CloudMicrophysics.jl-mod at 68007fb10 with ClimaCore.jl-mod on
       `pb/launch-bounds`; the `cm-registers` stage re-runs against whatever is
       checked out, so read its revision caveat before comparing against a fresh
       file. Compiling one 1M evaluation standalone
@@ -204,7 +226,7 @@ questions:
           READ THE REVISION BEFORE READING THE NUMBERS. This stage is cheap and
           not frozen, so it re-runs against whatever is checked out, and both
           halves of the decomposition move independently. The 163/68 split above
-          was measured with CloudMicrophysics.jl-mod at 48a4129f
+          was measured with CloudMicrophysics.jl-mod at 68007fb10
           (exp/2026-08-21-cm-and-core-mod) and ClimaCore.jl-mod on
           `pb/launch-bounds`. A later run on 2026-08-31, with CloudMicrophysics
           12 commits further along at cbfc5954 and ClimaCore back on upstream
@@ -572,6 +594,10 @@ pipeline:
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
+        # The mod arm devs CloudMicrophysics.jl-mod (see the manifest and
+        # scripts/dev-local-repos-coupler.sh), so a CM-only treatment is invisible
+        # to DVC without this and the stage silently reuses a cached result.
+        - CloudMicrophysics.jl-mod/src
         - ClimaAtmos.jl-mod/config
       outputs:
         - results/nsys/mod.nsys-rep
@@ -686,6 +712,10 @@ pipeline:
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
+        # The mod arm devs CloudMicrophysics.jl-mod (see the manifest and
+        # scripts/dev-local-repos-coupler.sh), so a CM-only treatment is invisible
+        # to DVC without this and the stage silently reuses a cached result.
+        - CloudMicrophysics.jl-mod/src
       outputs:
         - results/ncu/mod.ncu-rep
         - path: results/ncu/mod-details.csv
@@ -741,6 +771,10 @@ pipeline:
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
+        # The mod arm devs CloudMicrophysics.jl-mod (see the manifest and
+        # scripts/dev-local-repos-coupler.sh), so a CM-only treatment is invisible
+        # to DVC without this and the stage silently reuses a cached result.
+        - CloudMicrophysics.jl-mod/src
         - ClimaAtmos.jl-mod/toml
         - ClimaAtmos.jl-mod/config
     summarize:
@@ -808,6 +842,10 @@ pipeline:
         - scripts/measure-cm-registers.jl
         - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
         - ClimaAtmos.jl-mod/src
+        # The mod arm devs CloudMicrophysics.jl-mod (see the manifest and
+        # scripts/dev-local-repos-coupler.sh), so a CM-only treatment is invisible
+        # to DVC without this and the stage silently reuses a cached result.
+        - CloudMicrophysics.jl-mod/src
         - ClimaCore.jl-mod/ext
       outputs:
         - path: results/cm-registers.toml
@@ -876,6 +914,10 @@ pipeline:
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
+        # The mod arm devs CloudMicrophysics.jl-mod (see the manifest and
+        # scripts/dev-local-repos-coupler.sh), so a CM-only treatment is invisible
+        # to DVC without this and the stage silently reuses a cached result.
+        - CloudMicrophysics.jl-mod/src
       outputs:
         # Small TOML that answers the question directly -- keep it in Git so the
         # evidence is readable without a `calkit pull`.
