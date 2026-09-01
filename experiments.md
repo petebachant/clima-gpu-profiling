@@ -25,6 +25,7 @@ calkit run
 
 | experiment | date | treatment | speedup_pct | baseline_sypd | mod_sypd | commit | note |
 |---|---|---|---|---|---|---|---|
+| 2026-09-01-cm-fuse | 2026-09-01 | ClimaCoupler, CloudMicrophysics, dev-package-set | 1.872 | 0.27079 | 0.27596 | a151b0144 | CM source-term/linearize fusion: +1.872% SYPD, L1013 -27.2%, kernel time -5.37%; nsys screen was sign-wrong |
 | 2026-08-24-launch-bounds | 2026-08-24 | ClimaCore | -0.016 | 0.27226 | 0.27222 | 196be43a4 | ClimaCore pb/launch-bounds (PR 2601): kernel time -2.11%, SYPD null; L970 -22.4%, L1013 rejected by spill guard |
 | 2026-08-23-sgs-quad-earlyout-corrected | 2026-08-23 | ClimaAtmos | 1.792 | 0.26969 | 0.27461 | 5be34ffd3 | Clear-air early-out with subsaturation required: 1.792% (L1013 -21.5%), exact |
 | 2026-08-22-sgs-quad-earlyout | 2026-08-22 | ClimaAtmos | 6.732 | 0.26969 | 0.28915 | 8718b783e | INVALID: early-out omitted subsaturation, skipped real condensation (reported 6.732%) |
