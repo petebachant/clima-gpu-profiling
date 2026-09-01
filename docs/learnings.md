@@ -174,6 +174,44 @@ work even though its share of GPU time looks small. By subsystem, spectral
 element operators are 1,310 launches and 5.8% of kernel time; generic broadcasts
 and `copyto_foreach` are 4,050 launches and 18.7%.
 
+### 2b-i. Most of that idle is the profiler, not the model (2026-09-01)
+
+The paragraphs above treat GPU idle as an optimization target. **They are wrong,
+and the correction matters more than the original claim.** Instrumenting
+`scripts/run.jl` with per-step `Base.GC_Diff` and then attributing the idle
+directly:
+
+| candidate cause | verdict |
+|---|---|
+| Julia GC | **ruled out** — `gc_pauses = 0` on every profiled step, `alloc_MB` flat at 7.9 |
+| kernel compilation / allocation / sync | **ruled out** — 1.3 ms of CUDA API time inside 326.9 ms of large-gap idle |
+| OS calls (mmap, futex, I/O) | **ruled out** — 41.1 ms of 344.5 ms, 12%, mostly driver `ioctl` |
+| **Nsight Systems itself** | **the leading contributor** |
+
+The `PROFILER_OVERHEAD` table accounts for **137.8 ms of 663.8 ms of idle
+(20.8%)** explicitly, and it has exactly one row per large gap. CPU sampling
+inside those gaps is dominated by `libToolsInjection64.so` — 78 of 223 samples,
+35%, plus `pthread_mutex_lock`/`unlock` that is very likely the same library's
+internal locking. Julia frames appear at 3 samples each.
+
+The mechanism is the tracing volume: **1,020,691 traced CUDA API calls against
+31,180 kernel launches — 33 per launch.** Every one carries injection cost, and
+only the buffer flushes land in `PROFILER_OVERHEAD`; the per-event cost is
+smeared across the timeline and never attributed.
+
+**Consequence: do not project an idle fraction measured under nsys onto the real
+run.** The two windows are not even measuring the same thing — the nsys window
+runs 222.2 ms/step while the unprofiled AMIP stage runs 297.6 ms/step, so the
+profiled window is not a scaled version of the real one. Any "the GPU idles
+31%, therefore fusion/launch-count work is worth X" argument built on the
+numbers in §2b is unsupported. Kernel *times* from nsys remain trustworthy
+(they are device-side measurements); the *gaps between them* are not a model of
+the real run's host behaviour.
+
+The honest ground truth for wall-clock questions is the AMIP stage, and the one
+calibration we have from it is the conversion ratio in §3a: −5.37% GPU kernel
+time bought +1.87% SYPD.
+
 **Compute idle from the union of kernel intervals, not from summed durations.**
 An earlier hand analysis summed the per-kernel-name summary table, missed rows,
 and concluded the GPU was ~50% idle when the timeline says ~31%. The union is
