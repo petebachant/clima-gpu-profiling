@@ -21,6 +21,19 @@ index 11025fa0..f3656be3 100644
 +    agents:
 +      slurm_gpus: 1
 +      slurm_time: 00:15:00
+diff --git a/Project.toml b/Project.toml
+index 502d57a1..c4f1b720 100644
+--- a/Project.toml
++++ b/Project.toml
+@@ -25,7 +25,7 @@ MLJ = "add582a8-e3ab-11e8-2d5e-e98b27df1bc7"
+ EmulatorModelsExt = ["DataFrames", "MLJ"]
+ 
+ [compat]
+-ClimaParams = "1.0.18"
++ClimaParams = "1.1"
+ DataFrames = "1.6"
+ DocStringExtensions = "0.8, 0.9"
+ FastGaussQuadrature = "1"
 diff --git a/README.md b/README.md
 index b43a528e..20e0b6f8 100644
 --- a/README.md
@@ -33,11 +46,934 @@ index b43a528e..20e0b6f8 100644
  # CloudMicrophysics.jl
  
  CloudMicrophysics.jl provides a library of cloud microphysics and aerosol parameterizations for the [CliMA Earth System Model](https://clima.caltech.edu). It implements bulk microphysics schemes for cloud formation, precipitation, and aerosol processes, designed for high-performance climate simulations.
+diff --git a/docs/dev-guides/AGENTS.md b/docs/dev-guides/AGENTS.md
+index 1e28dd60..a3037bc4 100644
+--- a/docs/dev-guides/AGENTS.md
++++ b/docs/dev-guides/AGENTS.md
+@@ -39,7 +39,8 @@ The full enumeration and the allowed-without-approval list are in [workflow/agen
+ 
+ - [getting_started.md](code-quality/getting_started.md): orienting newcomers to writing pointwise code compatible with ClimaCore `Field`s and broadcasting.
+ - [code_style.md](code-quality/code_style.md): formatting, variable locality, Git workflow, feature removal, naming conventions.
+-- [documentation_policy.md](code-quality/documentation_policy.md): docstrings, repository-level docs, minimally viable documentation.
++- [code_comments.md](code-quality/code_comments.md): what earns a comment, never describing a previous state, words to cut, sweeping a branch.
++- [documentation_policy.md](code-quality/documentation_policy.md): docstrings, repository-level docs, README and badge conventions, LICENSE/NOTICE and copyright notices, minimally viable documentation.
+ - [changelogs_and_versions.md](code-quality/changelogs_and_versions.md): `NEWS.md` format, SemVer rules, and the release/tagging flow.
+ - [variable_list.md](code-quality/variable_list.md): standardized CliMA variable naming conventions.
+ - [glossary.md](code-quality/glossary.md): general CliMA software and simulation terminology.
+diff --git a/docs/dev-guides/README.md b/docs/dev-guides/README.md
+index d52e612c..f6271235 100644
+--- a/docs/dev-guides/README.md
++++ b/docs/dev-guides/README.md
+@@ -27,7 +27,8 @@ Every guide applies across the CliMA ecosystem unless it says otherwise.
+ 
+ - [getting_started.md](code-quality/getting_started.md): orienting newcomers to writing pointwise code compatible with ClimaCore `Field`s and broadcasting.
+ - [code_style.md](code-quality/code_style.md): formatting, variable locality, Git workflow, feature removal, naming conventions.
+-- [documentation_policy.md](code-quality/documentation_policy.md): docstrings, repository-level docs, minimally viable documentation.
++- [code_comments.md](code-quality/code_comments.md): what earns a comment, never describing a previous state, words to cut, sweeping a branch.
++- [documentation_policy.md](code-quality/documentation_policy.md): docstrings, repository-level docs, README and badge conventions, LICENSE/NOTICE and copyright notices, minimally viable documentation.
+ - [changelogs_and_versions.md](code-quality/changelogs_and_versions.md): `NEWS.md` format, SemVer rules, and the release/tagging flow.
+ - [variable_list.md](code-quality/variable_list.md): standardized CliMA variable naming conventions.
+ - [glossary.md](code-quality/glossary.md): general CliMA software and simulation terminology.
+@@ -74,7 +75,7 @@ git subtree pull --prefix docs/dev-guides \
+ >
+ > - `git subtree add --prefix docs/dev-guides ...` nests all of DeveloperGuides, including its own `AGENTS.md`, `LICENSE`, and `README.md`, under that prefix. It does not touch the consumer's root files, so the initial add does not conflict with them.
+ > - The real risk is editing the vendored copy under `docs/dev-guides/` directly instead of upstream (see "Contributing" below). A later `git subtree pull` merges upstream changes into that path, so a local edit there can produce a genuine merge conflict. Resolve it like any merge conflict: fix the conflicting file, `git add`, `git commit`. Subtree operations use merge, not rebase, so `git rebase --continue` does not apply.
+-> - When there are no new upstream commits the monthly run is a clean no-op. The workflow now fails loudly on a genuine `git subtree pull` error instead of masking it, so a red run means something actually needs attention.
++> - When there are no new upstream commits, the monthly run is a no-op. The workflow fails loudly on a `git subtree pull` error instead of masking it, so a red run needs attention.
+ 
+ ### Fixing a broken subtree sync
+ 
+diff --git a/docs/dev-guides/architecture/architectural_boundaries.md b/docs/dev-guides/architecture/architectural_boundaries.md
+index e9bf67bc..acf7c237 100644
+--- a/docs/dev-guides/architecture/architectural_boundaries.md
++++ b/docs/dev-guides/architecture/architectural_boundaries.md
+@@ -11,7 +11,7 @@ CliMA packages form a directed acyclic dependency graph. The canonical layering
+ | L0 | [ClimaParams.jl](https://github.com/CliMA/ClimaParams.jl), [RootSolvers.jl](https://github.com/CliMA/RootSolvers.jl), [UnrolledUtilities.jl](https://github.com/CliMA/UnrolledUtilities.jl), [LazyBroadcast.jl](https://github.com/CliMA/LazyBroadcast.jl), [MultiBroadcastFusion.jl](https://github.com/CliMA/MultiBroadcastFusion.jl), [EnsembleKalmanProcesses.jl](https://github.com/CliMA/EnsembleKalmanProcesses.jl), [NullBroadcasts.jl](https://github.com/CliMA/NullBroadcasts.jl), [RandomFeatures.jl](https://github.com/CliMA/RandomFeatures.jl) | Physical constants, calibratable parameters, generic math, and generic Julia utilities. No CliMA-internal dependencies. |
+ | L1 | [ClimaComms.jl](https://github.com/CliMA/ClimaComms.jl), [ClimaCore.jl](https://github.com/CliMA/ClimaCore.jl), [Thermodynamics.jl](https://github.com/CliMA/Thermodynamics.jl), [CubedSphere.jl](https://github.com/CliMA/CubedSphere.jl), [ClimaAnalysis.jl](https://github.com/CliMA/ClimaAnalysis.jl), [ClimaUtilities.jl](https://github.com/CliMA/ClimaUtilities.jl), [ClimaInterpolations.jl](https://github.com/CliMA/ClimaInterpolations.jl), [SeawaterPolynomials.jl](https://github.com/CliMA/SeawaterPolynomials.jl), [ClimaDiagnostics.jl](https://github.com/CliMA/ClimaDiagnostics.jl) | Foundations: device abstraction + MPI, fields & discretization, thermodynamic primitives, shared software tooling |
+ | L2 | [ClimaTimeSteppers.jl](https://github.com/CliMA/ClimaTimeSteppers.jl), [CloudMicrophysics.jl](https://github.com/CliMA/CloudMicrophysics.jl), [SurfaceFluxes.jl](https://github.com/CliMA/SurfaceFluxes.jl), [Insolation.jl](https://github.com/CliMA/Insolation.jl), [RRTMGP.jl](https://github.com/CliMA/RRTMGP.jl), [AtmosphericProfilesLibrary.jl](https://github.com/CliMA/AtmosphericProfilesLibrary.jl), [Oceananigans.jl](https://github.com/CliMA/Oceananigans.jl) | Higher-level libraries built on L1: time integration and physics parameterisations. |
+-| L3 | [ClimaAtmos.jl](https://github.com/CliMA/ClimaAtmos.jl), [ClimaLand.jl](https://github.com/CliMA/ClimaLand.jl), [ClimaOcean.jl](https://github.com/CliMA/ClimaOcean.jl), [CalibrateEmulateSample.jl](https://github.com/CliMA/CalibrateEmulateSample.jl), [ClimaSeaIce.jl](https://github.com/CliMA/ClimaSeaIce.jl), [ClimaOcean.jl](https://github.com/CliMA/ClimaOcean.jl) | Model repos: compose L1 / L2 to integrate state variables. |
++| L3 | [ClimaAtmos.jl](https://github.com/CliMA/ClimaAtmos.jl), [ClimaLand.jl](https://github.com/CliMA/ClimaLand.jl), [ClimaOcean.jl](https://github.com/CliMA/ClimaOcean.jl), [CalibrateEmulateSample.jl](https://github.com/CliMA/CalibrateEmulateSample.jl), [ClimaSeaIce.jl](https://github.com/CliMA/ClimaSeaIce.jl) | Model repos: compose L1 / L2 to integrate state variables. |
+ | L4 | [ClimaCoupler.jl](https://github.com/CliMA/ClimaCoupler.jl), [ClimaCalibrate.jl](https://github.com/CliMA/ClimaCalibrate.jl) | Couples multiple L3 models, toolkit for calibration pipelines |
+ 
+ **The rule**: a package at layer N may depend on packages at layers ≤ N, but never on packages at layers > N. Concretely:
+@@ -27,7 +27,8 @@ Verify against actual dependencies with `Pkg.dependencies` if in doubt. A new de
+ - **Physics libraries** (Thermodynamics.jl, CloudMicrophysics.jl, SurfaceFluxes.jl): public functions accept scalars or tuples and return scalars or `NamedTuple`s. They must not allocate `Array` or `Field` objects internally.
+ - **Infrastructure libraries** (ClimaCore.jl, ClimaTimeSteppers.jl, ClimaComms.jl): own the data structures, discretization, and parallelism. They define the types that model repos compose.
+ - **Parameter library** ([ClimaParams.jl](https://github.com/CliMA/ClimaParams.jl)): the central source of truth for physical constants and adjustable parameters that may be calibrated. All physics libraries read their constants from `ClimaParams`-derived parameter structs rather than hard-coding values.
+-- **Model repos** (ClimaAtmos.jl, ClimaLand.jl, ClimaOcean.jl, ClimaCoupler.jl): compose physics and infrastructure. Tendency functions call into physics libraries with extracted scalar values and write results back to fields via broadcasting.
++- **Model repos** (ClimaAtmos.jl, ClimaLand.jl, ClimaOcean.jl): compose physics and infrastructure. Tendency functions call into physics libraries with extracted scalar values and write results back to fields via broadcasting.
++- **Coupler** (ClimaCoupler.jl): composes multiple model repos into a coupled Earth system model. It sits above the model repos in the DAG; no model repo may depend on it.
+ 
+ When adding new code, place it in the layer that owns the relevant concern. Do not embed broadcasting, field allocation, or IO inside physics functions, and do not re-implement numerical algorithms inside model-level tendency code.
+ 
+diff --git a/docs/dev-guides/architecture/dependency_management.md b/docs/dev-guides/architecture/dependency_management.md
+index caefc350..e524df05 100644
+--- a/docs/dev-guides/architecture/dependency_management.md
++++ b/docs/dev-guides/architecture/dependency_management.md
+@@ -42,9 +42,7 @@ Both are accepted by `Pkg.test()`; match whichever convention the repo already u
+ 
+ ## 2. Runtime vs development dependencies
+ 
+-**Rule**: never place development tools (for example, `JuliaFormatter.jl`, `BenchmarkTools.jl`, `Aqua.jl`, `JET.jl`) in the root `[deps]` section of `Project.toml`. Put them in `test/Project.toml` (or in the `[extras]`/`[targets]` block: see §1).
+-
+-**Why**: dev tools in root `[deps]` cause `Aqua.test_stale_deps` to fail (if unused by `src/`) and inflate the dependency footprint for every downstream consumer.
++Never place development tools (`JuliaFormatter.jl`, `BenchmarkTools.jl`, `Aqua.jl`, `JET.jl`, ...) in the root `[deps]`; put them in `test/Project.toml` or the `[extras]`/`[targets]` block. This is the same rule as the first bullet of §1, called out because dev tools are the most common offender: they fail `Aqua.test_stale_deps` and inflate the dependency footprint of every downstream consumer.
+ 
+ ## 3. Package extensions
+ 
+@@ -118,7 +116,7 @@ Prefer standard Julia operations over internal modules from dependencies. Intern
+ 
+ ## 7. Writing `[compat]` bounds
+ 
+-Keep `[compat]` entries as broad as the package's API actually supports. Overly narrow upper bounds in upstream packages are the most common source of unresolvable graphs across the CliMA ecosystem. Tighten a bound only when you can name the specific incompatibility (a removed symbol, a changed signature, a regression). When working across nested environments (`docs/`, `test/`, `perf/`, `.buildkite/`) against a local checkout of the parent package, use `Pkg.develop(path="..")` so the subdirectory picks up unreleased changes.
++Keep `[compat]` entries as broad as the package's API supports. Overly narrow upper bounds in upstream packages are the most common source of unresolvable graphs across the CliMA ecosystem. Tighten a bound only when you can name the specific incompatibility (a removed symbol, a changed signature, a regression). When working across nested environments (`docs/`, `test/`, `perf/`, `.buildkite/`) against a local checkout of the parent package, use `Pkg.develop(path="..")` so the subdirectory picks up unreleased changes.
+ 
+ For the recovery procedure when an environment fails to resolve, see [onboarding.md §8](../workflow/onboarding.md).
+ 
+diff --git a/docs/dev-guides/architecture/ecosystem_conventions.md b/docs/dev-guides/architecture/ecosystem_conventions.md
+index db77b4fd..838d2b6e 100644
+--- a/docs/dev-guides/architecture/ecosystem_conventions.md
++++ b/docs/dev-guides/architecture/ecosystem_conventions.md
+@@ -92,7 +92,7 @@ When a CI job is mentioned by name in a guide or review, it is almost always a B
+ 
+ ## 6. Reproducibility tests (model repos)
+ 
+-Some model repos (notably ClimaAtmos) maintain a `reproducibility_tests/` directory that pins the simulation output of canonical jobs to within bit tolerance, keyed off `reproducibility_tests/ref_counter.jl`. A code change that flips a reproducibility test is itself a finding: report it in the PR description with the job name and the MSE diff, not as a hidden side effect.
++Some model repos (ClimaAtmos in particular) maintain a `reproducibility_tests/` directory that pins the simulation output of canonical jobs to within bit tolerance, keyed off `reproducibility_tests/ref_counter.jl`. A code change that flips a reproducibility test is itself a finding: report it in the PR description with the job name and the MSE diff, not as a hidden side effect.
+ 
+ Reference counters and MSE tolerance files must not be modified without explicit user instruction. See [agent_autonomy.md](../workflow/agent_autonomy.md) for the full rule.
+ 
+diff --git a/docs/dev-guides/architecture/repo_structure.md b/docs/dev-guides/architecture/repo_structure.md
+index 48dbd86a..458b0c52 100644
+--- a/docs/dev-guides/architecture/repo_structure.md
++++ b/docs/dev-guides/architecture/repo_structure.md
+@@ -23,6 +23,8 @@ Most CliMA Julia packages share these directories:
+ - `perf/` or `benchmarks/`: performance/allocation benchmarks. Often not run in CI.
+ - `examples/`, `runscripts/`, `post_processing/`, `calibration/`: repo-dependent.
+ 
++Alongside these, every repo root carries `README.md`, `LICENSE`, and — in Apache-licensed repos — `NOTICE`. Apache 2.0 is the CliMA default, but not universal: Oceananigans.jl and ClimaOcean.jl are MIT. See [documentation_policy.md §2.4](../code-quality/documentation_policy.md).
++
+ ## Conventions to expect
+ 
+ - **Cache / precomputed quantities**: ClimaAtmos has a `src/cache/` area where per-stage scratch state update functions are defined. The convention is to allocate once at construction and never inside per-step setters.
+diff --git a/docs/dev-guides/code-quality/changelogs_and_versions.md b/docs/dev-guides/code-quality/changelogs_and_versions.md
+index 02937116..a38358bd 100644
+--- a/docs/dev-guides/code-quality/changelogs_and_versions.md
++++ b/docs/dev-guides/code-quality/changelogs_and_versions.md
+@@ -46,7 +46,7 @@ One bullet per change. Entries under a released version are final and should not
+ 
+ ### 1.4 Badges
+ 
+-Some repos (notably `ClimaAtmos`, `ClimaCore`, `ClimaTimeSteppers`) prefix entries with a badge that classifies the change. The badge definitions live at the bottom of `NEWS.md` and must not be removed.
++Some repos (`ClimaAtmos`, `ClimaCore`, `ClimaTimeSteppers`) prefix entries with a badge that classifies the change. The badge definitions live at the bottom of `NEWS.md` and must not be removed.
+ 
+ | Badge                              | When to use                                                   |
+ |:-----------------------------------|:--------------------------------------------------------------|
+@@ -122,7 +122,7 @@ Test for breaking-ness: *can a downstream package, pinned to the current compat,
+ 
+ ### 2.4 Merging a PR with breaking changes
+ 
+-When merging a PR that contains breaking changes, ensure that the `NEWS.md` entry for the change is properly tagged with `![][badge-💥breaking]`. It is your responsibility to open PRs in downstream repositiories that will be affected when the breaking release is made. Ideally, the PRs in the downstream repositories should be opened before the breaking release is made. They can be tested with the new changes by `dev`ing the branch of the upstream package's repo.
++When merging a PR that contains breaking changes, ensure that the `NEWS.md` entry for the change is tagged with `![][badge-💥breaking]`. It is your responsibility to open PRs in downstream repositories that will be affected when the breaking release is made. Ideally, the PRs in the downstream repositories should be opened before the breaking release is made. They can be tested with the new changes by `dev`ing the branch of the upstream package's repo.
+ 
+ ---
+ 
+diff --git a/docs/dev-guides/code-quality/code_comments.md b/docs/dev-guides/code-quality/code_comments.md
+new file mode 100644
+index 00000000..f96531b1
+--- /dev/null
++++ b/docs/dev-guides/code-quality/code_comments.md
+@@ -0,0 +1,126 @@
++# Code Comments
++
++Conventions for writing, editing, and reviewing comments in source, tests, and CI config. Docstrings are covered separately in [documentation_policy.md §3](documentation_policy.md); this guide is about the `#` comments that sit next to code, though the defects below appear in docstrings and YAML just as often.
++
++## 1. The governing rule
++
++**A comment explains the code that is there, and why it is that way.** It is not a changelog, not a narrative of the work that produced it, and not a restatement of the line below it.
++
++Match the comment density and voice of the surrounding file rather than importing a different style. A new file dense with prose in a codebase whose neighbours are sparse is out of place, and the extra prose is almost always saying what the code already says.
++
++A header on a new file is justified when it states what the file does or asserts and why that is the right thing to do or assert. Keep it to a few lines. It is not the place for:
++
++- which precisions, resolutions, or cases are swept — the loop shows this;
++- which sibling files cover adjacent ground — navigation belongs in the README;
++- a restatement of the function or testset names below.
++
++## 2. Never describe a previous state
++
++The single most common defect, and the one to look for first. All of these are wrong in a committed comment:
++
++- "this used to fail on GPUs because ..."
++- "the fluxes were previously mislabeled ..."
++- "their former example files are deleted"
++- "these were already soft-failing before the split"
++
++Rewrite to the present. Keep the hazard, drop the history:
++
++```julia
++# BEFORE
++# The upwinded stencil, written as a fused broadcast. This used to fail on
++# GPUs because `Base.Fix1(convert, T)` stores a `Type` field and so is not a
++# bitstype; `ConvertTo{T}` is an empty struct, so the fused form now compiles.
++
++# AFTER
++# The conversion goes through `ConvertTo{T}`, an empty struct, rather than
++# `Base.Fix1(convert, T)`: the latter stores a `Type` field and so is not a
++# bitstype, which a fused broadcast cannot compile for the GPU.
++```
++
++The history belongs in the commit message, where it is dated and retrievable. A reader of the code a year from now needs the constraint, not the story of how it was found.
++
++## 3. Failure modes are worth documenting
++
++This is the exception that makes the rule useful. Document a hazard when a future developer could plausibly reintroduce it — but state it as a property of the current code, not as an incident report. Hazards worth a comment look like:
++
++- `if: ${{ a }} && ${{ b }}` in GitHub Actions interpolates each `${{ }}` separately and leaves the string `"true && false"`, which is truthy either way, so the condition must be written as one expression.
++- `--check-bounds=yes` disables `@inbounds` elision, so zero-allocation sentinels report allocations that are not there.
++- An inline `@allocated f(...)` depends on the caller's inlining budget; measure from a `@noinline` wrapper.
++- GPU kernel launches allocate host-side wrappers, so byte-count sentinels are CPU-only.
++
++Each states a constraint that is still true of the code as written, and each would cost someone a debugging session to rediscover.
++
++## 4. Words to cut
++
++**Adverbs and hedges.** simply, just, actually, essentially, effectively, merely, basically, clearly, obviously, carefully, properly, correctly, very, particularly, especially, notably, importantly, deliberately, intentionally.
++
++**Weak adjectives.** simple, easy, clean, nice, proper, robust, comprehensive, thorough, genuine, obvious, trivial, straightforward, crucial, critical, essential, powerful, elegant.
++
++**Connectives and filler openers.** "Note that", "It's worth noting", "In other words", "That said", "Keep in mind", "As such", "By design", "The whole point is", "exactly what we want".
++
++**Keep a flagged word when it carries meaning.** `silently` in "fails silently rather than erroring" *is* the content of the sentence. `sharp` describing a physical gradient is a measurement, not praise. "used to compare" means *employed to*, not *formerly*. These lists are grep targets for review, not find-and-replace rules.
++
++## 5. Name the mechanism, not its price
++
++Avoid borrowed vocabulary — economics-speak especially — that sounds knowing and says little:
++
++| Instead of | Write |
++|:---|:---|
++| "shards the suite" | "splits the suite" |
++| "instrumenting the others buys nothing" | "only this job's coverage is uploaded" |
++| "coverage is not free: it costs the job" | "instrumented runs are killed partway through; uninstrumented ones finish" |
++| "these tests cost minutes apiece" | "this marks the multi-minute tests" |
++
++## 6. Numbers over characterization
++
++A measured number beats an adjective, and it dates the claim implicitly:
++
++| Instead of | Write |
++|:---|:---|
++| "takes a while" | "~2.5x as long" |
++| "uses a lot of memory" | "peaks at 3.8 GB" |
++| "converges well" | "measured 2.82 against design 3" |
++| "roughly stable across builds" | "within ~10–20% across builds" |
++
++When a tolerance or baseline is pinned in code, say where the number came from — the resolution, configuration, and margin it was measured at — so the next person knows whether they are allowed to move it.
++
++## 7. Mechanics
++
++- **The formatter does not reflow comments.** JuliaFormatter leaves comment text alone, so rewrapping after an edit is manual: check line lengths yourself. Keep comments within the repo's margin (see [code_style.md §4](code_style.md)); wrapping narrower than the code margin is common and fine, as long as it is consistent within a file.
++- **No trailing whitespace.**
++- **Prefer the declarative to the imperative.** An imperative opener ("Split the branch outside the closure") reads as an instruction to change the code. Write what is true instead: "The branch sits outside the closure so that ...".
++- **In `#! format: off` blocks, alignment is manual.** Realign the whole column after editing any entry.
++
++## 8. Sweeping a branch for comment defects
++
++When reviewing or cleaning up a branch, work from the diff rather than by reading files.
++
++**Know which diff you are reading.** `git diff origin/main` reads the **working tree**; `git diff origin/main <branch>` reads the **committed tip**. Sweeping the wrong one silently reports stale results.
++
++**Scan every added line, not only `#` comments.** Docstrings and config values carry the same defects, and a comment-only filter never sees them. A stale value in a CI config is the dangerous case: it changes which jobs run without failing anything.
++
++```bash
++git diff origin/main HEAD > /tmp/d.diff
++awk '/^\+\+\+ b\// { f=substr($0,7) }
++     /^\+/ && !/^\+\+\+/ { print f"\t"substr($0,2) }' /tmp/d.diff
++```
++
++Narrow to `^[[:space:]]*#` only for line-length and density checks. Then grep the added lines for:
++
++- the word lists in §4;
++- historical phrasing: `former|used to |previously|no longer|has since|were dropped`;
++- lines over the margin.
++
++**Review each hit rather than replacing blindly.** The false-positive rate is high: "this **pr**operty" matches `this PR` case-insensitively, and "**used to** compare" is not historical.
++
++Finish by checking that filenames cited in comments still exist — extract every `*.jl` / `*.yml` / `*.md` reference and confirm each resolves, since renames and deletions strand them. Package names (`HDF5.jl`), globs (`*_utils.jl`), URL fragments, and documented placeholders are expected non-matches.
++
++## 9. Two ways comments go stale
++
++**Comments go stale across branches, not just across time.** A comment that is accurate on one branch can be false on another that renames or deletes what it describes. When rebasing a stack, a conflict inside a comment is a signal to check which branch's description is still true — not just to pick one.
++
++**Renaming a symbol, flag, or test tier strands its old name in prose and config.** The rename itself compiles and passes; the name survives in a docstring list, in an example, and in CI config values that select on it. Those config values then quietly select something different from what they used to — silently changing which tests run, with nothing failing to signal it. Before calling such a rename done, grep the old name across source, config, and docs, and confirm that any config value naming it still selects what it did before.
++
++## Self-correction
++
++If this guide is discovered to be stale or missing a pattern, update it.
+diff --git a/docs/dev-guides/code-quality/documentation_policy.md b/docs/dev-guides/code-quality/documentation_policy.md
+index dc5f0434..21416fea 100644
+--- a/docs/dev-guides/code-quality/documentation_policy.md
++++ b/docs/dev-guides/code-quality/documentation_policy.md
+@@ -9,6 +9,8 @@ CliMA is committed to producing high-quality, well-documented software so that k
+ - **Do** document interfaces, expected behavior, and short examples.
+ - **Do not** narrate what the code does line by line; the code itself should be self-explanatory.
+ 
++This guide covers docstrings and repository-level documentation. For the `#` comments beside the code — what earns one, and the defects to sweep for — see [code_comments.md](code_comments.md).
++
+ ## 2. Repository documentation
+ 
+ Every repository must include the following pages (typically under `docs/src/` or in `README.md`):
+@@ -18,7 +20,7 @@ Every repository must include the following pages (typically under `docs/src/` o
+ 3. **API reference**: interface concepts, purpose, and function signatures.
+ 4. **Contribution guidelines**: how to contribute (PRs, style, CI).
+ 
+-All repositories must also include a `LICENSE` file (Apache 2.0) and a `NOTICE` file in the repository root.
++Every repository must also carry a `README.md`, a `LICENSE`, and — for Apache-licensed repos — a `NOTICE` in the root. See §2.3 and §2.4.
+ 
+ ### 2.1 Organizing documentation by user need
+ 
+@@ -38,6 +40,111 @@ These modes are guides, not strict partitions: CliMA repos commonly interleave t
+ - Sources live in `docs/src/`; tutorials in `tutorials/` if present.
+ - For local iteration, use `LiveServer.servedocs()` (see [onboarding.md §9](../workflow/onboarding.md)).
+ 
++### 2.3 README
++
++The README is the first thing most users and agents see. Keep it short and current; depth belongs in `docs/src/`. Use this section order, omitting what does not apply:
++
++1. **Logo** (if the repo has one), centered, then the package name as an `#` heading.
++2. **One-sentence tagline**, then one short paragraph on what the package does and what it is built on.
++3. **Badge table** (below).
++4. **Features**: a handful of bullets, each naming a capability rather than an implementation detail.
++5. **Installation**: `Pkg.add("<PackageName>")` for a registered package.
++6. **Quick Example**: the shortest runnable snippet that produces something.
++7. **Documentation**: links to the stable and dev docs, plus any high-value pages.
++8. **Integration with CliMA models**: which ecosystem packages this one uses or is used by, with links.
++9. **Contributing**: point at `docs/dev-guides/` and the repo's `AGENTS.md`.
++
++**Run the Quick Example before committing it.** Execute it against the repo environment, or lift it verbatim from a doctested page (a Documenter `@example` block runs on every docs build). A README snippet that only *looks* right is worse than none: it is the first thing a new user pastes into a REPL. Verify the comments too — a snippet that runs but whose comment misstates the result is still wrong. When a snippet is copied from a docs page, prefer copying it verbatim so the two cannot drift.
++
++**Badge table.** Use reference-style link definitions, keep the label column right-aligned and the badge column left-aligned, and place the definitions immediately below the table:
++
++~~~markdown
++|||
++|------------------:|:------------------------------------------------------------|
++| **Documentation** | [![stable][docs-stable-img]][docs-stable-url] [![dev][docs-dev-img]][docs-dev-url] |
++| **Version**       | [![version][version-img]][version-url]                      |
++| **License**       | [![license][license-img]][license-url]                      |
++| **Tests**         | [![gha ci][gha-ci-img]][gha-ci-url] [![buildkite][bk-ci-img]][bk-ci-url] |
++| **Code Coverage** | [![codecov][codecov-img]][codecov-url]                      |
++| **Downloads**     | [![Downloads][dlt-img]][dlt-url]                            |
++
++[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
++[docs-stable-url]: https://CliMA.github.io/<Package>.jl/stable/
++~~~
++
++Row conventions:
++
++- **Omit rows that do not apply.** Drop the Buildkite badge in a repo with no Buildkite pipeline (or one that does not build `main` — see below) rather than shipping a badge that reads `unknown`.
++- **Add rows where warranted.** A repo with a Zenodo DOI or a JOSS paper gets a **DOI** and/or **JOSS** row; keep the existing DOI identifier exactly as-is when reformatting a table.
++- **Version** points at the JuliaHub badge for registered packages: `https://juliahub.com/docs/General/<Package>/stable/version.svg`. Some packages only resolve at `https://juliahub.com/docs/<Package>/version.svg` — fetch the URL and check for a 200 before committing it.
++
++**Badges must track `main`, and must be able to.** A badge that misreports status trains everyone to ignore it. Two independent requirements:
++
++1. *The workflow has to run on `main`.* A workflow triggered only by `pull_request` never produces a `main` run, so its badge falls back to the most recent run on **any** branch — one failing PR turns the badge red while `main` is green. Add a push trigger:
++
++   ~~~yaml
++   on:
++     push:
++       branches: [main]
++       tags: '*'
++     pull_request:
++   ~~~
++
++   A `tags:` filter under `pull_request` does nothing; tag filters only take effect under `push`.
++
++2. *The badge URL has to be pinned to `main`.* Append `?branch=main` to the badge image and filter the link target:
++
++   ~~~markdown
++   [gha-ci-img]: https://github.com/CliMA/<Package>.jl/actions/workflows/ci.yml/badge.svg?branch=main
++   [gha-ci-url]: https://github.com/CliMA/<Package>.jl/actions/workflows/ci.yml?query=branch%3Amain
++   ~~~
++
++Both are required: pinning a badge to `main` for a workflow that never runs there yields `no status`, and a `main`-running workflow with an unpinned badge still reports other branches. See [ci_triage.md §13](../workflow/ci_triage.md) for diagnosing a badge that reads `failing`, `unknown`, or `no status`.
++
++**Markdown is formatted in some repos.** Where the formatter hook covers markdown (ClimaAtmos runs JuliaFormatter over `types_or: [julia, markdown]`), it will inline reference-style links, pad table columns, and indent list items. Run the repo's pinned formatter over the README before pushing, and match the version CI uses — see [code_style.md §1](code_style.md).
++
++### 2.4 License, NOTICE, and copyright
++
++**Which license.** Apache 2.0 is the default across CliMA. It is not universal: repos in the Oceananigans lineage — [Oceananigans.jl](https://github.com/CliMA/Oceananigans.jl) and [ClimaOcean.jl](https://github.com/CliMA/ClimaOcean.jl) — are **MIT**. Never "standardize" a repo's license as part of unrelated work: relicensing is a legal decision for the maintainers and copyright holders, not a formatting cleanup. Read the existing `LICENSE` before touching anything near it.
++
++| | Apache 2.0 (most repos) | MIT (Oceananigans, ClimaOcean) |
++|:---|:---|:---|
++| `LICENSE` | Full Apache text; copyright notice in the appendix | MIT text with the copyright line inline |
++| `NOTICE` | Present, mirroring the `LICENSE` copyright line | Not used |
++| Badge | `license-Apache%202.0-blue` | `license-MIT-blue` |
++
++**Copyright notice.** The Apache boilerplate ships with a placeholder that often gets committed unfilled:
++
++~~~text
++Copyright [yyyy] [name of copyright owner]
++~~~
++
++Replace it with the year range and holder. CliMA repos use:
++
++~~~text
++Copyright 2021-2026 California Institute of Technology (Climate Modeling Alliance)
++~~~
++
++MIT repos carry the equivalent line inside the license text itself, in the form that license expects:
++
++~~~text
++Copyright (c) 2018 Climate Modeling Alliance
++~~~
++
++Conventions:
++
++- **The start year is the repo's first commit**, not the year the file was written. Find it with `git log --reverse --format=%ci | head -1`.
++- **Keep `NOTICE` and `LICENSE` in agreement.** Where both exist they should name the same holder and the same range; they drift because they are edited separately.
++- **A stale end year is not urgent.** Refresh it when you are already touching the file; a year-only bump is not worth a standalone PR.
++
++### 2.5 GitHub repository metadata
++
++The About line and topics are how a repo is found and understood from outside; they are part of its documentation.
++
++- **About**: one sentence, no trailing period, naming what the package *is* and its most distinguishing property — for example, "GPU-capable cloud microphysics and aerosol parameterizations for the CliMA Earth System Model". Avoid bare restatements of the name ("Clima's Land Model") and internal shorthand.
++- **Topics**: 8–12 lowercase, hyphenated tags. Cover the language (`julia`), the domain (`climate-modeling`, `atmospheric-physics`), the methods (`spectral-elements`, `ode-solvers`), and the platform (`gpu`). Topics drive GitHub search and the ecosystem's discoverability.
++- Both are set through the repo settings UI or `gh repo edit --description ... --add-topic ...`. Neither lives in the git history, so a change takes effect immediately and is not reviewable in a PR — mention it in the PR description when it accompanies one.
++
+ ## 3. Docstrings
+ 
+ Every docstring lives next to the code it describes and is the first thing a future reader (human or AI) sees. Docstrings should be useful, not decorative.
+@@ -108,7 +215,7 @@ Each bullet starts with the backticked identifier. For complex options, list val
+ 
+ ### 3.4 Units, math, references
+ 
+-**Units.** Atmospheric and physics code is dimensional; units carry meaning. Use SI unless the underlying library exposes another unit (then match it and say so). Put units in square brackets at the end of the description: `[K]`, `[kg/m³]`, `[m/s²]`, `[W/m²]`, `[kg/kg]` for specific humidities. Dimensionless quantities: `[-]`. Be consistent within a docstring. Do **not** put `(...)` immediately after `[...]`; Documenter parses `[text](text)` as a markdown link and will error (see §4).
++**Units.** Atmospheric and physics code is dimensional; units carry meaning. Use SI unless the underlying library exposes another unit (then match it and say so). Put units in square brackets at the end of the description: `[K]`, `[kg/m³]`, `[m/s²]`, `[W/m²]`, `[kg/kg]` for specific humidities. Dimensionless quantities: `[-]`. Be consistent within a docstring. Do **not** follow `[...]` with `(...)`; Documenter parses `[text](text)` as a markdown link and will error. This applies even when whitespace separates them — Documenter's parser accepts a space, several spaces, or a line break between `]` and `(` — so `Density [kg/m³] (at cloud base)` fails just as `Density [kg/m³](at cloud base)` does. Separate them with punctuation (`[kg/m³], at cloud base`) or wrap the units in backticks (`` `[kg/m³]` (at cloud base) ``). See §4.
+ 
+ **Math.** Documenter renders math with [KaTeX](https://katex.org/).
+ 
+@@ -158,7 +265,7 @@ Viscous sponge model; damps variables in proportion to the value of their Laplac
+ 
+ # Fields
+ - `zd`: Lower damping height [m].
+-- `κ₂`: Damping coefficient [m²/s²].
++- `κ₂`: Damping coefficient [m²/s].
+ """
+ @kwdef struct ViscousSponge{FT} <: SpongeModel
+     zd::FT
+@@ -331,7 +438,31 @@ abstract type Foo end
+ 
+ ## 4. Documenter.jl pitfalls
+ 
+-**Markdown link ambiguity.** `[kg/m^3](description)` is parsed as a markdown link and produces `:cross_references` errors if the parenthetical text is not a URL. Fix: use parentheses for units (`(kg/m^3)`), or separate brackets and parentheses with punctuation. Do not attempt to escape brackets with backslashes in Julia string literals; that causes invalid-escape-sequence errors during precompilation.
++**Markdown link ambiguity.** `[kg/m^3](description)` is parsed as a markdown link and produces `:cross_references` errors if the parenthetical text is not a URL.
++
++Documenter's parser is more permissive than CommonMark here: **any** whitespace between the closing bracket and the opening parenthesis still forms a link, including a line break. All of these fail:
++
++~~~text
++Density [kg/m³](at cloud base).
++Density [kg/m³] (at cloud base).
++Density [kg/m³]  (at cloud base).
++Density [kg/m³]
++(at cloud base).
++~~~
++
++The last case matters for wrapped docstrings, where the units end one line and the parenthetical begins the next.
++
++Fix by separating the two with punctuation, or by wrapping the units in backticks. Both keep the bracketed-units convention of §3.4:
++
++~~~text
++Density [kg/m³], at cloud base.
++Density [kg/m³]. (At cloud base.)
++Density `[kg/m³]` (at cloud base).
++~~~
++
++Because `checkdocs = :exports` leaves most docstrings unrendered, a broken link can sit latent until its symbol is added to a docs page, at which point an unrelated PR fails. A syntactic pre-commit check is worthwhile; ClimaAtmos.jl uses `.dev/check_markdown_link_ambiguity.py` for this.
++
++Do not attempt to escape brackets with backslashes in Julia string literals; that causes invalid-escape-sequence errors during precompilation.
+ 
+ **Missing docstrings.** If `makedocs` fails with "Missing docstrings", ensure every exported symbol with a docstring is included on a documentation page via `@docs` or `@autodocs`.
+ 
+diff --git a/docs/dev-guides/code-quality/getting_started.md b/docs/dev-guides/code-quality/getting_started.md
+index a1338fdd..da62afad 100644
+--- a/docs/dev-guides/code-quality/getting_started.md
++++ b/docs/dev-guides/code-quality/getting_started.md
+@@ -31,7 +31,7 @@ When a function is broadcasted over one or more `ClimaCore.Fields.Field`(s), and
+ 
+ ### Spatial Derivatives
+ 
+-When writing code that computes spatial derivatives, use the operators provided by `ClimaCore` (e.g., `ClimaCore.grad`, `ClimaCore.div`, `ClimaCore.curl`) rather than manually indexing into fields. This ensures that the code is compatible with the discretization and can be efficiently executed on the GPU.
++When writing code that computes spatial derivatives, use the operators provided by `ClimaCore.Operators` (gradient, divergence, curl, interpolation) rather than manually indexing into fields. This ensures that the code is compatible with the discretization and can be efficiently executed on the GPU.
+ 
+ ## Self-correction
+ 
+diff --git a/docs/dev-guides/code-quality/glossary.md b/docs/dev-guides/code-quality/glossary.md
+index 4807eded..d114ae0b 100644
+--- a/docs/dev-guides/code-quality/glossary.md
++++ b/docs/dev-guides/code-quality/glossary.md
+@@ -4,7 +4,7 @@ In addition to the variables defined in [variable_list.md](variable_list.md), th
+ 
+ ## Software Terminology
+ 
+-- **Artifact**: In the context of Julia packages, an artifact is a file or set of files that are downloaded and stored in the `Artifacts.toml` file. Artifacts are used for input data management. See [ClimaArtifacts.jl](https://github.com/CliMA/ClimaArtifacts) for more details.
++- **Artifact**: In the context of Julia packages, an artifact is a file or set of files declared in an `Artifacts.toml` file (which records their hashes and download URLs) and downloaded on demand. Artifacts are used for input data management. See [ClimaArtifacts](https://github.com/CliMA/ClimaArtifacts) for more details.
+ - **CI**: Continuous Integration, a practice in software development where code changes are automatically built and tested. CliMA uses GitHub Actions and Buildkite for CI.
+ - **REPL**: Read-Eval-Print Loop, an interactive programming environment that takes single user inputs, executes them, and returns the result to the user.
+ - **Type-stable**: A function is type-stable if the type of its output can be determined from the types of its inputs. Type stability is important for performance in Julia, and a requirement when running code on the GPU.
+@@ -14,8 +14,8 @@ In addition to the variables defined in [variable_list.md](variable_list.md), th
+ - **Downstream/Upstream**: In the context of software dependencies, a downstream package is one that depends on another package (the upstream). Changes in the upstream package can affect the downstream package, so it's important to consider the impact of changes on downstream users.
+ - **Project.toml**: Describes a Julia project's dependencies and compatibility requirements. It is used by the Julia package manager to manage dependencies and ensure that the correct versions of packages are used.
+ - **Manifest.toml**: Records the exact versions of all packages used in a Julia project, including transitive dependencies. It is generated by the package manager and should not be edited manually.
+-- **instantiate**: If no `Manifest.toml` exists for the project, `Pkg.instantiate()` is equivalent to `Pkg.resolve()`; if a `Manifest.toml` does exist, `Pkg.instantiate()` will download and install the exact versions of packages specified in the `Manifest.toml`, ensuring that the environment is consistent with the recorded state.
+-- **resolve**: `Pkg.resolve()` checks that the `Manifest.toml` is consistent with the `Project.toml` and updates the `Manifest.toml` to reflect any changes in dependencies or compatibility requirements. It then instantiates the project.
++- **instantiate**: If a `Manifest.toml` exists, `Pkg.instantiate()` downloads and installs the exact versions of packages it records, making the environment consistent with the recorded state; if none exists, it first resolves one from `Project.toml`.
++- **resolve**: `Pkg.resolve()` updates the `Manifest.toml` to be consistent with the `Project.toml`, re-running the version resolver against the current dependency and compatibility requirements. It does not install packages; run `Pkg.instantiate()` for that.
+ 
+ ## Simulation Terminology
+ 
+diff --git a/docs/dev-guides/code-quality/software_design_patterns.md b/docs/dev-guides/code-quality/software_design_patterns.md
+index de82a6ed..47668dee 100644
+--- a/docs/dev-guides/code-quality/software_design_patterns.md
++++ b/docs/dev-guides/code-quality/software_design_patterns.md
+@@ -1,6 +1,6 @@
+ # Software Design Patterns (SDPs)
+ 
+-This file is an agent-facing checklist for writing robust, maintainable, and GPU-compatible Julia code.
++This file is an agent-facing checklist for writing correct, maintainable, and GPU-compatible Julia code.
+ 
+ Unless explicitly instructed otherwise, treat all rules below as defaults.
+ 
+diff --git a/docs/dev-guides/code-quality/variable_list.md b/docs/dev-guides/code-quality/variable_list.md
+index c4f33373..4e7abd2b 100644
+--- a/docs/dev-guides/code-quality/variable_list.md
++++ b/docs/dev-guides/code-quality/variable_list.md
+@@ -59,7 +59,7 @@ Specific humidities of precipitation and cloud-condensate species:
+ - `q_icl` = specific humidity, cloud ice [kg/kg]
+ 
+ By convention, when all partitions of the phase of water are included, we use
+-- `q_liq` = specific humidity, all liquid 
++- `q_liq` = specific humidity, all liquid
+ - `q_ice` = specific humidity, all ice
+ 
+ Terminal velocities are per-species:
+diff --git a/docs/dev-guides/infrastructure/clima_comms.md b/docs/dev-guides/infrastructure/clima_comms.md
+index f080b47a..c80c874d 100644
+--- a/docs/dev-guides/infrastructure/clima_comms.md
++++ b/docs/dev-guides/infrastructure/clima_comms.md
+@@ -2,7 +2,7 @@
+ 
+ This guide covers patterns for writing code that runs on CPU and GPU, and on single-process and MPI-distributed configurations. All CliMA model packages use `ClimaComms.jl` to abstract over device and parallelism.
+ 
+-> To set up a machine and **run** a model on GPU (install Julia, add `CUDA.jl`, runtime compatibility, `CLIMACOMMS_DEVICE`), see [running_on_gpu.md](../workflow/running_on_gpu.md). 
++> To set up a machine and **run** a model on GPU (install Julia, add `CUDA.jl`, runtime compatibility, `CLIMACOMMS_DEVICE`), see [running_on_gpu.md](../workflow/running_on_gpu.md).
+ 
+ ## 1. Acquiring the device and context
+ 
+@@ -116,7 +116,7 @@ Use this pattern when adding a new GPU test entry point so all packages stay con
+ 
+ - **Implicit host transfer**: `sum(field)` on a GPU field is fine; `field[1]` is not. The first goes through a GPU reduction; the second triggers `allowscalar` and either errors (recommended) or silently transfers.
+ - **Random number streams under MPI**: `rand()` is not synchronized across ranks. For an independent per-rank stream, seed an explicit RNG with a rank-dependent seed (`rng = Random.Xoshiro(base_seed + ClimaComms.mypid(context))`); for cross-rank-synchronized randomness, generate on root and broadcast (`ClimaComms.bcast`).
+-- **`println` inside kernels**: not GPU-compatible and not MPI-safe. See [gpu_performance.md](../performance/gpu_performance.md) §7 for the static-error rule.
++- **`println` inside kernels**: not GPU-compatible and not MPI-safe. See [gpu_performance.md §7](../performance/gpu_performance.md) for the static-error rule.
+ - **Saving to a shared filesystem from every rank**: causes file lock contention. Use root-only IO or rank-suffixed filenames.
+ 
+ ## Self-correction
+diff --git a/docs/dev-guides/infrastructure/testing_and_validation.md b/docs/dev-guides/infrastructure/testing_and_validation.md
+index 55128fc0..972c4728 100644
+--- a/docs/dev-guides/infrastructure/testing_and_validation.md
++++ b/docs/dev-guides/infrastructure/testing_and_validation.md
+@@ -18,7 +18,7 @@ After implementing or modifying hot-path code, verify zero allocations with the
+ 
+ All CliMA packages run `Aqua.jl` tests in CI. These checks catch common package quality issues:
+ 
+-- `test_stale_deps`: fails if a package in `[deps]` is not used in source code. This is the most common failure, usually caused by adding a dev tool to `[deps]` instead of `[extras]` (see [Dependency Management](../architecture/dependency_management.md)).
++- `test_stale_deps`: fails if a package in `[deps]` is not used in source code. This is the most common failure, usually caused by adding a dev tool to `[deps]` instead of `test/Project.toml` or `[extras]` (see [Dependency Management](../architecture/dependency_management.md)).
+ - `test_deps_compat`: fails if `[compat]` entries are missing for dependencies.
+ - `test_undefined_exports`: fails if an exported symbol is not defined.
+ - `test_unbound_args`: detects methods with unbound type parameters (can cause ambiguities).
+diff --git a/docs/dev-guides/performance/branchless_code.md b/docs/dev-guides/performance/branchless_code.md
+index 128f4383..da89479f 100644
+--- a/docs/dev-guides/performance/branchless_code.md
++++ b/docs/dev-guides/performance/branchless_code.md
+@@ -15,21 +15,19 @@ readability wins there.
+ 
+ ## 1. Why rare branches are not rare at climate-model scale
+ 
+-On GPUs, threads execute in warps (typically 32) in lockstep. A data-dependent
+-`if/else` where threads in the same warp take different paths forces the
+-hardware to run *both* paths sequentially (**thread divergence**), which can
+-halve throughput or worse. The full SIMT mechanics are in
+-[gpu_performance.md §1](gpu_performance.md).
++On GPUs, a data-dependent `if/else` where threads in the same warp take
++different paths forces the hardware to run *both* paths sequentially
++(**thread divergence**), which can halve throughput or worse. The SIMT
++mechanics are in [gpu_performance.md §1](gpu_performance.md).
+ 
+ The scale of a climate model makes this worse than it first appears. A CliMA
+ simulation evaluates each pointwise function at **10⁶–10⁹ grid points**, every
+ timestep (and every Runge–Kutta stage), for **thousands to millions** of steps.
+ A branch that guards a "rare" special case (a parcel that is exactly saturated,
+ a point that just crossed freezing, a near-zero denominator) is, in aggregate,
+-*almost never rare*. Across millions of points per stage, essentially every warp
+-contains at least one point in the special case at essentially every step. The
+-"rarely taken" branch therefore pays its divergence cost on **essentially
+-every step**.
++*almost never rare*: at millions of points per stage, nearly every warp
++contains at least one point in the special case at nearly every step, so the
++"rarely taken" branch pays its divergence cost on **every step**.
+ 
+ The practical consequence: **inside a kernel, cost a data-dependent branch as if
+ it is always taken.** Do not reason "this case is unusual, so the branch is
+diff --git a/docs/dev-guides/performance/gpu_performance.md b/docs/dev-guides/performance/gpu_performance.md
+index d62cc1dd..44569164 100644
+--- a/docs/dev-guides/performance/gpu_performance.md
++++ b/docs/dev-guides/performance/gpu_performance.md
+@@ -100,7 +100,7 @@ ClimaCore's broadcast machinery does not support a tuple of `Field`s on the LHS:
+ 
+ ### Dollar interpolation for non-field arguments
+ 
+-Use `$expr` to prevent the `@.` macro from broadcasting over a subexpression. This is essential for singleton dispatch types and computed scalars.
++Use `$expr` to prevent the `@.` macro from broadcasting over a subexpression, in particular singleton dispatch types and computed scalars.
+ 
+ ```julia
+ # ✅ Singleton escaped from broadcast
+@@ -119,7 +119,7 @@ Extract non-`Field` arguments to local variables before the `@.` block; see [SDP
+ 
+ Large functions (roughly > 200–300 lines) may exceed the Julia compiler's inlining budget. When this happens, broadcast kernels inside the function are not inlined, causing heap allocations for each broadcast.
+ 
+-**Solution**: extract complex logical blocks into smaller `@inline` helper functions. Keeping the parent function small allows the compiler to stay within its heuristics threshold, ensuring all broadcasts are correctly fused.
++**Solution**: extract logical blocks into smaller `@inline` helper functions. Keeping the parent function small keeps the compiler within its inlining heuristics, so all broadcasts fuse.
+ 
+ ## 6. Fixed iteration solvers
+ 
+diff --git a/docs/dev-guides/performance/numerical_robustness.md b/docs/dev-guides/performance/numerical_robustness.md
+index 52c7ac0e..9b087585 100644
+--- a/docs/dev-guides/performance/numerical_robustness.md
++++ b/docs/dev-guides/performance/numerical_robustness.md
+@@ -7,7 +7,7 @@ This guide covers safe numerical idioms for avoiding NaN, Inf, and DivideError i
+ Dividing by quantities that may approach zero has several reasonable handlings. The right choice depends on:
+ 
+ - whether `x → 0` is physically valid behavior or signals a bug,
+-- whether downstream code can absorb `Inf` (or a large finite number) correctly,
++- whether downstream code can absorb `Inf` (or a large finite number),
+ - whether you want to bound the magnitude or surface the invalid state.
+ 
+ Float division does not raise an error: `a / 0.0` returns `Inf` (or `NaN` if `a` is also zero), and IEEE arithmetic propagates that through subsequent operations. You can sometimes deliberately allow `Inf` through, but only if downstream consumers are *known* to handle it: IEEE arithmetic does not take limits (`Inf * 0 = NaN`, `Inf - Inf = NaN`), so any later multiplication by a vanishing quantity silently produces `NaN` rather than the algebraic cancellation a mathematician would expect. Cases where allowing `Inf` is fine include a downstream `ifelse` or clamp that discards the singular branch, or operations where `Inf` results in well-defined behavior.
+diff --git a/docs/dev-guides/performance/type_stability.md b/docs/dev-guides/performance/type_stability.md
+index d2b6e391..88e5dfc8 100644
+--- a/docs/dev-guides/performance/type_stability.md
++++ b/docs/dev-guides/performance/type_stability.md
+@@ -113,9 +113,9 @@ A unit test may pass with standard inputs but fail in integrated simulations bec
+ - The test inputs never trigger the code path containing the Float64 literal.
+ - Edge-case inputs (zero, negative, very large) expose a hidden `Inf` or `NaN` literal.
+ 
+-## 6. Prefer using base julia general number functions
++## 6. Prefer Base Julia's generic number functions
+ 
+-Use general number functions from Base Julia that are designed to work across numeric types, as they often have optimized methods for different types and can help maintain type stability. Examples include `iszero`, `isfinite`, `isinf`, `isone`, `isodd`, and `isnan`. These functions are more likely to return consistent types across different numeric inputs, reducing the risk of type instability in your code.
++Use Base's generic number predicates (`iszero`, `isfinite`, `isinf`, `isone`, `isodd`, `isnan`) rather than hand-written comparisons. They have optimized methods per numeric type and return consistent types across numeric inputs, which reduces the risk of type instability.
+ 
+ ## Self-correction
+ 
+diff --git a/docs/dev-guides/workflow/ci_triage.md b/docs/dev-guides/workflow/ci_triage.md
+index 220594b7..a3a1d8b2 100644
+--- a/docs/dev-guides/workflow/ci_triage.md
++++ b/docs/dev-guides/workflow/ci_triage.md
+@@ -57,7 +57,7 @@ Allocation tests typically use the warm-up + `@allocated == 0` pattern (see [all
+ The `Documentation` workflow runs `docs/make.jl`. Two recurring failures:
+ 
+ - **Missing docstrings**: an exported symbol with no docstring (or with one not referenced from a docs page) triggers `Documenter`'s "missing docstring" error. Add an `@docs` block or use `@autodocs` over the module.
+-- **Cross-reference errors**: `[text](text)` in a docstring is parsed as a link. Use parentheses for units (`(kg/m^3)`), not brackets. See [documentation_policy.md](../code-quality/documentation_policy.md).
++- **Cross-reference errors**: `[text](text)` in a docstring is parsed as a link, and Documenter allows whitespace — even a line break — between `]` and `(`. Keep bracketed units (§3.4) but never let a parenthetical follow them directly: write `[kg/m^3], at cloud base` or `` `[kg/m^3]` (at cloud base) ``. See [documentation_policy.md](../code-quality/documentation_policy.md).
+ 
+ ## 10. Formatter
+ 
+@@ -77,6 +77,19 @@ Buildkite jobs on shared CliMA clusters use a per-pipeline Julia [depot](https:/
+ 
+ (Exact wording varies by Julia version; the consistent signal is a precompile/manifest failure during pipeline initialization, not in the test step itself.) When you see these on a fresh PR with no manifest changes, the depot is the suspect. Clearing it is a one-line maintainer action; the next pipeline run rebuilds the cache. The procedure is documented in the [CliMA slurm-buildkite wiki](https://github.com/CliMA/slurm-buildkite/wiki/Clearing-Shared-Depots).
+ 
++## 13. A README badge that disagrees with CI
++
++Not every red badge is a broken build. Before chasing a failure, confirm the badge is reporting what you think it is. The badge conventions themselves are in [documentation_policy.md §2.3](../code-quality/documentation_policy.md).
++
++- **GitHub Actions badge reads `failing` while `main` is green.** The badge has no `?branch=main` filter, so it shows the workflow's most recent run on *any* branch — typically a failing PR. Pin the badge, and check that the workflow has a `push: branches: [main]` trigger; without one there is no `main` run to report.
++- **GitHub Actions badge reads `no status`.** The badge is pinned to `main` but the workflow only triggers on `pull_request`. Add the push trigger; the first merge after that populates it.
++- **The last `main` run was `cancelled`.** GitHub renders a cancelled conclusion as `failing`. Repos set `concurrency: cancel-in-progress: true` keyed on the ref, so two pushes to `main` in quick succession cancel the first run — expected behavior, not a failure. Re-run it or wait for the next push.
++- **Buildkite badge reads `unknown`.** The `?branch=main` filter found no builds because that pipeline only builds PR branches. Either enable `main` builds in the Buildkite pipeline settings or drop the badge; do not leave a permanent `unknown`.
++- **Codecov badge reads `unknown` right after a merge.** Coverage is uploaded per matrix job *after* tests finish, so the tip commit has no report until the run completes. It resolves on its own.
++- **A Zenodo DOI badge renders broken intermittently.** GitHub's camo proxy does not cache Zenodo badges (`cache-control: no-cache`), so every page load refetches from Zenodo and a slow response shows as a broken image. Verify with `curl -I` before concluding the markdown is wrong.
++
++When a badge is genuinely reporting a real failure, say so rather than papering over it: relaxing a flaky threshold or dropping a badge to get green is a maintainer decision, not a cleanup.
++
+ ## Self-correction
+ 
+ If this guide is discovered to be stale or missing a pattern, update it.
+diff --git a/docs/dev-guides/workflow/cross_repo_issue_pr_search.md b/docs/dev-guides/workflow/cross_repo_issue_pr_search.md
+index 876d9b57..1960a047 100644
+--- a/docs/dev-guides/workflow/cross_repo_issue_pr_search.md
++++ b/docs/dev-guides/workflow/cross_repo_issue_pr_search.md
+@@ -45,7 +45,7 @@ form, and `gh search` with the equivalent flags):
+ | Open bugs across the org      | `org:CliMA state:open label:"bug 🐞"`               |
+ | PRs awaiting your review      | `org:CliMA is:pr is:open review-requested:@me`      |
+ | Issues assigned to you        | `org:CliMA is:issue is:open assignee:@me`           |
+-| Stale PRs (untouched 30 days) | `org:CliMA is:pr is:open updated:<2026-04-16`       |
++| Stale PRs (untouched 30 days) | `org:CliMA is:pr is:open updated:<YYYY-MM-DD` (a date 30 days ago; GitHub search has no relative dates) |
+ | Dependabot update PRs         | `org:CliMA is:pr is:open label:dependencies`        |
+ | Untriaged issues              | `org:CliMA is:issue is:open no:label`               |
+ | Mentions needing a reply      | `org:CliMA is:open mentions:@me`                    |
+diff --git a/docs/dev-guides/workflow/onboarding.md b/docs/dev-guides/workflow/onboarding.md
+index 39dc4b4e..c799c7e9 100644
+--- a/docs/dev-guides/workflow/onboarding.md
++++ b/docs/dev-guides/workflow/onboarding.md
+@@ -133,9 +133,8 @@ These all live in your *base* environment, not the project's:
+ - **[BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl)**: `@benchmark` for measuring time and allocations of hot-path code. See [allocation_debugging.md §5](../performance/allocation_debugging.md).
+ - **[LiveServer.jl](https://github.com/JuliaDocs/LiveServer.jl)**: `servedocs()` builds the docs site locally and auto-reloads on file changes.
+ - **[About.jl](https://github.com/tecosaur/About.jl)**: `about(x)` summarizes any value's type, memory layout, and methods.
+-- **[OhMyREPL.jl](https://github.com/KristofferC/OhMyREPL.jl)** - provides syntax highlighting within the REPL
+-  - Add `using OhMyREPL` to `~/.julia/config/startup.jl` to ensure it loads with every REPL session.
+-- **[Kaimon.jl](https://github.com/kahliburke/Kaimon.jl)** - provides AI agents with direct access to the Julia REPL, with your standard tools like `Revise` and `Infiltrator` for quick iteration and debugging
++- **[OhMyREPL.jl](https://github.com/KristofferC/OhMyREPL.jl)**: syntax highlighting in the REPL. Add `using OhMyREPL` to `~/.julia/config/startup.jl` so it loads with every session.
++- **[Kaimon.jl](https://github.com/kahliburke/Kaimon.jl)**: gives AI agents direct access to the Julia REPL, alongside `Revise` and `Infiltrator`, for iteration and debugging.
+ 
+ ## 10. Knowing where to look
+ 
+diff --git a/docs/dev-guides/workflow/review.md b/docs/dev-guides/workflow/review.md
+index 9c8be579..85f60d7a 100644
+--- a/docs/dev-guides/workflow/review.md
++++ b/docs/dev-guides/workflow/review.md
+@@ -16,7 +16,7 @@ Work in this order:
+ 1. Read the changed files first, then step to the nearest controlling compute paths only when needed to confirm behavior or risk.
+ 2. Run the two mandatory passes: mathematical and physical correctness and consistency (section 1), then conformance to the performance guides (section 2).
+ 3. Use local evidence: changed code, nearby tests, call sites, docs, and config usage. Where a mathematical or codegen claim is in doubt, generate the evidence: derive the relation, check equivalence numerically, or inspect `@code_typed`/`@code_llvm`/`@allocated`.
+-4. Report only evidence-backed findings or clearly labeled risks and open questions.
++4. Report only evidence-backed findings or explicitly labeled risks and open questions.
+ 
+ ## 1. Mathematical and physical correctness and consistency (mandatory, in depth)
+ 
+@@ -27,12 +27,13 @@ This is the heart of a CliMA review. Code can be clean, allocation-free, and GPU
+ - [ ] Check **every** formula, algebraic identity, exponent, coefficient, unit, and physical constant in the changed code against its source: the cited paper or textbook, the governing equation, or the pre-change code. Re-derive it; do not assume a refactor preserved the math.
+ - [ ] For each rewritten expression (a performance or clarity refactor: an exponent rewrite, a precomputed coefficient, a log-space reformulation, a fused `muladd`, a factored constant), **prove equivalence to the original** rather than eyeballing it. Confirm bit-identity with `===`, or agreement within a stated tolerance, across both `Float32` and `Float64`, on representative and extreme inputs. Recent example: `x^(2//3) -> cbrt(x)^2`, and `a_vent_0_coeff = av*cbrt(36)` replacing the inline `av / 6^(-2/3)`, were each confirmed identical before the change was accepted.
+ - [ ] Watch for equivalence that holds algebraically but fails numerically: a reordering that overflows or underflows an intermediate (`cbrt(x^2)` vs `cbrt(x)^2`), catastrophic cancellation, a dropped `max(x, floor)` guard, or a broken sign assumption (`cbrt` accepts negatives, `sqrt` does not). See [numerical_robustness.md](../performance/numerical_robustness.md).
+-- [ ] Check every **citation to a paper or reference**. Confirm the reference resolves (DOI, author-year, or equation/table/section number) and, more importantly, that it actually **supports the specific point being made**: the equation as written, the numerical value of a coefficient or threshold, the functional form of a parameterization, or the range of validity. Read the cited passage, do not trust the label. Flag a citation that supports something weaker or different than the code claims, an equation or table number that does not match the cited edition, a constant whose value disagrees with the source, and any new physics, empirical formula, or parameter value introduced without a citation. Keep citations consistent between code and docs (see [documentation_policy.md §3.4](../code-quality/documentation_policy.md)).
++- [ ] Check every **citation to a paper or reference**. Confirm the reference resolves (DOI, author-year, or equation/table/section number) and that it **supports the specific point being made**: the equation as written, the numerical value of a coefficient or threshold, the functional form of a parameterization, or the range of validity. Read the cited passage, do not trust the label. Flag a citation that supports something weaker or different than the code claims, an equation or table number that does not match the cited edition, a constant whose value disagrees with the source, and any new physics, empirical formula, or parameter value introduced without a citation. Keep citations consistent between code and docs (see [documentation_policy.md §3.4](../code-quality/documentation_policy.md)).
+ 
+ ### Keep documentation consistent with code
+ 
+ - [ ] Treat docstrings, code comments, and LaTeX/Documenter math as part of the artifact under review. Every relation they state must match the code **exactly**.
+ - [ ] Flag as findings: a docstring formula that no longer matches the implementation, a comment describing a previous implementation, a field docstring whose "pre-computed ..." description disagrees with the constructor, an `@ref`/`@docs` pointing at a renamed or removed symbol, and units or symbol definitions that have drifted from the code. A doc/code inconsistency is a finding even when the code itself is correct. See [documentation_policy.md](../code-quality/documentation_policy.md).
++- [ ] Flag comments that describe a **previous state** of the code ("this used to ...", "previously ...", "no longer ..."): the history belongs in the commit message, and the comment reads as false to anyone without that context. Flag likewise a renamed symbol, flag, or test tier whose old name survives in a docstring, an example, or a CI config value — the last silently changes which jobs run. See [code_comments.md](../code-quality/code_comments.md).
+ 
+ ### Physical reasoning
+ 
+@@ -59,7 +60,7 @@ Check the changed hot-path and kernel code (both defined in [gpu_performance.md]
+ ## 3. Validation
+ 
+ - [ ] Map validation to the test groups in the repo's `test/runtests.jl`. The repo-specific guide (linked from [AGENTS.md](../AGENTS.md)) lists the groups and example jobs.
+-- [ ] For any changed mathematical relation or physical behavior, confirm a test exists that would actually catch a wrong value: a limit test, a round-trip, or a comparison to an analytic result ([testing_and_validation.md](../infrastructure/testing_and_validation.md)). If a refactor is claimed "bit-identical," check whether an existing test truly pins the value or merely exercises the code path.
++- [ ] For any changed mathematical relation or physical behavior, confirm a test exists that would catch a wrong value: a limit test, a round-trip, or a comparison to an analytic result ([testing_and_validation.md](../infrastructure/testing_and_validation.md)). If a refactor is claimed "bit-identical," check whether an existing test truly pins the value or merely exercises the code path.
+ - [ ] For config or runtime workflow changes, name the affected CI driver and Buildkite/GitHub Actions jobs explicitly.
+ - [ ] Allocation benchmarks (typically under `perf/`) are not run in CI; catch allocation regressions in review with the `@allocated == 0` pattern from [allocation_debugging.md](../performance/allocation_debugging.md).
+ - [ ] If validation is missing, name the exact missing test group, nearby test file, or CI job.
+diff --git a/docs/dev-guides/workflow/running_on_gpu.md b/docs/dev-guides/workflow/running_on_gpu.md
+index b23feaff..106bb3a4 100644
+--- a/docs/dev-guides/workflow/running_on_gpu.md
++++ b/docs/dev-guides/workflow/running_on_gpu.md
+@@ -1,6 +1,6 @@
+ # Running a CliMA Model on GPU
+ 
+-This guide takes you from a fresh machine to a CliMA model that executes its kernels on an NVIDIA GPU. 
++This guide takes you from a fresh machine to a CliMA model that executes its kernels on an NVIDIA GPU.
+ 
+ This is a *run-the-model* guide. For writing GPU-compatible code (kernels, broadcasts, `isbits`), see [gpu_performance.md](../performance/gpu_performance.md); for the device-agnostic and MPI patterns used inside library code, see [clima_comms.md](../infrastructure/clima_comms.md).
+ 
+@@ -57,7 +57,7 @@ Place this near the top of your entry point or test file, before calling `ClimaC
+ export CLIMACOMMS_DEVICE="CUDA"   # in the shell, no spaces around =
+ ```
+ 
+-or, equivalently, at the very top of your Julia script before any CliMA package loads:
++or, equivalently, at the top of your Julia script before any CliMA package loads:
+ 
+ ```julia
+ ENV["CLIMACOMMS_DEVICE"] = "CUDA"
+@@ -73,7 +73,7 @@ export CLIMACOMMS_CONTEXT="SINGLETON"
+ 
+ ## 6. Verify the device
+ 
+-Confirm the model is actually on the GPU rather than silently on CPU:
++Confirm the model is on the GPU rather than silently on CPU:
+ 
+ ```julia
+ using ClimaComms
+diff --git a/docs/src/MicrophysicsNonEq.md b/docs/src/MicrophysicsNonEq.md
+index 8b68c94d..72bed0da 100644
+--- a/docs/src/MicrophysicsNonEq.md
++++ b/docs/src/MicrophysicsNonEq.md
+@@ -21,10 +21,12 @@ They consist of:
+ 
+ !!! note
+     For ice, the deposition timescale ``\tau_{dep}`` can optionally be computed
+-    from the [Frostenberg2023](@cite) INP parameterization (see
+-    [below](@ref ice-relaxation-timescale-frostenberg-et-al-2023)),
+-    while the sublimation timescale ``\tau_{sub}`` remains at the constant
+-    ``\tau_i``.
++    from the prescribed cloud-ice number concentration ``N_0`` (see
++    [below](@ref ice-relaxation-timescale-prescribed-ice-number)) or from the
++    [Frostenberg2023](@cite) INP parameterization (see
++    [below](@ref ice-relaxation-timescale-frostenberg-et-al-2023)).
++    With the Frostenberg option, the sublimation timescale ``\tau_{sub}`` remains
++    at the constant ``\tau_i``.
+ 
+ ## Condensation/evaporation and deposition/sublimation from Morrison and Milbrandt 2015
+ 
+@@ -124,6 +126,49 @@ include("plots/NonEqCondEvapRate.jl")
+ ![](condensation_evaporation_ql_z.svg)
+ ![](condensation_evaporation_ql_T.svg)
+ 
++## [Ice relaxation timescale — prescribed ice number](@id ice-relaxation-timescale-prescribed-ice-number)
++
++Instead of using a constant ice relaxation timescale, the `PrescribedIceNumber`
++  option derives ``\tau_i`` from the fixed cloud-ice number concentration
++  ``N_0`` stored in `CloudIce` (the same value used for cloud-ice sedimentation).
++
++The number concentration ``N_0`` is stored in volumetric units (``1/\text{m}^3``).
++For the radius computation it is converted to specific units:
++```math
++\begin{equation}
++  n = N_0 / \rho
++\end{equation}
++```
++where ``\rho`` is the air density.
++
++Given ``n`` and the cloud ice specific content ``q_{icl}`` (kg/kg),
++  the mean crystal radius is computed assuming spherical ice particles
++  with a monodisperse size distribution:
++```math
++\begin{equation}
++  r = \left(\frac{3 \, q_{icl}}{4 \pi \, n \, \rho_i}\right)^{1/3}
++\end{equation}
++```
++A minimum radius ``r_0 = 1\,\mu m`` is enforced.
++
++The relaxation timescale uses the volumetric ``N_0`` (``1/\text{m}^3``)
++  to keep the result in seconds:
++```math
++\begin{equation}
++  \tau_{i} = \frac{1}{4 \pi \, D_v \, N_0 \, r_{safe}}
++\end{equation}
++```
++where ``D_v`` is the water vapor diffusivity (``\text{m}^2/\text{s}``)
++  and ``r_{safe} = \max(r, r_0)``.
++
++Unlike the `TemperatureDependent` (Frostenberg) option, this approach uses the
++  **same timescale for both deposition and sublimation**.
++
++```@example
++include("plots/plotting_tau_relax_prescribed_N0.jl")
++```
++![](tau_relax_prescribed_N0.svg)
++
+ ## [Ice relaxation timescale — Frostenberg et al. (2023)](@id ice-relaxation-timescale-frostenberg-et-al-2023)
+ 
+ The constant ice relaxation timescale ``\tau_i`` can be replaced with
+diff --git a/docs/src/plots/plotting_tau_relax_frostenberg.jl b/docs/src/plots/plotting_tau_relax_frostenberg.jl
+index 76f18487..0f5023fc 100644
+--- a/docs/src/plots/plotting_tau_relax_frostenberg.jl
++++ b/docs/src/plots/plotting_tau_relax_frostenberg.jl
+@@ -50,7 +50,7 @@ for (j, q_icl) in enumerate(q_icl_values)
+ 
+         if T < T_freeze
+             # Deposition branch: τ_dep × Γᵢ
+-            τ_dep = CMNe.τ_relax(ice, aps, frs, q_icl, T)
++            τ_dep = CMNe.τ_relax(ice, aps, frs, q_icl, T, ρ)
+             τ_data[i, j] = τ_dep * Γᵢ
+         else
+             # Sublimation branch: τ_sub × Γᵢ
+diff --git a/docs/src/plots/plotting_tau_relax_prescribed_N0.jl b/docs/src/plots/plotting_tau_relax_prescribed_N0.jl
+new file mode 100644
+index 00000000..92eed97d
+--- /dev/null
++++ b/docs/src/plots/plotting_tau_relax_prescribed_N0.jl
+@@ -0,0 +1,74 @@
++import CairoMakie as MK
++CairoMakie = MK
++
++import CloudMicrophysics.Parameters as CMP
++import CloudMicrophysics.MicrophysicsNonEq as CMNe
++
++FT = Float64
++
++# Parameters
++aps = CMP.AirProperties(FT)
++ρ = FT(0.8)   # representative mid-troposphere air density
++
++# Cloud ice density (from defaults)
++ice_default = CMP.CloudIce(FT)
++ρᵢ = ice_default.ρᵢ
++
++# Build CloudIce structs with different N_0 values
++# (reuse the default struct's other fields, only vary N_0)
++N_0_values = [FT(1e7), FT(5e7), FT(1e8), FT(5e8)]   # 1/m³
++N_0_labels = ["10⁷", "5×10⁷", "10⁸", "5×10⁸"]
++
++# q_icl range: 10⁻⁸ to 10⁻² kg/kg (log-spaced)
++q_icl_range = 10 .^ range(-8, -2, length = 300)
++
++# Compute τ for each (N_0, q_icl) pair
++τ_data = Matrix{FT}(undef, length(q_icl_range), length(N_0_values))
++for (j, N_0) in enumerate(N_0_values)
++    ice_j = CMP.CloudIce(;
++        pdf = ice_default.pdf,
++        mass = ice_default.mass,
++        ρᵢ = ice_default.ρᵢ,
++        r_eff = ice_default.r_eff,
++        N_0 = N_0,
++    )
++    for (i, q_icl) in enumerate(q_icl_range)
++        τ_data[i, j] = CMNe.τ_relax(ice_j, aps, q_icl, ρ)
++    end
++end
++
++# Colors — distinct, colorblind-friendly
++colors = [
++    MK.RGBf(0.12, 0.47, 0.71),  # blue
++    MK.RGBf(1.0, 0.50, 0.05),   # orange
++    MK.RGBf(0.17, 0.63, 0.17),  # green
++    MK.RGBf(0.84, 0.15, 0.16),  # red
++]
++
++linestyles = [:solid, :dash, :dot, :dashdot]
++
++# Plot
++fig = MK.Figure(size = (800, 550))
++ax = MK.Axis(
++    fig[1, 1],
++    xlabel = "Cloud ice specific content q_icl [kg/kg]",
++    ylabel = "Relaxation timescale τ [s]",
++    title = "Ice relaxation timescale — prescribed N₀\n(ρ = $(ρ) kg/m³)",
++    xscale = log10,
++    yscale = log10,
++)
++
++for (j, (N_0, label)) in enumerate(zip(N_0_values, N_0_labels))
++    MK.lines!(
++        ax, q_icl_range, τ_data[:, j],
++        label = "N₀ = $(label) m⁻³",
++        color = colors[j],
++        linewidth = 2.5,
++        linestyle = linestyles[j],
++    )
++end
++
++MK.axislegend(ax, position = :rt)
++MK.save("tau_relax_prescribed_N0.svg", fig)
++
++println("Plot saved to tau_relax_prescribed_N0.svg")
 diff --git a/src/BulkMicrophysicsTendencies.jl b/src/BulkMicrophysicsTendencies.jl
-index 061f021d..93de91ef 100644
+index 061f021d..9028c6a9 100644
 --- a/src/BulkMicrophysicsTendencies.jl
 +++ b/src/BulkMicrophysicsTendencies.jl
-@@ -157,53 +157,48 @@ processes are pre-routed by temperature, so consumers never need `is_warm`.
+@@ -157,53 +157,57 @@ processes are pre-routed by temperature, so consumers never need `is_warm`.
      micro = (; q_tot, q_lcl, q_icl, q_rai, q_sno)
      thermo = (; ρ, T)
  
@@ -60,11 +996,22 @@ index 061f021d..93de91ef 100644
  
      # Cloud liquid + rain → rain
 -    S_accr_lcl_rai = CM1.accretion(procs.cloud_liquid_rain_accretion, mp, tps, micro, thermo, sd)
-+    S_accr_lcl_rai = CM1.accretion(procs.cloud_liquid_rain_accretion, mp, tps, micro, thermo)
- 
-     # Cloud liquid + snow: product goes to sno (cold) or rai (warm), plus thermal melt
+-
+-    # Cloud liquid + snow: product goes to sno (cold) or rai (warm), plus thermal melt
 -    (; S_accr, S_melt) = CM1.accretion(procs.cloud_liquid_snow_accretion, mp, tps, micro, thermo, sd)
-+    (; S_accr, S_melt) = CM1.accretion(procs.cloud_liquid_snow_accretion, mp, tps, micro, thermo)
++    S_accr_lcl_rai = CM1.accretion(procs.cloud_liquid_rain_accretion, mp, tps, micro, thermo)
++
++    # Cloud liquid + snow: product goes to sno (cold) or rai (warm), plus thermal melt.
++    # The previous accretion versions return a single number, this one has to return a tuple.
++    # Merge note: upstream's `nothing` guard is kept; its `sd` argument is not,
++    # because this branch deliberately removes the hoisted size-distribution
++    # struct so each process recomputes what it needs (see docs/learnings.md §6.5
++    # -- holding `sd` live across all 18 processes is what costs the registers).
++    (; S_accr, S_melt) = if isnothing(procs.cloud_liquid_snow_accretion)
++        (; S_accr = zero(FT), S_melt = zero(FT))
++    else
++        CM1.accretion(procs.cloud_liquid_snow_accretion, mp, tps, micro, thermo)
++    end
      S_accr_lcl_sno_cold = ifelse(is_warm, zero(FT), S_accr)    # lcl → sno (cold)
      S_accr_lcl_sno_warm = ifelse(is_warm, S_accr, zero(FT))    # lcl → rai (warm)
      S_accr_melt_lcl_sno = S_melt                                # thermal melt of sno from warm lcl (already zero when cold)
@@ -102,7 +1049,7 @@ index 061f021d..93de91ef 100644
  
      return (;
          S_phase_change_vap_lcl, S_phase_change_vap_icl,
-@@ -376,6 +371,187 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
+@@ -376,6 +380,193 @@ Returns a `NamedTuple` containing the nonzero entries of `M` and `e`.
      )
  end
  
@@ -212,8 +1159,14 @@ index 061f021d..93de91ef 100644
 +    M31 += D
 +
 +    # lcl + sno accretion: one call supplies the cold arm, the warm arm, and the
-+    # thermal melt, so all three stay live across the next three blocks.
-+    (; S_accr, S_melt) = CM1.accretion(procs.cloud_liquid_snow_accretion, mp, tps, micro, thermo)
++    # thermal melt, so all three stay live across the next three blocks. The
++    # `nothing` guard mirrors `_microphysics_source_terms`; the two must agree
++    # here or the equivalence test in test/bulk_tendencies_tests.jl fails.
++    (; S_accr, S_melt) = if isnothing(procs.cloud_liquid_snow_accretion)
++        (; S_accr = zero(FT), S_melt = zero(FT))
++    else
++        CM1.accretion(procs.cloud_liquid_snow_accretion, mp, tps, micro, thermo)
++    end
 +    S_accr_lcl_sno_cold = ifelse(is_warm, zero(FT), S_accr)
 +    S_accr_lcl_sno_warm = ifelse(is_warm, S_accr, zero(FT))
 +    D_cold = S_accr_lcl_sno_cold / max(q_min, q_lcl)
@@ -290,7 +1243,7 @@ index 061f021d..93de91ef 100644
  """
  Compute time-averaged 1-moment microphysics tendencies over a single linearized substep.
  
-@@ -393,19 +569,28 @@ The system uses a sparse structure specific to the 1-moment microphysics model.
+@@ -393,19 +584,28 @@ The system uses a sparse structure specific to the 1-moment microphysics model.
  Because sinks are linearized as `-D q`, they are effectively integrated as
  exponential decays over the substep.
  """
@@ -998,6 +1951,176 @@ index e072d53d..0d4d32da 100644
  end
  
  end #module Microphysics1M.jl
+diff --git a/src/MicrophysicsNonEq.jl b/src/MicrophysicsNonEq.jl
+index d11650f8..3a4f075c 100644
+--- a/src/MicrophysicsNonEq.jl
++++ b/src/MicrophysicsNonEq.jl
+@@ -25,29 +25,59 @@ export dqcld_dT
+ export gamma_helper
+ 
+ """
+-    τ_relax(ice, air_properties, frostenberg, q_icl, T)
++    τ_relax(ice, air_properties, q_icl, ρ)
++    τ_relax(ice, air_properties, frostenberg, q_icl, T, ρ)
+ 
+-Computes the deposition relaxation timescale through
+-the Frostenberg et al., (2023) parameterization.
++Computes the deposition/sublimation relaxation timescale.
++
++The first method uses the prescribed cloud-ice number concentration
++`N_0` from `CloudIce`; the second derives the ice-crystal
++number from the Frostenberg et al. (2023) INP parameterization.
+ See DOI: 10.5194/acp-23-10883-2023
++
++Arguments:
++  - cloud microphysics and air parameters
++  - q_icl [kg/kg] - cloud ice specific humidity
++  - T [K] - air temperature (Frostenberg only)
++  - ρ [kg/m³] - air density
+ """
++@inline function τ_relax(
++    (; ρᵢ, N_0)::CMP.CloudIce, (; D_vapor)::CMP.AirProperties, q_icl, ρ,
++)
++    FT = UT.promote_typeof(q_icl, N_0, ρᵢ)
++
++    # Convert N_0 from 1/m³ to 1/kg for the radius computation
++    N_specific = N_0 / ρ
++
++    # Compute the radius assuming spherical particles and
++    # mono-modal distribution (q in kg/kg, N in 1/kg)
++    r = cbrt((3 * q_icl) / (4 * FT(π) * N_specific * ρᵢ))
++    r0 = FT(1e-6) # TODO - make a parameter
++    r_safe = max(r, r0)
++
++    # Compute the relaxation timescale (D_vapor in m²/s, N in 1/m³, r in m → τ in s)
++    τ = (4 * FT(π) * D_vapor * N_0 * r_safe)^(-1)
++    return τ
++end
+ @inline function τ_relax(
+     (; ρᵢ)::CMP.CloudIce, (; D_vapor)::CMP.AirProperties,
+-    ip::CMP.Frostenberg2023, q_icl, T,
++    ip::CMP.Frostenberg2023, q_icl, T, ρ,
+ )
+-    FT = UT.promote_typeof(q_icl, T, ρᵢ)
+-    # Get the estimated number of INPs
+-    N_icl = exp(IN.INP_concentration_mean(ip, T))
++    FT = UT.promote_typeof(q_icl, T, ρᵢ, ρ)
++    # Get the estimated number of INPs in 1/m³
++    N_vol = exp(IN.INP_concentration_mean(ip, T))
++    # Convert to 1/kg for the radius computation
++    N_icl = N_vol / ρ
+ 
+     # Compute the radius assuming spherical particles and
+-    # mono-modal distribution
++    # mono-modal distribution (q in kg/kg, N in 1/kg)
+     safe_N_icl = max(N_icl, UT.ϵ_numerics(FT))
+     r = ifelse(N_icl > UT.ϵ_numerics(FT), cbrt((3 * q_icl) / (4 * FT(π) * safe_N_icl * ρᵢ)), zero(FT))
+-    r0 = FT(1e-6)
++    r0 = FT(1e-6) # TODO - make a parameter
+     r_safe = max(r, r0)
+ 
+-    # Compute the relaxation timescale
+-    τ = (4 * FT(π) * D_vapor * N_icl * r_safe)^(-1)
++    # Compute the relaxation timescale (D_vapor in m²/s, N in 1/m³, r in m → τ in s)
++    τ = (4 * FT(π) * D_vapor * N_vol * r_safe)^(-1)
+     return τ
+ end
+ 
+@@ -143,6 +173,7 @@ end
+ 
+ """
+     conv_q_vap_to_q_icl(opt::ConstantTimescale, mp, tps, micro, thermo)
++    conv_q_vap_to_q_icl(opt::PrescribedIceNumber, mp, tps, micro, thermo)
+     conv_q_vap_to_q_icl(opt::TemperatureDependent, mp, tps, micro, thermo)
+     conv_q_vap_to_q_icl(::Nothing, mp, tps, micro, thermo)
+ 
+@@ -151,7 +182,7 @@ Morrison & Grabowski (2008), https://doi.org/10.1175/2007JAS2374.1, and
+ Morrison & Milbrandt (2015), https://doi.org/10.1175/JAS-D-14-0065.1.
+ 
+ # Arguments
+-- `opt`: `ConstantTimescale()`, `TemperatureDependent()`, or `nothing` (disabled)
++- `opt`: `ConstantTimescale()`, PrescribedIceNumber(), `TemperatureDependent()`, or `nothing` (disabled)
+ - `mp`: 1-moment microphysics parameters
+ - `tps`: thermodynamics parameters
+ - `micro`: microphysics state `(; q_tot, q_lcl, q_icl, q_rai, q_sno)`
+@@ -165,6 +196,13 @@ Morrison & Milbrandt (2015), https://doi.org/10.1175/JAS-D-14-0065.1.
+     ::CMP.ConstantTimescale, mp, tps::TDI.PS, micro, thermo) =
+     _conv_q_vap_to_q_icl_const(
+         mp.process_params.cloud_ice_formation.τ_relax, tps, micro, thermo)
++@inline function conv_q_vap_to_q_icl(
++    ::CMP.PrescribedIceNumber, mp, tps::TDI.PS, micro, thermo)
++    (; q_icl) = micro
++    (; ρ) = thermo
++    τ = τ_relax(mp.cloud.ice, mp.air_properties, q_icl, ρ)
++    return _conv_q_vap_to_q_icl_const(τ, tps, micro, thermo)
++end
+ 
+ # Kernel for `conv_q_vap_to_q_icl` with a constant relaxation timescale `τ`
+ @inline function _conv_q_vap_to_q_icl_const(τ, tps::TDI.PS, micro, thermo)
+@@ -199,7 +237,7 @@ end
+     (; ρ, T) = thermo
+     pp = mp.process_params.cloud_ice_formation
+     τ_sub = pp.τ_relax
+-    τ_dep = τ_relax(mp.cloud.ice, mp.air_properties, pp.frostenberg, q_icl, T)
++    τ_dep = τ_relax(mp.cloud.ice, mp.air_properties, pp.frostenberg, q_icl, T, ρ)
+ 
+     Rᵥ = TDI.Rᵥ(tps)
+     Lₛ = TDI.Lₛ(tps, T)
+diff --git a/src/parameters/Microphysics1MOptions.jl b/src/parameters/Microphysics1MOptions.jl
+index 1fbc4829..9f835660 100644
+--- a/src/parameters/Microphysics1MOptions.jl
++++ b/src/parameters/Microphysics1MOptions.jl
+@@ -3,6 +3,7 @@ export Microphysics1MOptions,
+     CloudLiquidFormation,
+     CloudIceFormation,
+     ConstantTimescale,
++    PrescribedIceNumber,
+     TemperatureDependent,
+     CloudIceMelt,
+     RainAutoconversion,
+@@ -41,7 +42,8 @@ abstract type MicrophysicsOption end
+     CloudIceFormation <: MicrophysicsOption
+ 
+ Abstract type for cloud ice formation (deposition/sublimation) methods.
+-See subtypes: [`ConstantTimescale`](@ref), [`TemperatureDependent`](@ref).
++See subtypes: [`ConstantTimescale`](@ref), [`PrescribedIceNumber`](@ref),
++[`TemperatureDependent`](@ref).
+ """
+ abstract type CloudIceFormation <: MicrophysicsOption end
+ 
+@@ -95,12 +97,23 @@ Parameters (`τ_relax`) are stored in `process_params.cloud_ice_formation` in
+ """
+ struct ConstantTimescale <: CloudIceFormation end
+ 
++"""
++    PrescribedIceNumber <: CloudIceFormation
++
++Ice deposition/sublimation timescale derived from the prescribed cloud-ice
++number concentration `N_0` in `CloudIce` (the same `N_0` used for
++sedimentation).  Both deposition and sublimation use the dynamically
++computed timescale.  No additional process parameters are required.
++"""
++struct PrescribedIceNumber <: CloudIceFormation end
++
+ """
+     TemperatureDependent <: CloudIceFormation
+ 
+ INP-dependent Frostenberg (2023) timescale for deposition,
+ with constant timescale for sublimation. Parameters (`τ_relax`, `frostenberg`)
+-are stored in `process_params.cloud_ice_formation` in [`Microphysics1MParams`](@ref).
++are stored in `process_params.cloud_ice_formation` in
++[`Microphysics1MParams`](@ref).
+ """
+ struct TemperatureDependent <: CloudIceFormation end
+ 
+@@ -404,6 +417,7 @@ microphysics_1m_process_params(td::CP.ParamDict, o::Microphysics1MOptions) = (;
+ # ═══════════════════════════════════════════════════════════════════
+ @deprecate CloudLiquidFormation(::CP.ParamDict) CloudLiquidFormation() false
+ @deprecate ConstantTimescale(::CP.ParamDict) ConstantTimescale() false
++@deprecate PrescribedIceNumber(::CP.ParamDict) PrescribedIceNumber() false
+ @deprecate TemperatureDependent(::CP.ParamDict) TemperatureDependent() false
+ @deprecate Kessler1M(::CP.ParamDict) Kessler1M() false
+ @deprecate PrescribedNd(::CP.ParamDict) PrescribedNd() false
 diff --git a/test/bulk_tendencies_tests.jl b/test/bulk_tendencies_tests.jl
 index 070338c5..68b49ad5 100644
 --- a/test/bulk_tendencies_tests.jl
@@ -1545,3 +2668,118 @@ index 00000000..a711047d
 +    end
 +end
 +nothing
+diff --git a/test/microphysics_noneq_tests.jl b/test/microphysics_noneq_tests.jl
+index fb2f6519..1e0c16d8 100644
+--- a/test/microphysics_noneq_tests.jl
++++ b/test/microphysics_noneq_tests.jl
+@@ -25,14 +25,34 @@ function test_microphysics_noneq(FT)
+     TT.@testset "τ_relax Frostenberg" begin
+         q_icl = FT(1e-4)
+         T_cold = FT(250)
+-        τ_frs = CMNe.τ_relax(ice, aps, frs, q_icl, T_cold)
++        ρ_frs = FT(0.8)
++        τ_frs = CMNe.τ_relax(ice, aps, frs, q_icl, T_cold, ρ_frs)
+         TT.@test τ_frs > FT(0)
+         TT.@test isfinite(τ_frs)
+         # Increasing ice content should decrease τ (larger crystals → faster relaxation)
+-        τ_frs_more = CMNe.τ_relax(ice, aps, frs, FT(10) * q_icl, T_cold)
++        τ_frs_more = CMNe.τ_relax(ice, aps, frs, FT(10) * q_icl, T_cold, ρ_frs)
+         TT.@test τ_frs_more < τ_frs
+     end
+ 
++    TT.@testset "τ_relax PrescribedIceNumber" begin
++        q_icl = FT(1e-4)
++        ρ_pin = FT(0.8)
++
++        # Basic smoke test
++        τ_pin = CMNe.τ_relax(ice, aps, q_icl, ρ_pin)
++        TT.@test τ_pin > FT(0)
++        TT.@test isfinite(τ_pin)
++
++        # Increasing ice content should decrease τ (larger crystals → faster relaxation)
++        τ_pin_more = CMNe.τ_relax(ice, aps, FT(10) * q_icl, ρ_pin)
++        TT.@test τ_pin_more < τ_pin
++
++        # Higher density (same q) → more ice mass per m³ → larger r
++        # Since τ = 1/(4π D_v N_0 r) with N_0 fixed, larger r → smaller τ
++        τ_dense = CMNe.τ_relax(ice, aps, q_icl, FT(1.2))
++        TT.@test τ_dense < τ_pin
++    end
++
+     TT.@testset "CondEvap_DepSub" begin
+ 
+ 
+@@ -139,6 +159,43 @@ function test_microphysics_noneq(FT)
+         #! format: on
+     end
+ 
++    TT.@testset "PrescribedIceNumber conv_q_vap_to_q_icl" begin
++        ρ = FT(0.8)
++        T = FT(273 - 10)
++
++        pᵥ_si = TDI.saturation_vapor_pressure_over_ice(tps, T)
++        qᵥ_si = TDI.p2q(tps, T, ρ, pᵥ_si)
++
++        #! format: off
++        _conv_pin(q_tot, q_lcl, q_icl, ρ, T) = CMNe.conv_q_vap_to_q_icl(
++            CMP.PrescribedIceNumber(),
++            (; cloud = (; ice), air_properties = aps, process_params = (;)),
++            tps,
++            (; q_tot, q_lcl, q_icl, q_rai = FT(0), q_sno = FT(0)),
++            (; ρ, T)
++        )
++        #! format: on
++
++        # Sign tests
++        TT.@test _conv_pin(FT(0.5 * qᵥ_si), FT(0), FT(0), ρ, T) == FT(0)
++        TT.@test _conv_pin(FT(1.5 * qᵥ_si), FT(0), FT(0), ρ, T) > FT(0)
++        TT.@test _conv_pin(qᵥ_si, FT(0), FT(0), ρ, T) ≈ FT(0)
++
++        # INP limiter: above freezing, positive ice deposition should be zero
++        T_warm = FT(280)
++        pᵥ_si_w = TDI.saturation_vapor_pressure_over_ice(tps, T_warm)
++        qᵥ_si_w = TDI.p2q(tps, T_warm, ρ, pᵥ_si_w)
++        TT.@test _conv_pin(FT(1.5 * qᵥ_si_w), FT(0), FT(0), ρ, T_warm) == FT(0)
++
++        # Ice sublimation above freezing should NOT be limited
++        TT.@test _conv_pin(FT(0.5 * qᵥ_si_w), FT(0), FT(0.001), ρ, T_warm) <= FT(0)
++
++        # The tendency should differ from a constant-timescale result (τ depends on q_icl, ρ)
++        rate_a = _conv_pin(FT(1.5 * qᵥ_si), FT(0), FT(1e-5), ρ, T)
++        rate_b = _conv_pin(FT(1.5 * qᵥ_si), FT(0), FT(1e-3), ρ, T)
++        TT.@test rate_a != rate_b  # timescale changes with q_icl
++    end
++
+ 
+ 
+     TT.@testset "Cloud condensate sedimentation - liquid" begin
+diff --git a/test/performance_tests.jl b/test/performance_tests.jl
+index 9528d9ff..834ab291 100644
+--- a/test/performance_tests.jl
++++ b/test/performance_tests.jl
+@@ -232,7 +232,7 @@ function benchmark_test(FT)
+     bench_press(FT, CMI_hom.homogeneous_J_linear, (ip.homogeneous, Delta_a_w), 230)
+ 
+     @info "Non-equilibrium Microphysics"
+-    bench_press(FT, CMN.τ_relax, (ice, aps, ip_frostenberg, FT(1e-4), FT(250)), 300)
++    bench_press(FT, CMN.τ_relax, (ice, aps, ip_frostenberg, FT(1e-4), FT(250), FT(0.8)), 300)
+ 
+     mp_mock = (;
+         cloud = (; liquid = liquid),
+diff --git a/test/return_type_tests.jl b/test/return_type_tests.jl
+index 4353e265..84565c04 100644
+--- a/test/return_type_tests.jl
++++ b/test/return_type_tests.jl
+@@ -74,7 +74,11 @@ end
+     @test concrete_for_all_mixes(UT._regularised_ratio, (), 2)
+     @test concrete_for_all_mixes(
+         CMNonEq.τ_relax,
+-        (P(CMP.CloudIce(FT64)), P(CMP.AirProperties(FT64)), P(mp.ice.ice_nucleation)), 2,
++        (P(CMP.CloudIce(FT64)), P(CMP.AirProperties(FT64)), P(mp.ice.ice_nucleation)), 3,
++    )
++    @test concrete_for_all_mixes(
++        CMNonEq.τ_relax,
++        (P(CMP.CloudIce(FT64)), P(CMP.AirProperties(FT64))), 2,
+     )
+     @test concrete_for_all_mixes(P3.loggamma_inc_moment, (), 4)
+     # P3 aspect ratio: plain state with Dual D and vice versa

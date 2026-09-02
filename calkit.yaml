@@ -49,10 +49,22 @@ questions:
 
       A third change now joins them, and it is the first to attack WORK rather
       than occupancy. Fusing the 1M source-term evaluation into the
-      linearization (CloudMicrophysics `pb/1m-spill-fuse`,
-      `exp/2026-09-01-cm-fuse`) is worth +1.87% SYPD: total GPU kernel time
-      -5.37%, the hot SGS-quadrature kernel -27.2%, launch count unchanged to
-      the unit and every other top-ten kernel within 0.11%. It folds each source
+      linearization (CloudMicrophysics `pb/1m-spill-fuse`) is worth +1.95% SYPD
+      on the current stack (`exp/2026-09-02-deps-and-fuse`): total GPU kernel
+      time -6.28%, the hot SGS-quadrature kernel -28.6%, launch count unchanged
+      to the unit and every other top-six kernel within 0.7%. It measured +1.87%
+      on the previous stack (`exp/2026-09-01-cm-fuse`), so it survives the
+      dependency update intact.
+
+      AND THE UPSTREAM UPDATE IS WORTH +4.36% BY ITSELF. Moving ClimaCore (24
+      commits), ClimaAtmos (2) and ClimaCoupler (63) to main took the BASELINE
+      arm from 0.27079 to 0.28312, independently confirming the ~4% seen in the
+      nightly. The mechanism is ClimaCore PR 2606: the CUDA.jl Cartesian
+      broadcast path collapsed from ~168 ms in the top ten alone to one kernel
+      kind at 0.4 ms. Combined with the fusion that is +6.22% over the old
+      baseline, and the two are additive rather than interacting -- the fusion's
+      absolute saving is unchanged at ~80 ms, since the baseline arm's hot
+      kernel is 279.2 ms on both stacks. See docs/learnings.md sections 3b, 3c. It folds each source
       term into the accumulators at its point of computation instead of
       materializing all eighteen first, and is bit-for-bit identical because
       each accumulator still receives its contributions in the same order.

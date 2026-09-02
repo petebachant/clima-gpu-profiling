@@ -1,5 +1,13 @@
 # ClimaCore #2598 (`dy/spectral_fusion`) — kernel exception on AMIP
 
+> **RESOLVED (2026-09-02).** #2598 merged as `78756c3d3` and the fault below no
+> longer reproduces: on merged main the AMIP benchmark completes with zero
+> errors across `baseline-nsys`, `mod-nsys`, `amip-baseline` and `amip-mod`.
+> Whatever fixed it landed before the merge. Kept as a record of the failure and
+> of how it was diagnosed (device stacktrace via `julia -g2`), not as an open
+> issue.
+
+
 Tested at `0f2131304` ("Strip broadcast args against each node's own space, not
 the root space") against ClimaAtmos `main` (8e81bb618), on an A100-SXM4-80GB.
 

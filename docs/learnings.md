@@ -338,6 +338,71 @@ rescheduling it, which is what §1 predicted would be required. Use ~1/3
 pass-through as the estimator for a work-removing change, and ~0 for a
 rescheduling one.
 
+### 3b. Re-measured on the updated stack (2026-09-02), and it is additive
+
+The dependency update (§3c) moved both arms, so the numbers above describe the
+old stack. Re-run with everything at upstream main:
+
+| | baseline | mod | fusion |
+|---|---|---|---|
+| AMIP SYPD | 0.28312 | 0.28874 | **+1.95%** |
+| GPU kernel time | 1520.2 ms | 1424.8 ms | **−6.28%** |
+| hot kernel L1013 | 279.2 ms | 199.3 ms | **−28.6%** |
+| launches | 31,180 | 31,180 | 0.00% |
+
+Everything else in the top six moved by ≤0.7%, both arms report 357 distinct
+kernels with zero name mismatches, and launch counts are identical to the unit —
+so the arm comparison is sound on this stack even though it is *not* sound
+across the update (see §3c).
+
+**A prediction that was wrong, and why.** Before the run I expected the fusion to
+come in *below* +1.87%, reasoning that ClimaCore PR 2606 had removed ~170 ms of
+kernel time from the denominator. It came in slightly higher. The error was
+treating total kernel time as the denominator for SYPD: 2606's gains are largely
+device allocations and Cartesian index arithmetic, which do not sit on the
+microphysics kernel's critical path. The fusion's saving held at ~80 ms in
+absolute terms — the baseline arm's L1013 is 279.2 ms on *both* stacks — so its
+share rose as the total fell. **The two changes are independent and additive**,
+which is the more useful conclusion than either number.
+
+**Two samples for the conversion ratio now**, rather than one: −5.37% → +1.87%
+(35%) and −6.28% → +1.95% (31%). Roughly a third of GPU kernel time reaching
+SYPD is a defensible estimator for a work-removing change.
+
+## 3c. The upstream update is worth +4.36% on its own (2026-09-02)
+
+Prompted by the nightly showing ~4%. Updated ClimaCore (24 commits), ClimaAtmos
+(2), ClimaCoupler (63) in both arms, and merged main into CloudMicrophysics
+`pb/1m-spill-fuse`.
+
+| | SYPD |
+|---|---|
+| old baseline | 0.27079 |
+| **new baseline** | **0.28312** (+4.36%) |
+| new mod (with fusion) | 0.28874 |
+| **combined vs old baseline** | **+6.22%** |
+
+The mechanism is ClimaCore **PR 2606**, and it is visible directly in the
+profile: the CUDA.jl Cartesian broadcast path collapsed from ~168 ms in the
+top ten alone to **one kernel kind, 30 launches, 0.4 ms**. Those broadcasts now
+take ClimaCore's flattened linear-indexing path. Launch count did not change, so
+nothing was merged — the same kernels got faster.
+
+**PR 2598 no longer crashes AMIP.** `docs/misc/climacore-pr2598-report.md`
+recorded a device-side `error_mismatched_spaces` on the first tendency
+evaluation; on merged main all runs complete with zero errors. That report is
+resolved.
+
+### Per-kernel rows are not comparable across this update
+
+Work moved *between* kernels: broadcasts that were separate unnamed Cartesian
+kernels are now attributed to the enclosing NVTX-named kernel. So several
+kernels appear to have roughly doubled —
+`prep_hyperdiffusion_tendency` 19.5 → 38.8 ms, `apply_hyperdiffusion_tendency`
+19.3 → 35.5, `horizontal_tracer_advection_tendency` 29.5 → 47.1 — and have not.
+Launch counts identical to the unit rule out kernels being merged. Compare
+**totals** across the update, and per-kernel rows only *within* a stack.
+
 The superadditivity is the important pattern: the register cap was worth nothing
 on its own because the kernel already spilled at its natural register count, and
 worth a great deal once CloudMicrophysics had created headroom. Expect
