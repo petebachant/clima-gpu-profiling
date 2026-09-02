@@ -308,6 +308,43 @@ stages:
           persist: false
     desc: Automatically generated from the 'export-kernel-resources'
       stage in calkit.yaml. Changes made here will be overwritten.
+  sgs-degeneracy:
+    cmd: calkit scheduler batch --name sgs-degeneracy --environment
+      clima --dep scripts/measure-sgs-degeneracy.jl --dep
+      ClimaCoupler.jl-mod/src --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
+      ClimaAtmos.jl-mod/src --dep CloudMicrophysics.jl-mod/src --dep
+      .calkit/env-locks/clima --out results/sgs-degeneracy.toml
+      --option --gpus=1 --option --time=60 --
+      scripts/run-julia-script.sh
+      --project=ClimaCoupler.jl-mod/experiments/AMIP
+      scripts/measure-sgs-degeneracy.jl --config_file
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --out results/sgs-degeneracy.toml
+    deps:
+      - scripts/run-julia-script.sh
+      - scripts/measure-sgs-degeneracy.jl
+      - ClimaCoupler.jl-mod/src
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCore.jl-mod/ext
+      - ClimaCore.jl-mod/src
+      - ClimaAtmos.jl-mod/src
+      - CloudMicrophysics.jl-mod/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/sgs-degeneracy.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/sgs-degeneracy.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'sgs-degeneracy' stage in
+      calkit.yaml. Changes made here will be overwritten.
   cm-registers:
     cmd: calkit scheduler batch --name cm-registers --environment
       clima --dep scripts/measure-cm-registers.jl --dep

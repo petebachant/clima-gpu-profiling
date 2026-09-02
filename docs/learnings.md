@@ -508,13 +508,18 @@ to clear the benchmark's resolution.
 
 Ordered by preference — ClimaCore first, then ClimaAtmos, then CloudMicrophysics:
 
-1. **Collapse the quadrature where the SGS PDF is degenerate.** Where `σ_q` and
-   `σ_T` are both ≈ 0 the nine points map to the same state and the weights sum
-   to one, so the sum *is* one grid-mean evaluation. Exact and free.
+1. **~~Collapse the quadrature where the SGS PDF is degenerate.~~ DEAD, measured
+   2026-09-01.** The idea was that where `σ_q` and `σ_T` are both zero the nine
+   points map to the same state and the weights sum to one, making the collapse
+   exact and free. Measured across all 1,548,288 cells: **0.00%** qualify. `σ_q`
+   is never identically zero — its minimum is `3.25e-16`. There is no free,
+   exact collapse. See §6a.
 2. **Adapt the order to why the quadrature exists.** It resolves the `max(0, ·)`
    kink at saturation. Where the PDF sits wholly on one side —
    `|mu_S| > k·σ_S`, both already computed — the integrand is smooth and low
-   order suffices. Error controlled by `k`.
+   order suffices. Error controlled by `k`. **Measured and viable: 98.74% of
+   points and 83.22% of warps are more than 10σ clear of the kink. See §6a,
+   including why this is a science question before it is a performance one.**
 3. **Collapse the 2-D rule to 1-D in the saturation excess**, evaluating the
    smooth temperature-dependent rate coefficients at the mean. Error
    `O(σ_T²)`, 9 → 3 evaluations.
@@ -606,6 +611,119 @@ that materialises per-quadrature-point state into scratch first (~223 MB, cheap
 against idle DRAM). Splitting with the quadrature loop left inside each process
 kernel multiplies the ~1.5 ms fixed cost by the number of processes and is not
 viable.
+
+## 6a. How much work the SGS quadrature is actually doing (2026-09-01)
+
+Measured by `scripts/measure-sgs-degeneracy.jl` on a settled AMIP state (three
+steps in), reading `ᶜT′T′`, `ᶜq′q′`, `ᶜT⁰` and `ᶜq_tot_nonneg⁰` from
+`p.precomputed` and the prognostic `Y.c.ρ`. Log:
+`.calkit/scheduler/logs/sgs-degeneracy.out`.
+
+### The distribution
+
+| | |
+|---|---|
+| `σ_T` | median 0.0112 K, max 0.465 K |
+| `σ_q` | median 2.25e-7, max 1.07e-3 |
+| `σ_S` | median 3.04e-6, max 0.0336 |
+| `\|mu_S\|` | median 1.64e-3 |
+| **`\|mu_S\| / σ_S`** | **p1 7.8, p25 266, median 449, p75 899, p95 2761** |
+
+`σ_S² = σ_q² + (∂q_sat/∂T)²σ_T² − 2·corr·σ_q·σ_T·(∂q_sat/∂T)`, with
+`∂q_sat/∂T` from Clausius-Clapeyron. Cross-checked independently: the median
+`|mu_S|`/median `σ_S` ≈ 540 against the measured median ratio of 449, same
+order, so the formula is behaving.
+
+**At the median cell the saturation excess sits 449 standard deviations from
+the kink the quadrature exists to resolve.** Even the worst 1% of cells are
+~8σ clear of it.
+
+### And it survives the warp test, which is the part that usually kills these
+
+| criterion | point frac | warp frac |
+|---|---|---|
+| exact: `σ_T == 0 && σ_q == 0` | 0.00% | 0.00% |
+| `\|mu_S\| > 2·σ_S` | 99.76% | 94.30% |
+| `\|mu_S\| > 3·σ_S` | 99.63% | 92.24% |
+| `\|mu_S\| > 5·σ_S` | 99.36% | 89.12% |
+| `\|mu_S\| > 10·σ_S` | 98.74% | **83.22%** |
+
+Scattered, `0.9874³²` would give 66.7% of warps; measured 83.22%, so vertical
+clustering adds ~1.25×. But the reason this works is not clustering — it is that
+the point fraction is so close to one that warps qualify almost regardless.
+Contrast the clear-air early-out: 77.7% of points returned 21.5%.
+
+### What the quadrature costs, so the trade is a decision and not an abstraction
+
+Priced by a config-only bounding run — `quadrature_order: 1` in the mod arm,
+collapsing 3×3 points to 1, compared against the *mod* arm rather than the
+baseline so the fusion is held fixed and only the quadrature moves:
+
+| configuration | SYPD |
+|---|---|
+| baseline (upstream CloudMicrophysics) | 0.27079 |
+| + fusion (`exp/2026-09-01-cm-fuse`) | 0.27596 |
+| + quadrature collapsed to one point | **0.29973** |
+
+**The nine-point quadrature costs 7.93% SYPD.** Removing it entirely would put
+the flagship run 9.66% above today's baseline.
+
+This is an **upper bound and not a candidate**: `quadrature_order: 1` changes
+results, and the config was reverted immediately after. It exists so the science
+question has a number attached — *is the quadrature worth 8% of the flagship
+run's throughput, given the PDF sits 449σ from the feature it resolves?*
+
+An adaptive collapse (item 2) captures only the warps that qualify, so expect
+roughly `0.83 × 7.93% ≈ 6.6%` before subtracting the branch cost and the
+divergence in the ~17% of mixed warps. The full 7.93% is available only if the
+quadrature can go entirely.
+
+### Three caveats, all load-bearing
+
+**It is an approximation, not an exact collapse.** Being clear of the kink makes
+the *condensate reconstruction* smooth, but the rest of the integrand — the
+evaporation and sublimation rates, which depend on `T̂` and `q̂` — still varies
+across the PDF. The error is `O(σ²·f″)`; the relative PDF width is tiny
+(`σ_q/q_tot` ≈ 2e-5 at the median), so it should be small, but it must be
+measured against the nine-point answer rather than assumed. Item 1 was exact;
+this one has a knob.
+
+**The 98.74% is dominated by cells where nothing happens anyway.** The median
+cell is dry upper atmosphere. `σ_q` reaches 1.07e-3, comparable to `q_tot`, so
+the cells that matter physically are exactly the minority where σ is large and
+the quadrature *is* doing work. The saving is real but concentrated in cheap
+cells, which means it **overlaps heavily with the clear-air early-out**
+(ClimaAtmos `3b38b0e50`, +1.79%) — and that early-out is *not* in the currently
+checked-out ClimaAtmos (v0.42.8). The two are not additive and must not be
+estimated as though they were.
+
+**It is a science question before it is a performance one.** If the SGS PDF
+genuinely sits 449σ from saturation at the median cell, the nine-point
+quadrature is buying almost nothing physically in this configuration — while
+costing 9× on the largest kernel in the run. Either the covariance closure is
+producing variances that are too small, or the quadrature is unnecessary here.
+Those have *different* remedies: if the variances are wrong the fix is in the
+closure and the quadrature stays; if they are right, the quadrature order should
+be reconsidered outright rather than worked around. Put this to whoever owns
+`_compute_sgs_moments` before writing kernel code.
+
+### Two method errors made getting here, both worth not repeating
+
+**The first version of this measurement used the wrong yardstick.** It compared
+`σ_q` and `σ_T` against absolute constants and reported 99.77% of warps under
+`σ < 1e-3`, which looks like a headline result and means nothing — "σ is small"
+is dimensionally arbitrary. A tiny σ still needs the quadrature if the mean sits
+on the kink; a large one does not if the cell is far from it. Only the ratio to
+`σ_S` is meaningful.
+
+**And `calkit scheduler batch` silently returned the previous result.** It keys
+on job name, and with no declared dependencies it reported *"Job
+'sgs-degeneracy' already left the queue; using its result"* — so the corrected
+script's output was the old script's numbers. This was caught only because the
+output *format* had changed; a threshold-only edit would have been reported as
+fresh. **Always pass `--dep` for the script itself.** This is the same failure
+as the `CloudMicrophysics.jl-mod` input bug in §3a: an under-declared dependency
+reusing a cached result.
 
 ## 7. Reference
 

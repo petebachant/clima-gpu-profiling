@@ -1009,8 +1009,8 @@ stages:
     - path: 
         ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       hash: md5
-      md5: 577bef53fd5c8e8eb2897c6d236dec53
-      size: 461
+      md5: 02f5ccea95875db54d798dc7842dc005
+      size: 709
     - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
       hash: md5
       md5: e1db3663d10b8139e536e49cfc852676
@@ -1040,8 +1040,8 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: 75139009aca80991c5fb315649575d8d
-      size: 45012
+      md5: 49857613e7709c3c948f6c47733f0303
+      size: 43782
   make-diffs:
     cmd: bash --noprofile --norc scripts/make-diffs.sh
     deps:
@@ -1505,3 +1505,78 @@ stages:
       hash: md5
       md5: 5f56845160d13d25150e4547575adf9d
       size: 683
+  sgs-degeneracy:
+    cmd: calkit scheduler batch --name sgs-degeneracy --environment clima --dep 
+      scripts/measure-sgs-degeneracy.jl --dep ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
+      ClimaAtmos.jl-mod/src --dep CloudMicrophysics.jl-mod/src --dep 
+      .calkit/env-locks/clima --out results/sgs-degeneracy.toml --option 
+      --gpus=1 --option --time=60 -- scripts/run-julia-script.sh 
+      --project=ClimaCoupler.jl-mod/experiments/AMIP 
+      scripts/measure-sgs-degeneracy.jl --config_file 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --out results/sgs-degeneracy.toml
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: f17ad3cffea332b35d9baf150d65b6b1.dir
+      size: 2143460
+      nfiles: 160
+    - path: ClimaCore.jl-mod/ext
+      hash: md5
+      md5: cfe5ca50b2ff378d7e475a73f6c0dc7a.dir
+      size: 210166
+      nfiles: 22
+    - path: ClimaCore.jl-mod/src
+      hash: md5
+      md5: cbc4b476c78197e33929e9cc6e32b7d6.dir
+      size: 1238905
+      nfiles: 102
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 577bef53fd5c8e8eb2897c6d236dec53
+      size: 461
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: e1db3663d10b8139e536e49cfc852676
+      size: 122643
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: 0c072357ce169058667a15672376802e
+      size: 905
+    - path: ClimaCoupler.jl-mod/src
+      hash: md5
+      md5: a84324e5025d442f3110bcbc78bf1015.dir
+      size: 307976
+      nfiles: 22
+    - path: CloudMicrophysics.jl-mod/src
+      hash: md5
+      md5: 251c6a16698dd7df996e9016cd1a9105.dir
+      size: 450543
+      nfiles: 57
+    - path: scripts/measure-sgs-degeneracy.jl
+      hash: md5
+      md5: 933f21c2d3d5104e3cd5e29ae22938ce
+      size: 6622
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: a61880cfce301ad9069fbaddfa8d5ad5
+      size: 1033
+    outs:
+    - path: .calkit/scheduler/logs/sgs-degeneracy.out
+      hash: md5
+      md5: e6f65e47811aa4edda670dbb9019f7a9
+      size: 28417
+    - path: results/sgs-degeneracy.toml
+      hash: md5
+      md5: b7c4cdfb953bbfaf79c1ded49f342be5
+      size: 1135

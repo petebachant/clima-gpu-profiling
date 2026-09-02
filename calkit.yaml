@@ -187,6 +187,20 @@ questions:
       `exp/2026-08-24-launch-bounds` pins the commit, and results/treatment.json
       there records the exact branch and SHA that reached the run.
 
+      THE QUADRATURE MAY NOT BE EARNING ITS 9x. Measured across all 1,548,288
+      cells, the SGS PDF sits a median of 449 standard deviations from the
+      saturation kink it exists to resolve, and 98.74% of points (83.22% of
+      warps, so it survives the divergence test) are more than 10 sigma clear of
+      it. Whether that means the covariance closure is producing variances that
+      are too small, or that the quadrature is genuinely unnecessary in this
+      configuration, is a question for the science owners rather than a
+      performance lever to exploit -- the two have different remedies. A
+      config-only bounding run prices it: collapsing the quadrature to one point
+      is worth +7.93% SYPD (0.27596 -> 0.29973), so the question carries a
+      number. That bound is NOT a candidate -- it changes results and was
+      reverted -- and an adaptive collapse would capture roughly 0.83 of it. See
+      docs/learnings.md section 6a.
+
       docs/learnings.md carries the rest: the cost model that splits the kernel
       into ~52% fixed and ~48% substep work, the decompositions that were
       measured and rejected (splitting per quadrature point, fusing the scratch
@@ -828,6 +842,42 @@ pipeline:
       outputs:
         - path: results/kernel-resources.csv
           storage: git
+    sgs-degeneracy:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # Minutes, not an hour: builds the coupled simulation, takes three steps
+      # to settle, then reads the SGS covariances off the state. Answers whether
+      # the nine-point quadrature is doing work -- |mu_S| against σ_S -- and
+      # whether it clusters into whole warps, which is what decides if
+      # collapsing it could pay. See docs/learnings.md 6a.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=60
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/measure-sgs-degeneracy.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --out
+        - results/sgs-degeneracy.toml
+      inputs:
+        - scripts/measure-sgs-degeneracy.jl
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaAtmos.jl-mod/src
+        - CloudMicrophysics.jl-mod/src
+      outputs:
+        # Small TOML answering the question directly -- keep it in Git so the
+        # evidence is readable without a `calkit pull`.
+        - path: results/sgs-degeneracy.toml
+          storage: git
+
     cm-registers:
       kind: shell-script
       environment: clima
