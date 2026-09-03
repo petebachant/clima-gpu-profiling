@@ -369,6 +369,39 @@ which is the more useful conclusion than either number.
 (35%) and −6.28% → +1.95% (31%). Roughly a third of GPU kernel time reaching
 SYPD is a defensible estimator for a work-removing change.
 
+### The mechanism, finally measured: the fusion removes the spill entirely
+
+Both ncu stages refreshed together on the current stack (2026-09-03), the first
+ncu data describing the post-fusion, post-2606 kernel:
+
+| L1013 | baseline | mod |
+|---|---|---|
+| registers per thread | 255 | 255 |
+| **local memory spill overhead** | **32.92%** | **0%** |
+| stack frame | 2,272 B | 2,048 B |
+| achieved occupancy | 12.39% | 12.40% |
+
+Both arms sit at the 255-register cap, at the same occupancy. **nsys therefore
+shows nothing changed** — it reports registers per thread and not spilling — so
+the entire mechanism behind the −28.6% is invisible in `top-kernels.csv` and
+appears only here. The baseline spills a third of its memory traffic; the fused
+version spills none.
+
+This retires two open items:
+
+- **"Does the fused L1013 still spill?"** No. The 2208-byte stack frame and 21%
+  spill overhead recorded in §2 were properties of the *pre-fusion* kernel.
+- **"Is the hot kernel memory-bound?"** It never was on *global* memory — DRAM
+  at 4.7% — but it did carry heavy *local* traffic, and ncu's own memory
+  recommendations were all about local loads and stores (0.9 of 32 bytes
+  utilized per sector). That traffic is gone, and it was removed by cutting
+  register pressure rather than by any memory optimisation. Spill is downstream
+  of registers; there is no separate memory lever here.
+
+Note the shape of the win: occupancy is *unchanged* at 12.4%. The kernel got
+28.6% faster without gaining a single warp. Occupancy was never the only thing
+the register pressure was costing.
+
 ## 3c. The upstream update is worth +4.36% on its own (2026-09-02)
 
 Prompted by the nightly showing ~4%. Updated ClimaCore (24 commits), ClimaAtmos

@@ -1,10 +1,12 @@
 """Export per-kernel register/spill/occupancy stats from the Nsight Compute reports.
 
 The nsys-derived table (results/top-kernels.csv) carries timings and registers
-per thread, but not spilling -- nsys does not collect it. That omission can hide
-the mechanism behind a result: a kernel pinned at the 255-register cap in BOTH
-arms shows an unchanged number in the nsys table while its spill traffic, and so
-its speed, moves a lot.
+per thread, but not spilling -- nsys does not collect it. That omission hides
+the mechanism behind this project's current headline result: the hot
+microphysics kernel sits at the 255-register cap in BOTH arms and at the same
+12.4% occupancy, so the nsys table shows an unchanged number while the kernel
+runs 28.6% faster. It is only visible here -- measured 2026-09-03, the baseline
+spills 32.9% of its memory traffic and the fused mod arm spills none.
 
 Do NOT read a spill delta out of this file without checking the provenance
 header it now writes. The two ncu stages are frozen independently, so the

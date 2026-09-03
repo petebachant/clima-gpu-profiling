@@ -704,13 +704,16 @@ pipeline:
       # the two arms describe the same revision), run `calkit run`, then freeze
       # again. results/treatment.json records which arms the current evidence
       # describes.
-      # UNFROZEN 2026-09-03 to refresh both arms together. They had been
-      # frozen independently and last ran three days apart (baseline 2026-08-20,
-      # a null test; mod 2026-08-23, the clear-air early-out), so
-      # results/kernel-resources.csv put two unrelated runs side by side as
-      # though they were one comparison. Re-freeze BOTH together after this
-      # refresh, or not at all -- freezing them separately is what caused it.
-      frozen: false
+      # FROZEN 2026-09-03, both together and at the same revision. They cost
+      # ~1.5 h each, more than half the pipeline's cluster time. Unfreeze BOTH
+      # or NEITHER: they were previously frozen independently and last ran three
+      # days apart (baseline 2026-08-20, a null test; mod 2026-08-23, the
+      # clear-air early-out), so results/kernel-resources.csv presented two
+      # unrelated runs as one comparison. export-kernel-resources.py now stamps
+      # each arm's revision into the CSV header and warns on a mismatch, so a
+      # shared copy carries its own provenance -- but not recreating the
+      # condition is better than detecting it.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
@@ -764,13 +767,16 @@ pipeline:
       # the two arms describe the same revision), run `calkit run`, then freeze
       # again. results/treatment.json records which arms the current evidence
       # describes.
-      # UNFROZEN 2026-09-03 to refresh both arms together. They had been
-      # frozen independently and last ran three days apart (baseline 2026-08-20,
-      # a null test; mod 2026-08-23, the clear-air early-out), so
-      # results/kernel-resources.csv put two unrelated runs side by side as
-      # though they were one comparison. Re-freeze BOTH together after this
-      # refresh, or not at all -- freezing them separately is what caused it.
-      frozen: false
+      # FROZEN 2026-09-03, both together and at the same revision. They cost
+      # ~1.5 h each, more than half the pipeline's cluster time. Unfreeze BOTH
+      # or NEITHER: they were previously frozen independently and last ran three
+      # days apart (baseline 2026-08-20, a null test; mod 2026-08-23, the
+      # clear-air early-out), so results/kernel-resources.csv presented two
+      # unrelated runs as one comparison. export-kernel-resources.py now stamps
+      # each arm's revision into the CSV header and warns on a mismatch, so a
+      # shared copy carries its own provenance -- but not recreating the
+      # condition is better than detecting it.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
