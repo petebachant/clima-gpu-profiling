@@ -8,11 +8,13 @@ microphysics kernel sits at the 255-register cap in BOTH arms and at the same
 runs 28.6% faster. It is only visible here -- measured 2026-09-03, the baseline
 spills 32.9% of its memory traffic and the fused mod arm spills none.
 
-Do NOT read a spill delta out of this file without checking the provenance
-header it now writes. The two ncu stages are frozen independently, so the
-`_baseline` and `_mod` columns can come from different revisions -- they did
-between 2026-08-20 and 2026-08-23 -- in which case the side-by-side comparison
-is two unrelated runs and means nothing.
+The `_baseline` and `_mod` columns are only a real comparison if both ncu
+stages ran at the same revision. They did not between 2026-08-20 and 2026-08-23,
+when the stages were frozen independently, and the table silently presented two
+unrelated runs as one. The rule that prevents it is in AGENTS.md: freeze and
+unfreeze the two ncu stages TOGETHER. This script prints each arm's revision and
+treatment when it runs, so the stage log records which state the table
+describes.
 
 Reads the `*-details.csv` files Nsight Compute exports, so it needs no GPU and
 no ncu install.
@@ -136,17 +138,12 @@ def main():
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     pb, pm = provenance("baseline"), provenance("mod")
+    # Provenance is reported to stdout (and so into the stage log), not written
+    # into the CSV: a commented header makes the file awkward to load in tools
+    # that do not skip `#`. The structural guard against a mismatched comparison
+    # is the freeze rule in AGENTS.md -- the two ncu stages are frozen and
+    # unfrozen together, so the arms cannot drift apart in the first place.
     with OUT.open("w", newline="") as f:
-        # Provenance first, as comment lines, so a copy of this file carries its
-        # own answer to "which revision is this?" without needing the repo.
-        f.write(f"# baseline arm: written by {pb[0]}, treatment: {pb[1]}\n")
-        f.write(f"# mod arm:      written by {pm[0]}, treatment: {pm[1]}\n")
-        if pb[0] != pm[0] and "UNCOMMITTED" not in pb[0] + pm[0]:
-            f.write("# WARNING: the two arms were exported by DIFFERENT commits;"
-                    " the _baseline vs _mod comparison is NOT a single run.\n")
-        for arm, prov in (("baseline", pb), ("mod", pm)):
-            for k, v in sorted(prov[2].items()):
-                f.write(f"# {arm} {k}: {v}\n")
         w = csv.DictWriter(f, fieldnames=["kernel"] + [
             f"{c}_{case}" for c in cols for case in ("baseline", "mod")
         ])

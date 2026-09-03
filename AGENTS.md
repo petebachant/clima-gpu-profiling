@@ -96,3 +96,23 @@ So we can `cd` into each Coupler submodule and run
 ```sh
 bash scripts/update-coupler-to-main.sh
 ```
+
+## Freeze and unfreeze the two ncu stages together
+
+`baseline-ncu` and `mod-ncu` are frozen by default because they cost ~1.5 hours
+each, more than half the pipeline's cluster time. When they need refreshing,
+**unfreeze both, run both, and re-freeze both** — never one alone.
+
+`results/kernel-resources.csv` puts the two arms in adjacent `_baseline` and
+`_mod` columns, so it reads as a single comparison. It only is one if both
+exports came from the same revision. Freezing the stages separately breaks that
+silently: on 2026-09-03 the baseline column turned out to be from 2026-08-20 (a
+null test, both arms identical) and the mod column from 2026-08-23 (the
+clear-air early-out), three days and one experiment apart. Nothing in the table
+said so, and it had already been shared outside the repo.
+
+`scripts/export-kernel-resources.py` prints each arm's source revision and
+treatment when it runs, so the stage log records what the table describes. That
+is a check, not a guard — the guard is running the two stages as a pair.
+
+The same applies to any future pair of arm-specific stages.
