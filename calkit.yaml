@@ -64,10 +64,12 @@ questions:
       kind at 0.4 ms. Combined with the fusion that is +6.22% over the old
       baseline, and the two are additive rather than interacting -- the fusion's
       absolute saving is unchanged at ~80 ms, since the baseline arm's hot
-      kernel is 279.2 ms on both stacks. See docs/learnings.md sections 3b, 3c. It folds each source
-      term into the accumulators at its point of computation instead of
-      materializing all eighteen first, and is bit-for-bit identical because
-      each accumulator still receives its contributions in the same order.
+      kernel is 279.2 ms on both stacks. See docs/learnings.md sections 3b, 3c.
+
+      The fusion itself folds each 1M source term into the linearization
+      accumulators at its point of computation instead of materializing all
+      eighteen first, and is bit-for-bit identical because each accumulator
+      still receives its contributions in the same order.
 
       THE NSYS SCREEN WAS SIGN-WRONG ON THIS ONE. Its estimated SYPD read the
       mod arm as 3-4% SLOWER, and `nsys_speedup_pct` recorded -1.12% against the
@@ -76,10 +78,12 @@ questions:
       discarded a real +1.87%. Treat that figure as diagnostic (per-kernel
       times, launch counts), never as a stop rule.
 
-      The conversion ratio is the number worth carrying forward: -5.37% kernel
-      time bought +1.87% SYPD, about 35% pass-through, against roughly 0% for
-      launch bounds (-2.11% -> -0.016%). Work removal converts; rescheduling
-      does not.
+      The conversion ratio is the number worth carrying forward, and it now has
+      two samples rather than one: -5.37% kernel time bought +1.87% SYPD (35%
+      pass-through) on the old stack, and -6.28% bought +1.95% (31%) on the
+      current one. Against roughly 0% for launch bounds (-2.11% -> -0.016%). Use
+      about a third for a work-removing change and about nothing for a
+      rescheduling one.
     # Long-form account of this answer; the entrypoint stays short.
     explanation: docs/learnings.md
     evidence:
@@ -700,7 +704,13 @@ pipeline:
       # the two arms describe the same revision), run `calkit run`, then freeze
       # again. results/treatment.json records which arms the current evidence
       # describes.
-      frozen: true
+      # UNFROZEN 2026-09-03 to refresh both arms together. They had been
+      # frozen independently and last ran three days apart (baseline 2026-08-20,
+      # a null test; mod 2026-08-23, the clear-air early-out), so
+      # results/kernel-resources.csv put two unrelated runs side by side as
+      # though they were one comparison. Re-freeze BOTH together after this
+      # refresh, or not at all -- freezing them separately is what caused it.
+      frozen: false
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
@@ -754,7 +764,13 @@ pipeline:
       # the two arms describe the same revision), run `calkit run`, then freeze
       # again. results/treatment.json records which arms the current evidence
       # describes.
-      frozen: true
+      # UNFROZEN 2026-09-03 to refresh both arms together. They had been
+      # frozen independently and last ran three days apart (baseline 2026-08-20,
+      # a null test; mod 2026-08-23, the clear-air early-out), so
+      # results/kernel-resources.csv put two unrelated runs side by side as
+      # though they were one comparison. Re-freeze BOTH together after this
+      # refresh, or not at all -- freezing them separately is what caused it.
+      frozen: false
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
