@@ -112,7 +112,60 @@ not parallelism-starved; and no pipe is near its roofline. Memory is the *idle*
 resource and occupancy is the exhausted one — which is what makes tabulation
 interesting and makes anything that adds spill traffic dangerous.
 
-### The 255 registers are one CloudMicrophysics evaluation
+### 2a-i. SUPERSEDED 2026-09-03: the barrier no longer holds, and the cost is the broadcast
+
+The subsection below was measured pre-fusion and its central claim — that the
+`@noinline` barrier holds, so nine evaluations cost 9 registers more than one —
+**is no longer true.** Re-measured with the rebased launch-bounds branch
+(`pb/launch-bounds-v2`), on a harness that reproduces *both* real microphysics
+kernels exactly:
+
+| | pre-fusion | now |
+|---|---|---|
+| single-call (real L970, and layer D) | 246 | **153** → 12 warps/SM |
+| nine-point (real L1013, and layer E) | 255 | **255** → 8 warps/SM |
+| gap attributable to the quadrature | **9** | **102** |
+
+The fusion cut the single-call path by 93 registers and the quadrature path by
+none, which is why L970 crossed to 12 warps/SM and L1013 did not.
+
+**And the 102 registers are the broadcast context, not the physics:**
+
+| | registers |
+|---|---|
+| quadrature body, **scalar** kernel | **147** |
+| quadrature form, **broadcast** (layer E) | **255** |
+| direct form, **broadcast** (layer D) | 153 |
+| CloudMicrophysics `LinearizedAverage` standalone | 116 |
+
+Identical physics costs 147 standalone and 255 inside a broadcast. The broadcast
+adds +108 for the quadrature form against +37 for the direct form — and layer B
+rules out field count as the cause (7 fields = 32 registers, *fewer* than 3
+fields at 40), so the three extra quadrature inputs are not it.
+
+**Leading hypothesis: the quadrature loop is being unrolled in the broadcast
+context.** `sum_over_quadrature_points` deliberately uses `for` loops rather than
+`ntuple`, and its own comment gives the reason — "each loop iteration releases
+registers from the previous one". ClimaCore compiles broadcasts with
+`always_inline = true`. If LLVM unrolls the 3×3 loops there but not in the
+scalar context, nine copies of the body go live simultaneously, which is the
+right order of magnitude for +108.
+
+**Not yet established**, and both matter before acting:
+
+- Whether layer E's 255 is a demand or the hardware *cap*. The real kernel has
+  zero spill at 255 (ncu, §3a), so its demand is genuinely ≤255; layer E's
+  figure could be clipped.
+- Whether the loop is actually unrolled. This is inferred from a register count.
+  `@device_code_llvm` on the scalar and broadcast contexts would settle it, and
+  is cheap.
+
+If it holds, the fix is local — an unroll barrier inside the quadrature loop —
+and it is the whole remaining obstacle to the occupancy win ncu ranks at 69%
+estimated speedup. It also moves the target off CloudMicrophysics: the physics
+is already at 147.
+
+### The 255 registers are one CloudMicrophysics evaluation (PRE-FUSION; see 2a-i)
 
 The single-call updraft kernel (one evaluation per point, no quadrature) uses
 **246 registers**. The nine-point quadrature kernel behind its `@noinline`

@@ -29,51 +29,6 @@ Loading climacommon/2025_05_15
 │ 
 │ In any other case, please file an issue.
 └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-Precompiling ClimaAtmos...
-  82749.7 ms  ✓ ClimaCore
-   6096.2 ms  ✓ ClimaCore → KrylovExt
-   6000.2 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreExt
-   7112.3 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreNCDatasetsExt
-   8987.8 ms  ✓ ClimaDiagnostics
-   9610.6 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreInterpolationsExt
-  24658.7 ms  ✓ ClimaAtmos
-  7 dependencies successfully precompiled in 125 seconds. 281 already precompiled.
-Precompiling ClimaCoreCUDAExt...
-Info Given ClimaCoreCUDAExt was explicitly requested, output will be shown live [0K
-[0K┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
-[0K│ This may cause errors.
-[0K│ 
-[0K│ If you're running under a profiler, this situation is expected. Otherwise,
-[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
-[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
-[0K│ 
-[0K│ In any other case, please file an issue.
-[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-[0K┌ Warning: CUDA runtime library `libnvJitLink.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libnvJitLink.so.13`.
-[0K│ This may cause errors.
-[0K│ 
-[0K│ If you're running under a profiler, this situation is expected. Otherwise,
-[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
-[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
-[0K│ 
-[0K│ In any other case, please file an issue.
-[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-[0K┌ Warning: CUDA runtime library `libcusparse.so.12` was loaded from a system path, `/usr/local/cuda/lib64/libcusparse.so.12`.
-[0K│ This may cause errors.
-[0K│ 
-[0K│ If you're running under a profiler, this situation is expected. Otherwise,
-[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
-[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
-[0K│ 
-[0K│ In any other case, please file an issue.
-[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-   8371.8 ms  ✓ ClimaCore → ClimaCoreCUDAExt
-  1 dependency successfully precompiled in 10 seconds. 172 already precompiled.
-  1 dependency had output during precompilation:
-┌ ClimaCore → ClimaCoreCUDAExt
-│  [Output was shown above]
-└  
-[ Info: ClimaCore lacks the launch-bounds record; skipping the broadcast layers
 
 === registers, params passed as RUNTIME kernel arguments ===
 layer                           regs   local B  warps/SM
@@ -83,5 +38,20 @@ one linearized implicit step    94     536      16
 LinearizedAverage nsub=1        116    536      16
 LinearizedAverage nsub=2        116    536      16
 LinearizedAverage nsub=3        116    536      16
+
+=== can ptxas hit 12 warps/SM without spilling? ===
+compilation                       regs   local B  warps/SM
+unbounded                         147    640      12
+__launch_bounds__ 12 warps/SM     146    640      12
+
+spill growth asking for 12 warps/SM: 0 bytes  (within the 256 B budget the guard allows)
+
+=== ClimaCore broadcast layers, AMIP layout ===
+layer                             regs   warps/SM
+A bare broadcast (3 in, 1 out)    40     16
+B 7 fields in, 1 out              32     16
+C 7 in, NamedTuple out            64     16
+D microphysics_tendencies_1m      153    12
+E microphysics_tendencies_1m (9-pt quadrature)255    8
 
 BISECT DONE

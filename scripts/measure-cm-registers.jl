@@ -65,6 +65,62 @@ for (nm, body) in layers
     results[nm] = Dict("registers" => r, "local_bytes" => m.local, "warps_per_sm" => warps(r))
 end
 
+# ---------------------------------------------------------------------------
+# Can ptxas reach the 168-register occupancy step WITHOUT spilling, now that the
+# fusion has removed the spill?
+#
+# This was measured before and the answer was no: ptxas reached 168 but paid
+# +344 B of spill and ran 20.5% slower, so the launch-bounds guard rejected it
+# and learnings.md §4 recorded occupancy as a dead end for this kernel. But that
+# was measured on a kernel ALREADY spilling 21% at its natural register count --
+# it had no slack. The fused kernel spills nothing (ncu 2026-09-03: 0 requests,
+# 0% overhead), so the question is open again, and ncu now ranks occupancy as
+# the single largest available win at 69% estimated speedup.
+#
+# Compile the full nine-point quadrature body both ways and compare. A
+# `maxthreads` of 384 with one block per SM is the 12-warp target the
+# launch-bounds mechanism asks for.
+const QUAD = ClimaAtmos.SGSQuadrature(FT; quadrature_order = 3)
+# corr and alpha are runtime scalars; their values do not affect register
+# allocation, so use representative constants rather than building a full
+# ClimaAtmosParameters (the docstring puts T-q correlation around 0.6).
+const CORR = FT(0.6)
+const ALPHA = FT(1)
+
+quad_body(out, s, mp, tps, quad) = begin
+    r = ClimaAtmos.microphysics_tendencies_1m(
+        BMT.Microphysics1Moment(), quad, mp, tps,
+        s.ρ, s.T, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno,
+        FT(1.0e-2), FT(1.0e-12), CORR, FT(1.0e-5), ALPHA, DT, 2,
+    )
+    out[1] = r.dq_lcl_dt
+    nothing
+end
+
+println("\n=== can ptxas hit 12 warps/SM without spilling? ===")
+println(rpad("compilation", 34), rpad("regs", 7), rpad("local B", 9), "warps/SM")
+lb = Dict{String, Any}()
+try
+    unb = CUDA.@cuda launch=false always_inline=true quad_body(out, ST, MP, TPS, QUAD)
+    ru, mu = CUDA.registers(unb), CUDA.memory(unb).local
+    println(rpad("unbounded", 34), rpad(ru, 7), rpad(mu, 9), warps(ru))
+    lb["unbounded"] = Dict("registers" => ru, "local_bytes" => mu, "warps_per_sm" => warps(ru))
+
+    bnd = CUDA.@cuda launch=false always_inline=true maxthreads=384 blocks_per_sm=1 quad_body(
+        out, ST, MP, TPS, QUAD)
+    rb, mb = CUDA.registers(bnd), CUDA.memory(bnd).local
+    println(rpad("__launch_bounds__ 12 warps/SM", 34), rpad(rb, 7), rpad(mb, 9), warps(rb))
+    lb["bounded_12warps"] =
+        Dict("registers" => rb, "local_bytes" => mb, "warps_per_sm" => warps(rb))
+    lb["spill_growth_bytes"] = mb - mu
+    println("\nspill growth asking for 12 warps/SM: $(mb - mu) bytes",
+            mb - mu <= 256 ? "  (within the 256 B budget the guard allows)" :
+                             "  (OVER the 256 B budget -- ptxas is buying occupancy with spill)")
+catch err
+    @warn "launch-bounds probe failed" exception = (err, catch_backtrace())
+end
+results["launch_bounds_probe"] = lb
+
 # Record for the pipeline: these numbers are cited by the kernel-limits question.
 # ---------------------------------------------------------------------------
 # Second half: the ClimaCore side. A standalone CloudMicrophysics evaluation is
@@ -97,6 +153,10 @@ else
     parent(qr) .= FT(2e-4); parent(qs) .= FT(3e-5)
     outs = sc()
     outnt = VIJFH{NTT, Nv, Nij, Nij, nothing}(AT, Nh)
+    # Extra inputs the quadrature form takes: the two SGS variances and the
+    # Lagrange multiplier.
+    TTf, qqf, lamf = ntuple(_ -> sc(), 3)
+    parent(TTf) .= FT(1.0e-2); parent(qqf) .= FT(1.0e-12); parent(lamf) .= FT(1.0e-5)
 
     bcast_layers = [
         ("A bare broadcast (3 in, 1 out)", () -> @. outs = ρf + qt * Tf),
@@ -106,6 +166,17 @@ else
         ("D microphysics_tendencies_1m",
          () -> @. outnt = ClimaAtmos.microphysics_tendencies_1m(
              ρf, qt, ql, qi, qr, qs, Tf, MP, TPS, DT, 2)),
+        # E is the kernel that actually matters: the nine-point SGS-quadrature
+        # form, broadcast over the same layout. D (the single-call form) matches
+        # the real L970 exactly at 153 registers, so if E lands near D the
+        # `@noinline` barrier on Microphysics1MEvaluator is holding and the
+        # inflation is elsewhere; if it lands at 255 the barrier is being
+        # defeated in the broadcast context, which is where L1013's remaining
+        # register pressure would then be.
+        ("E microphysics_tendencies_1m (9-pt quadrature)",
+         () -> @. outnt = ClimaAtmos.microphysics_tendencies_1m(
+             BMT.Microphysics1Moment(), QUAD, MP, TPS, ρf, Tf, qt, ql, qi, qr, qs,
+             TTf, qqf, CORR, lamf, ALPHA, DT, 2)),
     ]
     println("\n=== ClimaCore broadcast layers, AMIP layout ===")
     println(rpad("layer", 34), rpad("regs", 7), "warps/SM")

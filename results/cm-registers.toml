@@ -5,6 +5,26 @@ local_bytes = 32
 registers = 60
 warps_per_sm = 16
 
+[layers."A bare broadcast (3 in, 1 out)"]
+registers = 40
+warps_per_sm = 16
+
+[layers."B 7 fields in, 1 out"]
+registers = 32
+warps_per_sm = 16
+
+[layers."C 7 in, NamedTuple out"]
+registers = 64
+warps_per_sm = 16
+
+[layers."D microphysics_tendencies_1m"]
+registers = 153
+warps_per_sm = 12
+
+[layers."E microphysics_tendencies_1m (9-pt quadrature)"]
+registers = 255
+warps_per_sm = 8
+
 [layers."LinearizedAverage nsub=1"]
 local_bytes = 536
 registers = 116
@@ -19,6 +39,19 @@ warps_per_sm = 16
 local_bytes = 536
 registers = 116
 warps_per_sm = 16
+
+[layers.launch_bounds_probe]
+spill_growth_bytes = 0
+
+    [layers.launch_bounds_probe.bounded_12warps]
+    local_bytes = 640
+    registers = 146
+    warps_per_sm = 12
+
+    [layers.launch_bounds_probe.unbounded]
+    local_bytes = 640
+    registers = 147
+    warps_per_sm = 12
 
 [layers."one linearized implicit step"]
 local_bytes = 536

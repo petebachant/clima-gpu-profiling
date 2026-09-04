@@ -116,11 +116,26 @@ questions:
       dominant stall is fixed-latency execution dependency (42% of the cycles
       between issued instructions) and IPC is 1.34 of 4.
 
-      The quadrature scaffolding is NOT what costs the registers: the unfused
-      single-call kernel uses 246 against the nine-point kernel's 255, so the
-      `@noinline` barrier holds and nine evaluations cost 9 registers more than
-      one. On sm_80 the occupancy steps are 255 -> 8 warps/SM, 168 -> 12,
-      128 -> 16, so nothing saving 9 registers can move occupancy.
+      THE QUADRATURE SCAFFOLDING IS NOW EXACTLY WHAT COSTS THE REGISTERS, which
+      reverses what this answer said before the fusion. Pre-fusion the
+      single-call kernel used 246 against the nine-point kernel's 255, so the
+      `@noinline` barrier held and nine evaluations cost 9 registers more than
+      one. Re-measured 2026-09-03 the single-call kernel is 153 and the
+      nine-point kernel is still 255: the fusion cut one by 93 registers and the
+      other by none, so the gap is 102, not 9. That is why L970 crossed to 12
+      warps/SM and L1013 did not.
+
+      And the 102 are the BROADCAST CONTEXT, not the physics. The identical
+      quadrature body compiles to 147 registers as a scalar kernel and 255
+      inside a ClimaCore broadcast; the direct form costs only +37 in the same
+      place. Field count is ruled out (seven fields cost fewer registers than
+      three). The leading hypothesis is that the 3x3 quadrature loop is unrolled
+      in the broadcast context -- ClimaCore compiles broadcasts with
+      `always_inline = true`, and `sum_over_quadrature_points` uses explicit
+      loops precisely so each iteration can release the previous one's
+      registers. Not yet confirmed against generated code, and layer E's 255 may
+      be the cap rather than a demand. On sm_80 the occupancy steps are 255 -> 8
+      warps/SM, 168 -> 12, 128 -> 16. See docs/learnings.md section 2a-i.
 
       Where the 246 come from has been measured layer by layer, and the answer is
       roughly 70/30 physics to framework. The figures below are for
