@@ -61,15 +61,36 @@ questions:
       arm from 0.27079 to 0.28312, independently confirming the ~4% seen in the
       nightly. The mechanism is ClimaCore PR 2606: the CUDA.jl Cartesian
       broadcast path collapsed from ~168 ms in the top ten alone to one kernel
-      kind at 0.4 ms. Combined with the fusion that is +6.22% over the old
-      baseline, and the two are additive rather than interacting -- the fusion's
-      absolute saving is unchanged at ~80 ms, since the baseline arm's hot
-      kernel is 279.2 ms on both stacks. See docs/learnings.md sections 3b, 3c.
+      kind at 0.4 ms. That is the BASELINE MOVING, not a result of ours: upstream
+      main is the floor this work builds on, it changes continuously, and a
+      baseline improvement belongs to whoever wrote the upstream PR. Our
+      contribution is only ever the mod-vs-baseline delta at a given revision,
+      which is what speedup_pct measures; the two must not be added into a
+      cumulative figure. The fusion survives the update intact -- its absolute
+      saving is unchanged at ~80 ms, since the baseline arm's hot kernel is
+      279.2 ms on both stacks. See docs/learnings.md sections 3b, 3c.
 
       The fusion itself folds each 1M source term into the linearization
       accumulators at its point of computation instead of materializing all
       eighteen first, and is bit-for-bit identical because each accumulator
       still receives its contributions in the same order.
+
+      AND THE PAIRING WORKED A THIRD TIME. Adding ClimaCore's launch-bounds
+      mechanism (`pb/launch-bounds-v2`, PR 2601 rebased) on top of the fusion
+      takes the hot kernel from 199.3 to 160.7 ms (-19.4%) at 168 registers and
+      12 warps/SM, worth +0.63% SYPD on top, +2.56% combined, total GPU kernel
+      time -9.06%. The same mechanism was worth a SYPD NULL on its own and was
+      actively harmful when forced pre-fusion (20.5% slower). It only became
+      viable because the fusion cut the spill cost of reaching 168 registers
+      from +344 bytes to +48, inside the guard's 256-byte budget.
+
+      That is the third instance of one pattern: occupancy machinery CONVERTS
+      register headroom and cannot CREATE it, while work removal creates
+      headroom without converting it. CM register work +1.107% and the ClimaCore
+      register cap +0.433% were +2.372% together; CM fusion +1.95% and launch
+      bounds (null alone) are +2.56% together. Never judge an occupancy-side
+      change by its standalone number -- on 2026-09-01 that reasoning nearly got
+      PR 2601 closed, two days before the fusion made it worth keeping.
 
       THE NSYS SCREEN WAS SIGN-WRONG ON THIS ONE. Its estimated SYPD read the
       mod arm as 3-4% SLOWER, and `nsys_speedup_pct` recorded -1.12% against the
@@ -171,9 +192,17 @@ questions:
       warps/SM for +88 bytes of spill, and -22% in time; total CUDA kernel time
       falls 2.11%.
 
-      OCCUPANCY IS A DEAD END FOR THE HOT KERNEL ITSELF. ptxas can reach 168
-      registers on it, but only at +344 bytes of spill per thread, and it then
-      runs 20.5% SLOWER (31.33 vs 26.00 ms). The spill-growth guard that rejects
+      OCCUPANCY WAS A DEAD END ONLY WHILE THE KERNEL HAD NO SLACK, and is not
+      one now. Pre-fusion ptxas could reach 168 registers but only at +344 bytes
+      of spill per thread, running 20.5% SLOWER (31.33 vs 26.00 ms), so the
+      guard rejected it. Post-fusion the same request costs +48 bytes, the guard
+      accepts it, and the kernel goes 199.3 -> 160.7 ms (-19.4%) at 168
+      registers and 12 warps/SM -- worth +0.63% SYPD on top of the fusion, for
+      +2.56% combined. Third instance of the same superadditive pattern: an
+      occupancy mechanism converts register headroom but cannot create it, so
+      judging one by its standalone number is a mistake. See
+      docs/learnings.md section 4a. The measurement below stands as recorded;
+      the conclusion drawn from it did not generalise. The spill-growth guard that rejects
       it is therefore load-bearing: unguarded, the change is net negative, since
       the hot kernel is 16% of GPU time against the 2.3% that benefits.
 

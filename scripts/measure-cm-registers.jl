@@ -178,16 +178,35 @@ else
              BMT.Microphysics1Moment(), QUAD, MP, TPS, ρf, Tf, qt, ql, qi, qr, qs,
              TTf, qqf, CORR, lamf, ALPHA, DT, 2)),
     ]
+    # Report the WHOLE decision, not just the unbounded count. `unbounded_regs`
+    # alone cannot distinguish a genuine demand from the 255 hardware cap, and
+    # `spill_growth` is what says whether asking for 12 warps/SM is free -- the
+    # question that decides the occupancy win ncu ranks at 69%.
     println("\n=== ClimaCore broadcast layers, AMIP layout ===")
-    println(rpad("layer", 34), rpad("regs", 7), "warps/SM")
+    println(rpad("layer", 46), rpad("unbnd", 7), rpad("bnd", 6),
+            rpad("spill+", 8), rpad("warps", 7), "applied")
     for (nm, f) in bcast_layers
         before = Set(keys(Ext.LAUNCH_BOUNDS_CACHE))
         f()
         CUDA.synchronize()
         fresh = [d for (k, d) in Ext.LAUNCH_BOUNDS_CACHE if !(k in before)]
-        r = isempty(fresh) ? -1 : maximum(d.unbounded_regs for d in fresh)
-        println(rpad(nm, 34), rpad(r, 7), r > 0 ? string(warps(r)) : "?")
-        r > 0 && (results[nm] = Dict("registers" => r, "warps_per_sm" => warps(r)))
+        if isempty(fresh)
+            println(rpad(nm, 46), "(no decision recorded)")
+            continue
+        end
+        # The layer's own kernel is the most register-hungry one it compiled.
+        d = argmax(x -> x.unbounded_regs, fresh)
+        println(rpad(nm, 46), rpad(d.unbounded_regs, 7), rpad(d.bounded_regs, 6),
+                rpad(d.spill_growth, 8), rpad(d.unbounded_warps, 7),
+                !isnothing(d.bounds))
+        results[nm] = Dict(
+            "registers" => d.unbounded_regs,
+            "warps_per_sm" => d.unbounded_warps,
+            "bounded_registers" => d.bounded_regs,
+            "bounded_warps_per_sm" => d.bounded_warps,
+            "spill_growth_bytes" => d.spill_growth,
+            "launch_bounds_applied" => !isnothing(d.bounds),
+        )
     end
 end
 

@@ -464,9 +464,20 @@ Prompted by the nightly showing ~4%. Updated ClimaCore (24 commits), ClimaAtmos
 | | SYPD |
 |---|---|
 | old baseline | 0.27079 |
-| **new baseline** | **0.28312** (+4.36%) |
+| **new baseline** | **0.28312** |
 | new mod (with fusion) | 0.28874 |
-| **combined vs old baseline** | **+6.22%** |
+
+**This is the baseline moving, not a result of ours.** Upstream `main` is the
+floor we build on and it changes continuously; a +4.36% baseline improvement
+belongs to whoever wrote PR 2606. Our contribution is only ever the mod-vs-
+baseline delta at a given revision, which is what `speedup_pct` measures and
+what `experiments.csv` records. Do not add the two together and report a
+cumulative figure — that silently claims upstream's work.
+
+Absolute SYPD is still the right KPI for "how fast is the flagship model", and
+`baseline_sypd` in `experiments.csv` is the column that shows when the floor
+moved (0.26969 → 0.27079 → 0.28312). Keep the two questions separate: *what did
+we contribute* is the delta; *how fast is it now* is the absolute.
 
 The mechanism is ClimaCore **PR 2606**, and it is visible directly in the
 profile: the CUDA.jl Cartesian broadcast path collapsed from ~168 ms in the
@@ -523,9 +534,13 @@ landing in `CoupledSimulation`, the phase it targeted. It works in isolation
 so the ceiling was inside the noise before the package was written. Doing that
 arithmetic first would have been cheaper than the experiment.
 
-**Forcing launch bounds on the hot kernel** — ptxas *can* reach 168 registers and
-12 warps/SM, but it costs +344 bytes of spill per thread and the kernel runs
-**31.33 ms against 26.00 ms, 20.5% slower**
+**Forcing launch bounds on the hot kernel** — *(SUPERSEDED 2026-09-04: this was
+measured on a kernel spilling 21% at its natural register count, with no slack
+to reschedule away. The fusion created the slack, and the same mechanism is now
+accepted and worth −19.4% on the kernel. See §4a. The measurement below stands
+as recorded; the conclusion drawn from it does not generalise.)* ptxas *can*
+reach 168 registers and 12 warps/SM, but it costs +344 bytes of spill per thread
+and the kernel runs **31.33 ms against 26.00 ms, 20.5% slower**
 (`unguarded.kernels.L1013.mean_ms` against `off.kernels.L1013.mean_ms`).
 Occupancy on this kernel is not reachable by codegen alone. The spill-growth
 guard that rejects it is load-bearing: without it the change is net negative,
@@ -619,6 +634,68 @@ Also excluded by measurement: there is **no Float64** in this kernel (0% of FP64
 peak, no `dfma` instructions), so the common "hidden Float64 promotion" diagnosis
 does not apply. And parameter structs are not the driver — the updraft kernel
 passes the same `cmp, thp` and sits 9 registers *lower*.
+
+## 4a. Occupancy was not a dead end — it was waiting for headroom (2026-09-04)
+
+§4 concluded that "occupancy is a dead end for the hot kernel itself." That was
+correct on its evidence and is now false. The mechanism is unchanged; the kernel
+underneath it changed.
+
+| | pre-fusion | post-fusion |
+|---|---|---|
+| registers asked of ptxas | 168 | 168 |
+| **spill growth to get there** | **+344 B** | **+48 B** |
+| guard verdict (256 B budget) | rejected | **accepted** |
+| measured effect | 20.5% *slower* | **19.4% faster** |
+
+Measured end to end, with the mechanism on ClimaCore `pb/launch-bounds-v2`
+(PR 2601 rebased onto the current base) and the fusion on CloudMicrophysics
+`pb/1m-spill-fuse`:
+
+| | SYPD | L1013 | registers | total kernel time |
+|---|---|---|---|---|
+| baseline | 0.28312 | 279.2 ms | 255 | 1520.2 ms |
+| + fusion | 0.28874 (+1.95%) | 199.3 ms (−28.6%) | 255 | 1424.8 ms |
+| **+ both** | **0.29056 (+2.56%)** | **160.7 ms (−42.4%)** | **168** | **1382.4 ms (−9.06%)** |
+
+Launch bounds contributes **+0.63% SYPD** and **−19.4%** on the hot kernel on
+top of the fusion. Every other top-five kernel moved by ≤0.14%, and nsys
+confirms the mechanism fired in the real run: L1013 compiles at 168 registers in
+the mod arm against 255 in baseline. **8 → 12 warps/SM on the largest kernel in
+the run**, bought for 48 bytes of spill.
+
+### The pattern this is the third instance of
+
+| pair | alone | alone | together |
+|---|---|---|---|
+| CM register work + ClimaCore register cap | +1.107% | +0.433% | +2.372% |
+| CM fusion + ClimaCore launch bounds | +1.95% | +0.433%¹ | **+2.56%** |
+
+¹ the launch-bounds mechanism's own standalone measurement, from
+`exp/2026-08-24-launch-bounds`, where it had no substrate and returned a SYPD
+null.
+
+Occupancy machinery converts register headroom; it cannot create it. Work
+removal creates headroom but does not by itself convert it into warps. **Neither
+is worth much alone and the pair is worth more than the sum** — three times now.
+Expect it, and do not judge an occupancy-side change by its standalone number.
+
+### And it nearly got thrown away
+
+On 2026-09-01 the recommendation here was to close PR 2601: its payoff was
+conditional on CloudMicrophysics work that did not exist, the target looked like
+~100 registers, and it was worth −2.11% kernel time with a SYPD null on its own.
+That reasoning was sound on the evidence available. The fusion invalidated the
+evidence two days later by moving the target to a reachable place. The branch
+survived only because the tag `exp/2026-08-24-launch-bounds` and the branch
+itself were preserved rather than deleted — which is the argument for keeping
+dead-end branches around rather than for the analysis that declared it dead.
+
+**ncu's 69%-estimated-speedup figure for occupancy remains a poor estimator.**
+The prediction made before this run — that it was optimistic, because the kernel
+is latency-bound on execution dependencies rather than occupancy-starved, and
+that the real gain would be "real but smaller" — held. −19.4% is real but
+smaller.
 
 ## 5. Methodology lessons
 

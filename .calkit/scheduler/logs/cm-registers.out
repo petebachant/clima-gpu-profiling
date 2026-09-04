@@ -1,4 +1,4 @@
-gpu-guard: running on GPU(s) [3] -- OK (avoiding [])
+gpu-guard: running on GPU(s) [4] -- OK (avoiding [])
 Loading climacommon/2025_05_15
   Loading requirement: climaauth/2025_05_15 openmpi/4.1.5-mpitrampoline
     julia/1.11.5 cuda/julia-pref
@@ -47,11 +47,11 @@ __launch_bounds__ 12 warps/SM     146    640      12
 spill growth asking for 12 warps/SM: 0 bytes  (within the 256 B budget the guard allows)
 
 === ClimaCore broadcast layers, AMIP layout ===
-layer                             regs   warps/SM
-A bare broadcast (3 in, 1 out)    40     16
-B 7 fields in, 1 out              32     16
-C 7 in, NamedTuple out            64     16
-D microphysics_tendencies_1m      153    12
-E microphysics_tendencies_1m (9-pt quadrature)255    8
+layer                                         unbnd  bnd   spill+  warps  applied
+A bare broadcast (3 in, 1 out)                40     40    0       48     false
+B 7 fields in, 1 out                          32     32    0       64     false
+C 7 in, NamedTuple out                        64     64    0       32     false
+D microphysics_tendencies_1m                  153    153   0       12     false
+E microphysics_tendencies_1m (9-pt quadrature)255    168   48      8      true
 
 BISECT DONE

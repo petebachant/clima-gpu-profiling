@@ -6,23 +6,43 @@ registers = 60
 warps_per_sm = 16
 
 [layers."A bare broadcast (3 in, 1 out)"]
+bounded_registers = 40
+bounded_warps_per_sm = 48
+launch_bounds_applied = false
 registers = 40
-warps_per_sm = 16
+spill_growth_bytes = 0
+warps_per_sm = 48
 
 [layers."B 7 fields in, 1 out"]
+bounded_registers = 32
+bounded_warps_per_sm = 64
+launch_bounds_applied = false
 registers = 32
-warps_per_sm = 16
+spill_growth_bytes = 0
+warps_per_sm = 64
 
 [layers."C 7 in, NamedTuple out"]
+bounded_registers = 64
+bounded_warps_per_sm = 32
+launch_bounds_applied = false
 registers = 64
-warps_per_sm = 16
+spill_growth_bytes = 0
+warps_per_sm = 32
 
 [layers."D microphysics_tendencies_1m"]
+bounded_registers = 153
+bounded_warps_per_sm = 12
+launch_bounds_applied = false
 registers = 153
+spill_growth_bytes = 0
 warps_per_sm = 12
 
 [layers."E microphysics_tendencies_1m (9-pt quadrature)"]
+bounded_registers = 168
+bounded_warps_per_sm = 12
+launch_bounds_applied = true
 registers = 255
+spill_growth_bytes = 48
 warps_per_sm = 8
 
 [layers."LinearizedAverage nsub=1"]
