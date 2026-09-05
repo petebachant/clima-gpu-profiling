@@ -38,6 +38,26 @@ def show_json(ref, path):
         return None
 
 
+def reproducible(t):
+    """Can this row be reproduced by the recipe this index advertises?
+
+    `git checkout <commit> && git submodule update && calkit run` restores the
+    COMMITTED state. A run made against a dirty working tree measured something
+    that no longer exists anywhere, so the row is not reproducible however good
+    its numbers are. `reproducible` is written by record-treatment.py; rows
+    predating it fall back to inspecting the per-submodule dirty flags, and rows
+    with no treatment.json at all are unknown rather than assumed good.
+    """
+    if t is None:
+        return "unknown"
+    if "reproducible" in t:
+        return "yes" if t["reproducible"] else "NO (dirty tree)"
+    # Only submodule dirtiness counts; the superproject is dirty during every
+    # run because results and logs are written while record-treatment executes.
+    subs = (t.get("submodules") or {}).values()
+    return "NO (dirty tree)" if any(i.get("dirty") for i in subs) else "yes"
+
+
 def treatment_summary(t):
     """One phrase naming what this experiment varied.
 
@@ -94,13 +114,14 @@ def rows():
             "baseline_sypd": num(summary, "baseline", "sypd", fmt="{:.5f}"),
             "mod_sypd": num(summary, "mod", "sypd", fmt="{:.5f}"),
             "commit": (sha or "")[:9],
+            "reproducible": reproducible(treat),
             "note": subject.replace("\n", " ").strip(),
         }
 
 
 FIELDS = [
     "experiment", "date", "treatment", "speedup_pct",
-    "baseline_sypd", "mod_sypd", "commit", "note",
+    "baseline_sypd", "mod_sypd", "commit", "reproducible", "note",
 ]
 
 
@@ -122,6 +143,11 @@ def main():
         "the script.",
         "",
         "Newest first. `speedup_pct` is `(mod - baseline) / mod` in SYPD, the",
+        "convention every run in this repo's history uses. `reproducible` is",
+        "`NO (dirty tree)` when the run was made against uncommitted changes: the",
+        "numbers may be sound, but the checkout recipe below restores the",
+        "committed state and so cannot reproduce them. Commit before running",
+        "anything meant for the record.",
         "convention every run in this repo's history uses. A null test measures",
         "run-to-run variation, which is the floor any other row has to clear to",
         "mean anything.",
@@ -147,7 +173,10 @@ def main():
         lines.append("| " + " | ".join(str(r[k]) for k in FIELDS) + " |")
     MD.write_text("\n".join(lines) + "\n")
 
+    bad = [r["experiment"] for r in data if r["reproducible"].startswith("NO")]
     print(f"wrote {MD.relative_to(ROOT)} and {CSV.relative_to(ROOT)} ({len(data)} experiments)")
+    if bad:
+        print(f"  NOT REPRODUCIBLE ({len(bad)}): {', '.join(bad)}")
     return 0
 
 

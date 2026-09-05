@@ -30,19 +30,49 @@ spill_growth_bytes = 0
 warps_per_sm = 32
 
 [layers."D microphysics_tendencies_1m"]
-bounded_registers = 153
-bounded_warps_per_sm = 12
-launch_bounds_applied = false
+bounded_registers = 128
+bounded_warps_per_sm = 16
+launch_bounds_applied = true
 registers = 153
-spill_growth_bytes = 0
+spill_growth_bytes = 64
 warps_per_sm = 12
 
+[layers."D microphysics_tendencies_1m @16warps"]
+bounded_registers = 128
+bounded_warps_per_sm = 16
+launch_bounds_applied = true
+registers = 153
+spill_growth_bytes = 64
+
 [layers."E microphysics_tendencies_1m (9-pt quadrature)"]
-bounded_registers = 168
-bounded_warps_per_sm = 12
+bounded_registers = 128
+bounded_warps_per_sm = 16
 launch_bounds_applied = true
 registers = 255
-spill_growth_bytes = 48
+spill_growth_bytes = 208
+warps_per_sm = 8
+
+[layers."E microphysics_tendencies_1m (9-pt quadrature) @16warps"]
+bounded_registers = 128
+bounded_warps_per_sm = 16
+launch_bounds_applied = true
+registers = 255
+spill_growth_bytes = 208
+
+[layers."F same, N=1 (1 point)"]
+bounded_registers = 128
+bounded_warps_per_sm = 16
+launch_bounds_applied = true
+registers = 193
+spill_growth_bytes = 88
+warps_per_sm = 8
+
+[layers."G same, N=2 (4 points)"]
+bounded_registers = 128
+bounded_warps_per_sm = 16
+launch_bounds_applied = true
+registers = 215
+spill_growth_bytes = 176
 warps_per_sm = 8
 
 [layers."LinearizedAverage nsub=1"]
@@ -72,6 +102,11 @@ spill_growth_bytes = 0
     local_bytes = 640
     registers = 147
     warps_per_sm = 12
+
+    [layers.launch_bounds_probe.unbounded_no_always_inline]
+    local_bytes = 728
+    registers = 190
+    warps_per_sm = 8
 
 [layers."one linearized implicit step"]
 local_bytes = 536

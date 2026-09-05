@@ -122,6 +122,18 @@ questions:
           than what a commit message claims. Rows marked "null test (arms
           identical)" are the noise-floor measurements; rows marked
           "unrecorded" predate that file.
+
+          THE `reproducible` COLUMN IS LOAD-BEARING. A run made against a dirty
+          working tree measured code that exists nowhere afterwards, so the
+          checkout recipe above restores the committed state and cannot
+          reproduce it -- the numbers may be perfectly sound, but the row is
+          not evidence anyone else can check. Such rows read
+          `NO (dirty tree)`; rows predating results/treatment.json read
+          `unknown`. Only submodule dirtiness counts, because the superproject
+          is dirty during every run (record-treatment executes mid-pipeline
+          while results and logs are being written), so counting it would flag
+          everything and mean nothing. Commit before running anything intended
+          for the record.
       - kind: result
         path: results/summary.json
         key: speedup_pct

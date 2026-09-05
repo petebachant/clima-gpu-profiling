@@ -116,3 +116,25 @@ treatment when it runs, so the stage log records what the table describes. That
 is a check, not a guard — the guard is running the two stages as a pair.
 
 The same applies to any future pair of arm-specific stages.
+
+## Commit before running anything meant for the record
+
+`experiments.csv` advertises that any row can be reproduced with
+`git checkout <commit> && git submodule update --init --recursive && calkit run`.
+That restores the **committed** state. A run made against a dirty working tree
+measured code that exists nowhere afterwards, so the recipe cannot reproduce it —
+however good the numbers are.
+
+`record-treatment.py` writes a top-level `reproducible` flag and `dirty_trees`
+list into `results/treatment.json`, and the experiment index carries a
+`reproducible` column: `yes`, `NO (dirty tree)`, or `unknown` for rows predating
+that file. Non-reproducible rows are visible in the log rather than buried.
+
+Only **submodule** dirtiness counts. The superproject is dirty during every run —
+`record-treatment` executes mid-pipeline while results and logs are being
+written — so counting it would flag every row and mean nothing.
+
+Iterating dirty is fine and is what the normal loop does. Just commit the
+submodule change before the run whose result you intend to tag. It is also worth
+not editing a stage input while a run is in flight: it invalidates stages
+mid-pass and forces a re-run for a change that may not even affect behaviour.

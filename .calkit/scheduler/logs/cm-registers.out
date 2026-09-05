@@ -1,4 +1,4 @@
-gpu-guard: running on GPU(s) [4] -- OK (avoiding [])
+gpu-guard: running on GPU(s) [2] -- OK (avoiding [])
 Loading climacommon/2025_05_15
   Loading requirement: climaauth/2025_05_15 openmpi/4.1.5-mpitrampoline
     julia/1.11.5 cuda/julia-pref
@@ -29,6 +29,50 @@ Loading climacommon/2025_05_15
 │ 
 │ In any other case, please file an issue.
 └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+Precompiling ClimaAtmos...
+  83477.9 ms  ✓ ClimaCore
+   5989.8 ms  ✓ ClimaCore → KrylovExt
+   5874.5 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreExt
+   6548.6 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreNCDatasetsExt
+   8726.9 ms  ✓ ClimaDiagnostics
+  10079.9 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreInterpolationsExt
+  25022.6 ms  ✓ ClimaAtmos
+  7 dependencies successfully precompiled in 126 seconds. 281 already precompiled.
+Precompiling ClimaCoreCUDAExt...
+Info Given ClimaCoreCUDAExt was explicitly requested, output will be shown live [0K
+[0K┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
+[0K│ This may cause errors.
+[0K│ 
+[0K│ If you're running under a profiler, this situation is expected. Otherwise,
+[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
+[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+[0K│ 
+[0K│ In any other case, please file an issue.
+[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+[0K┌ Warning: CUDA runtime library `libnvJitLink.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libnvJitLink.so.13`.
+[0K│ This may cause errors.
+[0K│ 
+[0K│ If you're running under a profiler, this situation is expected. Otherwise,
+[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
+[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+[0K│ 
+[0K│ In any other case, please file an issue.
+[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+[0K┌ Warning: CUDA runtime library `libcusparse.so.12` was loaded from a system path, `/usr/local/cuda/lib64/libcusparse.so.12`.
+[0K│ This may cause errors.
+[0K│ 
+[0K│ If you're running under a profiler, this situation is expected. Otherwise,
+[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
+[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+[0K│ 
+[0K│ In any other case, please file an issue.
+[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+   8573.4 ms  ✓ ClimaCore → ClimaCoreCUDAExt
+  1 dependency successfully precompiled in 10 seconds. 172 already precompiled.
+  1 dependency had output during precompilation:
+┌ ClimaCore → ClimaCoreCUDAExt
+│  [Output was shown above]
+└  
 
 === registers, params passed as RUNTIME kernel arguments ===
 layer                           regs   local B  warps/SM
@@ -42,6 +86,7 @@ LinearizedAverage nsub=3        116    536      16
 === can ptxas hit 12 warps/SM without spilling? ===
 compilation                       regs   local B  warps/SM
 unbounded                         147    640      12
+unbounded, always_inline=false    190    728      8
 __launch_bounds__ 12 warps/SM     146    640      12
 
 spill growth asking for 12 warps/SM: 0 bytes  (within the 256 B budget the guard allows)
@@ -51,7 +96,14 @@ layer                                         unbnd  bnd   spill+  warps  applie
 A bare broadcast (3 in, 1 out)                40     40    0       48     false
 B 7 fields in, 1 out                          32     32    0       64     false
 C 7 in, NamedTuple out                        64     64    0       32     false
-D microphysics_tendencies_1m                  153    153   0       12     false
-E microphysics_tendencies_1m (9-pt quadrature)255    168   48      8      true
+D microphysics_tendencies_1m                  153    128   64      12     true
+E microphysics_tendencies_1m (9-pt quadrature)255    128   208     8      true
+F same, N=1 (1 point)                         193    128   88      8      true
+G same, N=2 (4 points)                        215    128   176     8      true
+
+=== asking for 16 warps/SM instead of 12 ===
+layer                                         unbnd  bnd   spill+  warps  applied
+D microphysics_tendencies_1m                  153    128   64      16     true
+E microphysics_tendencies_1m (9-pt quadrature)255    128   208     16     true
 
 BISECT DONE

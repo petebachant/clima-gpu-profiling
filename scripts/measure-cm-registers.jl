@@ -81,6 +81,8 @@ end
 # `maxthreads` of 384 with one block per SM is the 12-warp target the
 # launch-bounds mechanism asks for.
 const QUAD = ClimaAtmos.SGSQuadrature(FT; quadrature_order = 3)
+const QUAD1 = ClimaAtmos.SGSQuadrature(FT; quadrature_order = 1)
+const QUAD2 = ClimaAtmos.SGSQuadrature(FT; quadrature_order = 2)
 # corr and alpha are runtime scalars; their values do not affect register
 # allocation, so use representative constants rather than building a full
 # ClimaAtmosParameters (the docstring puts T-q correlation around 0.6).
@@ -105,6 +107,19 @@ try
     ru, mu = CUDA.registers(unb), CUDA.memory(unb).local
     println(rpad("unbounded", 34), rpad(ru, 7), rpad(mu, 9), warps(ru))
     lb["unbounded"] = Dict("registers" => ru, "local_bytes" => mu, "warps_per_sm" => warps(ru))
+
+    # Is `always_inline = true` -- which ClimaCore passes on every launch --
+    # overriding the `@noinline` on Microphysics1MEvaluator, so the nine
+    # quadrature bodies inline instead of being called? Registers grow ~7.7 per
+    # quadrature point (F/G/E: 193 -> 215 -> 255), which is the signature of
+    # per-point state accumulating rather than whole bodies being duplicated,
+    # so the barrier looks partly effective. Compiling the same body with
+    # always_inline off says how much of the growth it accounts for.
+    noai = CUDA.@cuda launch=false always_inline=false quad_body(out, ST, MP, TPS, QUAD)
+    rn, mn = CUDA.registers(noai), CUDA.memory(noai).local
+    println(rpad("unbounded, always_inline=false", 34), rpad(rn, 7), rpad(mn, 9), warps(rn))
+    lb["unbounded_no_always_inline"] =
+        Dict("registers" => rn, "local_bytes" => mn, "warps_per_sm" => warps(rn))
 
     bnd = CUDA.@cuda launch=false always_inline=true maxthreads=384 blocks_per_sm=1 quad_body(
         out, ST, MP, TPS, QUAD)
@@ -177,6 +192,25 @@ else
          () -> @. outnt = ClimaAtmos.microphysics_tendencies_1m(
              BMT.Microphysics1Moment(), QUAD, MP, TPS, ρf, Tf, qt, ql, qi, qr, qs,
              TTf, qqf, CORR, lamf, ALPHA, DT, 2)),
+        # F/G/E scale the quadrature order at fixed everything else. `N` is a
+        # TYPE parameter of SGSQuadrature, so the 3x3 loops in
+        # sum_over_quadrature_points have compile-time trip counts and LLVM is
+        # free to unroll them. That is the hypothesis for why the identical
+        # physics costs 147 registers as a scalar kernel and 255 in a broadcast.
+        #
+        # This distinguishes it decisively without reading IR: if the loops are
+        # unrolled, live ranges accumulate across the N^2 copies and registers
+        # grow with N^2. If they stay loops -- which is what the explicit `for`
+        # in sum_over_quadrature_points exists to ensure, "each loop iteration
+        # releases registers from the previous one" -- registers are flat in N.
+        ("F same, N=1 (1 point)",
+         () -> @. outnt = ClimaAtmos.microphysics_tendencies_1m(
+             BMT.Microphysics1Moment(), QUAD1, MP, TPS, ρf, Tf, qt, ql, qi, qr, qs,
+             TTf, qqf, CORR, lamf, ALPHA, DT, 2)),
+        ("G same, N=2 (4 points)",
+         () -> @. outnt = ClimaAtmos.microphysics_tendencies_1m(
+             BMT.Microphysics1Moment(), QUAD2, MP, TPS, ρf, Tf, qt, ql, qi, qr, qs,
+             TTf, qqf, CORR, lamf, ALPHA, DT, 2)),
     ]
     # Report the WHOLE decision, not just the unbounded count. `unbounded_regs`
     # alone cannot distinguish a genuine demand from the 255 hardware cap, and
@@ -208,6 +242,36 @@ else
             "launch_bounds_applied" => !isnothing(d.bounds),
         )
     end
+end
+
+# ---------------------------------------------------------------------------
+# Is the NEXT occupancy step reachable? The kernel now runs at 168 registers and
+# 12 warps/SM (the default target). 128 registers would give 16. ncu still ranks
+# occupancy as the top limiter, and 8 -> 12 was worth -19.4% on the kernel, so
+# 12 -> 16 is worth pricing -- but only if ptxas can get there without paying
+# the spill that made the pre-fusion attempt at 12 warps 20.5% slower.
+if !(isnothing(Ext) || !isdefined(Ext, :LAUNCH_BOUNDS_CACHE))
+    println("\n=== asking for 16 warps/SM instead of 12 ===")
+    println(rpad("layer", 46), rpad("unbnd", 7), rpad("bnd", 6),
+            rpad("spill+", 8), rpad("warps", 7), "applied")
+    Ext.set_launch_bounds_target!(16)
+    for (nm, f) in bcast_layers
+        startswith(nm, "D ") || startswith(nm, "E ") || continue
+        before = Set(keys(Ext.LAUNCH_BOUNDS_CACHE))
+        f()
+        CUDA.synchronize()
+        fresh = [d for (k, d) in Ext.LAUNCH_BOUNDS_CACHE if !(k in before)]
+        isempty(fresh) && continue
+        d = argmax(x -> x.unbounded_regs, fresh)
+        println(rpad(nm, 46), rpad(d.unbounded_regs, 7), rpad(d.bounded_regs, 6),
+                rpad(d.spill_growth, 8), rpad(d.bounded_warps, 7), !isnothing(d.bounds))
+        results[nm * " @16warps"] = Dict(
+            "registers" => d.unbounded_regs, "bounded_registers" => d.bounded_regs,
+            "bounded_warps_per_sm" => d.bounded_warps,
+            "spill_growth_bytes" => d.spill_growth,
+            "launch_bounds_applied" => !isnothing(d.bounds))
+    end
+    Ext.set_launch_bounds_target!(12)   # restore the shipped default
 end
 
 # TOML, not JSON: TOML is stdlib and JSON is not a dependency of the AMIP

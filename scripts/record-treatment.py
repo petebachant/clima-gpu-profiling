@@ -183,6 +183,19 @@ def main():
         # Empty means the arms are identical: a null test, not a treatment.
         "arms_differ_in": sorted(set(delta)),
     }
+    # A run made against a dirty working tree cannot be reproduced by the recipe
+    # experiments.csv advertises -- `git checkout <commit> && git submodule
+    # update && calkit run` restores the COMMITTED state, not whatever was in
+    # the tree at the time. The numbers may be perfectly good; the row is not
+    # reproducible, and the index must say so rather than leave a reader to dig
+    # through treatment.json. Recorded as a top-level flag so it is queryable.
+    # Only SUBMODULE dirtiness counts. The superproject is dirty during
+    # essentially every run -- record-treatment executes mid-pipeline, while
+    # results and logs are being written -- so including it flags everything and
+    # says nothing about the code under test.
+    dirty_trees = sorted(p for p, i in subs.items() if i["dirty"])
+    record["reproducible"] = not dirty_trees
+    record["dirty_trees"] = dirty_trees
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(record, indent=2) + "\n")
@@ -190,8 +203,11 @@ def main():
     dirty = [p for p, i in subs.items() if i["dirty"]]
     print(f"wrote {OUT.relative_to(ROOT)}")
     print(f"  arms differ in: {record['arms_differ_in'] or 'NOTHING (null test)'}")
-    if dirty:
-        print(f"  WARNING: dirty submodules, SHAs do not describe this run: {dirty}")
+    if dirty_trees:
+        print(f"  NOT REPRODUCIBLE: dirty trees, SHAs do not describe this run: "
+              f"{dirty_trees}")
+        print("  Commit before running if this result is meant for the record; "
+              "experiments.csv will mark the row reproducible=no.")
     return 0
 
 
