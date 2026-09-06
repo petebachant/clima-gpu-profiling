@@ -797,6 +797,133 @@ measurement of the changed kernel disagree by 27 points in opposite directions,
 the proxy is what is broken. Grepping a log for `sypd` will find these lines
 first; they are not the metric.
 
+## 4c. 80 registers is unreachable, and why the ladder says so (2026-09-06)
+
+§4b closed on the idea that the 24-warp step "would come back if the kernel body
+shrank enough to reach 80 registers without the spill", and named
+CloudMicrophysics work removal as the way there. The register ladder already
+measured says that is impossible, and it is worth stating plainly so nobody
+spends a week on it.
+
+| layer | registers | what it contains |
+|---|---|---|
+| B | 32 | 7 fields in, one scalar out |
+| **C** | **64** | 7 fields in, NamedTuple out — **framework only, zero physics** |
+| D | 153 | + the full non-quadrature microphysics |
+| F | 193 | + quadrature machinery, 1 point |
+| G | 215 | 4 points |
+| E | 255 | 9 points |
+
+**Layer C is the floor: 64 registers before a single line of physics runs.** An
+80-register budget leaves 16 registers for all of microphysics, and the "source
+terms only" layer alone is 44. Deleting the entire quadrature would land at 153.
+There is no amount of CloudMicrophysics work removal that reaches 80, because
+the thing standing in the way is not microphysics.
+
+Note also B → C: **+32 registers for returning a 4-field NamedTuple instead of a
+scalar.** That is half the framework floor, spent on output layout rather than
+on any computation, and it is a ClimaCore question rather than a
+CloudMicrophysics one. It is the only visible lever on the floor itself.
+
+### The leak that is worth chasing instead
+
+The same ladder shows something that should not be there. `Microphysics1MEvaluator`
+carries a `@noinline` barrier precisely so that `sum_over_quadrature_points`
+reuses registers across points, and the loop is hand-written (rather than
+`ntuple`) for the same reason. If the barrier held, F, G and E would be equal.
+
+    1 point   193
+    4 points  215      +22
+    9 points  255      +62      ~7.75 registers per extra point
+
+**The barrier leaks, and the leak scales with point count.** That is the gap
+between 255 and ~193, and closing it is worth real time even though it does not
+reach 80: at the shipped 128-register bound, spill growth is 208 B at 255
+unbounded but only 88 B at 193 (layer F), and spill is currently 12.81% of the
+kernel's memory traffic.
+
+So the target to chase is **not a lower register bound — it is a lower unbounded
+register count, which buys less spill at the bound we already have.** Those are
+different objectives and the ladder distinguishes them; conflating them is what
+produced the 80-register goal in the first place.
+
+### Attempt 1: it is not transform hoisting (rejected)
+
+The first hypothesis for the leak was that `GaussianPhysicalPointTransform` is
+small enough to inline, so LLVM computes all nine `(T_hat, q_hat)` pairs up
+front and keeps eighteen values live across the barrier — which would scale with
+point count exactly as observed. Marking the transform `@noinline` so each point
+is transformed at its point of use:
+
+| layer | before | after |
+|---|---|---|
+| D (no quadrature) | 153 | 153 |
+| F (1 point) | 193 | 195 |
+| G (4 points) | 215 | 216 |
+| E (9 points) | **255** | **255** |
+
+**No effect on registers.** Spill growth at the 128-register bound moved 208 →
+192 B, which is not nothing but is not the mechanism either. Reverted — it added
+an ABI cost for no register gain. The transform is not what is being kept alive.
+
+### Attempt 2: it is not loop unrolling either (rejected)
+
+Second hypothesis: with `N` a compile-time constant the loops fully unroll into
+N² call sites, so the `@noinline` on the evaluator never produces a single
+reusable call frame. Two tries:
+
+- **`@noinline _opaque_trip_count(n) = n`** — changed *nothing*, to the byte.
+  The reason is worth keeping: **`@noinline` blocks inlining, not constant
+  propagation.** Julia's constprop runs independently and folded the identity
+  straight back to `3`, so the loop still unrolled. A `@noinline` identity is
+  not an optimization barrier.
+- **`Base.compilerbarrier(:const, N)`** — the primitive that *does* block
+  constprop. Registers: D unchanged, F unchanged, E unchanged at 255, G
+  215 → 185.
+
+That last number looks like a win and is not one, which is the real lesson here.
+
+### The instrument was hiding the answer
+
+`spill_growth_bytes` is a *difference* between the bounded and unbounded
+compiles, and it was the only local-memory number recorded. A difference cannot
+tell "demand fell" from "both compiles moved together", and a kernel pinned at
+the 255-register hard cap reports 255 whatever its true demand — so neither
+recorded quantity could answer whether a change did anything. Added absolute
+`unbounded_local_bytes` / `bounded_local_bytes` to the launch-bounds decision
+record. With those visible, barrier on vs off:
+
+| layer | registers | unbounded local | bounded local |
+|---|---|---|---|
+| D | 153 → 153 | 1096 → 1096 | 1160 → 1160 |
+| F (1 pt) | 193 → 193 | 592 → 592 | 680 → 680 |
+| G (4 pt) | 215 → **185** | 640 → 640 | 816 → 816 |
+| E (9 pt) | 255 → 255 | 1864 → 1864 | 2072 → 2072 |
+
+**Every footprint is identical.** G's 30-register "improvement" is the compiler
+choosing a different register/spill split at exactly the same total cost. The
+barrier does nothing; it only moved where the compiler wrote the number down.
+Reverted.
+
+### What the absolute numbers say instead
+
+| layer | unbounded local memory |
+|---|---|
+| F: 1 point | 592 B |
+| G: 4 points | 640 B |
+| E: 9 points | **1864 B** |
+
+**The 9-point kernel spills 1864 bytes before launch bounds are applied at all.**
+The 208 B of growth that the spill budget adjudicates — the number §4a and §4b
+are built around — is an 11% increment on a kernel already deep in local memory.
+
+This reframes the register story. Going 1 → 9 points does not mainly cost
+registers (they are capped, so they cannot show it); it costs **+1272 bytes of
+spill**. Reasoning about this kernel in registers was measuring the cap rather
+than the demand, and the three failed attempts above are what that error looks
+like from the inside: each targeted register pressure, and register pressure was
+never the free variable.
+
 ## 5. Methodology lessons
 
 **A mechanism that wins on the GPU can still lose the run.** The first full

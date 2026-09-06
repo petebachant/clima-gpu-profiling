@@ -232,13 +232,20 @@ else
         d = argmax(x -> x.unbounded_regs, fresh)
         println(rpad(nm, 46), rpad(d.unbounded_regs, 7), rpad(d.bounded_regs, 6),
                 rpad(d.spill_growth, 8), rpad(d.unbounded_warps, 7),
-                !isnothing(d.bounds))
+                rpad(!isnothing(d.bounds), 7),
+                rpad(d.unbounded_local, 8), d.bounded_local)
         results[nm] = Dict(
             "registers" => d.unbounded_regs,
             "warps_per_sm" => d.unbounded_warps,
             "bounded_registers" => d.bounded_regs,
             "bounded_warps_per_sm" => d.bounded_warps,
             "spill_growth_bytes" => d.spill_growth,
+            # Absolute footprints, not just their difference. A kernel pinned at
+            # the 255-register cap reports 255 whatever its real demand, so
+            # `registers` cannot tell you whether a change moved anything; these
+            # can.
+            "unbounded_local_bytes" => d.unbounded_local,
+            "bounded_local_bytes" => d.bounded_local,
             "launch_bounds_applied" => !isnothing(d.bounds),
         )
     end
