@@ -1,12 +1,19 @@
 """Export per-kernel register/spill/occupancy stats from the Nsight Compute reports.
 
 The nsys-derived table (results/top-kernels.csv) carries timings and registers
-per thread, but not spilling -- nsys does not collect it. That omission hides
-the mechanism behind this project's current headline result: the hot
-microphysics kernel sits at the 255-register cap in BOTH arms and at the same
-12.4% occupancy, so the nsys table shows an unchanged number while the kernel
-runs 28.6% faster. It is only visible here -- measured 2026-09-03, the baseline
-spills 32.9% of its memory traffic and the fused mod arm spills none.
+per thread, but not spilling -- nsys does not collect it. Spilling is the
+mechanism behind this project's headline result, so it is only visible here.
+
+The omission was starkest at the fusion-only stage: the hot microphysics kernel
+sat at the 255-register cap in BOTH arms and at the same 12.4% occupancy, so the
+nsys table showed an unchanged number while the kernel ran 28.6% faster. All of
+the difference was spill traffic.
+
+Refreshed 2026-09-05, with launch bounds now targeting 16 warps/SM, the two arms
+separate on every axis: 255 vs 128 registers, 32.9% vs 12.8% spill overhead,
+12.4% vs 24.6% achieved occupancy, 31.7 vs 11.4 ms. The mod arm still spills --
+an earlier version of this note said it spilled none, which held only for the
+intermediate fusion-without-launch-bounds build.
 
 The `_baseline` and `_mod` columns are only a real comparison if both ncu
 stages ran at the same revision. They did not between 2026-08-20 and 2026-08-23,

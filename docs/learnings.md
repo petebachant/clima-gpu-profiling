@@ -697,6 +697,106 @@ is latency-bound on execution dependencies rather than occupancy-starved, and
 that the real gain would be "real but smaller" — held. −19.4% is real but
 smaller.
 
+## 4b. What the refreshed ncu reports actually show (2026-09-05)
+
+The ncu pair was refreshed after the 16-warp step landed, because the table on
+record still described the pre-launch-bounds mod arm. Only `mod-ncu` re-ran:
+DVC found `baseline-ncu` up to date, correctly — the baseline arm has not
+changed since its 2026-09-03 export, which was already post-dep-update. A
+skipped baseline is not the mismatch AGENTS.md warns about; that one was two
+arms from *different* project states. Here the baseline state is the same one,
+and the skip is DVC saying so.
+
+| | baseline | mod (128 reg / 16 warps) |
+|---|---|---|
+| duration | 31.70 ms | **11.38 ms** |
+| registers | 255 | **128** |
+| achieved occupancy | 12.39% | **24.60%** |
+| SM throughput | 31.01% | **43.88%** |
+| IPC | 1.27 | **1.79** |
+| spill requests | 37,538,807 | **15,654,128** |
+| spill overhead | 32.92% | **12.81%** |
+| block size | 256 | **512** |
+
+### The spill went down, not up
+
+This was recorded backwards while the change was being made: the 16-warp target
+was described as "reintroducing 208 bytes of spill," and §4a's budget table
+frames spill growth as the cost paid for occupancy. On the real kernel, forcing
+128 registers **halves** spill traffic against baseline — 37.5M requests to
+15.7M, 32.92% to 12.81% overhead.
+
+Both statements are true and they are about different baselines. `spill_growth`
+in the guard is measured against the *unbounded* compile of the same kernel,
+which is the right quantity for the guard's decision. It is not the quantity
+that predicts the measured result, because the unbounded compile of the fused
+kernel is not what the arm is being compared against. **When reporting a spill
+number, say which compile it is relative to** — the guard's budget and the
+profiler's overhead are not the same axis, and reading one as the other is what
+produced the wrong description here.
+
+### Part of the conversion anomaly is block size
+
+The unexplained item from §3b — the mod arm gained SYPD out of proportion to its
+summed kernel time — has a partial mechanism now. Block size went 256 → 512, so
+each block covers twice the work and the grid-stride loop runs half as many
+iterations. IPC rose 1.27 → 1.79 and SM throughput 31% → 44%: the kernel is not
+merely holding more warps resident, it is *issuing* substantially better.
+Summed kernel duration understates this, because part of the gain lands in how
+work is scheduled rather than in any single kernel's wall time. This narrows the
+anomaly; it does not close it, and the mechanism is inferred from the counters
+rather than demonstrated.
+
+### The next occupancy step does not exist
+
+ncu still ranks occupancy first, at 55% estimated (down from 69%), on the same
+grounds: 4.00 of 16 warps per scheduler, register-limited. The obvious read is
+to take one more step. The register sweep says there is no step to take —
+ptxas goes from 128 registers (16 warps) directly to 80 (24 warps), with nothing
+between, and the hot kernel pays **+392 B** of spill growth to get there against
+a 256 B budget. The nearest measured point on that axis, +344 B pre-fusion at 12
+warps, ran **20.5% slower**.
+
+So the register lever is not exhausted because occupancy saturated. It is
+exhausted because the granularity of the next step overshoots. That is a
+different claim and it fails differently: it would come back if the kernel body
+shrank enough to reach 80 registers without the spill.
+
+### Measured, not extrapolated (2026-09-06)
+
+Raising `LAUNCH_BOUNDS_SPILL_BUDGET` to 512 lets the 24-warp target through, so
+the step could be priced rather than argued about. Under nsys, over 10 launches
+each:
+
+| | L1013 total | per launch |
+|---|---|---|
+| 16 warps / 128 reg | 150.3 ms | 15.03 ms |
+| 24 warps / 80 reg | **177.9 ms** | 17.79 ms |
+
+**18.4% slower**, against the 20.5% the +344 B case lost pre-fusion. Reverted.
+The 256 B budget now has a rejection on either side of its single acceptance,
+and the two rejections cost almost the same amount — the budget is not a
+conservative guess that happens to work, it is tracking something real.
+
+Re-running the 16-warp build afterwards to restore `results/nsys/mod.sqlite`
+produced an unplanned replicate: **15.07 ms** against the original 15.03 ms,
+**0.31% apart**. So this measurement — L1013 total over 10 launches under nsys —
+has a repeat spread of roughly a third of a percent, and the 24-warp effect is
+about sixty times that. It is a far sharper instrument than full-AMIP SYPD
+(±~2% noise floor, 0.43% at best across repeats), because it counts one kernel
+under one instrument rather than a whole run's wall time. Prefer it for
+kernel-local questions; it cannot answer whole-run ones, since it is blind to
+everything that is not that kernel.
+
+**A warning about the wrong number, because it nearly got reported as a win.**
+The same run's `sypd ≈` lines read 0.4104 against the 16-warp run's 0.3784 —
+apparently +8.5%. They are the progress logger's *running average* at coupler
+steps 8 and 12 of a 10-step profiled run, so they carry JIT and profiler warmup
+and are not the pipeline's `estimated_sypd`. When a proxy and a direct
+measurement of the changed kernel disagree by 27 points in opposite directions,
+the proxy is what is broken. Grepping a log for `sypd` will find these lines
+first; they are not the metric.
+
 ## 5. Methodology lessons
 
 **A mechanism that wins on the GPU can still lose the run.** The first full

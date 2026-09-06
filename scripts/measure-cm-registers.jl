@@ -250,11 +250,12 @@ end
 # occupancy as the top limiter, and 8 -> 12 was worth -19.4% on the kernel, so
 # 12 -> 16 is worth pricing -- but only if ptxas can get there without paying
 # the spill that made the pre-fusion attempt at 12 warps 20.5% slower.
-if !(isnothing(Ext) || !isdefined(Ext, :LAUNCH_BOUNDS_CACHE))
-    println("\n=== asking for 16 warps/SM instead of 12 ===")
+for TARGET in (16, 21, 24)
+    (isnothing(Ext) || !isdefined(Ext, :LAUNCH_BOUNDS_CACHE)) && break
+    println("\n=== asking for $TARGET warps/SM instead of the shipped 16 ===")
     println(rpad("layer", 46), rpad("unbnd", 7), rpad("bnd", 6),
             rpad("spill+", 8), rpad("warps", 7), "applied")
-    Ext.set_launch_bounds_target!(16)
+    Ext.set_launch_bounds_target!(TARGET)
     for (nm, f) in bcast_layers
         startswith(nm, "D ") || startswith(nm, "E ") || continue
         before = Set(keys(Ext.LAUNCH_BOUNDS_CACHE))
@@ -265,13 +266,13 @@ if !(isnothing(Ext) || !isdefined(Ext, :LAUNCH_BOUNDS_CACHE))
         d = argmax(x -> x.unbounded_regs, fresh)
         println(rpad(nm, 46), rpad(d.unbounded_regs, 7), rpad(d.bounded_regs, 6),
                 rpad(d.spill_growth, 8), rpad(d.bounded_warps, 7), !isnothing(d.bounds))
-        results[nm * " @16warps"] = Dict(
+        results[nm * " @$(TARGET)warps"] = Dict(
             "registers" => d.unbounded_regs, "bounded_registers" => d.bounded_regs,
             "bounded_warps_per_sm" => d.bounded_warps,
             "spill_growth_bytes" => d.spill_growth,
             "launch_bounds_applied" => !isnothing(d.bounds))
     end
-    Ext.set_launch_bounds_target!(12)   # restore the shipped default
+    Ext.set_launch_bounds_target!(16)   # restore the shipped default
 end
 
 # TOML, not JSON: TOML is stdlib and JSON is not a dependency of the AMIP

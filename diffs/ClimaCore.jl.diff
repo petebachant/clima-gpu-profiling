@@ -1,5 +1,5 @@
 diff --git a/ClimaCore.jl/ext/cuda/cuda_utils.jl b/ClimaCore.jl-mod/ext/cuda/cuda_utils.jl
-index 0a8da83..12c7bd8 100644
+index 0a8da83..5e33358 100644
 --- a/ClimaCore.jl/ext/cuda/cuda_utils.jl
 +++ b/ClimaCore.jl-mod/ext/cuda/cuda_utils.jl
 @@ -132,6 +132,25 @@ function max_active_blocks(threads_per_block, regs_per_thread, shmem_per_block)
@@ -39,7 +39,7 @@ index 0a8da83..12c7bd8 100644
      # The default is resolved before the cache key is built, so that changing
      # MAX_WAVES[] at runtime (as perf/sweep_kernel_configs.jl does) misses the
      # cache instead of returning configurations computed for the old value.
-@@ -320,6 +341,220 @@ function config_via_occupancy(f::F, nitems, args) where {F}
+@@ -320,6 +341,229 @@ function config_via_occupancy(f::F, nitems, args) where {F}
      return (; threads = threads_per_block, blocks = cld(nitems, threads_per_block))
  end
  
@@ -93,11 +93,20 @@ index 0a8da83..12c7bd8 100644
 +# runs 0.11% apart against a 0.43% noise floor. That is nearly three times the
 +# 8 -> 12 step (+0.63%), so occupancy had not saturated at 12.
 +#
-+# The budget itself remains the load-bearing part and is validated at both ends
-+# now: +344 B (pre-fusion, 12 warps) ran 20.5% SLOWER and is correctly rejected;
-+# +208 B is accepted and helps. Do not raise the target further without
-+# measuring -- 128 -> 96 registers would be the next step and there is no reason
-+# to assume it stays on the right side of the trade.
++# The budget itself remains the load-bearing part and is validated at three
++# points now: +344 B (pre-fusion, 12 warps) ran 20.5% SLOWER and is correctly
++# rejected; +208 B is accepted and helps; +392 B was measured on 2026-09-06 by
++# raising the budget to 512 so the guard would let it through, and the hot
++# kernel ran 18.4% slower (150.3 -> 177.9 ms over 10 launches). Reverted. Two
++# rejections either side of one acceptance, with the losses landing where the
++# budget says they should.
++#
++# There is also no finer step to take. ptxas goes from 128 registers (16 warps)
++# straight to 80 (24 warps) on this kernel -- a 21-warp target compiles to the
++# same 80 registers as a 24-warp one. So the target is not held back by a
++# cautious budget; the next rung is simply too far up, and asking for it costs
++# more in spill than the occupancy returns. This would change if the kernel body
++# shrank enough to reach 80 registers without the spill.
 +const LAUNCH_BOUNDS_TARGET_WARPS_PER_SM = Ref{Int}(16)
 +const LAUNCH_BOUNDS_SPILL_BUDGET = Ref{Int}(256)
 +
@@ -260,7 +269,7 @@ index 0a8da83..12c7bd8 100644
  const reported_stats = Dict()
  const kernel_names = IdDict()
  
-@@ -406,6 +641,14 @@ function __init__()
+@@ -406,6 +650,14 @@ function __init__()
      # directly, so a larger value would fail at the first kernel launch.
      FD_MAX_THREADS[] = _getenv_int("CLIMA_FD_MAX_THREADS", 128; max = 1024)
      DSS_MAX_THREADS[] = _getenv_int("CLIMA_DSS_MAX_THREADS", 256; max = 1024)
@@ -275,7 +284,7 @@ index 0a8da83..12c7bd8 100644
  end
  
  name_kernels_from_stack_trace() = NAME_KERNELS_FROM_STACK_TRACE[]
-@@ -528,18 +771,26 @@ function auto_launch!(
+@@ -528,18 +780,26 @@ function auto_launch!(
      if auto
          @assert !isnothing(nitems)
          if nitems ≥ 0
