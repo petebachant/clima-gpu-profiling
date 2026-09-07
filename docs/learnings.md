@@ -924,6 +924,67 @@ than the demand, and the three failed attempts above are what that error looks
 like from the inside: each targeted register pressure, and register pressure was
 never the free variable.
 
+## 4d. The evaluator payload, and what it does not buy (2026-09-06)
+
+§4c ended by naming the evaluator's live state as the lead worth chasing. It was
+the right lead and it produced the largest kernel-level win in the project, but
+it does not do the thing it looked like it might.
+
+`Microphysics1MEvaluator` stored `mp` and `tps` as fields, making it 472 B of
+which **432 B was those two parameter structs** — identical for every cell and
+every quadrature point. A struct built per cell is an alloca the ABI writes to
+local memory before each `@noinline` call; the same values passed as arguments
+stay in `.param` space and are read field-by-field. Threading them through
+`sum_over_quadrature_points` as a defaulted `extra` tuple:
+
+| | before | after |
+|---|---|---|
+| `sizeof(Microphysics1MEvaluator)` | 472 B | **40 B** |
+| unbounded registers | 255 *(at the cap)* | **184** |
+| unbounded local memory | 1864 B | **1432 B** |
+| bounded local memory (shipped) | 2072 B | **1648 B** |
+| L1013, 10 launches | 150.3 ms | **137.2 ms (−8.8%)** |
+
+The −432 B is *exactly* `sizeof(mp) + sizeof(tps)`, which is what makes this
+mechanism measured rather than inferred. Verified bit-for-bit: 400 randomized
+states × 4 tendencies, identical bit patterns.
+
+### The kernel win does not reach SYPD, and never could
+
+Measured end to end: **0.29423, +3.93%** — against a +4.24% three-run mean for
+fusion+bounds@16 *without* this change. It is a single sample inside the 0.43%
+noise floor, so not a regression, but not an improvement either.
+
+The arithmetic was available before the run and should have been done first:
+L1013 is now **10.1% of GPU time**, so −8.8% on it is ~0.95% of kernel time and
+**~0.3% SYPD** at the ~⅓ pass-through this project keeps measuring. That is
+below the noise floor by construction. **A kernel-level win on a kernel that is
+10% of the budget cannot be validated by a whole-model measurement** — check the
+share before spending 45 minutes of cluster time on the confirmation.
+
+### It does not remove the need for the ClimaCore work
+
+The tempting inference from 255 → 184 was that a little more slimming reaches
+168 and 12 warps/SM unaided, making the launch-bounds branch unnecessary. That
+is the wrong target. **Launch bounds already delivers 16 warps at 128
+registers**; 168 would buy 12, which is a downgrade. The threshold that would
+make ClimaCore redundant is ≤128 unbounded — 56 registers below where we are,
+not 16 — and with a 64-register framework floor that leaves 64 for physics and
+quadrature together, which currently cost 120.
+
+**Occupancy at 16 warps is only reachable through launch bounds.** The
+superadditive pattern holds a fourth time and the ClimaCore change is
+load-bearing.
+
+Nor is there an easy follow-up in narrowing the parameter struct:
+
+    Microphysics1MParams = 328 B
+      precip 132   terminal_velocity 76   process_params 56
+      cloud   52   air_properties    12   processes        0 (singleton)
+
+No large unused chunk — the physics touches most of it, so narrowing means an
+invasive refactor for a fraction of 432 B.
+
 ## 5. Methodology lessons
 
 **A mechanism that wins on the GPU can still lose the run.** The first full
