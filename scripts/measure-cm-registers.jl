@@ -216,6 +216,29 @@ else
     # alone cannot distinguish a genuine demand from the 255 hardware cap, and
     # `spill_growth` is what says whether asking for 12 warps/SM is free -- the
     # question that decides the occupancy win ncu ranks at 69%.
+    # Why does 1 -> 9 quadrature points cost +1272 B of local memory when the
+    # `@noinline` barrier on Microphysics1MEvaluator exists precisely so the
+    # points reuse one call frame? (1864 - 592) / 8 = 159 B per extra point.
+    # If the evaluator struct is about that size, the ABI is materializing one
+    # copy of it per unrolled call site: the struct is passed BY VALUE and
+    # carries the full microphysics and thermodynamics parameter structs.
+    let ev = ClimaAtmos.Microphysics1MEvaluator(
+            BMT.Microphysics1Moment(), FT(0.9),
+            FT(2e-4), FT(3e-5), FT(0.7), FT(1e-5), FT(1e-4), ALPHA,
+            DT, 2, (),
+        )
+        println("\n=== evaluator live state (passed by value across the barrier) ===")
+        println("  sizeof(Microphysics1MEvaluator) = ", sizeof(typeof(ev)), " B")
+        println("  sizeof(mp  :: ", nameof(typeof(MP)), ") = ", sizeof(typeof(MP)), " B")
+        println("  sizeof(tps :: ", nameof(typeof(TPS)), ") = ", sizeof(typeof(TPS)), " B")
+        println("  measured local-memory cost per extra quadrature point = 159 B")
+        results["evaluator_bytes"] = Dict(
+            "evaluator" => sizeof(typeof(ev)),
+            "mp" => sizeof(typeof(MP)),
+            "tps" => sizeof(typeof(TPS)),
+        )
+    end
+
     println("\n=== ClimaCore broadcast layers, AMIP layout ===")
     println(rpad("layer", 46), rpad("unbnd", 7), rpad("bnd", 6),
             rpad("spill+", 8), rpad("warps", 7), "applied")

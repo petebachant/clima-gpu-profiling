@@ -1,4 +1,4 @@
-gpu-guard: running on GPU(s) [0] -- OK (avoiding [])
+gpu-guard: running on GPU(s) [7] -- OK (avoiding [])
 Loading climacommon/2025_05_15
   Loading requirement: climaauth/2025_05_15 openmpi/4.1.5-mpitrampoline
     julia/1.11.5 cuda/julia-pref
@@ -30,8 +30,8 @@ Loading climacommon/2025_05_15
 │ In any other case, please file an issue.
 └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
 Precompiling ClimaAtmos...
-  25176.2 ms  ✓ ClimaAtmos
-  1 dependency successfully precompiled in 28 seconds. 287 already precompiled.
+  26011.6 ms  ✓ ClimaAtmos
+  1 dependency successfully precompiled in 29 seconds. 287 already precompiled.
 
 === registers, params passed as RUNTIME kernel arguments ===
 layer                           regs   local B  warps/SM
@@ -45,10 +45,16 @@ LinearizedAverage nsub=3        116    536      16
 === can ptxas hit 12 warps/SM without spilling? ===
 compilation                       regs   local B  warps/SM
 unbounded                         147    640      12
-unbounded, always_inline=false    190    728      8
-__launch_bounds__ 12 warps/SM     146    640      12
+unbounded, always_inline=false    194    728      8
+__launch_bounds__ 12 warps/SM     150    640      12
 
 spill growth asking for 12 warps/SM: 0 bytes  (within the 256 B budget the guard allows)
+
+=== evaluator live state (passed by value across the barrier) ===
+  sizeof(Microphysics1MEvaluator) = 40 B
+  sizeof(mp  :: Microphysics1MParams) = 328 B
+  sizeof(tps :: ThermodynamicsParameters) = 104 B
+  measured local-memory cost per extra quadrature point = 159 B
 
 === ClimaCore broadcast layers, AMIP layout ===
 layer                                         unbnd  bnd   spill+  warps  applied
@@ -56,23 +62,23 @@ A bare broadcast (3 in, 1 out)                40     40    0       48     false 
 B 7 fields in, 1 out                          32     32    0       64     false  32      32
 C 7 in, NamedTuple out                        64     64    0       32     false  32      32
 D microphysics_tendencies_1m                  153    128   64      12     true   1096    1160
-E microphysics_tendencies_1m (9-pt quadrature)255    128   208     8      true   1864    2072
-F same, N=1 (1 point)                         193    128   88      8      true   592     680
-G same, N=2 (4 points)                        215    128   176     8      true   640     816
+E microphysics_tendencies_1m (9-pt quadrature)184    128   216     8      true   1432    1648
+F same, N=1 (1 point)                         161    128   96      12     true   1368    1464
+G same, N=2 (4 points)                        185    128   200     8      true   1424    1624
 
 === asking for 16 warps/SM instead of the shipped 16 ===
 layer                                         unbnd  bnd   spill+  warps  applied
 D microphysics_tendencies_1m                  153    128   64      16     true
-E microphysics_tendencies_1m (9-pt quadrature)255    128   208     16     true
+E microphysics_tendencies_1m (9-pt quadrature)184    128   216     16     true
 
 === asking for 21 warps/SM instead of the shipped 16 ===
 layer                                         unbnd  bnd   spill+  warps  applied
 D microphysics_tendencies_1m                  153    80    264     24     false
-E microphysics_tendencies_1m (9-pt quadrature)255    80    392     24     false
+E microphysics_tendencies_1m (9-pt quadrature)184    80    408     24     false
 
 === asking for 24 warps/SM instead of the shipped 16 ===
 layer                                         unbnd  bnd   spill+  warps  applied
 D microphysics_tendencies_1m                  153    80    264     24     false
-E microphysics_tendencies_1m (9-pt quadrature)255    80    392     24     false
+E microphysics_tendencies_1m (9-pt quadrature)184    80    408     24     false
 
 BISECT DONE

@@ -67,54 +67,54 @@ registers = 153
 spill_growth_bytes = 264
 
 [layers."E microphysics_tendencies_1m (9-pt quadrature)"]
-bounded_local_bytes = 2072
+bounded_local_bytes = 1648
 bounded_registers = 128
 bounded_warps_per_sm = 16
 launch_bounds_applied = true
-registers = 255
-spill_growth_bytes = 208
-unbounded_local_bytes = 1864
+registers = 184
+spill_growth_bytes = 216
+unbounded_local_bytes = 1432
 warps_per_sm = 8
 
 [layers."E microphysics_tendencies_1m (9-pt quadrature) @16warps"]
 bounded_registers = 128
 bounded_warps_per_sm = 16
 launch_bounds_applied = true
-registers = 255
-spill_growth_bytes = 208
+registers = 184
+spill_growth_bytes = 216
 
 [layers."E microphysics_tendencies_1m (9-pt quadrature) @21warps"]
 bounded_registers = 80
 bounded_warps_per_sm = 24
 launch_bounds_applied = false
-registers = 255
-spill_growth_bytes = 392
+registers = 184
+spill_growth_bytes = 408
 
 [layers."E microphysics_tendencies_1m (9-pt quadrature) @24warps"]
 bounded_registers = 80
 bounded_warps_per_sm = 24
 launch_bounds_applied = false
-registers = 255
-spill_growth_bytes = 392
+registers = 184
+spill_growth_bytes = 408
 
 [layers."F same, N=1 (1 point)"]
-bounded_local_bytes = 680
+bounded_local_bytes = 1464
 bounded_registers = 128
 bounded_warps_per_sm = 16
 launch_bounds_applied = true
-registers = 193
-spill_growth_bytes = 88
-unbounded_local_bytes = 592
-warps_per_sm = 8
+registers = 161
+spill_growth_bytes = 96
+unbounded_local_bytes = 1368
+warps_per_sm = 12
 
 [layers."G same, N=2 (4 points)"]
-bounded_local_bytes = 816
+bounded_local_bytes = 1624
 bounded_registers = 128
 bounded_warps_per_sm = 16
 launch_bounds_applied = true
-registers = 215
-spill_growth_bytes = 176
-unbounded_local_bytes = 640
+registers = 185
+spill_growth_bytes = 200
+unbounded_local_bytes = 1424
 warps_per_sm = 8
 
 [layers."LinearizedAverage nsub=1"]
@@ -132,12 +132,17 @@ local_bytes = 536
 registers = 116
 warps_per_sm = 16
 
+[layers.evaluator_bytes]
+evaluator = 40
+mp = 328
+tps = 104
+
 [layers.launch_bounds_probe]
 spill_growth_bytes = 0
 
     [layers.launch_bounds_probe.bounded_12warps]
     local_bytes = 640
-    registers = 146
+    registers = 150
     warps_per_sm = 12
 
     [layers.launch_bounds_probe.unbounded]
@@ -147,7 +152,7 @@ spill_growth_bytes = 0
 
     [layers.launch_bounds_probe.unbounded_no_always_inline]
     local_bytes = 728
-    registers = 190
+    registers = 194
     warps_per_sm = 8
 
 [layers."one linearized implicit step"]

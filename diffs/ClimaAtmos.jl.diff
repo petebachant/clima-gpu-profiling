@@ -1,0 +1,157 @@
+diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
+index c5a7604..6085707 100644
+--- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
++++ b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
+@@ -208,7 +208,7 @@ end
+ ###
+ 
+ """
+-    Microphysics1MEvaluator{S, MP, TPS, FT, Args}
++    Microphysics1MEvaluator{S, FT, Args}
+ 
+ GPU-safe functor evaluating 1-moment microphysics tendencies at SGS quadrature
+ points, for use with [`integrate_over_sgs`](@ref).
+@@ -222,7 +222,7 @@ quadrature points.
+ # Fields
+ 
+   - `scheme`: CloudMicrophysics scheme tag (e.g. `BMT.Microphysics1Moment()`).
+-  - `mp`, `tps`: Microphysics and thermodynamics parameters.
++  - `mp`, `tps`: passed as call arguments, not stored; see the note below.
+   - `ρ`: Air density [kg/m³].
+   - `q_rai`, `q_sno`: Rain and snow specific humidity [kg/kg], clamped
+     non-negative by the caller.
+@@ -236,10 +236,14 @@ quadrature points.
+   - `nsubs`: Number of substeps in the tendency averaging.
+   - `args`: Extra trailing arguments forwarded to the CloudMicrophysics call.
+ """
+-struct Microphysics1MEvaluator{S, MP, TPS, FT, Args <: Tuple}
++# `mp` and `tps` are deliberately NOT fields. They are identical for every cell
++# and every quadrature point, and storing them here made this struct 472 B, of
++# which 432 B was those two parameter structs. A struct built per cell becomes an
++# alloca the ABI writes to local memory before each `@noinline` call; the same
++# values passed as arguments stay in .param space and are read field-by-field.
++# They are threaded through `sum_over_quadrature_points`'s `extra` tuple instead.
++struct Microphysics1MEvaluator{S, FT, Args <: Tuple}
+     scheme::S
+-    mp::MP
+-    tps::TPS
+     ρ::FT
+     # Precipitation (held fixed across quadrature points)
+     q_rai::FT
+@@ -294,7 +298,7 @@ local vapor.
+ NamedTuple from `BMT.bulk_microphysics_tendencies(BMT.LinearizedAverage(), ...)`
+ with `dq_lcl_dt`, `dq_icl_dt`, `dq_rai_dt`, `dq_sno_dt` [kg/kg/s].
+ """
+-@noinline function (eval::Microphysics1MEvaluator)(T_hat, q_tot_hat)
++@noinline function (eval::Microphysics1MEvaluator)(T_hat, q_tot_hat, mp, tps)
+     FT = typeof(eval.ρ)
+     q_tot_hat = max(FT(0), q_tot_hat)
+ 
+@@ -307,7 +311,7 @@ with `dq_lcl_dt`, `dq_icl_dt`, `dq_rai_dt`, `dq_sno_dt` [kg/kg/s].
+     # to cloud-only q_c), and CloudMicrophysics subtracts q_rai/q_sno from
+     # q_tot_hat when it diagnoses the local vapor. Subtracting them from the
+     # cloud condensate as well would double-count them and break ⟨q_c^local⟩ = q_c.
+-    q_sat_hat = TD.q_vap_saturation(eval.tps, T_hat, eval.ρ)
++    q_sat_hat = TD.q_vap_saturation(tps, T_hat, eval.ρ)
+     S′_hat = q_tot_hat - q_sat_hat - eval.mu_S
+     shifted_excess = max(FT(0), eval.λ_lagrange + eval.α * S′_hat)
+     q_lcl_hat = eval.λ * shifted_excess
+@@ -315,7 +319,7 @@ with `dq_lcl_dt`, `dq_icl_dt`, `dq_rai_dt`, `dq_sno_dt` [kg/kg/s].
+ 
+     return BMT.bulk_microphysics_tendencies(
+         BMT.LinearizedAverage(),
+-        eval.scheme, eval.mp, eval.tps, eval.ρ, T_hat, q_tot_hat,
++        eval.scheme, mp, tps, eval.ρ, T_hat, q_tot_hat,
+         q_lcl_hat, q_icl_hat, eval.q_rai, eval.q_sno,
+         eval.dt, eval.nsubs, eval.args...,
+     )
+@@ -401,13 +405,13 @@ end
+     q_sno_nonneg = max(FT(0), q_sno)
+ 
+     evaluator = Microphysics1MEvaluator(
+-        scheme, cmp, thp, ρ,
++        scheme, ρ,
+         q_rai_nonneg, q_sno_nonneg,
+         λ, λ_lagrange, mu_S, α,
+         dt, nsubs, args,
+     )
+     return integrate_over_sgs(
+-        evaluator, sgs_quad, q_tot_nonneg, T, q′q′, T′T′, corr_Tq,
++        evaluator, sgs_quad, q_tot_nonneg, T, q′q′, T′T′, corr_Tq, (cmp, thp),
+     )
+ end
+ 
+diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/sgs_quadrature.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/sgs_quadrature.jl
+index cffa1b5..e73299c 100644
+--- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/sgs_quadrature.jl
++++ b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/sgs_quadrature.jl
+@@ -636,10 +636,18 @@ as ``1/\\sqrt{\\pi}`` per dimension. Accumulation uses `RecursiveApply`'s `⊞`
+ 
+ The weighted sum, of the same type as `f(T_hat, q_hat)`.
+ """
++# `extra` is splatted into every `f` call rather than captured in `f` itself.
++# Values placed here arrive as kernel arguments and stay in .param space, where
++# the callee reads fields directly; the same values stored as fields of `f` make
++# `f` a per-cell struct, which becomes an alloca the ABI must write to local
++# memory before each call. For the microphysics evaluator that is 432 bytes of
++# parameter structs -- identical for every cell and every quadrature point --
++# and the 9-point kernel spills 1864 B against 592 B at one point.
+ function sum_over_quadrature_points(
+     f,
+     get_x_hat,
+     quad::SGSQuadrature{N},
++    extra::Tuple = (),
+ ) where {N}
+     χ = quad.a
+     weights = quad.w
+@@ -654,19 +662,19 @@ function sum_over_quadrature_points(
+     # saves one full evaluation of `f` per cell (≈ 11% of work at N = 3).
+     @inbounds begin
+         x_hat = get_x_hat(χ[1], χ[1])
+-        inner_sum = f(x_hat...) ⊠ (weights[1] * inv_sqrt_pi)
++        inner_sum = f(x_hat..., extra...) ⊠ (weights[1] * inv_sqrt_pi)
+         for j in 2:N
+             x_hat = get_x_hat(χ[1], χ[j])
+-            inner_sum = inner_sum ⊞ (f(x_hat...) ⊠ (weights[j] * inv_sqrt_pi))
++            inner_sum = inner_sum ⊞ (f(x_hat..., extra...) ⊠ (weights[j] * inv_sqrt_pi))
+         end
+         outer_sum = inner_sum ⊠ (weights[1] * inv_sqrt_pi)
+ 
+         for i in 2:N
+             x_hat = get_x_hat(χ[i], χ[1])
+-            inner_sum = f(x_hat...) ⊠ (weights[1] * inv_sqrt_pi)
++            inner_sum = f(x_hat..., extra...) ⊠ (weights[1] * inv_sqrt_pi)
+             for j in 2:N
+                 x_hat = get_x_hat(χ[i], χ[j])
+-                inner_sum = inner_sum ⊞ (f(x_hat...) ⊠ (weights[j] * inv_sqrt_pi))
++                inner_sum = inner_sum ⊞ (f(x_hat..., extra...) ⊠ (weights[j] * inv_sqrt_pi))
+             end
+             outer_sum = outer_sum ⊞ (inner_sum ⊠ (weights[i] * inv_sqrt_pi))
+         end
+@@ -699,11 +707,11 @@ perturbed.
+ 
+ The weighted sum ``\\approx E[f(T, q)]``, of the same type as `f(T_hat, q_hat)`.
+ """
+-function integrate_over_sgs(f, quad, μ_q, μ_T, q′q′, T′T′, corr_Tq)
++function integrate_over_sgs(f, quad, μ_q, μ_T, q′q′, T′T′, corr_Tq, extra::Tuple = ())
+     # Use functor instead of closure to avoid heap allocations.
+     # Field order is (T, q) to match return order of get_physical_point.
+     transform = build_physical_transform(quad, μ_q, μ_T, q′q′, T′T′, corr_Tq)
+-    return sum_over_quadrature_points(f, transform, quad)
++    return sum_over_quadrature_points(f, transform, quad, extra)
+ end
+ 
+ """
+@@ -783,8 +791,10 @@ Lets callers pass a bare `GridMeanSGS()` without wrapping it in an
+ [`SGSQuadrature`](@ref), which would require knowing `FT` from the space. The
+ variances and correlation are accepted for signature compatibility and ignored.
+ """
+-@inline function integrate_over_sgs(f, ::GridMeanSGS, μ_q, μ_T, q′q′, T′T′, corr_Tq)
+-    return f(μ_T, μ_q)
++@inline function integrate_over_sgs(
++    f, ::GridMeanSGS, μ_q, μ_T, q′q′, T′T′, corr_Tq, extra::Tuple = (),
++)
++    return f(μ_T, μ_q, extra...)
+ end
+ 
+ """
