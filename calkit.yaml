@@ -6,13 +6,33 @@ git_repo_url: https://github.com/petebachant/clima-gpu-profiling
 
 questions:
   - question: Can we improve the performance of the flagship AMIP simulation?
-    answer: Probably.
+    answer: >-
+      Yes -- +4.24% SYPD measured, 0.28312 to 0.29565 across three runs -- but
+      not from any one package: it takes coordinated changes in
+      CloudMicrophysics, ClimaCore and ClimaAtmos, and the two largest
+      contributors measure as roughly nothing on their own (the ClimaCore
+      occupancy work is -0.016% by itself and +2.6 points on top of the
+      CloudMicrophysics fusion).
+    explanation: docs/whole-stack.md
     evidence:
       - kind: figure
         path: figures/sypd-time-series.png
       - kind: result
         path: results/summary.json
         key: speedup_pct
+      - kind: result
+        path: results/summary.json
+        key: mod.sypd
+        explanation: >-
+          The decomposition that the headline number hides. Measured ALONE
+          against an unmodified stack, the ClimaCore launch-bounds mechanism is
+          -0.016% (tag exp/2026-08-24-launch-bounds) -- a null, which is why the
+          pull request was closed as a dead end on 2026-08-31. Measured on top
+          of the CloudMicrophysics fusion the same unchanged mechanism is worth
+          +2.6 points (exp/2026-09-04-fuse-and-bounds at +2.56%,
+          exp/2026-09-04-16warps at +4.10%). The fusion alone is +1.87%
+          (exp/2026-09-01-cm-fuse). Read the cumulative rows as cumulative: no
+          row after the first is that change's own effect.
       - kind: table
         path: results/top-kernels.csv
         explanation: >-
@@ -24,6 +44,83 @@ questions:
           treatment revision it measures the treatment. Spill counts are not
           collected by nsys; see results/kernel-resources.csv and results/ncu/
           for those.
+
+  - question: >-
+      What CI checks would catch a kernel this inefficient before it reaches
+      main, and block it until it is fixed?
+    hypothesis: >-
+      The obvious gate -- benchmark the model and fail the build if it got
+      slower -- cannot work here, and this project has the numbers to say why.
+      Full-AMIP SYPD has a 0.43% noise floor at best and ~2% typically, while
+      the change that made the hot kernel 8.8% faster is worth ~0.3% SYPD. A
+      threshold loose enough to avoid false alarms would pass almost every
+      regression worth catching, and a tight one would fail constantly. The
+      quantities that actually diagnose these kernels are compile-time and
+      deterministic, so the gate should be built on those instead.
+    answer: >-
+      Gate on per-kernel compile-time resource use, not on end-to-end timing:
+      registers per thread AND absolute local-memory bytes, recorded per kernel
+      as a checked-in baseline, with the build failing on regression or on
+      crossing an absolute limit. Both come from `CUDA.registers` and
+      `CUDA.memory` without running the kernel or needing a benchmark, so they
+      are exactly reproducible and cost seconds. Three specifics this project
+      learned the hard way, all of which a naive version of the check would get
+      wrong.
+
+      (1) **Registers alone are not enough, and are actively misleading.** A
+      kernel at the 255-register hardware cap reports 255 no matter how far over
+      it is, so register count cannot distinguish "fine" from "catastrophic",
+      and cannot show whether a fix helped. Three separate attempts here read as
+      no-ops for exactly this reason. Local-memory bytes must be recorded
+      alongside, in absolute terms.
+
+      (2) **Record absolutes, not differences.** The launch-bounds decision
+      originally logged only `spill_growth`, the difference between two
+      compiles. A difference cannot separate "demand fell" from "both compiles
+      moved together", and it hid a 30-register change that turned out to be the
+      compiler relabelling identical total cost.
+
+      (3) **Spilling at all is the signal worth alerting on.** The flagship
+      kernel spilled 32.9% of its memory traffic while looking unremarkable in
+      any timing table, because nsys does not collect spill data. Any kernel
+      compiling to nonzero local memory deserves a warning, and one at the
+      register cap deserves a hard failure.
+
+      Not yet implemented or validated here -- this is a design derived from the
+      measurements below, not a tested CI configuration. The natural place to
+      build it is ClimaCore's launch-bounds decision record, which already
+      computes every one of these numbers per kernel at compile time.
+    evidence:
+      - kind: result
+        path: results/cm-registers.toml
+        key: layers.E microphysics_tendencies_1m (9-pt quadrature).registers
+        explanation: >-
+          Why a register-only gate fails. This kernel sat at 255 -- the sm_80
+          hard cap -- through the fusion AND through three attempted fixes,
+          reporting an identical number each time while its actual local-memory
+          demand ranged from 1864 B down to 1432 B. The same file's
+          `unbounded_local_bytes` is the quantity that moved, and it was not
+          recorded at all until 2026-09-06.
+      - kind: table
+        path: results/kernel-resources.csv
+        explanation: >-
+          The per-kernel table a CI check would compare against a stored
+          baseline: registers, spill requests, spill overhead, and achieved vs
+          theoretical occupancy for both arms. On the refreshed 2026-09-05
+          reports the hot kernel reads 255 registers and 32.92% spill overhead
+          in the baseline arm against 128 and 12.81% in the modified one --
+          a difference invisible in every timing-based table because nsys does
+          not collect spilling.
+      - kind: result
+        path: results/summary.json
+        key: speedup_pct
+        explanation: >-
+          Why the gate cannot be a model benchmark. This is the end-to-end
+          number, whose repeat spread is 0.43% at best and ~2% typically. The
+          ClimaAtmos change measured 8.8% faster on the target kernel and
+          ~0.3% here, i.e. below the floor -- so a SYPD gate would neither
+          reward it nor catch its inverse. By contrast the kernel-level
+          measurement repeats to 0.31%, resolving the same change at ~28x noise.
 
   - question: >-
       Which changes actually improve AMIP performance, by how much, and how do

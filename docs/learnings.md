@@ -951,7 +951,7 @@ states × 4 tendencies, identical bit patterns.
 
 ### The kernel win does not reach SYPD, and never could
 
-Measured end to end: **0.29423, +3.93%** — against a +4.24% three-run mean for
+Measured end to end: **0.29423, +3.78%** — against a +4.24% three-run mean for
 fusion+bounds@16 *without* this change. It is a single sample inside the 0.43%
 noise floor, so not a regression, but not an improvement either.
 
