@@ -17,7 +17,10 @@ kink at saturation, where the integrand is non-smooth.
 median of 449 standard deviations away from that kink.** The worst 1% of cells
 are still ~8σ clear of it.
 
-**The quadrature costs 7.93% of simulated-years-per-day.**
+**The quadrature costs 5.45% of simulated-years-per-day**, and takes the hot
+kernel from 140.1 ms to 20.9 ms — an 85% reduction in the largest single kernel
+in the run. That is larger than every code optimisation in this project
+combined.
 
 So either the covariance closure is producing variances far smaller than
 intended, or the quadrature is not needed at this resolution. Those have
@@ -82,13 +85,23 @@ a physics one.)
 Priced by a configuration-only run — `quadrature_order: 1`, collapsing 3×3
 points to 1 — against an otherwise identical model:
 
-| configuration | SYPD |
-|---|---|
-| current | 0.28874 |
-| quadrature collapsed to one point | **≈ +7.93%** |
+| configuration | SYPD | hot kernel |
+|---|---|---|
+| nine-point quadrature (shipped) | 0.29653 | 140.1 ms |
+| collapsed to one point | **0.31361 (+5.45%)** | **20.9 ms (−85%)** |
 
-That is an upper bound and was reverted immediately; it changes results and is
-not proposed as a change. It exists so the question carries a number.
+Tagged `exp/2026-09-08-quadrature-order-1`, reproducible from its commit. An
+upper bound, reverted immediately: it changes results and is not proposed as a
+change. It exists so the question carries a number.
+
+An earlier measurement of this put it at **7.93%** (0.27596 → 0.29973). Both are
+real; they were taken against different stacks. The cost fell because the
+microphysics kernel has since been optimised — fusion, occupancy targeting and
+the evaluator payload took roughly a third of the quadrature's cost off before
+this measurement was made. The remaining 5.45% is what is left on the table for
+the science decision, and it is the number to use. The 7.93% was never logged as
+an experiment and its evidence pointer had gone stale, which is why it is
+restated here rather than cited.
 
 For scale, the entire performance effort on this benchmark has produced +6.22%
 to date. The quadrature alone is larger than everything else combined.
@@ -99,12 +112,12 @@ to date. The quadrature alone is larger than everything else combined.
 variability it is meant to represent, the quadrature is integrating a
 near-degenerate PDF, and it is doing nothing because it has been given nothing
 to do. Then the fix is in `_compute_sgs_moments` / the covariance closure, the
-quadrature stays, and the 7.93% is the price of a correctly functioning scheme.
+quadrature stays, and the 5.45% is the price of a correctly functioning scheme.
 
 **If the variances are right** — subgrid variability genuinely is this small at
 h_elem 16, the PDF genuinely never straddles saturation, and a 3×3 rule is
 resolving a feature that is not there. Then the quadrature order is the thing to
-reconsider, and 7.93% is recoverable.
+reconsider, and 5.45% is recoverable.
 
 We cannot distinguish these from the profile. A useful discriminator would be
 whether `σ_q` and `σ_T` here match what the closure is expected to produce for
@@ -125,8 +138,8 @@ present in the boundary layer and cloudy regions (not harmless).
   the evaporation and sublimation rates still vary across the PDF; the error is
   O(σ²·f″) and should be small at these widths, but it is not zero and has not
   been measured against the 9-point answer.
-- **An adaptive scheme would recover less than the full 7.93%** — roughly the
-  83% warp fraction of it, before the cost of the branch itself.
+- **An adaptive scheme would recover less than the full 5.45%** — roughly the
+  83% warp fraction of it (~4.5%), before the cost of the branch itself.
 
 ## Reproducing
 

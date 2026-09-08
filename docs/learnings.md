@@ -1193,7 +1193,9 @@ baseline so the fusion is held fixed and only the quadrature moves:
 | + fusion (`exp/2026-09-01-cm-fuse`) | 0.27596 |
 | + quadrature collapsed to one point | **0.29973** |
 
-**The nine-point quadrature costs 7.93% SYPD.** Removing it entirely would put
+**The nine-point quadrature costs 5.45% SYPD** (tagged 2026-09-08; an earlier
+measurement on a slower stack put it at 7.93%, and the difference is the
+optimisation work since). Removing it entirely would put
 the flagship run 9.66% above today's baseline.
 
 This is an **upper bound and not a candidate**: `quadrature_order: 1` changes
@@ -1202,8 +1204,8 @@ question has a number attached — *is the quadrature worth 8% of the flagship
 run's throughput, given the PDF sits 449σ from the feature it resolves?*
 
 An adaptive collapse (item 2) captures only the warps that qualify, so expect
-roughly `0.83 × 7.93% ≈ 6.6%` before subtracting the branch cost and the
-divergence in the ~17% of mixed warps. The full 7.93% is available only if the
+roughly `0.83 × 5.45% ≈ 4.5%` before subtracting the branch cost and the
+divergence in the ~17% of mixed warps. The full 5.45% is available only if the
 quadrature can go entirely.
 
 ### Three caveats, all load-bearing

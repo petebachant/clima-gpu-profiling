@@ -365,7 +365,8 @@ questions:
       configuration, is a question for the science owners rather than a
       performance lever to exploit -- the two have different remedies. A
       config-only bounding run prices it: collapsing the quadrature to one point
-      is worth +7.93% SYPD (0.27596 -> 0.29973), so the question carries a
+      is worth +5.45% SYPD (0.29653 -> 0.31361, tagged exp/2026-09-08-quadrature-order-1;
+      an earlier run on a slower stack read +7.93%, 0.27596 -> 0.29973), so the question carries a
       number. That bound is NOT a candidate -- it changes results and was
       reverted -- and an adaptive collapse would capture roughly 0.83 of it. See
       docs/learnings.md section 6a.
@@ -517,13 +518,16 @@ questions:
 
   - question: >-
       Is the nine-point SGS quadrature in the 1-moment microphysics earning the
-      7.93% of throughput it costs?
+      5.45% of throughput it costs?
     answer: >-
       Unresolved, and it belongs to the science owners rather than to profiling:
       the subgrid PDF sits a median of 449 standard deviations from the
       saturation kink the quadrature exists to resolve, which means either the
       covariance closure is producing variances far smaller than intended or the
-      quadrature is unnecessary at this resolution.
+      quadrature is unnecessary at this resolution. Collapsing it to a single
+      point is worth 5.45% SYPD and takes the hot kernel down 85%
+      (exp/2026-09-08-quadrature-order-1) -- larger than every code optimisation
+      in this project combined.
     # Write-up for the science team; the entrypoint stays one sentence.
     explanation: docs/sgs-quadrature.md
     evidence:
@@ -547,14 +551,22 @@ questions:
           points saves nothing. Contrast the clear-air early-out, where a 77.7%
           point fraction returned 21.5%. It is a performance detail rather than a
           physics one, but it is why the question is worth asking now.
-      - kind: result
-        path: results/summary.json
-        key: mod.sypd
+      - kind: table
+        path: experiments.csv
         explanation: >-
-          The throughput the 7.93% is measured against. That cost came from a
-          configuration-only run with `quadrature_order: 1`, which changes
-          results and was reverted -- it is an upper bound attached to the
-          question, not a proposed change.
+          What the quadrature costs, measured and tagged rather than quoted.
+          Compare `2026-09-08-quadrature-order-1` (0.31361) against
+          `2026-09-07-evaluator-repeat` (0.29653), the same stack with the
+          nine-point quadrature: collapsing it to one point is worth **5.45%
+          SYPD**, and takes the hot kernel from 140.1 ms to 20.9 ms (-85%). A
+          configuration-only change that alters results and was reverted -- an
+          upper bound attached to the question, not a proposal.
+
+          This evidence deliberately points at the tagged experiment index
+          rather than at `results/summary.json`, which every pipeline run
+          overwrites. It previously pointed there, and by 2026-09-08 the file
+          held an unrelated run, leaving the headline number with no backing at
+          all. Cite a tag, never a regenerated artefact.
 
   - question: >-
       How much of a GPU profiling job is compilation rather than computation,
