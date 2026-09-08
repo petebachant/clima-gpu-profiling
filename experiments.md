@@ -30,6 +30,7 @@ calkit run
 
 | experiment | date | treatment | speedup_pct | baseline_sypd | mod_sypd | commit | reproducible | note |
 |---|---|---|---|---|---|---|---|---|
+| 2026-09-07-evaluator-repeat | 2026-09-07 | ClimaAtmos, ClimaCore, ClimaCoupler, CloudMicrophysics, dev-package-set | 4.524 | 0.28312 | 0.29653 | c8c4733a8 | yes | Repeat of the evaluator build: 0.29653, +4.52% |
 | 2026-09-06-evaluator-param-args | 2026-09-07 | ClimaAtmos, ClimaCore, ClimaCoupler, CloudMicrophysics, dev-package-set | 3.778 | 0.28312 | 0.29423 | 862d05efb | yes | Evaluator param-args on top of fusion + bounds@16 |
 | 2026-09-04-16warps | 2026-09-05 | ClimaCore, ClimaCoupler, CloudMicrophysics, dev-package-set | 4.100 | 0.28312 | 0.29522 | 9856e5cbf | yes | Launch bounds at 16 warps/SM: +4.100% SYPD, L1013 -46.6% at 128 regs; mean +4.24% over three runs |
 | 2026-09-04-fuse-and-bounds | 2026-09-04 | ClimaCore, ClimaCoupler, CloudMicrophysics, dev-package-set | 2.562 | 0.28312 | 0.29056 | 7adc8e59e | yes | CM fusion + ClimaCore launch bounds: +2.562% SYPD, L1013 -42.4% at 168 regs / 12 warps/SM |
