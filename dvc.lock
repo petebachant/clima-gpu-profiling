@@ -603,8 +603,8 @@ stages:
     - path: 
         ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       hash: md5
-      md5: c4fa450108c17def48f2a2c922424622
-      size: 878
+      md5: 577bef53fd5c8e8eb2897c6d236dec53
+      size: 461
     - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
       hash: md5
       md5: e1db3663d10b8139e536e49cfc852676
@@ -634,16 +634,16 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/mod-nsys.out
       hash: md5
-      md5: 9e75c662138b1e1f48d5f00835008afd
-      size: 131214
+      md5: de36990199d48000d93e923257615211
+      size: 134311
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: fa8b1e829adf247182a852ef0627e1cf
-      size: 21346336
+      md5: fde80ad9a60440ecc7629f6daecc2a9b
+      size: 21433597
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 48a6009d0c54ab9346b16bf6a677e7eb
-      size: 42065920
+      md5: 97fdb3628cadd68ccfed88e2b976fe05
+      size: 42430464
   mod-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep -t sqlite
       -o results/nsys/mod.sqlite"'
@@ -763,16 +763,16 @@ stages:
       size: 44725
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: 75bb6a208c32b7273ceb1ffeabc99538
-      size: 44350
+      md5: f6c007e4b797b301934b6459906a51a9
+      size: 44754
     - path: results/nsys/baseline.sqlite
       hash: md5
       md5: 8d96cb422d6212a81f73712abd14b445
       size: 42491904
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 48a6009d0c54ab9346b16bf6a677e7eb
-      size: 42065920
+      md5: 97fdb3628cadd68ccfed88e2b976fe05
+      size: 42430464
     - path: scripts/summarize.py
       hash: md5
       md5: f8dda50a87d3635eaaa42feae31ed48f
@@ -780,8 +780,8 @@ stages:
     outs:
     - path: results/summary.json
       hash: md5
-      md5: 195d33eed6a7c730908598d5c8418239
-      size: 540
+      md5: 0075d92fced59dfe8b893e43aef1df6a
+      size: 541
   mod-ncu:
     cmd: calkit scheduler batch --name mod-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -1009,8 +1009,8 @@ stages:
     - path: 
         ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       hash: md5
-      md5: c4fa450108c17def48f2a2c922424622
-      size: 878
+      md5: 577bef53fd5c8e8eb2897c6d236dec53
+      size: 461
     - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
       hash: md5
       md5: e1db3663d10b8139e536e49cfc852676
@@ -1040,8 +1040,8 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: 75bb6a208c32b7273ceb1ffeabc99538
-      size: 44350
+      md5: f6c007e4b797b301934b6459906a51a9
+      size: 44754
   make-diffs:
     cmd: bash --noprofile --norc scripts/make-diffs.sh
     deps:
@@ -1052,9 +1052,9 @@ stages:
       nfiles: 602
     - path: ClimaAtmos.jl-mod
       hash: md5
-      md5: 9a11f286e3f8e6244cc6b158f60d5b63.dir
-      size: 6564087
-      nfiles: 603
+      md5: 3fdf358eada38284534ce6f195310899.dir
+      size: 6571127
+      nfiles: 604
     - path: ClimaCore.jl
       hash: md5
       md5: 4b658cb8817869c73079946400f94193.dir
@@ -1072,8 +1072,8 @@ stages:
       nfiles: 273
     - path: ClimaCoupler.jl-mod
       hash: md5
-      md5: 298ce80e3a5a00c33cf1d1ef99dedaff.dir
-      size: 8381035
+      md5: 635f0506bb54767c7488554f357863fc.dir
+      size: 8380618
       nfiles: 269
     - path: CloudMicrophysics.jl-mod
       hash: md5
@@ -1082,15 +1082,15 @@ stages:
       nfiles: 271
     - path: scripts/make-diffs.sh
       hash: md5
-      md5: 7d8fee0aac84a909937389a3c04f13a4
-      size: 1915
+      md5: ab4982f958b03139b50ab47e8751474a
+      size: 2941
       isexec: true
     outs:
     - path: diffs
       hash: md5
-      md5: 1b3e1d6887ba3638b1f7d5d5b9d2ba7d.dir
-      size: 179374
-      nfiles: 4
+      md5: 3a92f4521413d8729f735bbf2bdf9849.dir
+      size: 250519
+      nfiles: 5
   compare-kernels:
     cmd: calkit nb execute --environment py --no-check --to html 
       "notebooks/compare-kernels.ipynb"
@@ -1110,8 +1110,8 @@ stages:
       size: 132091
     - path: .calkit/scheduler/logs/mod-nsys.out
       hash: md5
-      md5: 9e75c662138b1e1f48d5f00835008afd
-      size: 131214
+      md5: de36990199d48000d93e923257615211
+      size: 134311
     - path: results/nsys/baseline.nsys-rep
       hash: md5
       md5: ddecefbb348e30905f3ad1e405720eac
@@ -1122,25 +1122,25 @@ stages:
       size: 42491904
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: fa8b1e829adf247182a852ef0627e1cf
-      size: 21346336
+      md5: fde80ad9a60440ecc7629f6daecc2a9b
+      size: 21433597
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 48a6009d0c54ab9346b16bf6a677e7eb
-      size: 42065920
+      md5: 97fdb3628cadd68ccfed88e2b976fe05
+      size: 42430464
     outs:
     - path: .calkit/notebooks/executed/notebooks/compare-kernels.ipynb
       hash: md5
-      md5: f40ff3075701b6d04bf3dce86d079e9f
-      size: 67990
+      md5: e7a79950d8b45afbebec97d56264aac9
+      size: 67955
     - path: .calkit/notebooks/html/notebooks/compare-kernels.html
       hash: md5
-      md5: 9025acda54f2cfeb1f54db50d1767bca
-      size: 421029
+      md5: c81d7355083ee832fd854ac2ec1cc740
+      size: 421079
     - path: results/top-kernels.csv
       hash: md5
-      md5: 4f7040c9e6abd103d852959ca19f7de8
-      size: 2528
+      md5: 3c45efb651c14354a480f9bce3aa9674
+      size: 2536
   analyze-logs:
     cmd: calkit nb execute --environment py --no-check --to html 
       "notebooks/analyze-logs.ipynb"
@@ -1160,21 +1160,21 @@ stages:
       size: 44725
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: 75bb6a208c32b7273ceb1ffeabc99538
-      size: 44350
+      md5: f6c007e4b797b301934b6459906a51a9
+      size: 44754
     outs:
     - path: .calkit/notebooks/executed/notebooks/analyze-logs.ipynb
       hash: md5
-      md5: 2c37d0a6581214feced0483aed5b59db
-      size: 48611
+      md5: 66ca88c0ec45dad35501eb9d1e562aa8
+      size: 47621
     - path: .calkit/notebooks/html/notebooks/analyze-logs.html
       hash: md5
-      md5: 874b91cbd9dc0ec6f2d1b585bff48894
-      size: 329967
+      md5: 9306da45d567fec2145db600731ba55c
+      size: 328979
     - path: figures/sypd-time-series.png
       hash: md5
-      md5: 0263b664cb3d5ee862abcf0cfa6040a3
-      size: 33687
+      md5: 9c3a6a96e0fe8be7aabfbbcbb810945d
+      size: 32964
   compile-time-study:
     cmd: calkit scheduler batch --name compile-time-study --environment clima 
       --dep scripts/measure-compile-time.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -1302,13 +1302,13 @@ stages:
       nfiles: 2
     - path: calkit.yaml
       hash: md5
-      md5: a759abe7cc4606ff1906b6a743f15075
-      size: 68820
+      md5: ab9981b2821e9f4f838f85a9439ddf18
+      size: 69723
     - path: diffs
       hash: md5
-      md5: 1b3e1d6887ba3638b1f7d5d5b9d2ba7d.dir
-      size: 179374
-      nfiles: 4
+      md5: 3a92f4521413d8729f735bbf2bdf9849.dir
+      size: 250519
+      nfiles: 5
     - path: scripts/record-treatment.py
       hash: md5
       md5: 09f8d415d8a033b420bba60dc8f9c294
@@ -1316,7 +1316,7 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: 109496aa4f8c0d75c179bcf0a5e3909e
+      md5: f079bc45411ded2adc9c0f8413c8ff69
       size: 31055
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
@@ -1329,8 +1329,8 @@ stages:
       nfiles: 2
     - path: results/summary.json
       hash: md5
-      md5: 195d33eed6a7c730908598d5c8418239
-      size: 540
+      md5: 0075d92fced59dfe8b893e43aef1df6a
+      size: 541
     - path: scripts/build-experiment-index.py
       hash: md5
       md5: 6ecee83a0c8f1cc405ebcd60efab8df0
@@ -1338,12 +1338,12 @@ stages:
     outs:
     - path: experiments.csv
       hash: md5
-      md5: b922910ded32edaaca4884a788313951
-      size: 10780
+      md5: fbe450ce949d00b5c4084e633fd946bd
+      size: 10980
     - path: experiments.md
       hash: md5
-      md5: 741ad3838584157b6eb2baf3044f7220
-      size: 13291
+      md5: ca60ead6f966ca3b5838fa9f7562c265
+      size: 13506
   launch-bounds-study:
     cmd: calkit scheduler batch --name launch-bounds-study --environment clima 
       --dep scripts/measure-launch-bounds.jl --dep ClimaCoupler.jl-mod/src --dep
@@ -1439,8 +1439,8 @@ stages:
       size: 42491904
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 48a6009d0c54ab9346b16bf6a677e7eb
-      size: 42065920
+      md5: 97fdb3628cadd68ccfed88e2b976fe05
+      size: 42430464
     - path: scripts/analyze-kernel-population.py
       hash: md5
       md5: a90f5891b670fdab9de976867aaa6f86
@@ -1452,7 +1452,7 @@ stages:
     outs:
     - path: results/kernel-population.json
       hash: md5
-      md5: fcd69706fc15905c5c332213704b94bf
+      md5: 0b26722d569591b8f1af6dd07db6ccfe
       size: 8732
   cm-registers:
     cmd: calkit scheduler batch --name cm-registers --environment clima --dep 
@@ -1543,8 +1543,8 @@ stages:
     - path: 
         ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       hash: md5
-      md5: c4fa450108c17def48f2a2c922424622
-      size: 878
+      md5: 577bef53fd5c8e8eb2897c6d236dec53
+      size: 461
     - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
       hash: md5
       md5: e1db3663d10b8139e536e49cfc852676
@@ -1574,9 +1574,9 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/sgs-degeneracy.out
       hash: md5
-      md5: 34d073d73c1c19c5447b1d06ac93f8dd
-      size: 28439
+      md5: 5acecf036f967431a9e19d61eb554a94
+      size: 28438
     - path: results/sgs-degeneracy.toml
       hash: md5
-      md5: 6035778451c89eed9484159c27e91015
-      size: 1132
+      md5: a27a012b223fcc070f479822b1daa6d7
+      size: 1134
