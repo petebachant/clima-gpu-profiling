@@ -20,9 +20,10 @@ Every row is a full AMIP run against the same baseline (0.28312), tagged in
 | source-term / linearize fusion | CloudMicrophysics | **+1.87%** | +1.95% |
 | `__launch_bounds__` occupancy targeting @12 warps | ClimaCore | **−0.016%** | +2.56% |
 | same, retargeted @16 warps | ClimaCore | — | **+4.24%** |
-| evaluator parameter payload | ClimaAtmos | not measured alone | +3.78% ¹ |
+| evaluator parameter payload | ClimaAtmos | not measured alone | +4.15% ¹ |
 
-¹ single sample, inside the 0.43% noise floor — see "What ClimaAtmos actually
+¹ mean of two runs (3.78%, 4.52%), overlapping the +4.24% three-run range of
+the row above — no resolvable difference. See "What ClimaAtmos actually
 contributes" below.
 
 All percentages follow this project's `speedup_pct` convention,
@@ -84,7 +85,7 @@ improvement in the project**:
 | `sizeof(Microphysics1MEvaluator)` | 472 B | **40 B** |
 | unbounded registers | 255 *(pinned at the hardware cap)* | **184** |
 | unbounded local memory | 1864 B | **1432 B** |
-| L1013, 10 launches | 150.3 ms | **137.2 ms (−8.8%)** |
+| L1013, 10 launches | 150.3 / 150.7 ms | **137.2 / 140.1 ms (−7.9%)** |
 
 The −432 B is exactly `sizeof(mp) + sizeof(tps)`: two parameter structs,
 identical for every cell and every quadrature point, that were stored as fields
@@ -100,10 +101,17 @@ L1013 is **10.1% of GPU time**, so −8.8% on it is ~0.95% of kernel time and
 
 That is a general lesson about what to measure with what: **a whole-model
 benchmark cannot validate an improvement to a kernel holding a small share of
-the budget.** Check the share first. The kernel-level measurement used here
-(summed kernel time over 10 launches under nsys) has a 0.31% repeat spread, so
-it resolves this change at roughly 28× its noise. Use the instrument matched to
-the claim.
+the budget.** Check the share first, and use the instrument matched to the
+claim: the kernel-level measurement (summed kernel time over 10 launches under
+nsys) resolves a −7.9% change that whole-model SYPD cannot see at all.
+
+Be careful how sharp you claim that instrument is. Its repeat spread was first
+estimated at **0.31%** from a single pair of runs, and that number was quoted
+here as though it were the instrument's precision. A second pair, on the
+modified build, came back **2.08%** apart. Two pairs are not enough to pin it
+down, but they are enough to show the first estimate was optimistic — n=1 on a
+noise estimate is not a noise estimate. The −7.9% survives either way, at
+roughly 4× the larger spread rather than the 28× the optimistic figure implied.
 
 ## What it does not buy
 

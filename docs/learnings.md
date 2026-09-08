@@ -780,11 +780,17 @@ conservative guess that happens to work, it is tracking something real.
 
 Re-running the 16-warp build afterwards to restore `results/nsys/mod.sqlite`
 produced an unplanned replicate: **15.07 ms** against the original 15.03 ms,
-**0.31% apart**. So this measurement — L1013 total over 10 launches under nsys —
-has a repeat spread of roughly a third of a percent, and the 24-warp effect is
-about sixty times that. It is a far sharper instrument than full-AMIP SYPD
-(±~2% noise floor, 0.43% at best across repeats), because it counts one kernel
-under one instrument rather than a whole run's wall time. Prefer it for
+**0.31% apart**.
+
+**That 0.31% was over-read, and this note originally over-read it.** It is one
+pair. A second pair, taken on the evaluator build (§4d), came back **2.08%**
+apart — 137.21 vs 140.10 ms. A repeat spread estimated from a single pair is not
+a repeat spread; it is one draw from a distribution whose width is unknown. Treat
+the instrument as good to a couple of percent on this kernel until there are
+enough repeats to say otherwise. The 24-warp effect is large enough (+18.4%) to
+survive that revision comfortably; it is still a sharper instrument than
+full-AMIP SYPD, because it counts one kernel rather than a whole run's wall
+time, but not by the order of magnitude first claimed. Prefer it for
 kernel-local questions; it cannot answer whole-run ones, since it is blind to
 everything that is not that kernel.
 
@@ -943,7 +949,7 @@ stay in `.param` space and are read field-by-field. Threading them through
 | unbounded registers | 255 *(at the cap)* | **184** |
 | unbounded local memory | 1864 B | **1432 B** |
 | bounded local memory (shipped) | 2072 B | **1648 B** |
-| L1013, 10 launches | 150.3 ms | **137.2 ms (−8.8%)** |
+| L1013, 10 launches | 150.3 / 150.7 ms | **137.2 / 140.1 ms (−7.9%)** |
 
 The −432 B is *exactly* `sizeof(mp) + sizeof(tps)`, which is what makes this
 mechanism measured rather than inferred. Verified bit-for-bit: 400 randomized
@@ -951,9 +957,15 @@ states × 4 tendencies, identical bit patterns.
 
 ### The kernel win does not reach SYPD, and never could
 
-Measured end to end: **0.29423, +3.78%** — against a +4.24% three-run mean for
-fusion+bounds@16 *without* this change. It is a single sample inside the 0.43%
-noise floor, so not a regression, but not an improvement either.
+Measured end to end over two runs: **3.78% and 4.52%, mean 4.15%** — against
+4.25/4.36/4.10%, mean **4.24%**, for fusion+bounds@16 *without* this change.
+The two ranges overlap and the difference is not resolvable.
+
+Note the second sample also widens the SYPD noise picture: these two runs are
+0.78% apart, against the 0.27% spread of the three-run set above and the 0.43%
+"floor" quoted throughout this document. Like the kernel-level spread in §4b,
+that floor is an estimate from few repeats and should be treated as a lower
+bound on the true variability, not a constant.
 
 The arithmetic was available before the run and should have been done first:
 L1013 is now **10.1% of GPU time**, so −8.8% on it is ~0.95% of kernel time and
