@@ -40,6 +40,26 @@ if [ -z "${CM_TREE}" ]; then
     exit 1
 fi
 
-# `git diff <tree-ish>` compares that tree to the working tree. The tree object
-# is present locally via the registered release commit (e.g. v0.36.0).
-git -C CloudMicrophysics.jl-mod diff "${CM_TREE}" -- . > diffs/CloudMicrophysics.diff || true
+# Two diffs, because the pinned tree answers a different question than "what did
+# we change". `git diff <tree-ish>` against the manifest pin shows the TOTAL
+# delta between the arms, which is what determines behaviour -- but it also
+# sweeps in everything upstream landed on CloudMicrophysics main since that
+# release: vendored docs/dev-guides, unrelated src modules, doc plots. That came
+# to 39 files and 1534 insertions against 5 files of actual work, which buried
+# the change that produces the benefit.
+#
+#   CloudMicrophysics.diff             <- our authored changes only
+#   CloudMicrophysics-arm-delta.diff   <- full difference from what baseline runs
+#
+# Read the first to review the work; read the second to know what actually
+# differs between the two arms of an experiment.
+git -C CloudMicrophysics.jl-mod diff "${CM_TREE}" -- . \
+    > diffs/CloudMicrophysics-arm-delta.diff || true
+
+# Authored changes: everything on the working tree that is not on upstream main.
+CM_BASE=$(git -C CloudMicrophysics.jl-mod merge-base HEAD origin/main)
+if [ -z "${CM_BASE}" ]; then
+    echo "ERROR: could not find CloudMicrophysics merge-base with origin/main" >&2
+    exit 1
+fi
+git -C CloudMicrophysics.jl-mod diff "${CM_BASE}" -- . > diffs/CloudMicrophysics.diff || true
