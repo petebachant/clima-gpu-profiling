@@ -517,6 +517,86 @@ questions:
           worth end to end.
 
   - question: >-
+      Should the SGS quadrature order be reduced from 3 to 2, and what does that
+      trade?
+    answer: >-
+      Recommended, subject to science sign-off. Reducing the rule from 3x3 (nine
+      points) to 2x2 (four points) is worth **+6.14% SYPD on unmodified upstream
+      code** and **+8.05% with this project's numerics work**, against a
+      field-wide error in the microphysics tendencies of **0.65% of RMS for cloud
+      liquid and 1.20% for cloud ice**. Only 1.12% of cells change at all,
+      because the subgrid PDF sits a median 449 standard deviations from the
+      saturation kink the extra points exist to resolve, so in 98.9% of cells the
+      two rules agree bit for bit.
+
+      Order 2 rather than order 1: collapsing to a single point buys only 1.67
+      further points of SYPD (+9.72% vs +8.05%) while roughly tripling the cloud
+      liquid error (2.10% vs 0.65% of RMS), and gives up integrating over the PDF
+      at all. Order 2 remains a genuine quadrature.
+
+      Three caveats a reviewer should weigh, none of which profiling can settle.
+
+      (1) **The accuracy number is the direct effect, not the self-consistent
+      one.** `lambda_lagrange` is held at its 3x3 fit in the measurement; a real
+      order-2 run refits it, which would likely compensate in part. Settling this
+      needs two full runs diffed field by field.
+
+      (2) **Individual cells move a lot even though the field barely does.** The
+      worst cell shifts cloud ice by 1.72x the field's own RMS. The error is
+      concentrated in the ~1% of cells whose PDF actually reaches the kink, which
+      is exactly where the quadrature is doing its job. Whether a 1%-of-cells,
+      order-unity local change is acceptable is a physics judgement.
+
+      (3) **It is a real approximation, not a free lunch.** An adaptive scheme was
+      tried as the "free" alternative -- collapse only where the PDF is provably
+      clear of the kink -- and it failed: distance from the kink bounds the
+      smoothness of `max(0, .)` but not the curvature of deposition, sublimation
+      and snow processes, which stay strongly nonlinear far from saturation. It
+      cost 23.8% of RMS on cloud ice and is disabled. See docs/learnings.md 4e.
+    explanation: docs/sgs-quadrature.md
+    evidence:
+      - kind: result
+        path: results/summary.json
+        key: speedup_pct
+        git_ref: exp/2026-09-08-quadrature-order-2-isolated
+        explanation: >-
+          Standalone benefit: +6.135% on unmodified upstream code. A controlled
+          measurement -- ClimaCore.jl-mod and ClimaAtmos.jl-mod are
+          content-identical to the baseline arm and CloudMicrophysics.jl-mod is
+          checked out to v0.38.3, the exact tree the baseline manifest pins, so
+          the quadrature order is the only live difference. The hot kernel goes
+          274.3 -> 113.5 ms. This is the number that applies if the science
+          change lands on its own.
+      - kind: result
+        path: results/summary.json
+        key: speedup_pct
+        git_ref: exp/2026-09-09-order2-full-stack
+        explanation: >-
+          Benefit with the numerics work: +8.053%, with the CloudMicrophysics
+          source-term fusion, ClimaCore occupancy targeting and ClimaAtmos
+          evaluator payload change also in place. Hot kernel 68.4 ms.
+          Sub-additive against the two levers measured separately (+4.52% and
+          +6.14%, naive sum 10.66%) because they act on different factors -- the
+          numerics cut cost per quadrature point, the order cuts the number of
+          points. Note the corollary: the numerics work is worth +1.92 points ON
+          TOP of the order reduction, so it is not made redundant by this change.
+      - kind: result
+        path: results/quadrature-order-error.toml
+        key: order_2.dq_icl_dt.rms_over_scale
+        git_ref: exp/2026-09-09-order2-full-stack
+        explanation: >-
+          The accuracy cost: 1.196e-2, i.e. 1.20% of the cloud-ice tendency's own
+          RMS over the whole field, with cloud liquid at 0.65%, snow at 0.096%
+          and rain at 0.0033%. Measured on a real AMIP state with BYTE-IDENTICAL
+          inputs -- the two rules are evaluated over the same scratch fields the
+          real cache function built, and the path is verified bit-identical to
+          that function before any comparison is made. The same file carries
+          `order_1` for the bracket (cloud liquid 2.10%) and `max_over_scale` for
+          the worst single cell (cloud ice 1.72x field RMS). `p99_over_scale` is
+          zero by construction and should not be read as an error estimate: the
+          percentile is taken over all cells and 98.9% of them are unchanged.
+
+  - question: >-
       Is the nine-point SGS quadrature in the 1-moment microphysics earning the
       5.45% of throughput it costs?
     answer: >-
