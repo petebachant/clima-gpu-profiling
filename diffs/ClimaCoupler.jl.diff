@@ -1,21 +1,24 @@
 diff --git a/ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml b/ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-index 269ef61..32ecd7d 100644
+index 269ef61..7d08890 100644
 --- a/ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
 +++ b/ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-@@ -16,3 +16,14 @@ surface_setup: "PrescribedSurface"
+@@ -16,3 +16,17 @@ surface_setup: "PrescribedSurface"
  t_end: "1200secs"
  topo_smoothing: true
  topography: "Earth"
 +
-+# EXPERIMENT 2026-09-08: isolate the cost of the SGS quadrature order for the
-+# science team. Every other submodule is checked out to the SAME commit the
-+# baseline arm runs, so this config value is the ONLY difference between arms --
-+# `arms_differ_in` in results/treatment.json should name no code package.
++# EXPERIMENT 2026-09-09: the shipping configuration -- quadrature_order 2 on top
++# of the full optimisation stack (CM fusion, ClimaCore launch bounds, ClimaAtmos
++# evaluator param-args). Fills the one gap in the matrix:
 +#
-+# Order 2 (a 2x2 rule, 4 points) rather than 1, because reducing the order is
-+# the plausible proposal; order 1 is the upper bound and was measured separately
-+# in exp/2026-09-08-quadrature-order-1, which had the full optimisation stack on
-+# top and so could not isolate this.
++#   full stack, order 3   +4.52%   exp/2026-09-07-evaluator-repeat
++#   upstream,   order 2   +6.14%   exp/2026-09-08-quadrature-order-2-isolated
++#   full stack, order 1   +9.72%   exp/2026-09-08-quadrature-order-1
++#   full stack, order 2   <- this
++#
++# The two levers act on different factors -- the optimisations cut the cost per
++# quadrature point, the order cuts the number of points -- so they should
++# compose sub-additively rather than summing to 10.66%.
 +quadrature_order: 2
 diff --git a/ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml b/ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
 index aa91a86..88ed2aa 100644
