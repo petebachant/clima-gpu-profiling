@@ -603,8 +603,8 @@ stages:
     - path: 
         ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       hash: md5
-      md5: 77a538c533a269533f9cbda4e184a493
-      size: 1164
+      md5: 577bef53fd5c8e8eb2897c6d236dec53
+      size: 461
     - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
       hash: md5
       md5: e1db3663d10b8139e536e49cfc852676
@@ -634,16 +634,16 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/mod-nsys.out
       hash: md5
-      md5: 77e5bb2280e4fee6ced4cc5faa08481b
-      size: 133526
+      md5: 34154c6b9d7a9d2d00239a70ab597ebd
+      size: 134756
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: 8b66b537722922ef5e46de0f07d44b23
-      size: 21325729
+      md5: 9df8585858f070a4d5521f08604dbff6
+      size: 21438805
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 0c0036770f07b847e7c9d58123df01d7
-      size: 42086400
+      md5: cd8f86c53c4eee399644faa5a70d2724
+      size: 43331584
   mod-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep -t sqlite
       -o results/nsys/mod.sqlite"'
@@ -763,16 +763,16 @@ stages:
       size: 44725
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: 7ef3d1691d8b99906d09288c80572c2c
-      size: 44753
+      md5: d9682e3c5849f994f2ae3dabc768760b
+      size: 43995
     - path: results/nsys/baseline.sqlite
       hash: md5
       md5: 8d96cb422d6212a81f73712abd14b445
       size: 42491904
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 0c0036770f07b847e7c9d58123df01d7
-      size: 42086400
+      md5: cd8f86c53c4eee399644faa5a70d2724
+      size: 43331584
     - path: scripts/summarize.py
       hash: md5
       md5: f8dda50a87d3635eaaa42feae31ed48f
@@ -780,8 +780,8 @@ stages:
     outs:
     - path: results/summary.json
       hash: md5
-      md5: 60785ed3e7ada60535bb0cc7d338d9f4
-      size: 539
+      md5: 16e30f3c964fe9d3c0339721abdda7df
+      size: 540
   mod-ncu:
     cmd: calkit scheduler batch --name mod-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -1329,8 +1329,8 @@ stages:
       nfiles: 2
     - path: results/summary.json
       hash: md5
-      md5: 60785ed3e7ada60535bb0cc7d338d9f4
-      size: 539
+      md5: 16e30f3c964fe9d3c0339721abdda7df
+      size: 540
     - path: scripts/build-experiment-index.py
       hash: md5
       md5: 6ecee83a0c8f1cc405ebcd60efab8df0
@@ -1338,12 +1338,12 @@ stages:
     outs:
     - path: experiments.csv
       hash: md5
-      md5: a522419c817f35a14025f9f3318a7784
-      size: 11169
+      md5: 6e7eb7730a09ffbbce356e6a115ffc54
+      size: 11373
     - path: experiments.md
       hash: md5
-      md5: 976fc7df6147fc83aea938a019e0ec6b
-      size: 13710
+      md5: 5fc14a560996f3ead29ac65fc311c465
+      size: 13931
   launch-bounds-study:
     cmd: calkit scheduler batch --name launch-bounds-study --environment clima 
       --dep scripts/measure-launch-bounds.jl --dep ClimaCoupler.jl-mod/src --dep
