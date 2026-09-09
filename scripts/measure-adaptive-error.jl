@@ -57,78 +57,68 @@ function pick(nt, names...)
     error("none of $(names) in $(propertynames(nt))")
 end
 
-TT = flat(pick(p.precomputed, :ᶜT′T′))
-qq = flat(pick(p.precomputed, :ᶜq′q′))
-Tm = flat(pick(p.precomputed, :ᶜT⁰, :ᶜT))
-qt = flat(pick(p.precomputed, :ᶜq_tot_nonneg⁰, :ᶜq_tot_nonneg))
-ql = flat(pick(p.precomputed, :ᶜq_lcl⁰, :ᶜq_lcl))
-qi = flat(pick(p.precomputed, :ᶜq_icl⁰, :ᶜq_icl))
-qr = flat(pick(p.precomputed, :ᶜq_rai⁰, :ᶜq_rai))
-qs = flat(pick(p.precomputed, :ᶜq_sno⁰, :ᶜq_sno))
-lam = flat(p.precomputed.ᶜsgs_moments.λ_lagrange)
-ρ = flat(Y.c.ρ)
-n = length(TT)
+# Rather than reconstructing the kernel's inputs -- which are scratch fields
+# built inside the cache function (environment density, the specific_env_value
+# reconstructions) and easy to get subtly wrong -- call the real cache function
+# and diff the field it writes. This exercises the exact broadcast the model
+# runs, on the GPU, through ClimaCore.
+mp_model = p.atmos.microphysics_model
+tm = p.atmos.turbconv_model
+tend() = p.precomputed.ᶜmp_tendency⁰
 
-FT = eltype(TT)
-thp = CAP.thermodynamics_params(p.params)
-cmp = CAP.microphysics_1m_params(p.params)
-corr = FT(CA.correlation_Tq(p.params))
-α = FT(CA.sgs_variance_fidelity(CAP.cloud_fraction_steepness_scale(p.params)))
-dt = FT(float(integrator.dt))
-nsubs = p.atmos.microphysics_n_substeps_quadrature
-quad = p.atmos.water.sgs_quad
-
-FIELDS = (:dq_lcl_dt, :dq_icl_dt, :dq_rai_dt, :dq_sno_dt)
-
-function tendencies(k)
+function evaluate(k)
     CA.ADAPTIVE_QUADRATURE_SIGMA[] = k
-    out = [Vector{FT}(undef, n) for _ in FIELDS]
-    @inbounds for i in 1:n
-        r = CA.microphysics_tendencies_1m(
-            BMT.Microphysics1Moment(), quad, cmp, thp, ρ[i], Tm[i], qt[i],
-            ql[i], qi[i], qr[i], qs[i], TT[i], qq[i], corr, lam[i], α, dt, nsubs,
-        )
-        for (j, f) in enumerate(FIELDS)
-            out[j][i] = getproperty(r, f)
-        end
-    end
-    return out
+    CA.set_microphysics_tendency_cache!(Y, p, mp_model, tm)
+    return deepcopy(tend())
 end
 
-@info "evaluating $n cells with the full quadrature"
-full = tendencies(0.0)
+# A threshold of zero disables the branch (guarded in microphysics_wrappers.jl).
+# Verified below rather than trusted: if the reference arm were itself collapsing
+# cells, every error number here would be measured against the wrong baseline --
+# which is exactly what happened on the first attempt.
+@info "evaluating the full nine-point quadrature (branch disabled)"
+full = evaluate(0.0)
+flatten(f, name) = vec(Array(parent(getproperty(f, name))))
+names_ = propertynames(full)
+@info "tendency fields" names_
+n = length(flatten(full, first(names_)))
 
 results = Dict{String, Any}("cells" => n)
 for k in (3.0, 10.0)
     @info "evaluating with the adaptive collapse at $(k) sigma"
-    adapt = tendencies(k)
+    adapt = evaluate(k)
+    entry = Dict{String, Any}()
     fired = falses(n)
-    for j in eachindex(FIELDS), i in 1:n
-        full[j][i] == adapt[j][i] || (fired[i] = true)
+    for nm in names_
+        a, b = flatten(full, nm), flatten(adapt, nm)
+        @inbounds for i in 1:n
+            a[i] == b[i] || (fired[i] = true)
+        end
     end
     nf = count(fired)
-    entry = Dict{String, Any}("fired_frac" => nf / n)
-    @printf("\nk = %.1f sigma: branch changed %d of %d cells (%.2f%%)\n",
+    entry["changed_frac"] = nf / n
+    # Sanity: a STRICTER threshold must collapse fewer cells, so it must change
+    # fewer. If this ordering inverts, the reference arm is wrong.
+    entry["note"] = "changed_frac is where the answer differs, not where the " *
+        "branch fired; most collapses are bit-identical because the quadrature " *
+        "really is degenerate there."
+    @printf("\nk = %.1f sigma: answer changed in %d of %d cells (%.3f%%)\n",
             k, nf, n, 100nf / n)
-    for (j, f) in enumerate(FIELDS)
-        # Normalize by the RMS of the field itself, so a tendency that is
-        # near-zero everywhere cannot manufacture a huge relative error.
-        scale = sqrt(sum(abs2, full[j]) / n)
-        err = [abs(full[j][i] - adapt[j][i]) for i in 1:n if fired[i]]
-        if isempty(err) || scale == 0
-            continue
-        end
+    for nm in names_
+        a, b = flatten(full, nm), flatten(adapt, nm)
+        scale = sqrt(sum(abs2, a) / n)
+        scale == 0 && continue
+        err = Float64[abs(a[i] - b[i]) for i in 1:n if fired[i]]
+        isempty(err) && continue
         sort!(err)
-        rel_max = err[end] / scale
-        rel_p99 = err[max(1, floor(Int, 0.99 * length(err)))] / scale
         rel_rms = sqrt(sum(abs2, err) / length(err)) / scale
+        rel_p99 = err[max(1, floor(Int, 0.99 * length(err)))] / scale
+        rel_max = err[end] / scale
         @printf("  %-12s rms/scale %9.3e   p99/scale %9.3e   max/scale %9.3e\n",
-                String(f), rel_rms, rel_p99, rel_max)
-        entry[String(f)] = Dict(
-            "rms_over_scale" => rel_rms,
-            "p99_over_scale" => rel_p99,
-            "max_over_scale" => rel_max,
-            "field_rms" => scale,
+                String(nm), rel_rms, rel_p99, rel_max)
+        entry[String(nm)] = Dict(
+            "rms_over_scale" => rel_rms, "p99_over_scale" => rel_p99,
+            "max_over_scale" => rel_max, "field_rms" => scale,
         )
     end
     results["sigma_$(Int(k))"] = entry

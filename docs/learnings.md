@@ -997,6 +997,69 @@ Nor is there an easy follow-up in narrowing the parameter struct:
 No large unused chunk — the physics touches most of it, so narrowing means an
 invasive refactor for a fraction of 432 B.
 
+## 4e. The adaptive quadrature collapse fails, and the criterion is why (2026-09-09)
+
+§6a measured that the subgrid PDF sits a median 449σ from the saturation kink,
+and that at 10σ **83.2% of 32-lane warps** are entirely clear of it — a far
+better warp fraction than the clear-air early-out's 21.5%, which is why that one
+returned only +1.79%. That made an adaptive collapse look promising: branch on
+`|mu_S| > k·σ_S`, evaluate one point instead of nine where the PDF cannot reach
+the kink.
+
+The mechanism works. The accuracy does not.
+
+| tendency (10σ) | rms / field RMS | max / field RMS |
+|---|---|---|
+| `dq_lcl_dt` | 1.8% | 0.72× |
+| **`dq_icl_dt`** | **23.8%** | **7.0×** |
+| `dq_rai_dt` | 3.3% | 2.1× |
+| **`dq_sno_dt`** | **12.6%** | **30.6×** |
+
+### Tightening the threshold does not help, which is the whole diagnosis
+
+3σ → 10σ moves the ice error from 0.2316 to 0.2383 — **flat**. If the error came
+from marginal cells near the kink, a stricter criterion would cut it. It does
+not, so the error is intrinsic to collapsing rather than to the threshold.
+
+**Distance from the kink does not bound curvature of the integrand.** Clear of
+the kink the `max(0, ·)` is smooth — that is all the criterion establishes. It
+says nothing about the rest of the integrand, and deposition, sublimation and
+snow processes stay strongly nonlinear in T and q far from saturation. The
+collapse error is O(σ²·f″) and f″ is large for reasons that have nothing to do
+with saturation. §6a measures distance from the **kink**; the quantity that
+governs collapse error is curvature of the **whole integrand**. Conflating them
+is what motivated this branch, and it is the mistake to avoid repeating.
+
+### What it did confirm
+
+At 10σ roughly 98.7% of points collapse, but only **8.75% of cells change at
+all** — so about 91% of collapses are **bit-identical**, not approximately
+equal. The degeneracy claim is correct. The entire cost lives in the remaining
+~9%, and no threshold on kink distance separates them from the rest.
+
+### Two instrumentation errors, both mine, both worth not repeating
+
+**A knob whose "off" value meant "always on".** `|mu_S| > 0·σ_S` is `|mu_S| > 0`,
+true almost everywhere, so a threshold of zero collapsed *every* cell instead of
+disabling the branch. The first error measurement therefore compared full
+collapse against partial collapse and was discarded. It announced itself only
+because the ordering inverted — a stricter threshold appeared to change *more*
+cells (1.12% at 10σ against 0.36% at 3σ), which is impossible. **Build the
+monotonicity check into the measurement**; it is what caught this.
+
+**A synthetic distribution that sampled only the corner.** The first attempt used
+randomized states with variances far larger than the real field's, so the branch
+fired in 4% of cases — the marginal ones — and reported a 194% relative error on
+tendencies of order 1e-8, a small-denominator artefact. Normalise by the field's
+own RMS, and measure on the real state, which is what
+`scripts/measure-adaptive-error.jl` does by calling the real cache function and
+diffing its output rather than reconstructing the kernel's inputs.
+
+The branch is kept and disabled. The mechanism — a real branch rather than a
+mask, warp-uniform in 83% of warps, nearly free to evaluate because `mu_S` and
+the σ's are already computed — is sound and worth reusing if someone finds a
+criterion that actually bounds the error.
+
 ## 5. Methodology lessons
 
 **A mechanism that wins on the GPU can still lose the run.** The first full
