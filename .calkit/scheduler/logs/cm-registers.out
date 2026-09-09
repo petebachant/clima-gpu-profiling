@@ -1,4 +1,4 @@
-gpu-guard: running on GPU(s) [7] -- OK (avoiding [])
+gpu-guard: running on GPU(s) [3] -- OK (avoiding [])
 Loading climacommon/2025_05_15
   Loading requirement: climaauth/2025_05_15 openmpi/4.1.5-mpitrampoline
     julia/1.11.5 cuda/julia-pref
@@ -30,55 +30,66 @@ Loading climacommon/2025_05_15
 │ In any other case, please file an issue.
 └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
 Precompiling ClimaAtmos...
-  26011.6 ms  ✓ ClimaAtmos
-  1 dependency successfully precompiled in 29 seconds. 287 already precompiled.
+  87175.5 ms  ✓ ClimaCore
+   6850.6 ms  ✓ ClimaCore → KrylovExt
+   6755.9 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreExt
+   6797.6 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreNCDatasetsExt
+   8678.9 ms  ✓ ClimaDiagnostics
+  10648.0 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreInterpolationsExt
+  26518.5 ms  ✓ ClimaAtmos
+  7 dependencies successfully precompiled in 132 seconds. 281 already precompiled.
+Precompiling ClimaCoreCUDAExt...
+Info Given ClimaCoreCUDAExt was explicitly requested, output will be shown live [0K
+[0K┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
+[0K│ This may cause errors.
+[0K│ 
+[0K│ If you're running under a profiler, this situation is expected. Otherwise,
+[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
+[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+[0K│ 
+[0K│ In any other case, please file an issue.
+[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+[0K┌ Warning: CUDA runtime library `libnvJitLink.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libnvJitLink.so.13`.
+[0K│ This may cause errors.
+[0K│ 
+[0K│ If you're running under a profiler, this situation is expected. Otherwise,
+[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
+[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+[0K│ 
+[0K│ In any other case, please file an issue.
+[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+[0K┌ Warning: CUDA runtime library `libcusparse.so.12` was loaded from a system path, `/usr/local/cuda/lib64/libcusparse.so.12`.
+[0K│ This may cause errors.
+[0K│ 
+[0K│ If you're running under a profiler, this situation is expected. Otherwise,
+[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
+[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+[0K│ 
+[0K│ In any other case, please file an issue.
+[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+   8778.6 ms  ✓ ClimaCore → ClimaCoreCUDAExt
+  1 dependency successfully precompiled in 10 seconds. 172 already precompiled.
+  1 dependency had output during precompilation:
+┌ ClimaCore → ClimaCoreCUDAExt
+│  [Output was shown above]
+└  
+[ Info: ClimaCore lacks the launch-bounds record; skipping the broadcast layers
 
 === registers, params passed as RUNTIME kernel arguments ===
 layer                           regs   local B  warps/SM
-source terms only               44     32       16
-+ aggregate (Instantaneous)     60     32       16
-one linearized implicit step    94     536      16
-LinearizedAverage nsub=1        116    536      16
-LinearizedAverage nsub=2        116    536      16
-LinearizedAverage nsub=3        116    536      16
+source terms only               52     32       16
++ aggregate (Instantaneous)     64     32       16
+one linearized implicit step    76     32       16
+LinearizedAverage nsub=1        206    32       8
+LinearizedAverage nsub=2        206    32       8
+LinearizedAverage nsub=3        206    32       8
 
 === can ptxas hit 12 warps/SM without spilling? ===
 compilation                       regs   local B  warps/SM
-unbounded                         147    640      12
-unbounded, always_inline=false    194    728      8
-__launch_bounds__ 12 warps/SM     150    640      12
+unbounded                         255    704      8
+unbounded, always_inline=false    255    832      8
+__launch_bounds__ 12 warps/SM     168    1072     12
 
-spill growth asking for 12 warps/SM: 0 bytes  (within the 256 B budget the guard allows)
-
-=== evaluator live state (passed by value across the barrier) ===
-  sizeof(Microphysics1MEvaluator) = 40 B
-  sizeof(mp  :: Microphysics1MParams) = 328 B
-  sizeof(tps :: ThermodynamicsParameters) = 104 B
-  measured local-memory cost per extra quadrature point = 159 B
-
-=== ClimaCore broadcast layers, AMIP layout ===
-layer                                         unbnd  bnd   spill+  warps  applied
-A bare broadcast (3 in, 1 out)                40     40    0       48     false  32      32
-B 7 fields in, 1 out                          32     32    0       64     false  32      32
-C 7 in, NamedTuple out                        64     64    0       32     false  32      32
-D microphysics_tendencies_1m                  153    128   64      12     true   1096    1160
-E microphysics_tendencies_1m (9-pt quadrature)184    128   216     8      true   1432    1648
-F same, N=1 (1 point)                         161    128   96      12     true   1368    1464
-G same, N=2 (4 points)                        185    128   200     8      true   1424    1624
-
-=== asking for 16 warps/SM instead of the shipped 16 ===
-layer                                         unbnd  bnd   spill+  warps  applied
-D microphysics_tendencies_1m                  153    128   64      16     true
-E microphysics_tendencies_1m (9-pt quadrature)184    128   216     16     true
-
-=== asking for 21 warps/SM instead of the shipped 16 ===
-layer                                         unbnd  bnd   spill+  warps  applied
-D microphysics_tendencies_1m                  153    80    264     24     false
-E microphysics_tendencies_1m (9-pt quadrature)184    80    408     24     false
-
-=== asking for 24 warps/SM instead of the shipped 16 ===
-layer                                         unbnd  bnd   spill+  warps  applied
-D microphysics_tendencies_1m                  153    80    264     24     false
-E microphysics_tendencies_1m (9-pt quadrature)184    80    408     24     false
+spill growth asking for 12 warps/SM: 368 bytes  (OVER the 256 B budget -- ptxas is buying occupancy with spill)
 
 BISECT DONE
