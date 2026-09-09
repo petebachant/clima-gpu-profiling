@@ -30,6 +30,7 @@ calkit run
 
 | experiment | date | treatment | speedup_pct | baseline_sypd | mod_sypd | commit | reproducible | note |
 |---|---|---|---|---|---|---|---|---|
+| 2026-09-08-quadrature-order-2-isolated | 2026-09-08 | ClimaCoupler, CloudMicrophysics, dev-package-set | 6.135 | 0.28312 | 0.30162 | 5d9f78c32 | yes | SGS quadrature 3x3 -> 2x2, isolated: +6.14% SYPD |
 | 2026-09-08-quadrature-order-1 | 2026-09-08 | ClimaAtmos, ClimaCore, ClimaCoupler, CloudMicrophysics, dev-package-set | 9.723 | 0.28312 | 0.31361 | f94d74378 | yes | SGS quadrature priced: 5.45% SYPD, L1013 -85% |
 | 2026-09-07-evaluator-repeat | 2026-09-07 | ClimaAtmos, ClimaCore, ClimaCoupler, CloudMicrophysics, dev-package-set | 4.524 | 0.28312 | 0.29653 | c8c4733a8 | yes | Repeat of the evaluator build: 0.29653, +4.52% |
 | 2026-09-06-evaluator-param-args | 2026-09-07 | ClimaAtmos, ClimaCore, ClimaCoupler, CloudMicrophysics, dev-package-set | 3.778 | 0.28312 | 0.29423 | 862d05efb | yes | Evaluator param-args on top of fusion + bounds@16 |
