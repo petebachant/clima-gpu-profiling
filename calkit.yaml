@@ -583,7 +583,7 @@ questions:
       - kind: result
         path: results/quadrature-order-error.toml
         key: order_2.dq_icl_dt.rms_over_scale
-        git_ref: exp/2026-09-09-order2-full-stack
+        git_ref: meas/2026-09-09-quadrature-order-accuracy
         explanation: >-
           The accuracy cost: 1.196e-2, i.e. 1.20% of the cloud-ice tendency's own
           RMS over the whole field, with cloud liquid at 0.65%, snow at 0.096%
@@ -595,6 +595,13 @@ questions:
           the worst single cell (cloud ice 1.72x field RMS). `p99_over_scale` is
           zero by construction and should not be read as an error estimate: the
           percentile is taken over all cells and 98.9% of them are unchanged.
+
+          Tagged `meas/` rather than `exp/`: this is not a pipeline experiment and
+          deliberately does not appear in experiments.csv, which is built from
+          `exp/*` tags. The ref matters -- the two `exp/` tags above predate this
+          file, so citing one of them would point at a commit that does not
+          contain the data, which is the failure that left the earlier 7.93%
+          quadrature figure unbacked.
 
   - question: >-
       Is the nine-point SGS quadrature in the 1-moment microphysics earning the
