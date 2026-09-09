@@ -117,6 +117,60 @@ is a check, not a guard — the guard is running the two stages as a pair.
 
 The same applies to any future pair of arm-specific stages.
 
+## Push every submodule before pushing the superproject
+
+A committed submodule pointer to an **unpushed** commit is exactly as
+unreproducible as a dirty tree, and far less visible. The superproject pushes
+without complaint, `git status` is clean, and the local clone resolves fine
+because the objects are still in the local store. It only fails for someone else:
+
+```
+fatal: remote error: upload-pack: not our ref 5ed945da...
+fatal: Fetched in submodule path 'ClimaCoupler.jl-mod', but it did not contain
+       5ed945da... Direct fetching of that commit failed.
+```
+
+That happened on 2026-09-09 to `ClimaCoupler.jl-mod`. The cause is worth knowing
+because it is not carelessness about the important repo — it is the opposite. The
+three submodules with *code* changes were pushed; the one with only a *config*
+change was forgotten, and its commits were the ones three experiment tags
+depended on most directly, because the config value **was** the treatment.
+
+Check before pushing:
+
+```sh
+for d in *-mod; do
+  ptr=$(git ls-tree HEAD "$d" | awk '{print $3}')
+  git -C "$d" branch -r --contains "$ptr" >/dev/null 2>&1 || echo "$d NOT PUSHED"
+done
+```
+
+To audit the whole history rather than just HEAD, loop the same check over
+`git tag --list 'exp/*'` with `git ls-tree <tag>`.
+
+### Do not squash a submodule branch that tags point into
+
+Squashing away an experiment-and-revert pair is tidy for reviewers and
+catastrophic for reproducibility: it orphans every superproject commit whose
+pointer lands in the squashed range, silently. `git status` stays clean and the
+local clone still works.
+
+Both cases arose in this project and resolved oppositely:
+
+  * **ClimaCore, 2026-09-06.** The net change was comment-only, no tags pointed
+    into the range, so the experiment and its revert were squashed to one commit
+    before pushing. That orphaned five *superproject* commits, which then had to
+    be squashed as well -- repointing them was not an option, since they
+    genuinely ran the reverted code.
+  * **ClimaCoupler, 2026-09-09.** Also three experiment/revert pairs with an
+    empty net diff, so equally tempting. But `exp/2026-09-08-quadrature-order-1`,
+    `exp/2026-09-08-quadrature-order-2-isolated` and
+    `exp/2026-09-09-order2-full-stack` point at the *intermediate* commits.
+    Pushed in full.
+
+The rule: check whether any tag's pointer lands inside the range before
+rewriting it. If one does, push the history as-is.
+
 ## Commit before running anything meant for the record
 
 `experiments.csv` advertises that any row can be reproduced with
