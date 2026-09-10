@@ -894,13 +894,7 @@ pipeline:
         - results/nsys/baseline
         - ClimaCoupler.jl/experiments/AMIP
         - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        # Extends t_end so the 120-step profiling window in scripts/run.jl fits.
-        # run-nsys.sh turns every extra argument into a --config_file, and the
-        # coupler merges them in order, so this overrides t_end for both arms
-        # from one shared file. See config/profiling-window.yml.
-        - config/profiling-window.yml
       inputs:
-        - config/profiling-window.yml
         - scripts/run.jl
         - ClimaCoupler.jl/src
         - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -928,13 +922,7 @@ pipeline:
         - results/nsys/mod
         - ClimaCoupler.jl-mod/experiments/AMIP
         - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        # Extends t_end so the 120-step profiling window in scripts/run.jl fits.
-        # run-nsys.sh turns every extra argument into a --config_file, and the
-        # coupler merges them in order, so this overrides t_end for both arms
-        # from one shared file. See config/profiling-window.yml.
-        - config/profiling-window.yml
       inputs:
-        - config/profiling-window.yml
         - scripts/run.jl
         - ClimaCoupler.jl-mod/src
         - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -1094,14 +1082,9 @@ pipeline:
         - ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
         - --config_file
         - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        # One simulated DAY, via an extra --config_file: a bare --t_end flag is
-        # ignored because the config file wins. See config/long-run.yml.
-        - --config_file
-        - config/long-run.yml
         - --job_id
         - gpu_amip_progedmf_1M_land_he16_baseline
       inputs:
-        - config/long-run.yml
         - ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
         - ClimaCoupler.jl/src
         - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -1128,14 +1111,9 @@ pipeline:
         - ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
         - --config_file
         - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        # One simulated DAY, via an extra --config_file: a bare --t_end flag is
-        # ignored because the config file wins. See config/long-run.yml.
-        - --config_file
-        - config/long-run.yml
         - --job_id
         - gpu_amip_progedmf_1M_land_he16_mod
       inputs:
-        - config/long-run.yml
         - ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
         - ClimaCoupler.jl-mod/src
         - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
