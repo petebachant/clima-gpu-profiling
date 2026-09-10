@@ -49,7 +49,21 @@ end
 
 # Now profile a window large enough that one-shot per-step variation
 # averages out and steady-state kernel times dominate.
-n_steps = 10
+# 120 steps = one simulated hour = LCM(20, 60, 120) of this configuration's
+# periodic processes: radiation every 20 steps, both gravity-wave schemes every
+# 60, cloud fraction and the diagnostics write every 120. A window of exactly the
+# LCM is PHASE-INDEPENDENT -- each process fires its exact long-run share
+# wherever the window starts -- so the profile needs no offsetting and no
+# reweighting: a kernel appearing in 2 of 120 steps really is 2/120 of the work.
+#
+# 10 was shorter than the gravity-wave period, so both schemes fired 0 or 1 times
+# depending on phase: a coin flip that lands differently between runs and reads
+# as noise.
+#
+# Nearly free because compilation dominates the job: ~35 min of JIT against 1.5 s
+# of stepping at 10 steps and 18 s at 120. Traces measured 66 MB (nsys-rep) and
+# 163 MB (sqlite) per arm at 120 steps, well under a linear projection.
+n_steps = 120
 use_external_profiler = CUDA.Profile.detect_cupti()
 if use_external_profiler
     @info "Using external CUDA profiler"

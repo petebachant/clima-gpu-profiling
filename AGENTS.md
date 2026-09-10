@@ -137,6 +137,37 @@ been used throughout, and five artifacts were sitting only in the local cache.
 
 `calkit save` does the same for the archival case described above.
 
+## The benchmark window, and why `--config_file` overrides are forbidden
+
+`t_end` is **86400secs** (one simulated day, 2880 coupler steps at dt = 30 s) and
+`scripts/run.jl` profiles **120 steps**. Both numbers are deliberate:
+
+  * 120 steps = one simulated hour = LCM(20 radiation, 60 gravity wave, 120
+    cloud fraction, 120 diagnostics). A window of exactly the LCM is
+    **phase-independent**: every periodic process fires its exact long-run share
+    wherever the window starts, so profiles need no offsetting and no
+    reweighting.
+  * The previous 1200secs / 40-step window was shorter than the 60-step
+    gravity-wave period, so neither scheme ever fired. It was also about half
+    first-call compilation: 0.2767 s per coupling step reported against 0.146 s
+    measured in steady state with CUDA events.
+
+Both arms' benchmark configs are edited **in the submodules** and must stay
+byte-identical to each other. That is a deliberate deviation from "identical to
+upstream main except the Manifest" and is the only one.
+
+**Do not change these by passing an extra `--config_file`.** It does not merge.
+The additional file drops the primary config's coupler keys back to defaults: on
+2026-09-10 it silently changed `dt` and `dt_cpl` from 30secs to 400secs in all
+four arms, a 13x coarser physics timestep, and invalidated a full pipeline run.
+
+The failure is worth recognising by shape, because the SYPD looked spectacular:
+**0.297 -> 2.986, an apparent 10x.** The tell was that *walltime per coupling
+step went UP*, 0.2767 -> 0.3667 s. A real speedup lowers it. Throughput per
+simulated year rose only because 13x fewer steps were being taken per simulated
+hour -- a different, coarser problem, not a faster solution to the same one.
+**When SYPD and per-step walltime move the same direction, the timestep changed.**
+
 ## Push every submodule before pushing the superproject
 
 A committed submodule pointer to an **unpushed** commit is exactly as
