@@ -1094,16 +1094,14 @@ pipeline:
         - ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
         - --config_file
         - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        # One simulated DAY. The config's own 1200 s (40 steps) is shorter than
-        # the gravity-wave period (60 steps), so neither scheme ever fires and
-        # SYPD measured over it excludes them entirely. A day covers every
-        # sub-daily process many times and the daily ocean/sea-ice diagnostics
-        # once. Costs ~7 min of stepping on a job whose JIT is ~35 min.
-        - --t_end
-        - 86400secs
+        # One simulated DAY, via an extra --config_file: a bare --t_end flag is
+        # ignored because the config file wins. See config/long-run.yml.
+        - --config_file
+        - config/long-run.yml
         - --job_id
         - gpu_amip_progedmf_1M_land_he16_baseline
       inputs:
+        - config/long-run.yml
         - ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
         - ClimaCoupler.jl/src
         - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -1130,16 +1128,14 @@ pipeline:
         - ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
         - --config_file
         - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        # One simulated DAY. The config's own 1200 s (40 steps) is shorter than
-        # the gravity-wave period (60 steps), so neither scheme ever fires and
-        # SYPD measured over it excludes them entirely. A day covers every
-        # sub-daily process many times and the daily ocean/sea-ice diagnostics
-        # once. Costs ~7 min of stepping on a job whose JIT is ~35 min.
-        - --t_end
-        - 86400secs
+        # One simulated DAY, via an extra --config_file: a bare --t_end flag is
+        # ignored because the config file wins. See config/long-run.yml.
+        - --config_file
+        - config/long-run.yml
         - --job_id
         - gpu_amip_progedmf_1M_land_he16_mod
       inputs:
+        - config/long-run.yml
         - ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
         - ClimaCoupler.jl-mod/src
         - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml

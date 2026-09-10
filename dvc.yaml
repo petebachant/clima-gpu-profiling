@@ -31,7 +31,8 @@ stages:
       Changes made here will be overwritten.
   baseline-nsys:
     cmd: calkit scheduler batch --name baseline-nsys --environment clima --dep
-      scripts/run.jl --dep ClimaCoupler.jl/src --dep
+      config/profiling-window.yml --dep scripts/run.jl --dep ClimaCoupler.jl/src
+      --dep
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
       ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep ClimaCore.jl/ext
@@ -40,8 +41,10 @@ stages:
       results/nsys/baseline.sqlite -- scripts/run-nsys.sh results/nsys/baseline
       ClimaCoupler.jl/experiments/AMIP
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      config/profiling-window.yml
     deps:
       - scripts/run-nsys.sh
+      - config/profiling-window.yml
       - scripts/run.jl
       - ClimaCoupler.jl/src
       - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -64,7 +67,8 @@ stages:
       Changes made here will be overwritten.
   mod-nsys:
     cmd: calkit scheduler batch --name mod-nsys --environment clima --dep
-      scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep
+      config/profiling-window.yml --dep scripts/run.jl --dep
+      ClimaCoupler.jl-mod/src --dep
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
       ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
@@ -75,8 +79,10 @@ stages:
       --option --time=120 -- scripts/run-nsys.sh results/nsys/mod
       ClimaCoupler.jl-mod/experiments/AMIP
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      config/profiling-window.yml
     deps:
       - scripts/run-nsys.sh
+      - config/profiling-window.yml
       - scripts/run.jl
       - ClimaCoupler.jl-mod/src
       - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -189,7 +195,7 @@ stages:
       scripts/run-julia-script.sh --project=ClimaCoupler.jl/experiments/AMIP
       ClimaCoupler.jl/experiments/AMIP/run_simulation.jl --config_file
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --job_id gpu_amip_progedmf_1M_land_he16_baseline
+      --t_end 86400secs --job_id gpu_amip_progedmf_1M_land_he16_baseline
     deps:
       - scripts/run-julia-script.sh
       - ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
@@ -223,7 +229,7 @@ stages:
       scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
       ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl --config_file
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --job_id gpu_amip_progedmf_1M_land_he16_mod
+      --t_end 86400secs --job_id gpu_amip_progedmf_1M_land_he16_mod
     deps:
       - scripts/run-julia-script.sh
       - ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
