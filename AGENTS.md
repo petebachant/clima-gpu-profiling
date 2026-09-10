@@ -117,6 +117,26 @@ is a check, not a guard — the guard is running the two stages as a pair.
 
 The same applies to any future pair of arm-specific stages.
 
+## Use `calkit push`, not `git push`
+
+`git push` sends the git objects only. The pipeline's real outputs -- nsys
+reports, their sqlite databases, the ncu exports -- are DVC-tracked, so they stay
+in the local cache and reach nobody. `calkit push` sends both.
+
+This is silent. `git status` is clean, `calkit status` reports "DVC: No changes"
+(which means the local cache matches the workspace, NOT that the remote has the
+data), and the local clone works because the cache is right there. It fails only
+for someone else, and only when they try to open a report.
+
+It also breaks a claim this repo makes about itself. `experiments.csv` advertises
+that any row reproduces from `git checkout <commit> && git submodule update
+--init --recursive && calkit run`, and an audit of submodule pointers can pass
+while every nsys and ncu artifact is missing from the remote. That happened on
+2026-09-09: pointers were verified fetchable for all ten tags, `git push` had
+been used throughout, and five artifacts were sitting only in the local cache.
+
+`calkit save` does the same for the archival case described above.
+
 ## Push every submodule before pushing the superproject
 
 A committed submodule pointer to an **unpushed** commit is exactly as
