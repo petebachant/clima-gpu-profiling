@@ -1221,12 +1221,22 @@ pipeline:
       scheduler:
         options:
           - --gpus=1
-          - --time=60
+          - --time=90
       args:
         - --project=ClimaCoupler.jl-mod/experiments/AMIP
         - scripts/measure-step-breakdown.jl
         - --config_file
         - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        # 2880 steps = one simulated day. The 40-step benchmark window fires
+        # radiation (20 steps) but NEVER fires either gravity-wave scheme (60),
+        # the cloud-fraction update (120), or the hourly diagnostics write (120).
+        # One day covers all of those many times over, and the daily ocean and
+        # sea-ice diagnostics once. Only the monthly and 30-day work stays out of
+        # reach. At ~150 ms/step this is ~7 minutes of stepping.
+        - --steps
+        - '2880'
+        - --t_end
+        - 90000secs
         - --out
         - results/step-breakdown.toml
       inputs:
