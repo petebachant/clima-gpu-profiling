@@ -1060,6 +1060,61 @@ mask, warp-uniform in 83% of warps, nearly free to evaluate because `mu_S` and
 the σ's are already computed — is sound and worth reusing if someone finds a
 criterion that actually bounds the error.
 
+## 4f. The model is densely GPU-bound: there is no launch-overhead headroom (2026-09-09)
+
+Asked whether a structural change to how kernels are created could reach +50%
+SYPD, the obvious hypothesis was launch overhead. The model issues **3118 kernel
+launches per coupler step** across **346 distinct kernels** at a mean duration of
+43.7 µs, and nsys reports 30.5% GPU idle. That profile says "launch-bound", and
+CUDA graphs are the textbook answer.
+
+**It is wrong.** Measured without a profiler, using CUDA events around
+`step!(cs)` (two event records against a ~145 ms step, so the instrument cannot
+dominate what it measures):
+
+| | median over 12 steps |
+|---|---|
+| wall | 145.2 ms |
+| GPU span (first to last GPU activity) | **145.2 ms — 100.0% of wall** |
+| gap (host time outside the GPU timeline) | **0.0 ms** |
+
+`gpu_span` is a *span*, so it includes inter-kernel gaps and bounds GPU busy time
+from above; the gap is therefore a **lower** bound on host time. It is zero. And
+against nsys's ~136 ms/step of kernel time, the GPU timeline is **~94% kernel
+execution** — only ~6% gaps.
+
+**So CUDA graphs would buy at most ~6% of GPU time, and probably less.** 3118
+launches per step sounds enormous but they pipeline; the GPU never starves. Any
+route to a large speedup has to remove arithmetic, not improve scheduling.
+
+The 30.5% idle figure that motivated the hypothesis is the nsys artefact §2b-i
+already identified — the same profiled run reports 48.3% idle for the *mod* arm
+against 30.5% for baseline while being **faster** in SYPD, which is incoherent.
+Two independent observations now say that number is instrument, not model.
+
+### An unresolved discrepancy, recorded rather than smoothed over
+
+SYPD 0.29716 implies **276.6 ms per coupler step**. The measurement above gives a
+median of 145.2 ms and a mean of 168.2 ms over 12 steps — **61% of the implied
+value**. Roughly 108 ms/step is unaccounted for.
+
+The likely explanation is periodic work outside a 12-step window: one step in the
+sample took **421 ms**, nearly 3× the others, and the configuration has radiation
+on a 600 s cycle (20 steps), gravity wave drag on 1800 s (60 steps), and hourly
+diagnostics (120 steps). A short window samples the cheap steps and misses the
+duty cycle.
+
+If that is right it matters more than the launch-overhead question ever did:
+**about 40% of long-run wall time would sit in periodic work that the per-step
+kernel optimisation in this project never touches.** The flagship microphysics
+kernel runs every step; radiation does not. Nobody has measured the duty cycle,
+and doing so needs a window of at least 120 steps rather than 12.
+
+Do not treat the 61% as established. It is the difference between two
+instruments — a CUDA-event window and the model's own SYPD accounting — and this
+project has repeatedly found that such differences are the instrument rather than
+the model.
+
 ## 5. Methodology lessons
 
 **A mechanism that wins on the GPU can still lose the run.** The first full

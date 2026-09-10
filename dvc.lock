@@ -1580,3 +1580,78 @@ stages:
       hash: md5
       md5: a27a012b223fcc070f479822b1daa6d7
       size: 1134
+  step-breakdown:
+    cmd: calkit scheduler batch --name step-breakdown --environment clima --dep 
+      scripts/measure-step-breakdown.jl --dep ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
+      ClimaAtmos.jl-mod/src --dep CloudMicrophysics.jl-mod/src --dep 
+      .calkit/env-locks/clima --out results/step-breakdown.toml --option 
+      --gpus=1 --option --time=60 -- scripts/run-julia-script.sh 
+      --project=ClimaCoupler.jl-mod/experiments/AMIP 
+      scripts/measure-step-breakdown.jl --config_file 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --out results/step-breakdown.toml
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: 36702b207ccd6c517c4b32dfd47ea696.dir
+      size: 2140208
+      nfiles: 159
+    - path: ClimaCore.jl-mod/ext
+      hash: md5
+      md5: c44f7e14f92211d5a314fad3a928abbf.dir
+      size: 214315
+      nfiles: 20
+    - path: ClimaCore.jl-mod/src
+      hash: md5
+      md5: 7a01ae430e0fdc7ebfafa5f738595df1.dir
+      size: 1289211
+      nfiles: 106
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 577bef53fd5c8e8eb2897c6d236dec53
+      size: 461
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: e1db3663d10b8139e536e49cfc852676
+      size: 122643
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: 0c072357ce169058667a15672376802e
+      size: 905
+    - path: ClimaCoupler.jl-mod/src
+      hash: md5
+      md5: d05286163ac68b8a0a877690ad9c22c4.dir
+      size: 309801
+      nfiles: 22
+    - path: CloudMicrophysics.jl-mod/src
+      hash: md5
+      md5: 5d3366f3b092c96577d0600d0aa47e76.dir
+      size: 453461
+      nfiles: 57
+    - path: scripts/measure-step-breakdown.jl
+      hash: md5
+      md5: f31f644e557367e16f6a3b18eb7b8dc2
+      size: 3638
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: a61880cfce301ad9069fbaddfa8d5ad5
+      size: 1033
+    outs:
+    - path: .calkit/scheduler/logs/step-breakdown.out
+      hash: md5
+      md5: 83e26b034b67cc124498a8cc97b86643
+      size: 28057
+    - path: results/step-breakdown.toml
+      hash: md5
+      md5: 74813a1eda5fdc7153ddbde077f15244
+      size: 832
