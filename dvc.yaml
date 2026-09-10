@@ -185,6 +185,7 @@ stages:
       Changes made here will be overwritten.
   amip-baseline:
     cmd: calkit scheduler batch --name amip-baseline --environment clima --dep
+      config/long-run.yml --dep
       ClimaCoupler.jl/experiments/AMIP/run_simulation.jl --dep
       ClimaCoupler.jl/src --dep
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -195,9 +196,11 @@ stages:
       scripts/run-julia-script.sh --project=ClimaCoupler.jl/experiments/AMIP
       ClimaCoupler.jl/experiments/AMIP/run_simulation.jl --config_file
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --t_end 86400secs --job_id gpu_amip_progedmf_1M_land_he16_baseline
+      --config_file config/long-run.yml --job_id
+      gpu_amip_progedmf_1M_land_he16_baseline
     deps:
       - scripts/run-julia-script.sh
+      - config/long-run.yml
       - ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
       - ClimaCoupler.jl/src
       - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -217,6 +220,7 @@ stages:
       Changes made here will be overwritten.
   amip-mod:
     cmd: calkit scheduler batch --name amip-mod --environment clima --dep
+      config/long-run.yml --dep
       ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl --dep
       ClimaCoupler.jl-mod/src --dep
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -229,9 +233,11 @@ stages:
       scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
       ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl --config_file
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --t_end 86400secs --job_id gpu_amip_progedmf_1M_land_he16_mod
+      --config_file config/long-run.yml --job_id
+      gpu_amip_progedmf_1M_land_he16_mod
     deps:
       - scripts/run-julia-script.sh
+      - config/long-run.yml
       - ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
       - ClimaCoupler.jl-mod/src
       - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml

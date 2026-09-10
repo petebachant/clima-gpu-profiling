@@ -894,6 +894,7 @@ stages:
       size: 181165
   amip-baseline:
     cmd: calkit scheduler batch --name amip-baseline --environment clima --dep 
+      config/long-run.yml --dep 
       ClimaCoupler.jl/experiments/AMIP/run_simulation.jl --dep 
       ClimaCoupler.jl/src --dep 
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml 
@@ -904,7 +905,8 @@ stages:
       scripts/run-julia-script.sh --project=ClimaCoupler.jl/experiments/AMIP 
       ClimaCoupler.jl/experiments/AMIP/run_simulation.jl --config_file 
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml 
-      --t_end 86400secs --job_id gpu_amip_progedmf_1M_land_he16_baseline
+      --config_file config/long-run.yml --job_id 
+      gpu_amip_progedmf_1M_land_he16_baseline
     deps:
     - path: .calkit/env-locks/clima
       hash: md5
@@ -958,6 +960,10 @@ stages:
       md5: d05286163ac68b8a0a877690ad9c22c4.dir
       size: 309801
       nfiles: 22
+    - path: config/long-run.yml
+      hash: md5
+      md5: fd5ed056753963c5ca50f6fe1ca16119
+      size: 1153
     - path: scripts/run-julia-script.sh
       hash: md5
       md5: a61880cfce301ad9069fbaddfa8d5ad5
@@ -965,10 +971,11 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/amip-baseline.out
       hash: md5
-      md5: 3ea057d7f26c7bae2cda6db3db405afb
-      size: 44677
+      md5: d270f274c66ccfb72a1b3334e00bd9a5
+      size: 39149
   amip-mod:
     cmd: calkit scheduler batch --name amip-mod --environment clima --dep 
+      config/long-run.yml --dep 
       ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl --dep 
       ClimaCoupler.jl-mod/src --dep 
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -981,7 +988,8 @@ stages:
       scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
       ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl --config_file 
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --t_end 86400secs --job_id gpu_amip_progedmf_1M_land_he16_mod
+      --config_file config/long-run.yml --job_id 
+      gpu_amip_progedmf_1M_land_he16_mod
     deps:
     - path: .calkit/env-locks/clima
       hash: md5
@@ -1045,6 +1053,10 @@ stages:
       md5: 5d3366f3b092c96577d0600d0aa47e76.dir
       size: 453461
       nfiles: 57
+    - path: config/long-run.yml
+      hash: md5
+      md5: fd5ed056753963c5ca50f6fe1ca16119
+      size: 1153
     - path: scripts/run-julia-script.sh
       hash: md5
       md5: a61880cfce301ad9069fbaddfa8d5ad5
@@ -1052,8 +1064,8 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: 4e4f8e0d2a85eac53d425750f3605009
-      size: 44755
+      md5: 1206faad177198f6043889418a404f7a
+      size: 39193
   make-diffs:
     cmd: bash --noprofile --norc scripts/make-diffs.sh
     deps:
