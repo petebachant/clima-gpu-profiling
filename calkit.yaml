@@ -894,7 +894,13 @@ pipeline:
         - results/nsys/baseline
         - ClimaCoupler.jl/experiments/AMIP
         - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        # Extends t_end so the 120-step profiling window in scripts/run.jl fits.
+        # run-nsys.sh turns every extra argument into a --config_file, and the
+        # coupler merges them in order, so this overrides t_end for both arms
+        # from one shared file. See config/profiling-window.yml.
+        - config/profiling-window.yml
       inputs:
+        - config/profiling-window.yml
         - scripts/run.jl
         - ClimaCoupler.jl/src
         - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -922,7 +928,13 @@ pipeline:
         - results/nsys/mod
         - ClimaCoupler.jl-mod/experiments/AMIP
         - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        # Extends t_end so the 120-step profiling window in scripts/run.jl fits.
+        # run-nsys.sh turns every extra argument into a --config_file, and the
+        # coupler merges them in order, so this overrides t_end for both arms
+        # from one shared file. See config/profiling-window.yml.
+        - config/profiling-window.yml
       inputs:
+        - config/profiling-window.yml
         - scripts/run.jl
         - ClimaCoupler.jl-mod/src
         - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -1082,6 +1094,13 @@ pipeline:
         - ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
         - --config_file
         - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        # One simulated DAY. The config's own 1200 s (40 steps) is shorter than
+        # the gravity-wave period (60 steps), so neither scheme ever fires and
+        # SYPD measured over it excludes them entirely. A day covers every
+        # sub-daily process many times and the daily ocean/sea-ice diagnostics
+        # once. Costs ~7 min of stepping on a job whose JIT is ~35 min.
+        - --t_end
+        - 86400secs
         - --job_id
         - gpu_amip_progedmf_1M_land_he16_baseline
       inputs:
@@ -1111,6 +1130,13 @@ pipeline:
         - ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
         - --config_file
         - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        # One simulated DAY. The config's own 1200 s (40 steps) is shorter than
+        # the gravity-wave period (60 steps), so neither scheme ever fires and
+        # SYPD measured over it excludes them entirely. A day covers every
+        # sub-daily process many times and the daily ocean/sea-ice diagnostics
+        # once. Costs ~7 min of stepping on a job whose JIT is ~35 min.
+        - --t_end
+        - 86400secs
         - --job_id
         - gpu_amip_progedmf_1M_land_he16_mod
       inputs:
