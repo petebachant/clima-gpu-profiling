@@ -344,11 +344,11 @@ stages:
       ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
       ClimaAtmos.jl-mod/src --dep CloudMicrophysics.jl-mod/src --dep
       .calkit/env-locks/clima --out results/step-breakdown.toml --option
-      --gpus=1 --option --time=60 -- scripts/run-julia-script.sh
+      --gpus=1 --option --time=90 -- scripts/run-julia-script.sh
       --project=ClimaCoupler.jl-mod/experiments/AMIP
       scripts/measure-step-breakdown.jl --config_file
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --out results/step-breakdown.toml
+      --steps 2880 --t_end 90000secs --out results/step-breakdown.toml
     deps:
       - scripts/run-julia-script.sh
       - scripts/measure-step-breakdown.jl

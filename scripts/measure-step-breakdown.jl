@@ -36,9 +36,18 @@ project_dir = dirname(Base.active_project())
 include(joinpath(project_dir, "code_loading.jl"))
 
 out_path = "results/step-breakdown.toml"
+n_steps = 12
+# Strip our own options BEFORE the coupler's argparse sees ARGS -- it rejects
+# anything it does not know, and a late deletion is too late.
 let i = findfirst(==("--out"), ARGS)
     if !isnothing(i)
         out_path = ARGS[i + 1]
+        deleteat!(ARGS, i:(i + 1))
+    end
+end
+let i = findfirst(==("--steps"), ARGS)
+    if !isnothing(i)
+        n_steps = parse(Int, ARGS[i + 1])
         deleteat!(ARGS, i:(i + 1))
     end
 end
@@ -47,13 +56,6 @@ config_file = Input.parse_commandline(Input.argparse_settings())["config_file"]
 cs = CoupledSimulation(config_file)
 
 n_warmup = 3
-n_steps = 12
-let i = findfirst(==("--steps"), ARGS)
-    if !isnothing(i)
-        n_steps = parse(Int, ARGS[i + 1])
-        deleteat!(ARGS, i:(i + 1))
-    end
-end
 for i in 1:n_warmup
     @info "warmup step $i / $n_warmup"
     step!(cs)
