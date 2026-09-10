@@ -1201,6 +1201,48 @@ pipeline:
         - path: results/sgs-degeneracy.toml
           storage: git
 
+    step-breakdown:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # How much of a coupler step is GPU work, measured WITHOUT a profiler.
+      # nsys cannot answer this: docs/learnings.md 2b-i showed its own
+      # instrumentation dominates the idle measurement here, and the profiled mod
+      # arm reports MORE idle than baseline while being faster in SYPD. This uses
+      # CUDA events instead -- two records per ~277 ms step -- and reports wall,
+      # GPU span, and the gap between them. gpu_span includes inter-kernel gaps,
+      # so it bounds GPU busy from above and the gap is a LOWER bound on host
+      # time outside the GPU timeline.
+      #
+      # Must run through this wrapper, not a bare srun: without `module load
+      # climacommon` Julia picks up system CUDA libraries and a step takes 118 s
+      # instead of 277 ms, which is how the first attempt at this measurement was
+      # wasted.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=60
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/measure-step-breakdown.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --out
+        - results/step-breakdown.toml
+      inputs:
+        - scripts/measure-step-breakdown.jl
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaAtmos.jl-mod/src
+        - CloudMicrophysics.jl-mod/src
+      outputs:
+        - path: results/step-breakdown.toml
+          storage: git
+
     cm-registers:
       kind: shell-script
       environment: clima
