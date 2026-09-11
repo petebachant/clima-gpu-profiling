@@ -1655,3 +1655,91 @@ stages:
       hash: md5
       md5: 3f43188663ac42d3366d12136b186fad
       size: 918
+  radiation-ncu:
+    cmd: calkit scheduler batch --name radiation-ncu --environment clima --dep 
+      scripts/run.jl --dep ClimaCoupler.jl/src --dep 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml 
+      --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep ClimaCore.jl/ext 
+      --dep ClimaCore.jl/src --dep ClimaAtmos.jl/src --dep RRTMGP.jl/src --dep 
+      RRTMGP.jl/ext --dep .calkit/env-locks/clima --out 
+      results/ncu/radiation.ncu-rep --out results/ncu/radiation-details.csv 
+      --option --gpus=1 --option --time=180 -- scripts/run-ncu.sh 
+      results/ncu/radiation --kernel-name regex:rte_.w_2stream_solve_CUDA 
+      --project ClimaCoupler.jl/experiments/AMIP --config 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml 
+      --launch-skip 2 --launch-count 2
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaAtmos.jl/src
+      hash: md5
+      md5: 5e98a7104d1d20c3e76827d059289a0b.dir
+      size: 2139094
+      nfiles: 159
+    - path: ClimaCore.jl/ext
+      hash: md5
+      md5: e20df2d3e2e4c81056a1911de393d13e.dir
+      size: 201740
+      nfiles: 20
+    - path: ClimaCore.jl/src
+      hash: md5
+      md5: 7a01ae430e0fdc7ebfafa5f738595df1.dir
+      size: 1289211
+      nfiles: 106
+    - path: 
+        ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 7dbcad53bc9080ba1b2d34c4d63f6b35
+      size: 1654
+    - path: ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: d3b19f665e50c9647a2d51c2104b9326
+      size: 122620
+    - path: ClimaCoupler.jl/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: 0c072357ce169058667a15672376802e
+      size: 905
+    - path: ClimaCoupler.jl/src
+      hash: md5
+      md5: d05286163ac68b8a0a877690ad9c22c4.dir
+      size: 309801
+      nfiles: 22
+    - path: RRTMGP.jl/ext
+      hash: md5
+      md5: a4d7832a43077123653a6d0031c1a649.dir
+      size: 53880
+      nfiles: 11
+    - path: RRTMGP.jl/src
+      hash: md5
+      md5: 9dc7c1dae68c06d9c378745aa35bea47.dir
+      size: 305619
+      nfiles: 43
+    - path: scripts/run-ncu.sh
+      hash: md5
+      md5: c867521e040a5d380de0dcfdf1cd883c
+      size: 3817
+    - path: scripts/run-ncu.sh
+      hash: md5
+      md5: c867521e040a5d380de0dcfdf1cd883c
+      size: 3817
+    - path: scripts/run.jl
+      hash: md5
+      md5: be954b869488b6a8ed40f499008bcf9b
+      size: 3583
+    outs:
+    - path: .calkit/scheduler/logs/radiation-ncu.out
+      hash: md5
+      md5: 628267e3174e409901d01248249a5a82
+      size: 47254
+    - path: results/ncu/radiation-details.csv
+      hash: md5
+      md5: 1b9696de732a278fda37b1b91a074ecd
+      size: 403705
+    - path: results/ncu/radiation.ncu-rep
+      hash: md5
+      md5: 382b86d388769b7fee3b0f1d5edfcee0
+      size: 9647044
