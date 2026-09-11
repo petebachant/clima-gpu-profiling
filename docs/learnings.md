@@ -1115,6 +1115,68 @@ instruments — a CUDA-event window and the model's own SYPD accounting — and 
 project has repeatedly found that such differences are the instrument rather than
 the model.
 
+## 4g. The optimisation reverses over a realistic window (2026-09-10)
+
+Every performance result in this project was measured in a 10-step profiling
+window on a 40-step run. Lengthening the window to 120 steps (one simulated
+hour, the phase-independent LCM) shows the headline result does not survive.
+
+`set_microphysics_tendency_cache` L1013, mean ms per launch, 120 launches:
+
+| launches | baseline | mod | mod/base |
+|---|---|---|---|
+| 1–12 | 27.49 | **14.16** | **0.51** |
+| 25–36 | 28.40 | 19.69 | 0.69 |
+| 49–60 | 28.72 | 27.38 | 0.95 |
+| 61–72 | 28.73 | 30.49 | **1.06** |
+| 97–108 | 28.70 | 37.00 | 1.29 |
+| 109–120 | 29.14 | **38.13** | **1.31** |
+
+**Baseline is flat (+6% across the window). The mod arm degrades monotonically,
+crosses parity at launch ~60, and ends 31% SLOWER than the code it optimises.**
+
+End to end over one simulated day: **baseline 0.21458 SYPD, mod 0.20111,
+−6.70%** — against +4.72% measured on the old window. Walltime per coupling step
+0.3828 s baseline against 0.4084 s mod.
+
+### This is not a configuration error
+
+All four arms ran `dt = 30secs`, `t_end = 86400secs`. The manifests dev the
+optimised packages. The launch-bounds mechanism fired: `top-kernels.csv` records
+255 registers for baseline and 128 for mod, exactly as designed. The
+optimisation is present and working as specified; what it does is not what was
+wanted.
+
+### Probable mechanism, and the reason to distrust the guard
+
+The likely cause is that the 128-register cap is adequate for the kernel's early
+working set and inadequate later, so spill grows with the atmosphere's activity
+while baseline's 255 registers absorb it. That is precisely the trade
+`LAUNCH_BOUNDS_SPILL_BUDGET` exists to adjudicate — **but the guard evaluates
+spill at COMPILE time, once, against one input. It cannot see a working set that
+grows at run time.** A budget validated at three points (§4a, §4b) was validated
+at three *compile-time* points, all of which said the same thing about a state
+the kernel would leave within half a simulated hour.
+
+This is inferred, not measured. Separating the three changes needs one run each
+with the mechanism disabled; the register cap is the obvious suspect but the CM
+fusion and the evaluator payload have not been ruled out.
+
+### What this invalidates
+
+Every SYPD and kernel figure in this project predating 2026-09-10 was measured
+in the first 10 steps of a spin-up, which is the regime where this optimisation
+looks best and is least representative. That includes +1.87%, +4.24%, +8.05%,
+the −7.9% kernel result, and the quadrature-order comparisons. **The A/B
+structure was sound; the window was not.** Re-measurement on the 120-step window
+is required before any of those numbers is quoted again.
+
+The general lesson is sharper than "use a longer window". **A short window at the
+start of a run does not sample a representative state, it samples an
+unrepresentative one — and the direction of the error is not random.** An
+optimisation tuned against early-state behaviour will look best exactly where it
+was tuned.
+
 ## 5. Methodology lessons
 
 **A mechanism that wins on the GPU can still lose the run.** The first full
