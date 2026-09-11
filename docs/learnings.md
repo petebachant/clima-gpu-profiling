@@ -1340,6 +1340,76 @@ Honest framing for a reviewer: L1013 is ~14% of GPU time on this window, and
 diagnostics are ~34%. A 5.46% kernel improvement is roughly 0.8% of GPU time.
 This is a clean, real, modest result — not a headline.
 
+## 4k. Radiation is 43.9% of GPU time, and occupancy is not its lever either (2026-09-11)
+
+Once the profiling window is representative, the target this project has been
+optimising is not the one that matters.
+
+| | share of GPU kernel time |
+|---|---|
+| **radiation (4 × `rte_*_2stream`, RRTMGP)** | **43.9%** |
+| `set_microphysics_tendency_cache` (L1013) | 10.3% |
+
+On the old 10-step window radiation fired twice and looked marginal; L1013
+looked dominant. Neither was true — see §4g for why the window produced that.
+
+### Why RRTMGP had never been examined
+
+The kernels launch themselves:
+
+    @cuda always_inline = true threads = (tx) blocks = (bx) rte_lw_2stream_solve_CUDA!(args...)
+
+They never enter ClimaCore's `auto_launch!`, so they get no occupancy targeting,
+no launch-bounds machinery, and no stack-trace naming — which is why they appear
+in every profile this project has produced as unnamed mangled symbols. Their
+launch geometry comes from `_max_threads_cuda() = 256`, a hardcoded constant with
+no occupancy query.
+
+### The diagnosis is familiar, the fix is not
+
+All four sit at **255 registers — the sm_80 cap — at 12.5% occupancy, with ZERO
+local memory**. Genuine register demand, not allocator pessimism. Block size is
+not the lever: at 255 registers, 256 threads/block is already optimal and every
+alternative is equal or worse.
+
+So the only route to more occupancy is fewer registers. Asking for 2 blocks/SM
+via CUDA.jl's `blocks_per_sm = 2`:
+
+| | registers | occupancy | radiation total |
+|---|---|---|---|
+| baseline | 255 | 12.5% | 14549 ms |
+| 2 blocks/SM | **128** | **25%** | **15120 ms (+3.93%)** |
+
+**Rejected.** The mechanism did exactly what was asked and the result was worse.
+
+The reason is visible and differs from the microphysics case: **local memory
+stayed zero in both arms.** ptxas met the 128-register budget by
+*rematerialising* values rather than spilling them, and the recomputation cost
+more than the doubled occupancy returned. The 24-warp microphysics rejection
+(§4b) lost to spill; this one loses to recompute. **A register budget can be met
+two ways and both can be losses.**
+
+### What is actually in the way
+
+`rte_lw_2stream!` runs **one thread per column**, with two sequential vertical
+sweeps — bottom-up for albedo and source, top-down for fluxes — where each level
+depends on the previous. The vertical dimension (63 levels) is therefore serial
+by construction, and parallelism is capped at `ncol`. The measured grid is **96
+blocks on 108 SMs**: the device is not filled even once, at 1 block per SM.
+
+That is a structural limit, not a tuning one. Two directions follow, neither
+cheap:
+
+  * **Remove work to free registers.** `lw_2stream_coeffs` is evaluated *twice
+    per layer* — once in each sweep, from the same `τ`, `ssa`, `g` and level
+    sources. The upward sweep computes `Rdif, Tdif, src_up, src_dn`; the
+    downward sweep recomputes `Rdif, Tdif, src_dn`. Storing them costs
+    `nlay × ncol` of traffic against recomputing; at 63 layers neither is
+    obviously right, and it is measurable.
+  * **Restructure the parallelism.** The sweeps are recursive, so the vertical
+    cannot be parallelised directly, but the optical-property computation that
+    precedes them may be.
+
 ## 5. Methodology lessons
 
 **A mechanism that wins on the GPU can still lose the run.** The first full

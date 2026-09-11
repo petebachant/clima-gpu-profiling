@@ -7,12 +7,23 @@ git_repo_url: https://github.com/petebachant/clima-gpu-profiling
 questions:
   - question: Can we improve the performance of the flagship AMIP simulation?
     answer: >-
-      Yes -- +4.24% SYPD measured, 0.28312 to 0.29565 across three runs -- but
-      not from any one package: it takes coordinated changes in
-      CloudMicrophysics, ClimaCore and ClimaAtmos, and the two largest
-      contributors measure as roughly nothing on their own (the ClimaCore
-      occupancy work is -0.016% by itself and +2.6 points on top of the
-      CloudMicrophysics fusion).
+      Yes, but far less than this project once claimed, and not where it looked.
+
+      SUPERSEDED FIGURES: the +4.24% and +8.05% below were measured on a
+      10-step profiling window in a 40-step run -- shorter than the gravity-wave
+      period, so neither scheme ever fired, with ~half the per-step cost being
+      first-call compilation. On a phase-independent 120-step window the
+      microphysics kernel those changes target is 10.3% of GPU kernel time, not
+      the dominant cost, and the three code changes together are worth roughly
+      1-2% SYPD.
+
+      The one clean, confound-free result is the ClimaAtmos evaluator payload
+      change: -5.46% on its kernel, bit-identical model state over 120 coupled
+      steps, ~0.56% of GPU time -- below the 0.6-0.8% SYPD noise floor.
+
+      The larger targets are the SGS quadrature order (a science decision, and
+      still the biggest single lever) and radiation, which is 43.9% of GPU time
+      and untouched. See the question on where GPU time actually goes.
     explanation: docs/whole-stack.md
     evidence:
       - kind: figure
@@ -44,6 +55,66 @@ questions:
           treatment revision it measures the treatment. Spill counts are not
           collected by nsys; see results/kernel-resources.csv and results/ncu/
           for those.
+
+  - question: >-
+      Where does the AMIP simulation's GPU time actually go, and is the
+      microphysics kernel the right thing to optimise?
+    answer: >-
+      No. On a representative window, **radiation is 43.9% of GPU kernel time**
+      -- four RRTMGP `rte_*_2stream` kernels -- against **10.3%** for
+      `set_microphysics_tendency_cache`, the kernel this project spent its effort
+      on. The earlier picture was an artefact of the profiling window, not of the
+      model.
+
+      The old window profiled 10 steps of a 40-step run. That is shorter than the
+      gravity-wave period (60 steps), so neither scheme ever fired; cloud
+      fraction and the diagnostics write (120 steps) never fired either; and the
+      model's own accounting put ~half the per-step cost in first-call
+      compilation (0.2767 s reported against 0.146 s measured in steady state).
+      In that window microphysics looked dominant and radiation marginal.
+
+      The window is now 120 steps = one simulated hour = LCM(20, 60, 120) of the
+      periodic processes, which makes it **phase-independent**: every process
+      fires its exact long-run share wherever the window starts, so the profile
+      needs no offsetting and no reweighting.
+
+      The consequence for this project's results is that the optimisation ceiling
+      was overstated. Even eliminating the microphysics kernel entirely is worth
+      ~10% of GPU time; the three code changes together are worth roughly 1-2%
+      SYPD, not the +4.24% and +8.05% measured on the old window. The one clean,
+      confound-free result is the ClimaAtmos evaluator payload change at -5.46%
+      on its kernel, which is ~0.56% of GPU time -- real, and below the 0.6-0.8%
+      SYPD noise floor.
+
+      Radiation is untouched because it is invisible to this project's tooling:
+      RRTMGP launches its own kernels with `@cuda` rather than through
+      ClimaCore's `auto_launch!`, so it receives no occupancy targeting, no
+      launch-bounds machinery and no stack-trace naming -- which is why it
+      appears in every profile here as unnamed mangled symbols.
+    explanation: docs/learnings.md
+    evidence:
+      - kind: result
+        path: results/step-breakdown.toml
+        key: gap_frac_of_wall
+        explanation: >-
+          Measured WITHOUT a profiler, using CUDA events: host time outside the
+          GPU timeline is 0.0% of wall, and the GPU timeline is ~94% kernel
+          execution. So the model is densely GPU-bound and kernel time is the
+          thing to attack -- but also that scheduling changes such as CUDA graphs
+          have at most ~6% to give. nsys cannot answer this: its own
+          instrumentation dominates the idle measurement, reporting MORE idle for
+          the faster arm (docs/learnings.md 2b-i, 4f).
+      - kind: table
+        path: results/top-kernels.csv
+        explanation: >-
+          The per-kernel breakdown on the 120-step phase-independent window. The
+          four `rte_*_2stream` entries total 43.9% of GPU kernel time at 255
+          registers each -- the sm_80 hardware cap -- and 12.5% occupancy, with
+          ZERO local memory, so the register pressure is genuine demand. Asking
+          for two blocks per SM does reach 128 registers and 25% occupancy and
+          runs 3.93% SLOWER (tag meas/2026-09-11-radiation-occupancy): ptxas met
+          the budget by rematerialising rather than spilling, and the recompute
+          outweighed the occupancy.
 
   - question: >-
       What CI checks would catch a kernel this inefficient before it reaches
