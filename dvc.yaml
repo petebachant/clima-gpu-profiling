@@ -335,6 +335,45 @@ stages:
           persist: true
     desc: Automatically generated from the 'sgs-degeneracy' stage in
       calkit.yaml. Changes made here will be overwritten.
+  radiation-ncu:
+    cmd: calkit scheduler batch --name radiation-ncu --environment clima --dep
+      scripts/run.jl --dep ClimaCoupler.jl/src --dep
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep ClimaCore.jl/ext
+      --dep ClimaCore.jl/src --dep ClimaAtmos.jl/src --dep RRTMGP.jl/src --dep
+      RRTMGP.jl/ext --dep .calkit/env-locks/clima --out
+      results/ncu/radiation.ncu-rep --out results/ncu/radiation-details.csv
+      --option --gpus=1 --option --time=180 -- scripts/run-ncu.sh
+      results/ncu/radiation --kernel-name regex:rte_(lw|sw)_2stream_solve_CUDA
+      --project ClimaCoupler.jl/experiments/AMIP --config
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --launch-skip 2 --launch-count 2
+    deps:
+      - scripts/run-ncu.sh
+      - scripts/run-ncu.sh
+      - scripts/run.jl
+      - ClimaCoupler.jl/src
+      - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
+      - ClimaCore.jl/ext
+      - ClimaCore.jl/src
+      - ClimaAtmos.jl/src
+      - RRTMGP.jl/src
+      - RRTMGP.jl/ext
+      - .calkit/env-locks/clima
+    outs:
+      - results/ncu/radiation.ncu-rep:
+          persist: true
+      - results/ncu/radiation-details.csv:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/radiation-ncu.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'radiation-ncu' stage in calkit.yaml.
+      Changes made here will be overwritten.
   step-breakdown:
     cmd: calkit scheduler batch --name step-breakdown --environment clima --dep
       scripts/measure-step-breakdown.jl --dep ClimaCoupler.jl-mod/src --dep

@@ -1297,7 +1297,11 @@ pipeline:
       args:
         - results/ncu/radiation
         - --kernel-name
-        - 'regex:rte_(lw|sw)_2stream_solve_CUDA'
+        # No parentheses: calkit passes stage args through a shell unquoted, so
+        # `(lw|sw)` is a syntax error and the job dies before producing a log.
+        # `.` matches the l/s and keeps the pattern shell-safe -- the same reason
+        # the microphysics stages use only bracket classes.
+        - 'regex:rte_.w_2stream_solve_CUDA'
         - --project
         - ClimaCoupler.jl/experiments/AMIP
         - --config
