@@ -1294,6 +1294,52 @@ was the one already under discussion, rather than the one the evidence isolated.
 carries a different upstream.** Check what else rides along before naming a
 cause.
 
+## 4j. A clean number: the evaluator payload change is −5.46% (2026-09-11)
+
+The first performance result in this project measured without a confound.
+
+| | registers | mean over 120 launches | first-qtr | last-qtr | ratio |
+|---|---|---|---|---|---|
+| baseline | 255 | 28.51 ms | 27.88 | 28.81 | 1.03 |
+| + evaluator payload | 255 | **26.96 ms** | 26.35 | 27.20 | 1.03 |
+
+**−5.46% on `set_microphysics_tendency_cache`, flat across the window.**
+
+### Why this one is trustworthy where the others were not
+
+  * **Phase-independent window.** 120 steps = LCM(20, 60, 120), so radiation,
+    both gravity-wave schemes, cloud fraction and the diagnostics write each
+    fire at their true long-run frequency. The old 10-step window fired the
+    gravity-wave schemes 0 or 1 times depending on phase (§4g).
+  * **Byte-identical everything else.** ClimaCore at the baseline commit,
+    CloudMicrophysics at v0.38.3 in both arms. No upstream drift riding along,
+    which is what invalidated every CM comparison (§4i).
+  * **Bit-identical model state** over 120 coupled steps, on a model shown
+    deterministic by a null test (§4h/§4i).
+  * **Reproduced.** An earlier configuration — ClimaCore's branch present but
+    its launch bounds correctly declining to apply — gave 28.53 → 26.98,
+    −5.43%. Two setups, 0.03 points apart.
+  * **Both arms flat** (ratio 1.03). No degradation, unlike §4g.
+
+### The constraint this ran into
+
+ClimaAtmos main now requires CloudMicrophysics **0.39** (`PrescribedIceNumber`),
+which is incompatible with the v0.38.3 pin that removes the CM drift. Those two
+cannot both hold, so the measurement runs at ClimaAtmos `31d34486b`. That is
+sound here: the 7 commits to current main touch only `cloud_fraction.jl` in the
+microphysics tree, not the two files the change lives in.
+
+Measuring against current main needs CM 0.39 in **both** arms, where the drift
+is common-mode and cancels. That is the dependency-update cycle §4i already
+calls for, and it is the prerequisite for any future CloudMicrophysics
+measurement.
+
+### Scale
+
+Honest framing for a reviewer: L1013 is ~14% of GPU time on this window, and
+diagnostics are ~34%. A 5.46% kernel improvement is roughly 0.8% of GPU time.
+This is a clean, real, modest result — not a headline.
+
 ## 5. Methodology lessons
 
 **A mechanism that wins on the GPU can still lose the run.** The first full
