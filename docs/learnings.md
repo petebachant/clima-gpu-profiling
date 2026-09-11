@@ -1177,7 +1177,7 @@ unrepresentative one — and the direction of the error is not random.** An
 optimisation tuned against early-state behaviour will look best exactly where it
 was tuned.
 
-## 4h. The CloudMicrophysics fusion changes the physics (2026-09-10)
+## 4h. SUPERSEDED — see 4i. The divergence is upstream CloudMicrophysics, not the fusion (2026-09-10)
 
 Chasing the §4g reversal produced a bigger finding. The two arms do not compute
 the same atmosphere.
@@ -1241,6 +1241,58 @@ independent of the window issue in §4g.
 It does NOT explain §4g's kernel degradation. The mod arm produces *less*
 condensate, which would make its microphysics cheaper, not 2.4x more expensive.
 Those are two separate open problems.
+
+## 4i. The arms were comparing different CloudMicrophysics versions (2026-09-11)
+
+§4h blamed the source-term fusion for the state divergence. That was wrong, and
+the way it was wrong is the lesson.
+
+### The bisection, completed
+
+| configuration | step-20 worst | step-120 worst |
+|---|---|---|
+| full mod (upstream drift + our CM changes) | 2.190e-01 | 5.752e-02 |
+| **CM = upstream main at our branch point, NONE of our changes** | **2.190e-01** | **5.771e-02** |
+| CM = v0.38.3, identical to baseline | **0** | **0** |
+
+Removing every change we wrote leaves the divergence **identical to three
+digits**. The cause is upstream CloudMicrophysics between v0.38.3 and
+`cf58726f` — 3 source files, chiefly `MicrophysicsNonEq.jl` (64 lines) and
+`Microphysics1MOptions.jl` (18 lines). None of it ours.
+
+Two independent confirmations that our work is not responsible:
+
+  * `_fused_linearize` matches `_linearize(_microphysics_source_terms(...))`
+    **bit for bit on all 1,548,288 real model states** after 20 coupled steps,
+    measured by `scripts/measure-fusion-mismatch.jl`. §4h's claim that the
+    fusion's accumulation order "is not true in general" was unfounded.
+  * With CM pinned to v0.38.3, the mod arm — still carrying ClimaCore's launch
+    bounds and ClimaAtmos's evaluator payload — is **bit-identical to baseline at
+    every snapshot**. Both of those changes are provably neutral in the full
+    coupled model over 120 steps, which is a far stronger statement than the
+    unit-level equivalence tests that were being quoted for them.
+
+### The design flaw this exposes
+
+**The baseline arm pins CloudMicrophysics to a registry release; the mod arm
+tracks a branch off main.** So every CM experiment in this project has compared
+our change *plus* however much upstream had moved, and `arms_differ_in` reports
+`CloudMicrophysics.jl-mod` either way — it cannot distinguish the two. The signal
+was visible earlier and went unread: the `make-diffs` split showed 39 files
+against the 5 we authored, and that gap *is* the drift.
+
+The fix is to pin both arms to the same CloudMicrophysics base, so the arms
+differ only by what we wrote. Until that is done, no CM experiment in
+`experiments.csv` isolates its stated treatment.
+
+### On the attribution error
+
+The bisection was sound at every step; the attribution ran ahead of it. Each
+experiment showed *some part of the mod stack* was responsible and the part named
+was the one already under discussion, rather than the one the evidence isolated.
+**"The mod arm differs" is not "our change differs" whenever the mod arm also
+carries a different upstream.** Check what else rides along before naming a
+cause.
 
 ## 5. Methodology lessons
 
