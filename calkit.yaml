@@ -1272,6 +1272,57 @@ pipeline:
         - path: results/sgs-degeneracy.toml
           storage: git
 
+    radiation-ncu:
+      kind: shell-script
+      environment: clima
+      # Radiation is 43.9% of GPU kernel time -- four rte_*_2stream kernels at
+      # 255 registers and 12.5% occupancy with zero spill (docs/learnings.md 4k).
+      # Occupancy targeting was tried and rejected (+3.93%), so the next step is
+      # to see what actually limits them rather than guess again: the
+      # microphysics work went wrong repeatedly when it targeted from stale or
+      # absent profile data.
+      #
+      # ONE ARM ONLY, deliberately. This is diagnosis, not comparison, so the
+      # freeze-both-together rule for baseline-ncu/mod-ncu does not apply -- and
+      # it must not be turned into a comparison later without adding a mod-side
+      # sibling and running them as a pair.
+      #
+      # Radiation fires every 20 steps, so the four kernels launch 6 times each
+      # across the 120-step window. Skip 2 to clear first-call effects, take 2.
+      script_path: scripts/run-ncu.sh
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=180
+      args:
+        - results/ncu/radiation
+        - --kernel-name
+        - 'regex:rte_(lw|sw)_2stream_solve_CUDA'
+        - --project
+        - ClimaCoupler.jl/experiments/AMIP
+        - --config
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --launch-skip
+        - '2'
+        - --launch-count
+        - '2'
+      inputs:
+        - scripts/run-ncu.sh
+        - scripts/run.jl
+        - ClimaCoupler.jl/src
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl/ext
+        - ClimaCore.jl/src
+        - ClimaAtmos.jl/src
+        - RRTMGP.jl/src
+        - RRTMGP.jl/ext
+      outputs:
+        - results/ncu/radiation.ncu-rep
+        - path: results/ncu/radiation-details.csv
+          storage: git
+
     step-breakdown:
       kind: shell-script
       environment: clima
