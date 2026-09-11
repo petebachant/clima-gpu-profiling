@@ -1177,6 +1177,71 @@ unrepresentative one — and the direction of the error is not random.** An
 optimisation tuned against early-state behaviour will look best exactly where it
 was tuned.
 
+## 4h. The CloudMicrophysics fusion changes the physics (2026-09-10)
+
+Chasing the §4g reversal produced a bigger finding. The two arms do not compute
+the same atmosphere.
+
+### The model is deterministic, so the comparison is exact
+
+A null test — the baseline arm run twice, same config, same everything —
+is **bit-identical at every snapshot, all 12 prognostic fields, all statistics**.
+There is no run-to-run nondeterminism to hide behind, which makes any difference
+between arms real by construction.
+
+    BASELINE vs BASELINE    0/12 fields differ at every step
+    BASELINE vs MOD        12/12 fields differ from step 20 on
+
+### Bisected to CloudMicrophysics
+
+| configuration | diverges? |
+|---|---|
+| full mod (fusion + evaluator + launch bounds) | yes |
+| launch bounds disabled | yes, identically |
+| evaluator reverted, fusion only | **yes, byte-identical to full mod** |
+
+The fusion-only run reproduces the full mod arm's divergence *to the digit*, so
+`pb/evaluator-param-args` contributes nothing and its bit-identity does hold in
+the coupled model. `pb/1m-spill-fuse` is the sole cause.
+
+### What it changes
+
+    field      step   baseline        mod       mod/base
+    c.ρq_sno     20   9.92e-04   7.75e-04         0.781
+    c.ρq_sno    120   6.66e-01   6.28e-01         0.943
+    c.ρq_rai    120   3.81e-01   3.81e-01        1.0015
+    c.ρq_tot    120   5.16e+03   5.16e+03        1.0000
+
+**Total water is conserved to six digits**; the fusion shifts the snow/rain
+partitioning, producing ~22% less snow at step 20 and settling near 6% less.
+This is not a mass-conservation bug and not roundoff — it is a systematic
+process-level difference that appears within 20 coupled steps.
+
+### Why the equivalence test missed it
+
+`test/bulk_tendencies_tests.jl` compares fused against unfused over 2000
+randomized trials per float type and asserts zero mismatches. It passes. The
+model still diverges.
+
+**A randomized unit test samples a distribution the author chose; the model
+samples the one the physics produces.** The same error shape as the 10-step
+profiling window in §4g: a sample that looked broad and was not representative.
+Whatever the fusion does differently, it does it in states the random sampler
+generates rarely or never — and the commit message's claim that each accumulator
+receives contributions "in `_linearize`'s order" is therefore not true in
+general.
+
+### What this invalidates
+
+The fusion is not a pure optimisation and must not be presented as one. Every
+performance comparison involving it measured two arms solving *different
+problems*, so the attribution of any speedup to the fusion is unsound
+independent of the window issue in §4g.
+
+It does NOT explain §4g's kernel degradation. The mod arm produces *less*
+condensate, which would make its microphysics cheaper, not 2.4x more expensive.
+Those are two separate open problems.
+
 ## 5. Methodology lessons
 
 **A mechanism that wins on the GPU can still lose the run.** The first full
