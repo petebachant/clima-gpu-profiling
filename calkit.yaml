@@ -57,6 +57,89 @@ questions:
           for those.
 
   - question: >-
+      Can the radiation kernels be made faster without changing results?
+    answer: >-
+      Yes, substantially: **+8.70% SYPD** (0.21611 -> 0.23671), with the model
+      state **bit-identical over 120 coupled steps**. Radiation drops 26.8% and
+      total GPU kernel time 12.3%. That is roughly six times the combined SYPD of
+      this project's entire microphysics effort, and it comes from one function.
+
+      Two changes, both in RRTMGP, which was the only package differing between
+      arms:
+
+      (1) **A binary search replacing a linear scan** in `loc_lower`
+      (`src/optics/optics_utils.jl`). It is reached per layer, per g-point, per
+      aerosol species from `interp1d_loc_factor`, which interpolates relative
+      humidity in the MERRA aerosol optics. It returns the same index --
+      verified over 100,000 randomized cases and then bit-identical in the
+      coupled model. RRTMGP already used an O(1) index computation for
+      uniformly-spaced axes; this is the non-uniform path.
+
+      (2) **64-thread blocks** for the four `rte_*_2stream` kernels. Occupancy
+      is unchanged (at 255 registers an SM holds 256 threads either way), so
+      this only changes scheduling granularity.
+
+      The first carries nearly all of it: longwave fell 27.0% and the other
+      change touches only shortwave.
+
+      Two things worth knowing before profiling these kernels again.
+
+      **ncu's source attribution understated the hot lines by about 4x** -- it
+      put 7.2% of kernel time on the scan that turned out to be worth 27%.
+      Source-line sampling undercounts warp-divergent code: a sample lands on
+      the instruction a lane is stalled at, but the cost is the whole warp
+      waiting for its slowest lane. Read attribution as WHERE, not HOW MUCH.
+
+      **Occupancy is a dead end here and ncu ranks it first anyway** (74%
+      estimated). Raising it measured +3.93% WORSE. The reason is structural:
+      24,576 columns against 27,648 resident threads at 255 registers means the
+      whole problem is one resident wave at every block size, so a block
+      finishing early frees no capacity and kernel time is the slowest thread's
+      time. Load balancing cannot help either -- a night-column skip that is
+      45.96% warp-coherent bought only 2.63%.
+    explanation: docs/learnings.md
+    evidence:
+      - kind: result
+        path: results/summary.json
+        key: speedup_pct
+        git_ref: exp/2026-09-12-rrtmgp-optics
+        explanation: >-
+          +8.70% SYPD end to end. RRTMGP is the only package differing between
+          arms: ClimaCore and ClimaAtmos are at identical commits and
+          CloudMicrophysics at the v0.38.3 tree the baseline manifest pins.
+          (`arms_differ_in` also lists CloudMicrophysics.jl-mod and
+          dev-package-set, which it reports for any dev'd package regardless of
+          content -- see docs/learnings.md 4i.)
+      - kind: table
+        path: diffs/RRTMGP.jl.diff
+        git_ref: exp/2026-09-12-rrtmgp-optics
+        explanation: >-
+          The change itself, 69 lines across three files: the binary search in
+          src/optics/optics_utils.jl and the 64-thread launch configuration in
+          the two rte_*_2stream CUDA extensions. Reading the diff is the fastest
+          way to judge whether the result is plausible.
+      - kind: table
+        path: results/top-kernels.csv
+        git_ref: exp/2026-09-12-rrtmgp-optics
+        explanation: >-
+          Per-kernel confirmation on the 120-step phase-independent window:
+          longwave 7768 -> 5668 ms (-27.0%) and shortwave 6781 -> 4988 ms
+          (-26.4%). Longwave moving is the attribution -- the block-size change
+          affects only shortwave, so the shared optics code carries the result.
+      - kind: result
+        path: results/state-rad-mod.toml
+        key: steps
+        git_ref: meas/2026-09-12-rrtmgp-bit-identical
+        explanation: >-
+          Bit-identity, not an accuracy trade. Comparing this against
+          results/state-rad-baseline.toml gives 0 of 12 prognostic fields
+          differing at every snapshot across 120 coupled steps, on a model shown
+          deterministic by the null test in docs/learnings.md 4i (baseline run
+          twice is bit-identical). The unit-level check -- 100,000 randomized
+          cases against the original scan -- is necessary but was not sufficient
+          on its own; the CloudMicrophysics episode in 4h/4i is why.
+
+  - question: >-
       Where does the AMIP simulation's GPU time actually go, and is the
       microphysics kernel the right thing to optimise?
     answer: >-
