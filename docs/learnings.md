@@ -1479,6 +1479,78 @@ latency-bound, and load imbalance would finally be absorbable. It needs a
 reduction across g-points for the accumulated fluxes (atomics or a two-pass
 scheme) and is a substantial RRTMGP restructure, not a tuning change.
 
+## 4m. A linear scan in the aerosol optics was 27% of radiation (2026-09-12)
+
+The largest result in this project, and it is one function.
+
+| | baseline | + 64-thread blocks + binary search |
+|---|---|---|
+| longwave | 7768 ms | **5668 ms (−27.03%)** |
+| shortwave | 6781 ms | **4988 ms (−26.44%)** |
+| radiation | 14549 ms | **10656 ms (−26.76%)** |
+| **all GPU kernel time** | 33106 ms | **29048 ms (−12.26%)** |
+
+**Model state is bit-identical over 120 coupled steps**, all 12 prognostic
+fields, on a model shown deterministic by the null test in §4i. No accuracy
+trade, no configuration change.
+
+For scale: the entire microphysics effort — three repositories, the fusion,
+launch bounds and the evaluator payload — is worth 1–2% SYPD (§4j). This is
+roughly an order of magnitude more.
+
+### What it was
+
+`loc_lower(xi, x)` in `src/optics/optics_utils.jl` did a **linear scan**:
+
+```julia
+@inbounds for (i, xval) in enumerate(x)
+    xi < xval && return i - 1
+end
+```
+
+It is reached per layer, per g-point, per aerosol species from
+`interp1d_loc_factor`, which interpolates relative humidity in the MERRA aerosol
+optics. Replaced with a binary search returning the same index — verified over
+100,000 randomized cases with zero mismatches, then bit-identical in the coupled
+model. RRTMGP already had an O(1) index computation for uniformly-spaced axes
+(the four-argument `loc_lower`); this is the non-uniform path.
+
+### ncu's source attribution understated it by 4x
+
+ncu put **7.2%** of the kernel's time on those two lines. Removing them cut
+radiation **27%**.
+
+**Source-line sampling undercounts warp-divergent code.** A sample lands on the
+instruction a lane is stalled at, but the cost is the whole warp waiting for its
+slowest lane. A linear scan exits at a different index in every lane, so the
+warp pays the maximum; the binary search has a lane-independent trip count of
+`ceil(log2 n)` with only the branch direction differing. The divergence removal
+is worth more than the instruction-count reduction, and the profiler cannot see
+that in a per-line sample count.
+
+Read source attribution as a pointer to WHERE, not a measurement of HOW MUCH.
+
+### The route here, including the wrong turns
+
+1. ncu ranked **occupancy** first (74% estimated). Tried it: **+3.93%**, rejected.
+2. Night-column skip on `μ₀ ≤ 0`: **measured nothing** — ClimaAtmos clamps
+   `cos_zenith` to `eps`, so that branch is dead code.
+3. Skip on `μ₀ ≤ eps`: −2.63%, and the night fraction is 50% of points and
+   **45.96% of warps** — genuinely coherent, unlike the microphysics early-out.
+4. So why only −2.63%? **The whole problem is one resident wave** — 24,576
+   columns against 27,648 resident threads at 255 registers, at every block
+   size. A block finishing early frees no capacity; kernel time is the slowest
+   thread's time. 64-thread blocks helped marginally (−4.04%).
+5. **Source attribution**: 99.0% of RRTMGP time is optics, **0.1% is the
+   recursive vertical sweeps** — the part everyone would assume is the obstacle.
+   Hottest line: the linear scan.
+
+Three experiments went to occupancy and load balancing before anyone looked at
+what the code was doing. **ncu's top-ranked recommendation has now been the
+wrong lever four times in this project** (§4a, §4b, §4k, here). Its estimates
+assume the limiter it names is the binding one; they do not know whether the
+problem has a second wave, or whether a hot line is divergent.
+
 ## 5. Methodology lessons
 
 **A mechanism that wins on the GPU can still lose the run.** The first full
