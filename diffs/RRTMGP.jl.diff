@@ -1,0 +1,119 @@
+diff --git a/RRTMGP.jl/ext/cuda/rte_longwave_2stream.jl b/RRTMGP.jl-mod/ext/cuda/rte_longwave_2stream.jl
+index 739c98c..fa82e6f 100644
+--- a/RRTMGP.jl/ext/cuda/rte_longwave_2stream.jl
++++ b/RRTMGP.jl-mod/ext/cuda/rte_longwave_2stream.jl
+@@ -7,7 +7,14 @@ function rte_lw_2stream_solve!(
+     as::GrayAtmosphericState,
+ )
+     nlay, ncol = AtmosphericStates.get_dims(as)
+-    tx, bx = _configure_threadblock(ncol)
++    # 64, not the default 256. At 255 registers an SM holds 256 threads either
++    # way, so occupancy is unchanged -- but 24576 columns gives 384 blocks
++    # instead of 96, and there are 108 SMs. The 96-block launch is a SINGLE
++    # WAVE: every block is resident at once, so the kernel's duration is set by
++    # the slowest block and finishing early just idles an SM. That is why the
++    # night-column skip, which is 46% warp-coherent, bought only -2.63%.
++    # More blocks than SMs lets freed SMs take remaining work.
++    tx, bx = _configure_threadblock(64, ncol)
+     args = (flux_lw, src_lw, bcs_lw, op, nlay, ncol, as)
+     @cuda always_inline = true threads = (tx) blocks = (bx) rte_lw_2stream_solve_CUDA!(
+         args...,
+@@ -61,7 +68,14 @@ function rte_lw_2stream_solve!(
+ )
+     nlay, ncol = AtmosphericStates.get_dims(as)
+     set_band_flux_to_zero!(band_flux)
+-    tx, bx = _configure_threadblock(ncol)
++    # 64, not the default 256. At 255 registers an SM holds 256 threads either
++    # way, so occupancy is unchanged -- but 24576 columns gives 384 blocks
++    # instead of 96, and there are 108 SMs. The 96-block launch is a SINGLE
++    # WAVE: every block is resident at once, so the kernel's duration is set by
++    # the slowest block and finishing early just idles an SM. That is why the
++    # night-column skip, which is 46% warp-coherent, bought only -2.63%.
++    # More blocks than SMs lets freed SMs take remaining work.
++    tx, bx = _configure_threadblock(64, ncol)
+     args = (
+         flux,
+         flux_lw,
+diff --git a/RRTMGP.jl/ext/cuda/rte_shortwave_2stream.jl b/RRTMGP.jl-mod/ext/cuda/rte_shortwave_2stream.jl
+index 5c82ebd..19b5c04 100644
+--- a/RRTMGP.jl/ext/cuda/rte_shortwave_2stream.jl
++++ b/RRTMGP.jl-mod/ext/cuda/rte_shortwave_2stream.jl
+@@ -7,7 +7,14 @@ function rte_sw_2stream_solve!(
+     as::GrayAtmosphericState,
+ )
+     nlay, ncol = AtmosphericStates.get_dims(as)
+-    tx, bx = _configure_threadblock(ncol)
++    # 64, not the default 256. At 255 registers an SM holds 256 threads either
++    # way, so occupancy is unchanged -- but 24576 columns gives 384 blocks
++    # instead of 96, and there are 108 SMs. The 96-block launch is a SINGLE
++    # WAVE: every block is resident at once, so the kernel's duration is set by
++    # the slowest block and finishing early just idles an SM. That is why the
++    # night-column skip, which is 46% warp-coherent, bought only -2.63%.
++    # More blocks than SMs lets freed SMs take remaining work.
++    tx, bx = _configure_threadblock(64, ncol)
+     args = (flux_sw, op, bcs_sw, src_sw, nlay, ncol, as)
+     @cuda always_inline = true threads = (tx) blocks = (bx) rte_sw_2stream_solve_CUDA!(
+         args...,
+@@ -71,7 +78,14 @@ function rte_sw_2stream_solve!(
+ )
+     nlay, ncol = AtmosphericStates.get_dims(as)
+     set_band_flux_to_zero!(band_flux)
+-    tx, bx = _configure_threadblock(ncol)
++    # 64, not the default 256. At 255 registers an SM holds 256 threads either
++    # way, so occupancy is unchanged -- but 24576 columns gives 384 blocks
++    # instead of 96, and there are 108 SMs. The 96-block launch is a SINGLE
++    # WAVE: every block is resident at once, so the kernel's duration is set by
++    # the slowest block and finishing early just idles an SM. That is why the
++    # night-column skip, which is 46% warp-coherent, bought only -2.63%.
++    # More blocks than SMs lets freed SMs take remaining work.
++    tx, bx = _configure_threadblock(64, ncol)
+     args = (
+         flux,
+         flux_sw,
+@@ -144,7 +158,6 @@ function rte_sw_2stream_solve_CUDA!(
+                 set_flux_to_zero!(flux_sw, gcol, nlev)
+             else
+                 compute_net_flux!(flux_sw, gcol, nlev)
+-
+             end
+             # write out SW cloud cover
+             if cloud_state isa CloudState &&
+diff --git a/RRTMGP.jl/src/optics/optics_utils.jl b/RRTMGP.jl-mod/src/optics/optics_utils.jl
+index 37d23ad..d05d9e8 100644
+--- a/RRTMGP.jl/src/optics/optics_utils.jl
++++ b/RRTMGP.jl-mod/src/optics/optics_utils.jl
+@@ -19,11 +19,31 @@ end
+ Return the location of the left (lower) point of the interval in which `xi` is located in vector `x`.
+ """
+ @inline function loc_lower(xi, x)
++    # Binary search, not a linear scan. This is called per layer, per g-point,
++    # per aerosol species from `interp1d_loc_factor` (relative-humidity
++    # interpolation in the MERRA aerosol optics), and ncu attributes 7.2% of the
++    # shortwave kernel's total time to the two lines of the scan it replaces.
++    #
++    # The win is as much about divergence as about iteration count: a linear
++    # scan exits at a different index in every lane, so a warp pays the maximum
++    # over its 32 lanes, while this has a lane-independent trip count of
++    # ceil(log2(n)) and only the branch direction differs.
++    #
++    # Returns the same index as the scan: the largest `i` with `x[i] <= xi`,
++    # clamped to `[1, n-1]`.
++    n = length(x)
+     @inbounds xi ≤ x[1] && return 1
+-    @inbounds for (i, xval) in enumerate(x)
+-        xi < xval && return i - 1
++    @inbounds xi ≥ x[n] && return n - 1
++    lo, hi = 1, n
++    @inbounds while hi - lo > 1
++        mid = (lo + hi) >>> 1
++        if xi < x[mid]
++            hi = mid
++        else
++            lo = mid
++        end
+     end
+-    return length(x) - 1
++    return lo
+ end
+ 
+ """
