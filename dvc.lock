@@ -469,7 +469,8 @@ stages:
       size: 581378
   baseline-nsys:
     cmd: calkit scheduler batch --name baseline-nsys --environment clima --dep 
-      scripts/run.jl --dep ClimaCoupler.jl/src --dep 
+      RRTMGP.jl/src --dep RRTMGP.jl/ext --dep scripts/run.jl --dep 
+      ClimaCoupler.jl/src --dep 
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml 
       --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep 
       ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep ClimaCore.jl/ext 
@@ -511,8 +512,8 @@ stages:
       size: 1654
     - path: ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
       hash: md5
-      md5: b44f1b147e9d01ee09c94cf0e91d2238
-      size: 122651
+      md5: d3b19f665e50c9647a2d51c2104b9326
+      size: 122620
     - path: ClimaCoupler.jl/experiments/AMIP/code_loading.jl
       hash: md5
       md5: 0c072357ce169058667a15672376802e
@@ -522,6 +523,16 @@ stages:
       md5: d05286163ac68b8a0a877690ad9c22c4.dir
       size: 309801
       nfiles: 22
+    - path: RRTMGP.jl/ext
+      hash: md5
+      md5: a4d7832a43077123653a6d0031c1a649.dir
+      size: 53880
+      nfiles: 11
+    - path: RRTMGP.jl/src
+      hash: md5
+      md5: 9dc7c1dae68c06d9c378745aa35bea47.dir
+      size: 305619
+      nfiles: 43
     - path: scripts/run-nsys.sh
       hash: md5
       md5: d7bdb9eab2fe3f2124e6c21273de727b
@@ -533,16 +544,16 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/baseline-nsys.out
       hash: md5
-      md5: 6e7f346f18f5217ac62e7990bdaaa2d9
-      size: 176953
+      md5: c979d3a8ad75addb2f1ff62b9a85fd1a
+      size: 180518
     - path: results/nsys/baseline.nsys-rep
       hash: md5
-      md5: caa9868280d8b89b5f1a057d46468917
-      size: 260759015
+      md5: 53bcff4579f0d9fee71a44029ae78825
+      size: 261440135
     - path: results/nsys/baseline.sqlite
       hash: md5
-      md5: 8b2645d0187b9dedeab6132a50d6add6
-      size: 605646848
+      md5: 8d93360ee7f5c38af4b8834ad6493075
+      size: 605044736
   baseline-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/baseline.nsys-rep
       -t sqlite -o results/nsys/baseline.sqlite"'
