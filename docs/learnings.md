@@ -1410,6 +1410,75 @@ cheap:
     cannot be parallelised directly, but the optical-property computation that
     precedes them may be.
 
+## 4l. Radiation is one resident wave, so load balancing cannot help (2026-09-11)
+
+Four experiments on the RRTMGP kernels, and the useful result is the diagnosis
+rather than the speedup.
+
+| experiment | shortwave | longwave (control) |
+|---|---|---|
+| 2 blocks/SM via `blocks_per_sm` | — | rejected, **+3.93%** on radiation |
+| skip solve where `μ₀ ≤ 0` | −0.59% | −0.20% → measured nothing |
+| skip solve where `μ₀ ≤ eps` | **−2.63%** | −0.20% |
+| + 64-thread blocks | **−4.04%** | −0.24% |
+
+Net: **−4.04% shortwave, −1.52% of all GPU kernel time.** Real — the longwave
+arm is untouched by every one of these and moves ≤0.24%, which is the noise
+floor — but far below what the night fraction suggests.
+
+### The condition that never fires
+
+The first skip tested `μ₀ ≤ 0` and saved nothing, because ClimaAtmos sets
+`cos_zenith = max(insolation.μ, eps(FT))` — RRTMGP requires a non-zero μ, so
+RRTMGP's own `set_flux_to_zero!` branch is **dead code** under this
+configuration. Testing against the clamp floor instead is what made it fire.
+
+### The skip is warp-coherent, and that still is not enough
+
+Measured over the real state (`results/night-warps.toml`):
+
+    night point fraction   0.5000
+    night WARP fraction    0.4596      <- 46% of warps entirely dark
+    mixed warps            0.0807
+
+So unlike the microphysics clear-air early-out (77.7% of points, 21.5% of
+warps), this criterion **is** coherent — and it still bought only −4%.
+
+### Why: the whole problem is resident in one wave
+
+    A100: 108 SMs x 256 threads (at 255 registers) = 27,648 resident threads
+    problem: 24,576 columns                        = 89% of capacity
+
+    block  32:  768 blocks vs  864 slots -> single wave
+    block  64:  384 blocks vs  432 slots -> single wave
+    block 256:   96 blocks vs  108 slots -> single wave
+
+**At every block size the entire grid is resident simultaneously.** There is no
+second wave, so a block that finishes early does not free capacity for queued
+work — its SM simply idles. Kernel duration is set by the slowest thread, and
+removing work from other threads changes almost nothing. The 64-thread block
+change helped a little (−2.63% → −4.04%) but could never have delivered the 46%.
+
+This also re-reads the occupancy rejection: ncu ranked occupancy first at 74%
+estimated speedup, and doubling it made things worse. **ncu's occupancy estimate
+assumes more resident warps would hide latency; it cannot know the problem is
+too small to have a second wave.** That is the third time in this project ncu's
+top-ranked recommendation has been the wrong lever (§4a, §4b, here).
+
+### What would actually work
+
+The binding constraint is **serial work per thread**: each column loops over
+~224 spectral g-points, each doing a full optical-property lookup and two
+63-level vertical sweeps. The vertical sweeps are recursive and cannot be
+parallelised, but **the g-point loop is independent** apart from flux
+accumulation.
+
+Parallelising over g-points would give 24,576 × 224 ≈ 5.5M threads — far beyond
+resident capacity, hence many waves, hence throughput-bound rather than
+latency-bound, and load imbalance would finally be absorbable. It needs a
+reduction across g-points for the accumulated fluxes (atomics or a two-pass
+scheme) and is a substantial RRTMGP restructure, not a tuning change.
+
 ## 5. Methodology lessons
 
 **A mechanism that wins on the GPU can still lose the run.** The first full

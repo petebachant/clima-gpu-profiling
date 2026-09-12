@@ -31,7 +31,8 @@ stages:
       Changes made here will be overwritten.
   baseline-nsys:
     cmd: calkit scheduler batch --name baseline-nsys --environment clima --dep
-      scripts/run.jl --dep ClimaCoupler.jl/src --dep
+      RRTMGP.jl/src --dep RRTMGP.jl/ext --dep scripts/run.jl --dep
+      ClimaCoupler.jl/src --dep
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
       ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep ClimaCore.jl/ext
@@ -42,6 +43,8 @@ stages:
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
       - scripts/run-nsys.sh
+      - RRTMGP.jl/src
+      - RRTMGP.jl/ext
       - scripts/run.jl
       - ClimaCoupler.jl/src
       - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -64,7 +67,8 @@ stages:
       Changes made here will be overwritten.
   mod-nsys:
     cmd: calkit scheduler batch --name mod-nsys --environment clima --dep
-      scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep
+      RRTMGP.jl-mod/src --dep RRTMGP.jl-mod/ext --dep scripts/run.jl --dep
+      ClimaCoupler.jl-mod/src --dep
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
       ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
@@ -77,6 +81,8 @@ stages:
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
       - scripts/run-nsys.sh
+      - RRTMGP.jl-mod/src
+      - RRTMGP.jl-mod/ext
       - scripts/run.jl
       - ClimaCoupler.jl-mod/src
       - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -179,6 +185,7 @@ stages:
       Changes made here will be overwritten.
   amip-baseline:
     cmd: calkit scheduler batch --name amip-baseline --environment clima --dep
+      RRTMGP.jl/src --dep RRTMGP.jl/ext --dep
       ClimaCoupler.jl/experiments/AMIP/run_simulation.jl --dep
       ClimaCoupler.jl/src --dep
       ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -192,6 +199,8 @@ stages:
       --job_id gpu_amip_progedmf_1M_land_he16_baseline
     deps:
       - scripts/run-julia-script.sh
+      - RRTMGP.jl/src
+      - RRTMGP.jl/ext
       - ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
       - ClimaCoupler.jl/src
       - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -211,6 +220,7 @@ stages:
       Changes made here will be overwritten.
   amip-mod:
     cmd: calkit scheduler batch --name amip-mod --environment clima --dep
+      RRTMGP.jl-mod/src --dep RRTMGP.jl-mod/ext --dep
       ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl --dep
       ClimaCoupler.jl-mod/src --dep
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -226,6 +236,8 @@ stages:
       --job_id gpu_amip_progedmf_1M_land_he16_mod
     deps:
       - scripts/run-julia-script.sh
+      - RRTMGP.jl-mod/src
+      - RRTMGP.jl-mod/ext
       - ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl
       - ClimaCoupler.jl-mod/src
       - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
