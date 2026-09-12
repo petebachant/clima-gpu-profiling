@@ -5,7 +5,12 @@ set -euo pipefail
 
 mkdir -p diffs
 
-for repo in ClimaAtmos.jl ClimaCore.jl ClimaCoupler.jl; do
+# RRTMGP is here because both arms have their own submodule at the same base,
+# so the plain base-vs-mod directory comparison works. That symmetry is
+# deliberate: CloudMicrophysics has a mod-only submodule against a registry
+# baseline, which is why its diff needs the special handling below and why
+# upstream drift rode along inside every CM experiment (docs/learnings.md 4i).
+for repo in ClimaAtmos.jl ClimaCore.jl ClimaCoupler.jl RRTMGP.jl; do
     base="${repo}"
     mod="${repo}-mod"
 
