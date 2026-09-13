@@ -1,3 +1,26 @@
-# Add patterns of files dvc should ignore, which could improve
-# the performance. Learn more at
-# https://dvc.org/doc/user-guide/dvcignore
+# DVC honours this file, NOT .gitignore. Anything reachable under a stage's
+# directory dependency is hashed, so a file git ignores still makes the stage
+# stale -- and it does so only on the machine that lacks it. On 2026-09-13 a
+# tag looked fully reproducible here and showed six stale stages on another
+# clone, because these paths were being hashed into the submodule deps.
+
+# Julia dev-environment manifests, resolved per machine. The manifest that
+# picks the versions actually under test is experiments/AMIP/Manifest-v1.11.toml
+# and is declared explicitly by the AMIP stages, so it is untouched here. The
+# root Manifest.toml is a real dependency too -- these patterns start at */ so
+# they cannot match it.
+*/Manifest.toml
+*/test/Manifest.toml
+*/.dev/format/Manifest.toml
+
+# Tooling state that lands inside a submodule checkout. The superproject's own
+# .calkit/ is NOT matched: these patterns require a leading directory, and
+# .calkit/notebooks/cleaned/ is a declared input to compare-kernels.
+*/.calkit/
+/ClimaCoupler.jl/experiments/ClimaEarth/
+
+# Editor, OS and language scratch that varies by machine.
+.DS_Store
+__pycache__/
+.ipynb_checkpoints/
+*.cov

@@ -1867,3 +1867,25 @@ complaint raised earlier about the CloudMicrophysics diff.
 it diverged. For RRTMGP that is 30 lines in one function. Both are kept, because
 the total delta is what determines behaviour and the authored delta is what gets
 proposed upstream.
+
+### 4p. DVC honours `.dvcignore`, not `.gitignore`
+
+`meas/2026-09-13-binary-search-alone` was verified green here and showed six
+stale stages on another clone. The tracked content was identical; the dependency
+*hashes* were not, because every file reachable under a directory dependency is
+hashed whether or not git tracks it. Resolved Julia `Manifest.toml` files,
+`.calkit/` tooling state and a generated `experiments/ClimaEarth/` were inside
+the submodule deps, and they differ per machine by construction.
+
+The asymmetry is what makes it dangerous: the stage is stale only on machines
+that *lack* the file, so it never fails where the tag is made.
+
+Over-correcting is worse. A first pass used `*/.dev/` and `*/*/Manifest.toml`,
+which swallowed 5 tracked files per repo — real changes to them would no longer
+invalidate anything, and nothing reports that. `scripts/check-dep-hygiene.py`
+now asserts `dvc nfiles == git ls-files` for every whole-submodule dependency,
+which catches both directions.
+
+Only `make-diffs` was affected. The GPU stages depend on `src`/`ext`/`lib`
+subdirectories, which contain no machine-local files — worth knowing, because it
+meant the fix cost one CPU stage rather than a re-profile.
