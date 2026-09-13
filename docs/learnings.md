@@ -1873,9 +1873,17 @@ proposed upstream.
 `meas/2026-09-13-binary-search-alone` was verified green here and showed six
 stale stages on another clone. The tracked content was identical; the dependency
 *hashes* were not, because every file reachable under a directory dependency is
-hashed whether or not git tracks it. Resolved Julia `Manifest.toml` files,
-`.calkit/` tooling state and a generated `experiments/ClimaEarth/` were inside
-the submodule deps, and they differ per machine by construction.
+hashed whether or not git tracks it. Package-root `Manifest.toml` files, `.calkit/`
+tooling state and a generated `experiments/ClimaEarth/` were inside the
+submodule deps, and none of them are tracked by git.
+
+A first explanation -- that manifests are machine-dependent -- was wrong. They
+contain versions and tree hashes, no absolute paths, and the committed AMIP
+manifest uses relative `path` entries. What breaks the hash is that upstream
+CliMA repos gitignore the package-root manifests, so a fresh clone has no copy.
+The manifest that does determine the run, `experiments/AMIP/Manifest-v1.11.toml`,
+is committed and separately declared by 13 stages, and is deliberately not
+covered by the ignore patterns.
 
 The asymmetry is what makes it dangerous: the stage is stale only on machines
 that *lack* the file, so it never fails where the tag is made.

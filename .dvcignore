@@ -4,11 +4,18 @@
 # tag looked fully reproducible here and showed six stale stages on another
 # clone, because these paths were being hashed into the submodule deps.
 
-# Julia dev-environment manifests, resolved per machine. The manifest that
-# picks the versions actually under test is experiments/AMIP/Manifest-v1.11.toml
-# and is declared explicitly by the AMIP stages, so it is untouched here. The
-# root Manifest.toml is a real dependency too -- these patterns start at */ so
-# they cannot match it.
+# Package-root manifests, which upstream CliMA repos do not track. Their
+# CONTENT is machine-independent -- versions and tree hashes, no absolute
+# paths -- so the problem is not what they contain but that a fresh clone has
+# no copy, or a differently resolved one. They also do not pick the versions
+# under test: the AMIP environment is experiments/AMIP/Manifest-v1.11.toml,
+# which IS committed and is declared explicitly by 13 stages. These patterns
+# start at */ and end at Manifest.toml, so they match neither it nor the
+# superproject's own root Manifest.toml, which stays a hashed dependency.
+#
+# If these should be hashed instead, the fix is to commit them -- that would
+# mean carrying a diff against upstream in the baseline submodules, which are
+# otherwise pristine checkouts.
 */Manifest.toml
 */test/Manifest.toml
 */.dev/format/Manifest.toml
