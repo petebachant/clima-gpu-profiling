@@ -1897,3 +1897,30 @@ which catches both directions.
 Only `make-diffs` was affected. The GPU stages depend on `src`/`ext`/`lib`
 subdirectories, which contain no machine-local files — worth knowing, because it
 meant the fix cost one CPU stage rather than a re-profile.
+
+### 4q. nbstripout makes notebook stages stale on every clone
+
+The two notebook stages survived the `.dvcignore` fix, and for a different
+reason. A notebook stage depends on the *cleaned* copy of its notebook, which
+`calkit status` regenerates locally -- so the file is present everywhere, and
+the earlier "untracked dependency" framing does not apply to it.
+
+`clean_notebook` is deterministic, which is the problem. nbstripout rewrites
+cell IDs to ordinals and has no smudge filter, so one commit has two byte
+streams: the working tree it was committed from (executed, random hex IDs) and
+what any checkout materializes (stripped, IDs 0, 1, 2...). Cleaning propagates
+that difference faithfully.
+
+  source in the working tree   86,664 bytes   cleaned -> 62e8730f (= dvc.lock)
+  source as Git stores it      39,470 bytes   cleaned -> 78c8a121
+
+Across all 16 cells the only differing field was `id`. So the recorded hash
+matches only the machine that ran the stage, permanently, with `git status`
+clean and nothing reported as modified.
+
+Fixed upstream in calkit/calkit#1662 by dropping cell IDs when cleaning. The
+cleaned copy is only ever hashed, never executed.
+
+Worth noting what the three causes had in common: all were invisible locally and
+appeared only on another clone. `calkit status` on the machine that ran the
+pipeline cannot detect any of them.
