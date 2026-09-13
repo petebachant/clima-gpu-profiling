@@ -144,6 +144,15 @@ questions:
           longwave 7768 -> 5668 ms (-27.0%) and shortwave 6781 -> 4988 ms
           (-26.4%). Longwave moving is the attribution -- the block-size change
           affects only shortwave, so the shared optics code carries the result.
+      - kind: table
+        path: results/top-kernels.csv
+        git_ref: meas/2026-09-13-binary-search-alone
+        explanation: >-
+          The isolation: block size left at RRTMGP's default of 256 in both
+          arms, so this is the binary search alone. Radiation 14567 -> 10676 ms
+          (-26.71%), against -26.66% with the 64-thread block change added --
+          so that change contributes +0.05 points, which is nothing. It is not
+          part of the proposal.
       - kind: result
         path: results/state-rad-mod.toml
         key: steps
