@@ -1483,6 +1483,21 @@ scheme) and is a substantial RRTMGP restructure, not a tuning change.
 
 The largest result in this project, and it is one function.
 
+**The binary search is the entire result.** Measured separately (2026-09-13):
+
+| change | radiation | all GPU kernel time |
+|---|---|---|
+| binary search alone | **−26.71%** | **−11.81%** |
+| + 64-thread blocks | −26.66% | −11.74% |
+| block size contributes | **+0.05 points** | nothing |
+
+The block-size change is not part of the proposal. It *did* help earlier —
+shortwave went −2.63% to −4.04% on top of a night-column skip — but that was
+while the kernel was dominated by divergent scan work, where load imbalance
+mattered. Once the scan is gone the kernel is uniform enough that finer
+scheduling has nothing left to fix. **A scheduling fix and a work-removal fix
+are not additive when the scheduling problem was caused by the work.**
+
 | | baseline | + 64-thread blocks + binary search |
 |---|---|---|
 | longwave | 7768 ms | **5668 ms (−27.03%)** |
