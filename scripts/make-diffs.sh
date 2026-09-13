@@ -27,6 +27,16 @@ for repo in ClimaAtmos.jl ClimaCore.jl ClimaCoupler.jl RRTMGP.jl; do
         [ -f "${mod_f}" ] || mod_f="/dev/null"
         git diff --no-index "${base_f}" "${mod_f}" || true
     done <<< "${all_files}" > "diffs/${repo}.diff"
+
+    # The comparison above is base-pin vs mod-branch, so everything upstream
+    # landed since the pin rides along -- 872 lines of vendored dev-guides for
+    # one 14-line RRTMGP change. Also emit the branch's own change since it
+    # diverged from upstream, which is the diff that produced the SYPD number.
+    if git -C "${mod}" rev-parse --verify --quiet origin/main >/dev/null; then
+        git -C "${mod}" diff origin/main...HEAD > "diffs/${repo}-authored.diff" || true
+    else
+        rm -f "diffs/${repo}-authored.diff"
+    fi
 done
 
 # Diff CloudMicrophysics.jl-mod against the exact version that runs alongside

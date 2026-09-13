@@ -642,8 +642,8 @@ stages:
       nfiles: 11
     - path: RRTMGP.jl-mod/src
       hash: md5
-      md5: 08ce52b391cbc03677fdc80932ef1b51.dir
-      size: 305920
+      md5: 6a74031094807992c3eba1abbbddbc07.dir
+      size: 305932
       nfiles: 43
     - path: scripts/run-nsys.sh
       hash: md5
@@ -656,16 +656,16 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/mod-nsys.out
       hash: md5
-      md5: 76a33577eb3045fcbb7e72c8114b2f7c
-      size: 177073
+      md5: 59bed3c94a0b34f00bc5f470644aec37
+      size: 179615
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: 017868596a425a6888079d36a9cdcffa
-      size: 263086948
+      md5: 24925f8657f42a04aab9a898332b034e
+      size: 263217311
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 5b0d09ef69172da8cad159fc0ac5ef92
-      size: 604233728
+      md5: ac0698e6cb1e72290e46272c441e69f7
+      size: 604291072
   mod-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep -t sqlite
       -o results/nsys/mod.sqlite"'
@@ -793,8 +793,8 @@ stages:
       size: 605044736
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 5b0d09ef69172da8cad159fc0ac5ef92
-      size: 604233728
+      md5: ac0698e6cb1e72290e46272c441e69f7
+      size: 604291072
     - path: scripts/summarize.py
       hash: md5
       md5: f8dda50a87d3635eaaa42feae31ed48f
@@ -802,7 +802,7 @@ stages:
     outs:
     - path: results/summary.json
       hash: md5
-      md5: 387cf960c1283611a8ae397c8b08a0fd
+      md5: 9022446fa483a2ca895bc8b65c553a8b
       size: 548
   mod-ncu:
     cmd: calkit scheduler batch --name mod-ncu --environment clima --dep 
@@ -1124,17 +1124,27 @@ stages:
       md5: c8c7c52464f794ee0545fec94db1a162.dir
       size: 2195322
       nfiles: 268
+    - path: RRTMGP.jl
+      hash: md5
+      md5: 95cfe0dddbb5dfe1ad96fc1c30b76e46.dir
+      size: 1248227
+      nfiles: 203
+    - path: RRTMGP.jl-mod
+      hash: md5
+      md5: d0d52bd43dfc418656d7df570a356843.dir
+      size: 1268908
+      nfiles: 204
     - path: scripts/make-diffs.sh
       hash: md5
-      md5: 5cce014dd8fcd6a49518483ceea2d46b
-      size: 3331
+      md5: 1f67c0befdde0ae6fdca9034c97ff7fe
+      size: 3870
       isexec: true
     outs:
     - path: diffs
       hash: md5
-      md5: c408a1362a832c23e89e87c91696914c.dir
-      size: 9432
-      nfiles: 6
+      md5: 81947471a47430d93264d54230111add.dir
+      size: 780552
+      nfiles: 10
   compare-kernels:
     cmd: calkit nb execute --environment py --no-check --to html 
       "notebooks/compare-kernels.ipynb"
@@ -1154,8 +1164,8 @@ stages:
       size: 180518
     - path: .calkit/scheduler/logs/mod-nsys.out
       hash: md5
-      md5: 76a33577eb3045fcbb7e72c8114b2f7c
-      size: 177073
+      md5: 59bed3c94a0b34f00bc5f470644aec37
+      size: 179615
     - path: results/nsys/baseline.nsys-rep
       hash: md5
       md5: 53bcff4579f0d9fee71a44029ae78825
@@ -1166,25 +1176,25 @@ stages:
       size: 605044736
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: 017868596a425a6888079d36a9cdcffa
-      size: 263086948
+      md5: 24925f8657f42a04aab9a898332b034e
+      size: 263217311
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 5b0d09ef69172da8cad159fc0ac5ef92
-      size: 604233728
+      md5: ac0698e6cb1e72290e46272c441e69f7
+      size: 604291072
     outs:
     - path: .calkit/notebooks/executed/notebooks/compare-kernels.ipynb
       hash: md5
-      md5: 38bebb84f05e7923f1c463973b4911fb
-      size: 93179
+      md5: 8e4439b03c8e21d525d115d666cce880
+      size: 93177
     - path: .calkit/notebooks/html/notebooks/compare-kernels.html
       hash: md5
-      md5: 17a258a6384512a1a8e180c2dc85a98a
+      md5: fb6acabff2815d67b604ffa09b64766b
       size: 451676
     - path: results/top-kernels.csv
       hash: md5
-      md5: f11e32b5a7d6578524a9ffd8b23da83b
-      size: 2838
+      md5: 56fc4d2334e2de855b943965749b1c46
+      size: 2848
   analyze-logs:
     cmd: calkit nb execute --environment py --no-check --to html 
       "notebooks/analyze-logs.ipynb"
@@ -1346,13 +1356,13 @@ stages:
       nfiles: 2
     - path: calkit.yaml
       hash: md5
-      md5: afaa45348770cf29ef51279c709ccf2e
-      size: 89730
+      md5: cf6f250792bed4869f7ee5c0efdd35ac
+      size: 89774
     - path: diffs
       hash: md5
-      md5: c408a1362a832c23e89e87c91696914c.dir
-      size: 9432
-      nfiles: 6
+      md5: 81947471a47430d93264d54230111add.dir
+      size: 780552
+      nfiles: 10
     - path: scripts/record-treatment.py
       hash: md5
       md5: 09f8d415d8a033b420bba60dc8f9c294
@@ -1360,7 +1370,7 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: 0172d536e45e504601b40235d7dc8ac7
+      md5: babc926f859ca71e0e90c8947ade7043
       size: 31306
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
@@ -1373,7 +1383,7 @@ stages:
       nfiles: 2
     - path: results/summary.json
       hash: md5
-      md5: 387cf960c1283611a8ae397c8b08a0fd
+      md5: 9022446fa483a2ca895bc8b65c553a8b
       size: 548
     - path: scripts/build-experiment-index.py
       hash: md5
@@ -1483,8 +1493,8 @@ stages:
       size: 605044736
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 5b0d09ef69172da8cad159fc0ac5ef92
-      size: 604233728
+      md5: ac0698e6cb1e72290e46272c441e69f7
+      size: 604291072
     - path: scripts/analyze-kernel-population.py
       hash: md5
       md5: a90f5891b670fdab9de976867aaa6f86
@@ -1496,8 +1506,8 @@ stages:
     outs:
     - path: results/kernel-population.json
       hash: md5
-      md5: 96e229012df015a42e2be42b16341838
-      size: 8785
+      md5: 427a0f0e1a91ebfbcb43e9ce47b34341
+      size: 8787
   cm-registers:
     cmd: calkit scheduler batch --name cm-registers --environment clima --dep 
       scripts/measure-cm-registers.jl --dep 
