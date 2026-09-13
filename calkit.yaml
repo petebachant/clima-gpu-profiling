@@ -97,8 +97,10 @@ questions:
       is unchanged (at 255 registers an SM holds 256 threads either way), so
       this only changes scheduling granularity.
 
-      The first carries nearly all of it: longwave fell 27.0% and the other
-      change touches only shortwave.
+      The first carries all of it. Longwave fell 27.0% and the block change
+      touches only shortwave, so the shared optics code had to be responsible;
+      measuring the search alone confirmed it at +7.95% SYPD against +8.70% for
+      the pair, a gap inside the repeat spread. Only the search is proposed.
 
       Two things worth knowing before profiling these kernels again.
 
@@ -144,15 +146,34 @@ questions:
           longwave 7768 -> 5668 ms (-27.0%) and shortwave 6781 -> 4988 ms
           (-26.4%). Longwave moving is the attribution -- the block-size change
           affects only shortwave, so the shared optics code carries the result.
+      - kind: result
+        path: results/summary.json
+        key: speedup_pct
+        git_ref: meas/2026-09-13-binary-search-alone
+        explanation: >-
+          The isolation: block size left at RRTMGP's default of 256 in both
+          arms, so this is the binary search alone. +7.95% SYPD, against +8.70%
+          with the 64-thread block change added. The 0.75-point gap sits inside
+          the 0.6-0.8% repeat spread of this measurement, so the block change
+          cannot be claimed to contribute anything. It is not part of the
+          proposal.
       - kind: table
         path: results/top-kernels.csv
         git_ref: meas/2026-09-13-binary-search-alone
         explanation: >-
-          The isolation: block size left at RRTMGP's default of 256 in both
-          arms, so this is the binary search alone. Radiation 14567 -> 10676 ms
-          (-26.71%), against -26.66% with the 64-thread block change added --
-          so that change contributes +0.05 points, which is nothing. It is not
-          part of the proposal.
+          Per-kernel, same isolation: radiation 14567.1 -> 10645.6 ms
+          (-26.92%), against -26.66% with the block change added. The search
+          alone is marginally BETTER on radiation than the pair, which is the
+          clearest statement that the block change is noise rather than a small
+          gain.
+      - kind: table
+        path: diffs/RRTMGP.jl-authored.diff
+        git_ref: meas/2026-09-13-binary-search-alone
+        explanation: >-
+          The proposed change in full: 30 lines in one function. This is the
+          branch's own delta since it diverged from RRTMGP main, so it excludes
+          the vendored dev-guides that upstream landed after the baseline pin
+          and that dominate the base-vs-mod comparison.
       - kind: result
         path: results/state-rad-mod.toml
         key: steps
