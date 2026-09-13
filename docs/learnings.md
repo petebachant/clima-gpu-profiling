@@ -1838,3 +1838,32 @@ allocation granularity), for `round_up(regs × 32, 256)` per warp:
 
 The exact threshold for 12 warps is 168, not 170: it needs
 `round_up(regs × 32, 256) ≤ 16384/3`.
+
+### 4n. A stage that does not declare an input is silently never stale
+
+`make-diffs` listed the Coupler, Core, Atmos and CM submodules as inputs but not
+RRTMGP, even after `make-diffs.sh` was taught to enumerate RRTMGP. The script
+knew about the repo; the stage did not. So a radiation change never marked the
+stage stale, and `diffs/RRTMGP.jl.diff` still held the combined block-size +
+binary-search experiment while `results/` beside it came from the binary search
+alone. `calkit status` reported the pipeline up to date throughout.
+
+This matters more than a stale file normally would, because the diffs are cited
+as answer evidence: the point of archiving them is to show the change that
+produced a given SYPD number, and here they would have shown a different one.
+
+Teaching the *script* about a new repo is half the job. The stage's `inputs:`
+list is what DVC uses to decide staleness, and nothing cross-checks the two.
+
+### 4o. Diff against the branch point, not the baseline pin
+
+The base-vs-mod submodule comparison answers "how do the two arms differ", which
+includes everything upstream landed since the baseline pin. For RRTMGP that was
+872 lines, almost all vendored dev-guides, around a 14-line change — the same
+complaint raised earlier about the CloudMicrophysics diff.
+
+`make-diffs.sh` now also writes `<repo>-authored.diff` from
+`git diff origin/main...HEAD` in the mod submodule: the branch's own change since
+it diverged. For RRTMGP that is 30 lines in one function. Both are kept, because
+the total delta is what determines behaviour and the authored delta is what gets
+proposed upstream.
