@@ -168,6 +168,26 @@ simulated year rose only because 13x fewer steps were being taken per simulated
 hour -- a different, coarser problem, not a faster solution to the same one.
 **When SYPD and per-step walltime move the same direction, the timestep changed.**
 
+## A tag is only meaningful if the whole pipeline is green at it
+
+Before tagging, run `calkit status` and confirm no stale stages. Running one
+stage and reading its output directly bypasses the consistency the pipeline
+exists to enforce: the downstream stages that write `results/top-kernels.csv`,
+`results/summary.json` and `results/treatment.json` still hold the previous
+run's numbers, and nothing says so.
+
+That published `meas/2026-09-13-binary-search-alone` with a `top-kernels.csv`
+carrying the previous configuration's radiation figures, cited in the Q&A for
+numbers it did not contain. The tag was deleted and the measurement redone.
+
+`scripts/verify-evidence.py` checks every evidence item resolves at its
+`git_ref` **and** carries the value its answer quotes. Run it before pushing a
+tag. A check that only confirms the file exists is what let this through.
+
+Editing a stage input after a run makes its stage stale even when the edit
+cannot change behaviour -- a comment rewrite counts. Either re-run before
+tagging or tag the commit that was measured.
+
 ## Push every submodule before pushing the superproject
 
 A committed submodule pointer to an **unpushed** commit is exactly as
