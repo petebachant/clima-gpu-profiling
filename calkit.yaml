@@ -57,15 +57,33 @@ questions:
           for those.
 
   - question: >-
-      Can the radiation kernels be made faster without changing results?
+      Can the radiation kernels be made faster without changing results, and
+      which change is responsible?
     answer: >-
       Yes, substantially: **+8.70% SYPD** (0.21611 -> 0.23671), with the model
       state **bit-identical over 120 coupled steps**. Radiation drops 26.8% and
       total GPU kernel time 12.3%. That is roughly six times the combined SYPD of
       this project's entire microphysics effort, and it comes from one function.
 
-      Two changes, both in RRTMGP, which was the only package differing between
-      arms:
+      **One change is responsible.** Measured separately:
+
+      | change | radiation | all GPU kernel time |
+      |---|---|---|
+      | binary search alone | **-26.71%** | **-11.81%** |
+      | binary search + 64-thread blocks | -26.66% | -11.74% |
+      | 64-thread blocks contribute | **+0.05 points** | nothing |
+
+      The block-size change is NOT part of the proposal. It did help earlier --
+      shortwave went -2.63% to -4.04% on top of a night-column skip -- but that
+      was while the kernel was dominated by divergent scan work and load
+      imbalance mattered. Once the scan is gone the kernel is uniform enough
+      that finer scheduling has nothing to fix.
+
+      Note the split is only resolvable at kernel level: 0.05 points of
+      radiation is ~0.02% of GPU time, and even a real 1.5-point difference
+      would be ~0.7% SYPD, at this project's 0.6-0.8% SYPD noise floor.
+
+      The changes measured were:
 
       (1) **A binary search replacing a linear scan** in `loc_lower`
       (`src/optics/optics_utils.jl`). It is reached per layer, per g-point, per
