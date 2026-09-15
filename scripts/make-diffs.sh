@@ -35,6 +35,19 @@ done
 # pinned by `git-tree-sha1` in the baseline coupler's AMIP Manifest, so when the
 # CM submodule is checked out to the matching commit this diff is empty
 # (i.e. CloudMicrophysics has no influence on the experiment).
+# CloudMicrophysics only reaches a run if the mod Coupler devs it. When it does
+# not, diffing its checkout describes nothing that ran -- and a 615-line diff
+# sitting beside the results reads as a treatment. Say so instead.
+if ! grep -q 'path = "../../../CloudMicrophysics.jl-mod"' \
+    ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml; then
+    note="CloudMicrophysics is not dev'd by either arm, so its submodule does not
+reach the run and there is no arm difference to report. Both arms take the
+version pinned in the Coupler AMIP manifest."
+    echo "${note}" > diffs/CloudMicrophysics.diff
+    echo "${note}" > diffs/CloudMicrophysics-arm-delta.diff
+    exit 0
+fi
+
 CM_MANIFEST="ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml"
 CM_TREE=$(awk '
     /^\[\[deps\.CloudMicrophysics\]\]/ { f = 1; next }
