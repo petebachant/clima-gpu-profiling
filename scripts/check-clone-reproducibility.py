@@ -36,18 +36,20 @@ def repo_of(path: str) -> tuple[str, str]:
 
 def check(repo: str, rel: str) -> list[str]:
     """Files under ``rel`` whose stored bytes differ from the working tree."""
-    listed = run(["git", "-C", repo, "ls-files", "-s", "--", rel]).splitlines()
+    listed = run(["git", "-C", repo, "ls-files", "--", rel]).splitlines()
     problems = []
-    for line in listed:
-        meta, name = line.split("\t", 1)
-        stored_sha = meta.split()[1]
+    for name in listed:
         full = os.path.join(repo, name) if repo != "." else name
         if not os.path.exists(full):
             continue
+        # Hash the same bytes twice, once through the clean filter and once
+        # not. Comparing against the index instead would flag any file merely
+        # edited since it was staged, which says nothing about a filter.
+        filtered = run(["git", "-C", repo, "hash-object", "--", name]).strip()
         raw = run(
             ["git", "-C", repo, "hash-object", "--no-filters", "--", name]
         ).strip()
-        if raw and raw != stored_sha:
+        if filtered and raw and filtered != raw:
             problems.append(f"rewritten by a clean filter: {full}")
     return problems
 
