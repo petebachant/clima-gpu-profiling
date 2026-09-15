@@ -16,16 +16,14 @@ julia --project="$REPO_ROOT/ClimaCoupler.jl/$JULIA_PROJECT" -e "
 "
 
 # Do the same for ClimaCoupler.jl-mod for the -mod suffix submodules.
-# CloudMicrophysics.jl-mod carries the pb/1m-spill guarded 1M process rates; it is
-# the only package that differs between the two arms, so it is dev'd here and not
-# in the baseline above.
+# The dev'd set is deliberately the same on both sides: a package dev'd in only
+# one arm makes the arms differ by its whole version, not by our change to it.
+# CloudMicrophysics was dev'd here alone until 2026-09-14, which is how upstream
+# drift rode along inside every CM experiment (docs/learnings.md 4i). RRTMGP was
+# too, until the binary search merged upstream (CliMA/RRTMGP.jl#628). Neither is
+# a treatment now, so both arms take the Coupler-pinned versions.
 julia --project="$REPO_ROOT/ClimaCoupler.jl-mod/$JULIA_PROJECT" -e "
     import Pkg
     Pkg.develop(path=\"./ClimaCore.jl-mod\")
     Pkg.develop(path=\"./ClimaAtmos.jl-mod\")
-    Pkg.develop(path=\"./CloudMicrophysics.jl-mod\")
 "
-# Comment out the CloudMicrophysics line to take the Coupler-pinned version in
-# both arms instead, which isolates whatever else differs. Whether a package is
-# dev'd here -- not merely checked out -- is what decides if the submodule
-# reaches the run; results/treatment.json records the answer per run.
