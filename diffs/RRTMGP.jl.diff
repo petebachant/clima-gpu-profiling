@@ -1,92 +1,222 @@
-diff --git a/RRTMGP.jl/ext/cuda/rte_longwave_2stream.jl b/RRTMGP.jl-mod/ext/cuda/rte_longwave_2stream.jl
-index 739c98c..9943798 100644
---- a/RRTMGP.jl/ext/cuda/rte_longwave_2stream.jl
-+++ b/RRTMGP.jl-mod/ext/cuda/rte_longwave_2stream.jl
-@@ -7,9 +7,15 @@ function rte_lw_2stream_solve!(
-     as::GrayAtmosphericState,
+diff --git a/RRTMGP.jl/src/optics/AtmosphericStates.jl b/RRTMGP.jl-mod/src/optics/AtmosphericStates.jl
+index 1637821..efbd07e 100644
+--- a/RRTMGP.jl/src/optics/AtmosphericStates.jl
++++ b/RRTMGP.jl-mod/src/optics/AtmosphericStates.jl
+@@ -142,7 +142,7 @@ function TransposedStateCache(grid_params::RRTMGPGridParams)
+     DA = ClimaComms.array_type(grid_params)
+     FT = eltype(grid_params)
+     return TransposedStateCache(
+-        DA{FT, 3}(undef, ncol, nlay, 4),
++        DA{FT, 3}(undef, ncol, nlay, 5),
+         DA{FT, 2}(undef, ncol, nlay + 1),
+     )
+ end
+@@ -156,8 +156,16 @@ function refresh_transposed_state!(
+     cache::TransposedStateCache,
+     as::AtmosphericState,
  )
-     nlay, ncol = AtmosphericStates.get_dims(as)
--    tx, bx = _configure_threadblock(ncol)
-+    # 128 threads and a 168-register cap put three blocks on an SM: 12 warps,
-+    # against 8 at the shipped 256/255. ncu measures 0.25 eligible warps per
-+    # scheduler here, so the kernel is latency-bound with nothing to switch to;
-+    # more warps is the direct lever. The 16-warp step (128 registers) was
-+    # tested and lost to rematerialisation, and 12 warps is unreachable with
-+    # 256-thread blocks because two of them need 2*256*168 > 65536 registers.
-+    tx, bx = _configure_threadblock(128, ncol)
-     args = (flux_lw, src_lw, bcs_lw, op, nlay, ncol, as)
--    @cuda always_inline = true threads = (tx) blocks = (bx) rte_lw_2stream_solve_CUDA!(
-+    @cuda always_inline = true maxregs = 168 threads = (tx) blocks = (bx) rte_lw_2stream_solve_CUDA!(
-         args...,
-     )
+-    _transpose_into!(cache.layerdata, as.layerdata)
++    # Slices 1:4 mirror `as.layerdata`; slice 5 is derived below, so the
++    # transpose must target only the mirrored part -- `permutedims!` requires
++    # matching sizes.
++    nfld = size(as.layerdata, 1)
++    _transpose_into!(view(cache.layerdata, :, :, 1:nfld), as.layerdata)
+     _transpose_into!(cache.t_lev, as.t_lev)
++    # log(p_lay) once per column-layer. The gas optics needs it for the pressure
++    # interpolation at every one of the ~224 g-points, so computing it here
++    # replaces ~224 evaluations per layer with one store and 224 cached loads.
++    @views cache.layerdata[:, :, 5] .= log.(cache.layerdata[:, :, 2])
      return nothing
-@@ -61,7 +67,13 @@ function rte_lw_2stream_solve!(
+ end
+ 
+@@ -208,6 +216,12 @@ end
+     @inbounds view(cache.layerdata, gcol, :, 4)
+ @inline rel_hum_view(::Nothing, as::AtmosphericState, gcol) =
+     @inbounds view(as.layerdata, 4, :, gcol)
++@inline ln_p_lay_view(cache::TransposedStateCache, as, gcol) =
++    @inbounds view(cache.layerdata, gcol, :, 5)
++# Without a cache there is nowhere to have precomputed it; callers fall back to
++# evaluating log(p_lay) inline. The return type is known at compile time, so the
++# branch folds away.
++@inline ln_p_lay_view(::Nothing, as::AtmosphericState, gcol) = nothing
+ @inline t_lev_view(cache::TransposedStateCache, as, gcol) =
+     @inbounds view(cache.t_lev, gcol, :)
+ @inline t_lev_view(::Nothing, as::AtmosphericState, gcol) =
+diff --git a/RRTMGP.jl/src/optics/compute_optical_props.jl b/RRTMGP.jl-mod/src/optics/compute_optical_props.jl
+index 3b879f4..1852e95 100644
+--- a/RRTMGP.jl/src/optics/compute_optical_props.jl
++++ b/RRTMGP.jl-mod/src/optics/compute_optical_props.jl
+@@ -36,6 +36,8 @@ GPU access) when one is provided, and from `as` directly otherwise.
+         totplnk = view(lkp.planck.tot_planck, :, ibnd)
+         col_dry_col = AtmosphericStates.col_dry_view(state_cache, as, gcol)
+         p_lay_col = AtmosphericStates.p_lay_view(state_cache, as, gcol)
++        # `nothing` without a cache; the branch below folds at compile time.
++        ln_p_lay_col = AtmosphericStates.ln_p_lay_view(state_cache, as, gcol)
+         t_lay_col = AtmosphericStates.t_lay_view(state_cache, as, gcol)
+         t_lev_col = AtmosphericStates.t_lev_view(state_cache, as, gcol)
+         τ = view(op.τ, gcol, :)
+@@ -47,6 +49,8 @@ GPU access) when one is provided, and from `as` directly otherwise.
+         for glay in 1:nlay
+             col_dry, p_lay, t_lay =
+                 col_dry_col[glay], p_lay_col[glay], t_lay_col[glay]
++            log_p_lay =
++                isnothing(ln_p_lay_col) ? log(p_lay) : ln_p_lay_col[glay]
+             # compute gas optics
+             τ[glay], _, _, planckfrac = compute_gas_optics(
+                 lkp,
+@@ -58,6 +62,7 @@ GPU access) when one is provided, and from `as` directly otherwise.
+                 t_lay,
+                 glay,
+                 gcol,
++                log_p_lay,
+             )
+             # compute longwave source terms
+             t_lev_inc = t_lev_col[glay + 1]
+@@ -147,6 +152,8 @@ end
+         totplnk = view(lkp.planck.tot_planck, :, ibnd)
+         col_dry_col = AtmosphericStates.col_dry_view(state_cache, as, gcol)
+         p_lay_col = AtmosphericStates.p_lay_view(state_cache, as, gcol)
++        # `nothing` without a cache; the branch below folds at compile time.
++        ln_p_lay_col = AtmosphericStates.ln_p_lay_view(state_cache, as, gcol)
+         t_lay_col = AtmosphericStates.t_lay_view(state_cache, as, gcol)
+         t_lev_col = AtmosphericStates.t_lev_view(state_cache, as, gcol)
+         τ = view(op.τ, gcol, :)
+@@ -162,6 +169,8 @@ end
+         for glay in 1:nlay
+             col_dry, p_lay, t_lay =
+                 col_dry_col[glay], p_lay_col[glay], t_lay_col[glay]
++            log_p_lay =
++                isnothing(ln_p_lay_col) ? log(p_lay) : ln_p_lay_col[glay]
+             # compute gas optics
+             τ[glay], ssa[glay], g[glay], planckfrac = compute_gas_optics(
+                 lkp,
+@@ -173,6 +182,7 @@ end
+                 t_lay,
+                 glay,
+                 gcol,
++                log_p_lay,
+             )
+             # compute longwave source terms
+             t_lev_inc = t_lev_col[glay + 1]
+@@ -276,12 +286,16 @@ is provided, and from `as` directly otherwise.
+         t_sfc = as.t_sfc[gcol]
+         col_dry_col = AtmosphericStates.col_dry_view(state_cache, as, gcol)
+         p_lay_col = AtmosphericStates.p_lay_view(state_cache, as, gcol)
++        # `nothing` without a cache; the branch below folds at compile time.
++        ln_p_lay_col = AtmosphericStates.ln_p_lay_view(state_cache, as, gcol)
+         t_lay_col = AtmosphericStates.t_lay_view(state_cache, as, gcol)
+         τ = view(op.τ, gcol, :)
+     end
+     @inbounds for glay in 1:nlay
+         col_dry, p_lay, t_lay =
+             col_dry_col[glay], p_lay_col[glay], t_lay_col[glay]
++        log_p_lay =
++            isnothing(ln_p_lay_col) ? log(p_lay) : ln_p_lay_col[glay]
+         # compute gas optics
+         τ[glay], _, _ = compute_gas_optics(
+             lkp,
+@@ -293,6 +307,7 @@ is provided, and from `as` directly otherwise.
+             t_lay,
+             glay,
+             gcol,
++            log_p_lay,
+         )
+     end
+     return nothing
+@@ -315,6 +330,8 @@ end
+         t_sfc = as.t_sfc[gcol]
+         col_dry_col = AtmosphericStates.col_dry_view(state_cache, as, gcol)
+         p_lay_col = AtmosphericStates.p_lay_view(state_cache, as, gcol)
++        # `nothing` without a cache; the branch below folds at compile time.
++        ln_p_lay_col = AtmosphericStates.ln_p_lay_view(state_cache, as, gcol)
+         t_lay_col = AtmosphericStates.t_lay_view(state_cache, as, gcol)
+         τ = view(op.τ, gcol, :)
+         ssa = view(op.ssa, gcol, :)
+@@ -323,6 +340,8 @@ end
+     @inbounds for glay in 1:nlay
+         col_dry, p_lay, t_lay =
+             col_dry_col[glay], p_lay_col[glay], t_lay_col[glay]
++        log_p_lay =
++            isnothing(ln_p_lay_col) ? log(p_lay) : ln_p_lay_col[glay]
+         # compute gas optics
+         τ[glay], ssa[glay], g[glay] = compute_gas_optics(
+             lkp,
+@@ -334,6 +353,7 @@ end
+             t_lay,
+             glay,
+             gcol,
++            log_p_lay,
+         )
+     end
+     if !isnothing(lkp_cld) # clouds need TwoStream optics
+diff --git a/RRTMGP.jl/src/optics/gas_optics.jl b/RRTMGP.jl-mod/src/optics/gas_optics.jl
+index bf6757b..13266ce 100644
+--- a/RRTMGP.jl/src/optics/gas_optics.jl
++++ b/RRTMGP.jl-mod/src/optics/gas_optics.jl
+@@ -97,10 +97,14 @@ end
+ 
+ Compute interpolation fraction for pressure.
+ """
+-@inline function compute_interp_frac_press(ln_p_ref, p_lay, tropo)
++@inline function compute_interp_frac_press(
++    ln_p_ref,
++    p_lay,
++    tropo,
++    log_p_lay = log(p_lay),
++)
+     @inbounds Δ_ln_p_ref = ln_p_ref[1] - ln_p_ref[2]
+     n_p_ref = length(ln_p_ref)
+-    log_p_lay = log(p_lay)
+     @inbounds jpress = Int(
+         min(
+             max(
+@@ -183,6 +187,7 @@ end
+     t_lay,
+     glay,
+     gcol,
++    log_p_lay = log(p_lay),
  )
-     nlay, ncol = AtmosphericStates.get_dims(as)
-     set_band_flux_to_zero!(band_flux)
--    tx, bx = _configure_threadblock(ncol)
-+    # 128 threads and a 168-register cap put three blocks on an SM: 12 warps,
-+    # against 8 at the shipped 256/255. ncu measures 0.25 eligible warps per
-+    # scheduler here, so the kernel is latency-bound with nothing to switch to;
-+    # more warps is the direct lever. The 16-warp step (128 registers) was
-+    # tested and lost to rematerialisation, and 12 warps is unreachable with
-+    # 256-thread blocks because two of them need 2*256*168 > 65536 registers.
-+    tx, bx = _configure_threadblock(128, ncol)
-     args = (
-         flux,
-         flux_lw,
-@@ -77,7 +89,7 @@ function rte_lw_2stream_solve!(
-         lookup_lw_cld,
-         lookup_lw_aero,
-     )
--    @cuda always_inline = true threads = (tx) blocks = (bx) rte_lw_2stream_solve_CUDA!(
-+    @cuda always_inline = true maxregs = 168 threads = (tx) blocks = (bx) rte_lw_2stream_solve_CUDA!(
-         args...,
-     )
-     return nothing
-diff --git a/RRTMGP.jl/ext/cuda/rte_shortwave_2stream.jl b/RRTMGP.jl-mod/ext/cuda/rte_shortwave_2stream.jl
-index 5c82ebd..297c3c0 100644
---- a/RRTMGP.jl/ext/cuda/rte_shortwave_2stream.jl
-+++ b/RRTMGP.jl-mod/ext/cuda/rte_shortwave_2stream.jl
-@@ -7,9 +7,15 @@ function rte_sw_2stream_solve!(
-     as::GrayAtmosphericState,
+     # upper/lower troposphere
+     tropo = p_lay > lkp.p_ref_tropo ? 1 : 2
+@@ -190,7 +195,8 @@ end
+     vmr_h2o = get_vmr(vmr, lkp.idx_h2o, glay, gcol)
+ 
+     jftemp = compute_interp_frac_temp(lkp.ref_points.t_ref, t_lay)
+-    jfpress = compute_interp_frac_press(lkp.ref_points.ln_p_ref, p_lay, tropo)
++    jfpress =
++        compute_interp_frac_press(lkp.ref_points.ln_p_ref, p_lay, tropo, log_p_lay)
+ 
+     @inbounds kmajor = view(lkp.kmajor, :, :, :, igpt)
+     n_η = size(kmajor, 1)
+@@ -254,6 +260,7 @@ Compute optical thickness, single scattering albedo, and asymmetry parameter.
+     t_lay,
+     glay,
+     gcol,
++    log_p_lay = log(p_lay),
  )
-     nlay, ncol = AtmosphericStates.get_dims(as)
--    tx, bx = _configure_threadblock(ncol)
-+    # 128 threads and a 168-register cap put three blocks on an SM: 12 warps,
-+    # against 8 at the shipped 256/255. ncu measures 0.25 eligible warps per
-+    # scheduler here, so the kernel is latency-bound with nothing to switch to;
-+    # more warps is the direct lever. The 16-warp step (128 registers) was
-+    # tested and lost to rematerialisation, and 12 warps is unreachable with
-+    # 256-thread blocks because two of them need 2*256*168 > 65536 registers.
-+    tx, bx = _configure_threadblock(128, ncol)
-     args = (flux_sw, op, bcs_sw, src_sw, nlay, ncol, as)
--    @cuda always_inline = true threads = (tx) blocks = (bx) rte_sw_2stream_solve_CUDA!(
-+    @cuda always_inline = true maxregs = 168 threads = (tx) blocks = (bx) rte_sw_2stream_solve_CUDA!(
-         args...,
+     τ_major, τ_minor, tropo, vmr_h2o, jftemp, jfη, jfpress = compute_gas_optics_core(
+         lkp,
+@@ -265,6 +272,7 @@ Compute optical thickness, single scattering albedo, and asymmetry parameter.
+         t_lay,
+         glay,
+         gcol,
++        log_p_lay,
      )
-     return nothing
-@@ -71,7 +77,13 @@ function rte_sw_2stream_solve!(
+     # compute Planck fraction
+     @inbounds planck_fraction = view(lkp.planck.planck_fraction, :, :, :, igpt)
+@@ -285,6 +293,7 @@ end
+     t_lay,
+     glay,
+     gcol,
++    log_p_lay = log(p_lay),
  )
-     nlay, ncol = AtmosphericStates.get_dims(as)
-     set_band_flux_to_zero!(band_flux)
--    tx, bx = _configure_threadblock(ncol)
-+    # 128 threads and a 168-register cap put three blocks on an SM: 12 warps,
-+    # against 8 at the shipped 256/255. ncu measures 0.25 eligible warps per
-+    # scheduler here, so the kernel is latency-bound with nothing to switch to;
-+    # more warps is the direct lever. The 16-warp step (128 registers) was
-+    # tested and lost to rematerialisation, and 12 warps is unreachable with
-+    # 256-thread blocks because two of them need 2*256*168 > 65536 registers.
-+    tx, bx = _configure_threadblock(128, ncol)
-     args = (
-         flux,
-         flux_sw,
-@@ -87,7 +99,7 @@ function rte_sw_2stream_solve!(
-         lookup_sw_cld,
-         lookup_sw_aero,
+     τ_major, τ_minor, tropo, vmr_h2o, jftemp, jfη, jfpress = compute_gas_optics_core(
+         lkp,
+@@ -296,6 +305,7 @@ end
+         t_lay,
+         glay,
+         gcol,
++        log_p_lay,
      )
--    @cuda always_inline = true threads = (tx) blocks = (bx) rte_sw_2stream_solve_CUDA!(
-+    @cuda always_inline = true maxregs = 168 threads = (tx) blocks = (bx) rte_sw_2stream_solve_CUDA!(
-         args...,
-     )
-     return nothing
+     # compute τ_Rayleigh
+     @inbounds rayleigh_coeff =
