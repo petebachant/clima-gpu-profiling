@@ -1988,3 +1988,37 @@ That is now three rejected attempts on these kernels, each losing to a different
 mechanism: spill (§4b), rematerialisation (§4k), and here, memory latency on a
 serial chain. The common thread is that the kernel has no spare parallelism to
 absorb any of it.
+
+### 4t. What the short window actually missed, in periods
+
+§4g says the old setup was a 10-step nsys window on a 40-step run and that
+lengthening it reversed the headline result. It never wrote down the period
+arithmetic, which is what tells you *which* processes a window misrepresents.
+Measured from the 120-step profile (`dt = 30 s`):
+
+| process | launches / 120 steps | period | share of GPU kernel time |
+|---|---|---|---|
+| radiation, each of 4 `rte_*_2stream` | 6 | **20 steps** | 36.70% |
+| microphysics cache | — | every step | 13.47% |
+| cloud fraction / diagnostics | — | **120 steps** | 3.04% |
+| gravity waves (all kernels) | — | 20 steps, some every step | **0.66%** |
+
+Two corrections follow.
+
+**The 40-step run was never the problem for radiation.** 40 steps is exactly two
+20-step radiation periods, so radiation is weighted correctly in a 40-step
+window. What misrepresented it was the **10-step nsys window**: against a
+20-step period that catches radiation 0 or 1 times depending on phase, i.e. 0%
+or ~2x its true share. Window length matters relative to each process's period,
+and the profiling window is not the run length.
+
+**Gravity waves were never a reason to lengthen anything.** The benchmark config
+claimed both schemes fire every 1800 s = 60 steps and so never ran in a 40-step
+window. They fire every 20 steps, some components every step, and they are 0.66%
+of GPU kernel time. The comment has been corrected in both arms.
+
+What genuinely requires more than 40 steps is the **120-step** work -- cloud
+fraction and the diagnostics write, 3.04% -- plus diluting first-call
+compilation, which was about half the reported per-step cost on the old window.
+So the nightly extension is still worth having; radiation just was not the
+reason.
