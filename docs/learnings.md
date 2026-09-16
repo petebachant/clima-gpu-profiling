@@ -2086,3 +2086,48 @@ at 1.5x occupancy as well as 2x.
 RELIEVE register demand so occupancy rises on its own, not to cap it: move live
 state and recomputed work off the register file, which ncu says is the saturated
 resource while both compute and memory pipes sit idle (§4u).
+
+### 4w. Idle memory pipes do not make loads cheap on a latency-bound kernel
+
+ncu says these kernels run at 19.89% SM throughput, 9.00% DRAM throughput and an
+85.33% L1 hit rate (§4u). I read that as "the memory system is idle, so moving
+work off the register file onto it is affordable", and tested it by caching
+`log(p_lay)` -- computed once per column-layer in `refresh_transposed_state!`
+instead of ~224 times per layer in the g-point loop.
+
+| | baseline | mod | | null |
+|---|---|---|---|---|
+| longwave | 5688.2 | 5769.9 | **+1.44%** | -0.71% |
+| shortwave | 5019.7 | 5091.0 | **+1.42%** | -0.56% |
+| radiation | 10707.8 | 10860.9 | **+1.43%** | -0.64% |
+
+Worse, and both bands move together as a change in shared gas optics should.
+
+**The inference was wrong.** Low DRAM utilization on a latency-bound kernel does
+not mean there is spare capacity to spend: the pipes are idle *because* the
+kernel is stalled, not because it has room. Adding a load adds latency to the
+dependency chain, and with 0.25 eligible warps per scheduler there is nothing to
+hide it behind. Bandwidth headroom and latency tolerance are different things,
+and only the second one matters here.
+
+ptxas also has `p_lay` as loop-invariant across the g-point loop and can hoist
+the `log` itself, so the arithmetic saving was probably zero to begin with while
+the extra slice cost a load per layer per g-point plus a larger working set.
+
+Five attempts on these kernels now, and the pattern is consistent:
+
+| change | result |
+|---|---|
+| 2 blocks/SM, 128 regs, 16 warps | +3.93% |
+| 128-thread blocks, 168 regs, 12 warps | +2.91% |
+| cache layer coefficients between sweeps | nothing (targeted the 0.1% sweeps) |
+| cache log(p_lay) | +1.43% |
+| binary search in `loc_lower` | **-26.9%** |
+
+The only winner reduced *instruction count on the dependency chain* using
+registers alone -- a linear scan became `ceil(log2(n))` iterations, adding no
+memory traffic and capping no registers. Everything that added a load or forced
+a register budget lost.
+
+**Rule for these kernels: reduce instructions, touch neither memory nor the
+register cap.**
