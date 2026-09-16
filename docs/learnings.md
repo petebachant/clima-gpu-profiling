@@ -2022,3 +2022,41 @@ fraction and the diagnostics write, 3.04% -- plus diluting first-call
 compilation, which was about half the reported per-step cost on the old window.
 So the nightly extension is still worth having; radiation just was not the
 reason.
+
+### 4u. RRTMGP is latency-bound with no divergence, and the 12-warp step was never tested
+
+ncu on `rte_sw_2stream_solve_CUDA` (results/ncu/radiation-details.csv):
+
+| metric | value |
+|---|---|
+| Compute (SM) throughput | 19.89% |
+| DRAM throughput | 9.00% |
+| L1 hit rate | 85.33% |
+| Achieved / theoretical occupancy | 12.40% / 12.50% |
+| Active warps per scheduler | 1.99 of 16 |
+| **Eligible warps per scheduler** | **0.25** |
+| Executed IPC | 0.92 of 4 |
+| **Avg. active threads per warp** | **31.25 of 32** |
+
+Neither compute- nor bandwidth-bound: both pipes sit ~80-90% idle. The kernel is
+latency-bound, and with 2 warps per scheduler of which 0.25 are eligible, ~87% of
+the time both resident warps are stalled with nothing to switch to.
+
+**31.25 of 32 active threads means there is essentially no warp divergence.**
+That retroactively explains every skip experiment on these kernels: the night
+skip was 45.96% warp-coherent and bought -2.63%, and the clear-air analogue in
+microphysics underdelivered too. There was never divergence to recover -- the
+lanes were already doing useful work.
+
+It also reframes memory. DRAM at 9% with an 85% L1 hit rate means reads are
+nearly free here, so trading arithmetic for cached loads is affordable, contrary
+to what §4s suggested. §4s failed because it targeted the vertical sweeps, which
+are 0.1% of RRTMGP time (§4l item 5) -- a targeting error, not evidence about
+the trade.
+
+**The untested lever:** §4k rejected occupancy after testing `blocks_per_sm = 2`,
+which drove registers to 128 for 16 warps/SM and lost to rematerialisation. The
+sm_80 occupancy steps are 255 -> 8 warps, 168 -> 12, 128 -> 16. The 12-warp
+middle step was never tried, and it is the one this project's own notes name as
+the A100 target. At 256-thread blocks it is unreachable (two blocks need
+2x256x168 > 65536 registers); it needs 128-thread blocks, 3 per SM.
