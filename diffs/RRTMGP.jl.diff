@@ -1,0 +1,92 @@
+diff --git a/RRTMGP.jl/ext/cuda/rte_longwave_2stream.jl b/RRTMGP.jl-mod/ext/cuda/rte_longwave_2stream.jl
+index 739c98c..9943798 100644
+--- a/RRTMGP.jl/ext/cuda/rte_longwave_2stream.jl
++++ b/RRTMGP.jl-mod/ext/cuda/rte_longwave_2stream.jl
+@@ -7,9 +7,15 @@ function rte_lw_2stream_solve!(
+     as::GrayAtmosphericState,
+ )
+     nlay, ncol = AtmosphericStates.get_dims(as)
+-    tx, bx = _configure_threadblock(ncol)
++    # 128 threads and a 168-register cap put three blocks on an SM: 12 warps,
++    # against 8 at the shipped 256/255. ncu measures 0.25 eligible warps per
++    # scheduler here, so the kernel is latency-bound with nothing to switch to;
++    # more warps is the direct lever. The 16-warp step (128 registers) was
++    # tested and lost to rematerialisation, and 12 warps is unreachable with
++    # 256-thread blocks because two of them need 2*256*168 > 65536 registers.
++    tx, bx = _configure_threadblock(128, ncol)
+     args = (flux_lw, src_lw, bcs_lw, op, nlay, ncol, as)
+-    @cuda always_inline = true threads = (tx) blocks = (bx) rte_lw_2stream_solve_CUDA!(
++    @cuda always_inline = true maxregs = 168 threads = (tx) blocks = (bx) rte_lw_2stream_solve_CUDA!(
+         args...,
+     )
+     return nothing
+@@ -61,7 +67,13 @@ function rte_lw_2stream_solve!(
+ )
+     nlay, ncol = AtmosphericStates.get_dims(as)
+     set_band_flux_to_zero!(band_flux)
+-    tx, bx = _configure_threadblock(ncol)
++    # 128 threads and a 168-register cap put three blocks on an SM: 12 warps,
++    # against 8 at the shipped 256/255. ncu measures 0.25 eligible warps per
++    # scheduler here, so the kernel is latency-bound with nothing to switch to;
++    # more warps is the direct lever. The 16-warp step (128 registers) was
++    # tested and lost to rematerialisation, and 12 warps is unreachable with
++    # 256-thread blocks because two of them need 2*256*168 > 65536 registers.
++    tx, bx = _configure_threadblock(128, ncol)
+     args = (
+         flux,
+         flux_lw,
+@@ -77,7 +89,7 @@ function rte_lw_2stream_solve!(
+         lookup_lw_cld,
+         lookup_lw_aero,
+     )
+-    @cuda always_inline = true threads = (tx) blocks = (bx) rte_lw_2stream_solve_CUDA!(
++    @cuda always_inline = true maxregs = 168 threads = (tx) blocks = (bx) rte_lw_2stream_solve_CUDA!(
+         args...,
+     )
+     return nothing
+diff --git a/RRTMGP.jl/ext/cuda/rte_shortwave_2stream.jl b/RRTMGP.jl-mod/ext/cuda/rte_shortwave_2stream.jl
+index 5c82ebd..297c3c0 100644
+--- a/RRTMGP.jl/ext/cuda/rte_shortwave_2stream.jl
++++ b/RRTMGP.jl-mod/ext/cuda/rte_shortwave_2stream.jl
+@@ -7,9 +7,15 @@ function rte_sw_2stream_solve!(
+     as::GrayAtmosphericState,
+ )
+     nlay, ncol = AtmosphericStates.get_dims(as)
+-    tx, bx = _configure_threadblock(ncol)
++    # 128 threads and a 168-register cap put three blocks on an SM: 12 warps,
++    # against 8 at the shipped 256/255. ncu measures 0.25 eligible warps per
++    # scheduler here, so the kernel is latency-bound with nothing to switch to;
++    # more warps is the direct lever. The 16-warp step (128 registers) was
++    # tested and lost to rematerialisation, and 12 warps is unreachable with
++    # 256-thread blocks because two of them need 2*256*168 > 65536 registers.
++    tx, bx = _configure_threadblock(128, ncol)
+     args = (flux_sw, op, bcs_sw, src_sw, nlay, ncol, as)
+-    @cuda always_inline = true threads = (tx) blocks = (bx) rte_sw_2stream_solve_CUDA!(
++    @cuda always_inline = true maxregs = 168 threads = (tx) blocks = (bx) rte_sw_2stream_solve_CUDA!(
+         args...,
+     )
+     return nothing
+@@ -71,7 +77,13 @@ function rte_sw_2stream_solve!(
+ )
+     nlay, ncol = AtmosphericStates.get_dims(as)
+     set_band_flux_to_zero!(band_flux)
+-    tx, bx = _configure_threadblock(ncol)
++    # 128 threads and a 168-register cap put three blocks on an SM: 12 warps,
++    # against 8 at the shipped 256/255. ncu measures 0.25 eligible warps per
++    # scheduler here, so the kernel is latency-bound with nothing to switch to;
++    # more warps is the direct lever. The 16-warp step (128 registers) was
++    # tested and lost to rematerialisation, and 12 warps is unreachable with
++    # 256-thread blocks because two of them need 2*256*168 > 65536 registers.
++    tx, bx = _configure_threadblock(128, ncol)
+     args = (
+         flux,
+         flux_sw,
+@@ -87,7 +99,7 @@ function rte_sw_2stream_solve!(
+         lookup_sw_cld,
+         lookup_sw_aero,
+     )
+-    @cuda always_inline = true threads = (tx) blocks = (bx) rte_sw_2stream_solve_CUDA!(
++    @cuda always_inline = true maxregs = 168 threads = (tx) blocks = (bx) rte_sw_2stream_solve_CUDA!(
+         args...,
+     )
+     return nothing
