@@ -13,6 +13,7 @@ julia --project="$REPO_ROOT/ClimaCoupler.jl/$JULIA_PROJECT" -e "
     import Pkg
     Pkg.develop(path=\"./ClimaCore.jl\")
     Pkg.develop(path=\"./ClimaAtmos.jl\")
+    Pkg.develop(path=\"./RRTMGP.jl\")
 "
 
 # Do the same for ClimaCoupler.jl-mod for the -mod suffix submodules.
@@ -22,8 +23,15 @@ julia --project="$REPO_ROOT/ClimaCoupler.jl/$JULIA_PROJECT" -e "
 # drift rode along inside every CM experiment (docs/learnings.md 4i). RRTMGP was
 # too, until the binary search merged upstream (CliMA/RRTMGP.jl#628). Neither is
 # a treatment now, so both arms take the Coupler-pinned versions.
+#
+# RRTMGP is dev'd in BOTH arms from 2026-09-16. The registry pins v1.0.0, which
+# predates the binary search that merged as CliMA/RRTMGP.jl#628, so a stack
+# taking the registry version benchmarks radiation ~27% slower than what the
+# nightly (which installs from main) actually runs. Dev'ing both arms at main
+# fixes the baseline and makes RRTMGP the treatment again.
 julia --project="$REPO_ROOT/ClimaCoupler.jl-mod/$JULIA_PROJECT" -e "
     import Pkg
     Pkg.develop(path=\"./ClimaCore.jl-mod\")
     Pkg.develop(path=\"./ClimaAtmos.jl-mod\")
+    Pkg.develop(path=\"./RRTMGP.jl-mod\")
 "
