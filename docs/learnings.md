@@ -1952,3 +1952,39 @@ arithmetic.
 Consequence: skip-based optimizations for this kernel are capped near 4% and
 the remaining headroom is in register pressure. Do not spend another experiment
 on smarter early-outs here.
+
+### 4s. Caching the longwave layer coefficients buys nothing
+
+`rte_lw_2stream!` evaluates `lw_2stream_coeffs` twice per layer with identical
+arguments -- once per vertical sweep -- and that function holds a `sqrt`, an
+`exp` and an `expm1`. §4k flagged removing the second evaluation as the untried
+lever, since the single-wave structure (§4l) rules out occupancy work and leaves
+per-thread serial cost as the only thing that can move.
+
+Implemented as three extra slices on the existing `leveldata` array: the upward
+sweep stores `Rdif`, `Tdif`, `src_dn`; the downward sweep reads them and no
+longer reads `τ`, `ssa`, `g`. Reads per layer are unchanged at three, the cost is
+three coalesced stores, and the downward sweep ends up with zero transcendentals.
+
+Measured with shortwave as an untouched control:
+
+| | baseline | mod | |
+|---|---|---|---|
+| longwave (treated)   | 5743.7 | 5677.6 | -1.15% |
+| shortwave (control)  | 5055.6 | 5014.2 | -0.82% |
+
+The control moved -0.82% by itself, so the excess is 0.33 points -- and in the
+null run on the same base, longwave-minus-shortwave was already -0.15 points
+with identical code. Indistinguishable from zero. **Rejected.**
+
+Why it should have been expected: these kernels are one thread per column with a
+serial 63-level recurrence, at 255 registers and 12.5% occupancy. There is
+almost nothing to hide memory latency behind, so trading three transcendentals
+(which issue to the SFU pipe and overlap with the dependent FMA chain) for three
+dependent global stores does not help. Arithmetic was not the bottleneck; the
+dependency chain is.
+
+That is now three rejected attempts on these kernels, each losing to a different
+mechanism: spill (§4b), rematerialisation (§4k), and here, memory latency on a
+serial chain. The common thread is that the kernel has no spare parallelism to
+absorb any of it.
