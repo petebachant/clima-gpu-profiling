@@ -125,7 +125,7 @@ for k in (3.0, 10.0)
 end
 CA.ADAPTIVE_QUADRATURE_SIGMA[] = 10.0
 
-results["note"] = "Error from collapsing the SGS quadrature to its centre node " *
+results["note"] = "Error from collapsing the SGS quadrature to its center node " *
     "where |mu_S| > k*sigma_S, measured against the full nine-point rule on a " *
     "real AMIP state. Errors are normalized by each tendency's own RMS over " *
     "the whole field, not pointwise, so near-zero tendencies cannot dominate."

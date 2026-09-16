@@ -34,7 +34,7 @@ SUBSYSTEMS = {
 }
 
 
-def analyse(db_path):
+def analyze(db_path):
     con = sqlite3.connect(str(db_path))
     cur = con.cursor()
     names = {r[0]: r[1] for r in cur.execute("SELECT id, value FROM StringIds")}
@@ -122,7 +122,7 @@ def main():
     for arm in ("baseline", "mod"):
         db = ROOT / "results" / "nsys" / f"{arm}.sqlite"
         if db.exists():
-            out[arm] = analyse(db)
+            out[arm] = analyze(db)
     dest = ROOT / "results" / "kernel-population.json"
     dest.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
 

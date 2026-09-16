@@ -61,7 +61,7 @@ fi
 
 # Two diffs, because the pinned tree answers a different question than "what did
 # we change". `git diff <tree-ish>` against the manifest pin shows the TOTAL
-# delta between the arms, which is what determines behaviour -- but it also
+# delta between the arms, which is what determines behavior -- but it also
 # sweeps in everything upstream landed on CloudMicrophysics main since that
 # release: vendored docs/dev-guides, unrelated src modules, doc plots. That came
 # to 39 files and 1534 insertions against 5 files of actual work, which buried

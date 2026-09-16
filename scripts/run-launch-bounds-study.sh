@@ -9,7 +9,7 @@
 # or device variance, each in its own process so the configuration is set at load
 # time exactly as a real run would set it:
 #
-#   1. off       -- no launch bounds; the baseline arm's behaviour
+#   1. off       -- no launch bounds; the baseline arm's behavior
 #   2. guarded   -- 12 warps/SM target with the shipped 256-byte spill budget
 #   3. unguarded -- same target, but a budget loose enough that nothing is
 #                   rejected. This is the counterfactual: it is the only way to

@@ -181,7 +181,7 @@ precisely why the kernel sits at 255 despite the barrier holding.
 ### A cost model for the kernel
 
 The updraft kernel runs `n_substeps = 3`; each quadrature point runs
-`n_substeps_quadrature = 2`. Normalising the two measured times
+`n_substeps_quadrature = 2`. Normalizing the two measured times
 (3.63 ms and 26.29 ms / 9 = 2.92 ms per point):
 
 ```
@@ -259,7 +259,7 @@ profiled window is not a scaled version of the real one. Any "the GPU idles
 31%, therefore fusion/launch-count work is worth X" argument built on the
 numbers in §2b is unsupported. Kernel *times* from nsys remain trustworthy
 (they are device-side measurements); the *gaps between them* are not a model of
-the real run's host behaviour.
+the real run's host behavior.
 
 The honest ground truth for wall-clock questions is the AMIP stage, and the one
 calibration we have from it is the conversion ratio in §3a: −5.37% GPU kernel
@@ -448,7 +448,7 @@ This retires two open items:
   at 4.7% — but it did carry heavy *local* traffic, and ncu's own memory
   recommendations were all about local loads and stores (0.9 of 32 bytes
   utilized per sector). That traffic is gone, and it was removed by cutting
-  register pressure rather than by any memory optimisation. Spill is downstream
+  register pressure rather than by any memory optimization. Spill is downstream
   of registers; there is no separate memory lever here.
 
 Note the shape of the win: occupancy is *unchanged* at 12.4%. The kernel got
@@ -1050,7 +1050,7 @@ monotonicity check into the measurement**; it is what caught this.
 **A synthetic distribution that sampled only the corner.** The first attempt used
 randomized states with variances far larger than the real field's, so the branch
 fired in 4% of cases — the marginal ones — and reported a 194% relative error on
-tendencies of order 1e-8, a small-denominator artefact. Normalise by the field's
+tendencies of order 1e-8, a small-denominator artefact. Normalize by the field's
 own RMS, and measure on the real state, which is what
 `scripts/measure-adaptive-error.jl` does by calling the real cache function and
 diffing its output rather than reconstructing the kernel's inputs.
@@ -1106,7 +1106,7 @@ duty cycle.
 
 If that is right it matters more than the launch-overhead question ever did:
 **about 40% of long-run wall time would sit in periodic work that the per-step
-kernel optimisation in this project never touches.** The flagship microphysics
+kernel optimization in this project never touches.** The flagship microphysics
 kernel runs every step; radiation does not. Nobody has measured the duty cycle,
 and doing so needs a window of at least 120 steps rather than 12.
 
@@ -1115,7 +1115,7 @@ instruments — a CUDA-event window and the model's own SYPD accounting — and 
 project has repeatedly found that such differences are the instrument rather than
 the model.
 
-## 4g. The optimisation reverses over a realistic window (2026-09-10)
+## 4g. The optimization reverses over a realistic window (2026-09-10)
 
 Every performance result in this project was measured in a 10-step profiling
 window on a 40-step run. Lengthening the window to 120 steps (one simulated
@@ -1133,7 +1133,7 @@ hour, the phase-independent LCM) shows the headline result does not survive.
 | 109–120 | 29.14 | **38.13** | **1.31** |
 
 **Baseline is flat (+6% across the window). The mod arm degrades monotonically,
-crosses parity at launch ~60, and ends 31% SLOWER than the code it optimises.**
+crosses parity at launch ~60, and ends 31% SLOWER than the code it optimizes.**
 
 End to end over one simulated day: **baseline 0.21458 SYPD, mod 0.20111,
 −6.70%** — against +4.72% measured on the old window. Walltime per coupling step
@@ -1142,9 +1142,9 @@ End to end over one simulated day: **baseline 0.21458 SYPD, mod 0.20111,
 ### This is not a configuration error
 
 All four arms ran `dt = 30secs`, `t_end = 86400secs`. The manifests dev the
-optimised packages. The launch-bounds mechanism fired: `top-kernels.csv` records
+optimized packages. The launch-bounds mechanism fired: `top-kernels.csv` records
 255 registers for baseline and 128 for mod, exactly as designed. The
-optimisation is present and working as specified; what it does is not what was
+optimization is present and working as specified; what it does is not what was
 wanted.
 
 ### Probable mechanism, and the reason to distrust the guard
@@ -1165,7 +1165,7 @@ fusion and the evaluator payload have not been ruled out.
 ### What this invalidates
 
 Every SYPD and kernel figure in this project predating 2026-09-10 was measured
-in the first 10 steps of a spin-up, which is the regime where this optimisation
+in the first 10 steps of a spin-up, which is the regime where this optimization
 looks best and is least representative. That includes +1.87%, +4.24%, +8.05%,
 the −7.9% kernel result, and the quadrature-order comparisons. **The A/B
 structure was sound; the window was not.** Re-measurement on the 120-step window
@@ -1174,7 +1174,7 @@ is required before any of those numbers is quoted again.
 The general lesson is sharper than "use a longer window". **A short window at the
 start of a run does not sample a representative state, it samples an
 unrepresentative one — and the direction of the error is not random.** An
-optimisation tuned against early-state behaviour will look best exactly where it
+optimization tuned against early-state behavior will look best exactly where it
 was tuned.
 
 ## 4h. SUPERSEDED — see 4i. The divergence is upstream CloudMicrophysics, not the fusion (2026-09-10)
@@ -1233,7 +1233,7 @@ general.
 
 ### What this invalidates
 
-The fusion is not a pure optimisation and must not be presented as one. Every
+The fusion is not a pure optimization and must not be presented as one. Every
 performance comparison involving it measured two arms solving *different
 problems*, so the attribution of any speedup to the fusion is unsound
 independent of the window issue in §4g.
@@ -1343,7 +1343,7 @@ This is a clean, real, modest result — not a headline.
 ## 4k. Radiation is 43.9% of GPU time, and occupancy is not its lever either (2026-09-11)
 
 Once the profiling window is representative, the target this project has been
-optimising is not the one that matters.
+optimizing is not the one that matters.
 
 | | share of GPU kernel time |
 |---|---|
@@ -1384,7 +1384,7 @@ via CUDA.jl's `blocks_per_sm = 2`:
 
 The reason is visible and differs from the microphysics case: **local memory
 stayed zero in both arms.** ptxas met the 128-register budget by
-*rematerialising* values rather than spilling them, and the recomputation cost
+*rematerializing* values rather than spilling them, and the recomputation cost
 more than the doubled occupancy returned. The 24-warp microphysics rejection
 (§4b) lost to spill; this one loses to recompute. **A register budget can be met
 two ways and both can be losses.**
@@ -1407,7 +1407,7 @@ cheap:
     `nlay × ncol` of traffic against recomputing; at 63 layers neither is
     obviously right, and it is measurable.
   * **Restructure the parallelism.** The sweeps are recursive, so the vertical
-    cannot be parallelised directly, but the optical-property computation that
+    cannot be parallelized directly, but the optical-property computation that
     precedes them may be.
 
 ## 4l. Radiation is one resident wave, so load balancing cannot help (2026-09-11)
@@ -1470,10 +1470,10 @@ top-ranked recommendation has been the wrong lever (§4a, §4b, here).
 The binding constraint is **serial work per thread**: each column loops over
 ~224 spectral g-points, each doing a full optical-property lookup and two
 63-level vertical sweeps. The vertical sweeps are recursive and cannot be
-parallelised, but **the g-point loop is independent** apart from flux
+parallelized, but **the g-point loop is independent** apart from flux
 accumulation.
 
-Parallelising over g-points would give 24,576 × 224 ≈ 5.5M threads — far beyond
+Parallelizing over g-points would give 24,576 × 224 ≈ 5.5M threads — far beyond
 resident capacity, hence many waves, hence throughput-bound rather than
 latency-bound, and load imbalance would finally be absorbable. It needs a
 reduction across g-points for the accumulated fluxes (atomics or a two-pass
@@ -1600,7 +1600,7 @@ had ceilings that were computable in advance and smaller than the noise.
 
 The binding constraint is the number of CloudMicrophysics evaluations:
 **9 quadrature points × 2 substeps = 18 per grid point per call**. That is a
-modelling choice, not a compiler outcome, and it is the only lever large enough
+modeling choice, not a compiler outcome, and it is the only lever large enough
 to clear the benchmark's resolution.
 
 Ordered by preference — ClimaCore first, then ClimaAtmos, then CloudMicrophysics:
@@ -1764,7 +1764,7 @@ baseline so the fusion is held fixed and only the quadrature moves:
 
 **The nine-point quadrature costs 5.45% SYPD** (tagged 2026-09-08; an earlier
 measurement on a slower stack put it at 7.93%, and the difference is the
-optimisation work since). Removing it entirely would put
+optimization work since). Removing it entirely would put
 the flagship run 9.66% above today's baseline.
 
 This is an **upper bound and not a candidate**: `quadrature_order: 1` changes
@@ -1865,7 +1865,7 @@ complaint raised earlier about the CloudMicrophysics diff.
 `make-diffs.sh` now also writes `<repo>-authored.diff` from
 `git diff origin/main...HEAD` in the mod submodule: the branch's own change since
 it diverged. For RRTMGP that is 30 lines in one function. Both are kept, because
-the total delta is what determines behaviour and the authored delta is what gets
+the total delta is what determines behavior and the authored delta is what gets
 proposed upstream.
 
 ### 4p. DVC honours `.dvcignore`, not `.gitignore`
@@ -1985,7 +1985,7 @@ dependent global stores does not help. Arithmetic was not the bottleneck; the
 dependency chain is.
 
 That is now three rejected attempts on these kernels, each losing to a different
-mechanism: spill (§4b), rematerialisation (§4k), and here, memory latency on a
+mechanism: spill (§4b), rematerialization (§4k), and here, memory latency on a
 serial chain. The common thread is that the kernel has no spare parallelism to
 absorb any of it.
 
@@ -2055,7 +2055,7 @@ are 0.1% of RRTMGP time (§4l item 5) -- a targeting error, not evidence about
 the trade.
 
 **The untested lever:** §4k rejected occupancy after testing `blocks_per_sm = 2`,
-which drove registers to 128 for 16 warps/SM and lost to rematerialisation. The
+which drove registers to 128 for 16 warps/SM and lost to rematerialization. The
 sm_80 occupancy steps are 255 -> 8 warps, 168 -> 12, 128 -> 16. The 12-warp
 middle step was never tried, and it is the one this project's own notes name as
 the A100 target. At 256-thread blocks it is unreachable (two blocks need

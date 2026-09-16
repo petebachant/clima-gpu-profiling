@@ -1,5 +1,18 @@
 # Agent instructions
 
+## Use American spelling everywhere
+
+Code comments, commit messages, docs/learnings.md, calkit.yaml answers, PR
+bodies, and replies in the terminal. Write optimization, behavior, analyze,
+center, modeling, normalize, rematerialization, parallelize, labeled --
+not the -ise/-isation/-our/-re forms.
+
+This is a CliMA codebase and the surrounding prose is American; mixed spelling
+in the same file reads as careless. Note that `analysis`, `optimistic`,
+`precise`, `basis` and `emphasis` are the same in both and must not be
+"corrected".
+
+
 In this project we are trying to optimize an AMIP simulation.
 We have submodules for relevant packages, with and without a `-mod` suffix,
 which indicates our modified version used to compare against baseline.
@@ -161,7 +174,7 @@ The additional file drops the primary config's coupler keys back to defaults: on
 2026-09-10 it silently changed `dt` and `dt_cpl` from 30secs to 400secs in all
 four arms, a 13x coarser physics timestep, and invalidated a full pipeline run.
 
-The failure is worth recognising by shape, because the SYPD looked spectacular:
+The failure is worth recognizing by shape, because the SYPD looked spectacular:
 **0.297 -> 2.986, an apparent 10x.** The tell was that *walltime per coupling
 step went UP*, 0.2767 -> 0.3667 s. A real speedup lowers it. Throughput per
 simulated year rose only because 13x fewer steps were being taken per simulated
@@ -216,7 +229,7 @@ numbers it did not contain. The tag was deleted and the measurement redone.
 tag. A check that only confirms the file exists is what let this through.
 
 Editing a stage input after a run makes its stage stale even when the edit
-cannot change behaviour -- a comment rewrite counts. Either re-run before
+cannot change behavior -- a comment rewrite counts. Either re-run before
 tagging or tag the commit that was measured.
 
 ## Push every submodule before pushing the superproject
@@ -293,4 +306,4 @@ written — so counting it would flag every row and mean nothing.
 Iterating dirty is fine and is what the normal loop does. Just commit the
 submodule change before the run whose result you intend to tag. It is also worth
 not editing a stage input while a run is in flight: it invalidates stages
-mid-pass and forces a re-run for a change that may not even affect behaviour.
+mid-pass and forces a re-run for a change that may not even affect behavior.

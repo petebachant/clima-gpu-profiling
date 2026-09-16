@@ -2,7 +2,7 @@
 #
 # The question this answers: SYPD implies ~277 ms per coupler step, while nsys
 # reports ~136 ms of GPU kernel time per step. If that gap is real, roughly half
-# the wall clock is not GPU kernels, and no amount of kernel optimisation can
+# the wall clock is not GPU kernels, and no amount of kernel optimization can
 # reach it -- measured pass-through is 0.43, so even zeroing all kernel time
 # caps out near +43% SYPD.
 #

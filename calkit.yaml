@@ -242,7 +242,7 @@ questions:
 
   - question: >-
       Where does the AMIP simulation's GPU time actually go, and is the
-      microphysics kernel the right thing to optimise?
+      microphysics kernel the right thing to optimize?
     answer: >-
       No. On a representative window, **radiation is 43.9% of GPU kernel time**
       -- four RRTMGP `rte_*_2stream` kernels -- against **10.3%** for
@@ -262,7 +262,7 @@ questions:
       fires its exact long-run share wherever the window starts, so the profile
       needs no offsetting and no reweighting.
 
-      The consequence for this project's results is that the optimisation ceiling
+      The consequence for this project's results is that the optimization ceiling
       was overstated. Even eliminating the microphysics kernel entirely is worth
       ~10% of GPU time; the three code changes together are worth roughly 1-2%
       SYPD, not the +4.24% and +8.05% measured on the old window. The one clean,
@@ -297,7 +297,7 @@ questions:
           ZERO local memory, so the register pressure is genuine demand. Asking
           for two blocks per SM does reach 128 registers and 25% occupancy and
           runs 3.93% SLOWER (tag meas/2026-09-11-radiation-occupancy): ptxas met
-          the budget by rematerialising rather than spilling, and the recompute
+          the budget by rematerializing rather than spilling, and the recompute
           outweighed the occupancy.
 
   - question: >-
@@ -586,7 +586,7 @@ questions:
       floor is not the same as sensitivity. To move SYPD by 5% requires removing
       WORK, not rescheduling it; the binding constraint is 9 quadrature points x
       2 substeps = 18 CloudMicrophysics evaluations per grid point per call,
-      which is a modelling choice rather than a compiler outcome.
+      which is a modeling choice rather than a compiler outcome.
 
       THE MECHANISM IS NOT DISCARDED, IT IS WAITING ON A SUBSTRATE. What is dead
       is occupancy on L1013 at its present register demand, not the occupancy
@@ -710,7 +710,7 @@ questions:
           for the profiled microphysics kernels. This is what establishes the
           kernel as register-limited rather than memory-limited, and the
           register figures are what the occupancy-step arithmetic above is
-          computed from. Pipe utilisation and stall-reason breakdowns are not in
+          computed from. Pipe utilization and stall-reason breakdowns are not in
           this table; they come from the full Nsight Compute report, exported
           via `ncu --import results/ncu/baseline.ncu-rep --page raw --csv`.
 
@@ -868,7 +868,7 @@ questions:
       covariance closure is producing variances far smaller than intended or the
       quadrature is unnecessary at this resolution. Collapsing it to a single
       point is worth 5.45% SYPD and takes the hot kernel down 85%
-      (exp/2026-09-08-quadrature-order-1) -- larger than every code optimisation
+      (exp/2026-09-08-quadrature-order-1) -- larger than every code optimization
       in this project combined.
     # Write-up for the science team; the entrypoint stays one sentence.
     explanation: docs/sgs-quadrature.md
