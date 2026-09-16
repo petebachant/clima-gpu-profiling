@@ -1797,3 +1797,72 @@ stages:
       hash: md5
       md5: 382b86d388769b7fee3b0f1d5edfcee0
       size: 9647044
+  earlyout-hits:
+    cmd: calkit scheduler batch --name earlyout-hits --environment clima --dep 
+      scripts/measure-earlyout-hits.jl --dep ClimaCoupler.jl/src --dep 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml 
+      --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep ClimaCore.jl/ext 
+      --dep ClimaCore.jl/src --dep ClimaAtmos.jl/src --dep 
+      .calkit/env-locks/clima --out results/earlyout-hits.toml --option --gpus=1
+      --option --time=60 -- scripts/run-julia-script.sh 
+      --project=ClimaCoupler.jl/experiments/AMIP 
+      scripts/measure-earlyout-hits.jl --config_file 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml 
+      --out results/earlyout-hits.toml
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaAtmos.jl/src
+      hash: md5
+      md5: 61f97bb862ff21daef012a911538d56e.dir
+      size: 2147952
+      nfiles: 159
+    - path: ClimaCore.jl/ext
+      hash: md5
+      md5: 07146760c58140ea49f457ec08d2c6a6.dir
+      size: 233108
+      nfiles: 28
+    - path: ClimaCore.jl/src
+      hash: md5
+      md5: aa615c0ce7bd474ecf5073533b89c9c6.dir
+      size: 1326664
+      nfiles: 108
+    - path: 
+        ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 7dbcad53bc9080ba1b2d34c4d63f6b35
+      size: 1654
+    - path: ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: 24aa240e60672f95e7602b497c959686
+      size: 122739
+    - path: ClimaCoupler.jl/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: ClimaCoupler.jl/src
+      hash: md5
+      md5: 4fd4d056bc6e2db9d648fa394cb61f4d.dir
+      size: 309290
+      nfiles: 22
+    - path: scripts/measure-earlyout-hits.jl
+      hash: md5
+      md5: 47a62e1a37acc1c4db8b6250ce9d0cdc
+      size: 7251
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: a61880cfce301ad9069fbaddfa8d5ad5
+      size: 1033
+    outs:
+    - path: .calkit/scheduler/logs/earlyout-hits.out
+      hash: md5
+      md5: 32331d1cf7c483c96e09560d8a13fb4e
+      size: 32542
+    - path: results/earlyout-hits.toml
+      hash: md5
+      md5: 71feb5dc8020c7fa4cf50ad34aa3155d
+      size: 292

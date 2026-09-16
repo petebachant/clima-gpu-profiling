@@ -1924,3 +1924,31 @@ cleaned copy is only ever hashed, never executed.
 Worth noting what the three causes had in common: all were invisible locally and
 appeared only on another clone. `calkit status` on the machine that ran the
 pipeline cannot detect any of them.
+
+### 4r. The microphysics cache kernel is not bound by microphysics
+
+The clear-air early-out fell from -21.5% (2026-08-23) to -3.27% on current main
+with the kernel the same size, so the obvious suspect was upstream #4779's
+refit of `λ_lagrange` leaving tiny nonzero condensate where the bit-for-bit
+guard needs exact zero. Measured over 13,934,592 quadrature points
+(results/earlyout-hits.toml), that is wrong:
+
+  guard fires                      88.31%   (was 77.7% in August -- MORE, not less)
+  CM returns all-zero anyway       90.62%   <- ceiling for any skip
+  condensate exactly zero          88.31%
+  condensate in (0, 1e-10]          0.36%   <- a threshold version buys this
+
+So the hit rate is not the problem. Skipping the CloudMicrophysics call at
+88.31% of points makes the kernel 3.27% faster, which bounds that call at
+~3.7% of the kernel's cost. The other ~96% is the quadrature machinery, the
+per-point saturation call, and -- on a kernel already known to run at 255
+registers with 24.5% spill -- moving data.
+
+That explains the ordering that otherwise makes no sense: slimming the
+evaluator struct (472 B -> 40 B) is worth -4.2%, MORE than skipping 88% of the
+physics. The kernel is bound by register pressure and memory traffic, not
+arithmetic.
+
+Consequence: skip-based optimizations for this kernel are capped near 4% and
+the remaining headroom is in register pressure. Do not spend another experiment
+on smarter early-outs here.
