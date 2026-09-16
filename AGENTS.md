@@ -168,6 +168,37 @@ simulated year rose only because 13x fewer steps were being taken per simulated
 hour -- a different, coarser problem, not a faster solution to the same one.
 **When SYPD and per-step walltime move the same direction, the timestep changed.**
 
+## Never accumulate in a top-level Julia loop
+
+`count += 1` inside a `for` at top level creates a *new local*, so the loop dies
+with `UndefVarError` on the first iteration. Julia warns about it, but only
+after the job has already started, which on this cluster means the failure costs
+a GPU reservation and ~10 minutes of model warmup.
+
+This has now bitten four separate measurement scripts. Always put the
+accumulation in a function and return the counts:
+
+```julia
+function tally(args...)
+    n = 0
+    for ... ; n += 1 ; end
+    return (; n)
+end
+(; n) = tally(args...)
+```
+
+Measurement scripts are the usual victims because they are written quickly and
+run once. Run them for a single step locally before submitting if possible.
+
+## A package the arms do not dev cannot be imported by name
+
+`import CloudMicrophysics...` worked only while CM was dev'd in the mod arm.
+After the 2026-09-14 re-baseline neither arm devs it, so it is in the AMIP
+manifest but not in `Project.toml`, and importing it fails. Reach such a package
+through one that *is* a direct dependency -- `CA.BMT`, `CA.TD` -- rather than
+adding it to the environment, which would change the manifest and invalidate
+every profiling stage.
+
 ## A tag is only meaningful if the whole pipeline is green at it
 
 Before tagging, run `calkit status` and confirm no stale stages. Running one
