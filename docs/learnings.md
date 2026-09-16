@@ -2060,3 +2060,29 @@ sm_80 occupancy steps are 255 -> 8 warps, 168 -> 12, 128 -> 16. The 12-warp
 middle step was never tried, and it is the one this project's own notes name as
 the A100 target. At 256-thread blocks it is unreachable (two blocks need
 2x256x168 > 65536 registers); it needs 128-thread blocks, 3 per SM.
+
+### 4v. Occupancy via register capping loses at every step
+
+§4k rejected occupancy after one test at 16 warps. §4u noted the 12-warp middle
+step had never been tried and is the one this project's own notes name as the
+A100 target. Tried it: 128-thread blocks with `maxregs = 168`, three blocks per
+SM.
+
+| register cap | warps/SM | radiation |
+|---|---|---|
+| 255 (shipped) | 8 | baseline |
+| 168 | 12 | **+2.91%** |
+| 128 (§4k) | 16 | **+3.93%** |
+
+Null bands on the same base: radiation -0.64%, longwave -0.71%, shortwave
+-0.56%. Both caps are far outside them, and shortwave alone is +4.08%.
+
+The response is monotonic: the harder the cap, the worse the result. ptxas meets
+a register budget by rematerializing rather than spilling (local memory stayed
+zero in §4k), and the recomputation costs more than the extra warps return --
+at 1.5x occupancy as well as 2x.
+
+**Occupancy is closed as a lever on these kernels.** The remaining route is to
+RELIEVE register demand so occupancy rises on its own, not to cap it: move live
+state and recomputed work off the register file, which ncu says is the saturated
+resource while both compute and memory pipes sit idle (§4u).
