@@ -1,5 +1,25 @@
 # Agent instructions
 
+## Assert that every scripted edit matched
+
+`str.replace()` returns the string unchanged when the pattern is absent, so a
+scripted edit that misses leaves the file half-modified and silently wrong.
+
+On 2026-09-16 a signature rewrite in `compute_interp_frac_press` did not match
+(the pattern assumed a multi-line signature; the file had it on one line) while
+the edits to the body DID match. The function then took a struct in a parameter
+named for an array and referenced an undefined variable. It parsed fine, and
+failed 40 minutes later on the GPU with `InvalidIRError: unsupported dynamic
+function invocation (call to length)`. That was the third failed launch of one
+experiment.
+
+    assert s.count(old) == 1, f"pattern matched {s.count(old)} times"
+    s = s.replace(old, new, 1)
+
+Assert on every replacement, and after a multi-part edit verify each piece is
+present before submitting a job. A parse check is not enough -- the file above
+parsed.
+
 ## Use American spelling everywhere
 
 Code comments, commit messages, docs/learnings.md, calkit.yaml answers, PR
