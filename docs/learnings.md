@@ -2237,3 +2237,41 @@ launch API cost alone -- Julia-side work between broadcasts is in there too.
 Fusing reduces the count; it does not necessarily remove all of the per-gap cost.
 The honest claim is that launch count and host gap time are proportional, not
 that fusion recovers 11.8 us per removed launch.
+
+### 6a. A kernel launch costs ~18.5 us of host time, measured as a slope
+
+The 11.8 us mean inter-kernel gap could not be used to predict what fusion would
+recover, because it mixes CUDA launch cost with genuine Julia work between
+broadcasts. Measured directly instead, by adding a known number of trivial
+launches per step and taking the slope:
+
+| | baseline | +1000 launches/step | delta |
+|---|---|---|---|
+| launches | 396,122 | 516,122 | +120,000 |
+| GPU busy | 29,350 ms | 30,219 ms | +869 ms |
+| host gap (<1 ms) | 4,656 ms | 6,877 ms | +2,222 ms |
+
+**Marginal host cost per launch: 18.5 us**, and 25.8 us of wall time once the
+added GPU work is counted. The marginal cost EXCEEDS the mean gap, which means
+the host cannot queue launches as fast as the GPU drains them even for a 7.2 us
+copy: the host is the limiter, not the device.
+
+That is far above a bare CUDA launch (~5 us), so most of it is Julia-side
+broadcast machinery -- the same category as the `cufunction`-per-launch problem
+in §5, where per-launch host cost went 6.95 -> 11.47 us and cost ~19% SYPD.
+
+### What it is worth
+
+Halving the 396,122 launches saves ~3,667 ms over 120 steps = **30.6 ms/step**,
+about **10.8% of a ~284 ms step**. For comparison, radiation is 36.5% of kernel
+time and has no available win after eight attempts (4x), and the microphysics
+cache kernel win was +0.5% SYPD.
+
+Sub-25 us kernels are 52.6% of launches and 7.9% of GPU work. Fusing that band
+alone, if it collapsed 4:1, would remove ~156,000 launches: ~2,900 ms over 120
+steps, ~8.5% of step time.
+
+**Caveat**: the probe adds launches in a tight loop, where nothing overlaps
+them. Real launches may overlap slightly better, so 18.5 us is an upper bound on
+what each removed launch returns. The direction and order of magnitude are not
+in doubt.
