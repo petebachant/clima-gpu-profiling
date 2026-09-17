@@ -2275,3 +2275,43 @@ steps, ~8.5% of step time.
 them. Real launches may overlap slightly better, so 18.5 us is an upper bound on
 what each removed launch returns. The direction and order of magnitude are not
 in doubt.
+
+### 6b. 14.4 million driver calls asking which context we are in
+
+The 18.51 us marginal host cost per launch (§6a) decomposes from the profile's
+CUDA runtime table:
+
+| | calls per launch | us per launch |
+|---|---|---|
+| `cuLaunchKernel` | 1.0 | 8.19 |
+| **`cuCtxGetId`** | **25.5** | 3.44 |
+| **`cuStreamGetCaptureInfo`** | **10.8** | 1.85 |
+| memory ops | — | ~1.0 |
+| Julia broadcast machinery | — | ~4.0 (residual) |
+
+CUDA.jl asks the driver which context it is in **25 times per kernel launch**,
+and whether a graph capture is active **11 times per launch**. Over the window
+that is **14,389,192 calls costing 2,094 ms = 17.5 ms/step = 6.1% of a 284 ms
+step**, and it computes nothing.
+
+This is per-launch overhead, so it is additive with fusion rather than an
+alternative to it: fusing halves the count, and cutting the per-launch queries
+makes every remaining launch cheaper.
+
+The environment pins **CUDA.jl 5.11.3**; 6.4.0 is current. Whether the newer
+version reduces these queries is unknown and is the cheapest thing to check
+next, since it needs no code change -- only a manifest bump in one arm.
+
+Precedent from §5: a per-launch host cost regression of 6.95 -> 11.47 us (a
+`cufunction` call per launch, to build a cache key) cost ~19% SYPD. Per-launch
+host cost in this stack has a large SYPD lever attached to it.
+
+**Where this leaves the search for non-science optimizations**, in order of
+measured value:
+
+| target | worth | needs |
+|---|---|---|
+| per-launch driver queries | ~6% of step time | CUDA.jl bump or upstream fix |
+| halving launch count by fusion | ~10.8% of step time | mechanical `@fused_direct` work |
+| radiation kernels | nothing available | 4 attempts, all rejected |
+| microphysics cache kernel | +0.5% SYPD | done, tagged |
