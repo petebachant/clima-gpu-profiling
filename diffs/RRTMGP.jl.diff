@@ -1,8 +1,8 @@
 diff --git a/RRTMGP.jl/src/optics/LookUpTables.jl b/RRTMGP.jl-mod/src/optics/LookUpTables.jl
-index 4f054ee..6bb5759 100644
+index 4f054ee..9f48c37 100644
 --- a/RRTMGP.jl/src/optics/LookUpTables.jl
 +++ b/RRTMGP.jl-mod/src/optics/LookUpTables.jl
-@@ -67,10 +67,24 @@ lookup table.
+@@ -67,10 +67,29 @@ lookup table.
  - `vmr_ref`: Reference volume mixing ratios used by the lookup table
    `(2, n_gases, n_t_ref)`.
  """
@@ -18,8 +18,13 @@ index 4f054ee..6bb5759 100644
 +    inv_Δ_t_ref::FT
 +end
 +function ReferencePoints(ln_p_ref, t_ref, vmr_ref)
-+    inv_Δ_ln_p_ref = inv(ln_p_ref[1] - ln_p_ref[2])
-+    inv_Δ_t_ref = inv(t_ref[2] - t_ref[1])
++    # Copy the two leading entries to the host first: these arrays already live
++    # on the device by the time the lookup tables are built, and indexing them
++    # directly is a scalar-indexing error.
++    lnp = Array(view(ln_p_ref, 1:2))
++    tref = Array(view(t_ref, 1:2))
++    inv_Δ_ln_p_ref = inv(lnp[1] - lnp[2])
++    inv_Δ_t_ref = inv(tref[2] - tref[1])
 +    return ReferencePoints{
 +        typeof(ln_p_ref),
 +        typeof(vmr_ref),
