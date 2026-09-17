@@ -2131,3 +2131,53 @@ a register budget lost.
 
 **Rule for these kernels: reduce instructions, touch neither memory nor the
 register cap.**
+
+### 4x. Reciprocal multiplies in the gas optics: not significant
+
+The interpolation divides by the reference grid spacings four times per layer per
+g-point, and both spacings are constants the loader already computes.
+`ReferencePoints` was given their reciprocals so the inner loop multiplies --
+the one shape that has worked here (fewer instructions, no added memory, no
+register cap).
+
+| | baseline | mod | | null | excess |
+|---|---|---|---|---|---|
+| longwave | 5688.2 | 5646.4 | -0.73% | -0.71% | 0.02 |
+| shortwave | 5019.7 | 4952.5 | -1.34% | -0.56% | 0.78 |
+| radiation | 10707.8 | 10598.9 | -1.02% | -0.64% | 0.38 |
+
+Longwave lands exactly on its null. Radiation's 0.38-point excess is inside the
+per-kernel null spread (-0.24% to -0.87%). **Rejected** -- and it was never free:
+`a*(1/b)` is not bit-identical, and both quotients feed `unsafe_trunc` to choose
+a table cell, so a last-bit difference can select a different cell.
+
+Probable reason it did nothing: ptxas already hoists these divides. Both
+divisors are loop-invariant across layers AND g-points, so the division is
+computed once per kernel regardless, and only the multiply remained in the loop
+either way.
+
+**Comparing by kernel name breaks when a type parameter changes.** Adding `FT`
+to `ReferencePoints` changed the mangled symbol, so `top-kernels.csv` showed the
+radiation kernels with a baseline column and an empty mod column -- the join
+silently found no match. The numbers above come from aggregating the profiles by
+symbol prefix. Any change to a type that appears in a kernel signature has this
+effect, and an empty column is easy to mistake for a missing kernel.
+
+### The RRTMGP ledger
+
+| attempt | mechanism | result |
+|---|---|---|
+| binary search in `loc_lower` | fewer instructions | **-26.9%** (merged upstream) |
+| night-column skip | skip work | -2.63% |
+| 64-thread blocks | scheduling | nothing |
+| 2 blocks/SM, 128 regs, 16 warps | cap registers | +3.93% |
+| 128-thread blocks, 168 regs, 12 warps | cap registers | +2.91% |
+| cache layer coefficients between sweeps | add memory | nothing (hit the 0.1% sweeps) |
+| cache log(p_lay) | add memory | +1.43% |
+| reciprocal multiplies | fewer instructions | not significant |
+
+One win, and it came from removing a genuinely redundant O(n) scan. Everything
+since has been scheduling, register budgets, caching, or arithmetic the compiler
+was already handling. The kernel is latency-bound at 0.25 eligible warps per
+scheduler with no divergence to recover (§4u) and occupancy hard-capped by real
+register demand. **Further gains need the algorithm to change, not the code.**
