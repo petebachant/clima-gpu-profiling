@@ -1,0 +1,110 @@
+diff --git a/RRTMGP.jl/src/optics/LookUpTables.jl b/RRTMGP.jl-mod/src/optics/LookUpTables.jl
+index 4f054ee..6bb5759 100644
+--- a/RRTMGP.jl/src/optics/LookUpTables.jl
++++ b/RRTMGP.jl-mod/src/optics/LookUpTables.jl
+@@ -67,10 +67,24 @@ lookup table.
+ - `vmr_ref`: Reference volume mixing ratios used by the lookup table
+   `(2, n_gases, n_t_ref)`.
+ """
+-struct ReferencePoints{RD1, RD3}
++struct ReferencePoints{RD1, RD3, FT}
+     ln_p_ref::RD1
+     t_ref::RD1
+     vmr_ref::RD3
++    # Reciprocals of the (uniform) reference grid spacings. The gas optics
++    # divides by these once per layer per g-point in four places; holding the
++    # reciprocals turns those divides into multiplies.
++    inv_Δ_ln_p_ref::FT
++    inv_Δ_t_ref::FT
++end
++function ReferencePoints(ln_p_ref, t_ref, vmr_ref)
++    inv_Δ_ln_p_ref = inv(ln_p_ref[1] - ln_p_ref[2])
++    inv_Δ_t_ref = inv(t_ref[2] - t_ref[1])
++    return ReferencePoints{
++        typeof(ln_p_ref),
++        typeof(vmr_ref),
++        typeof(inv_Δ_t_ref),
++    }(ln_p_ref, t_ref, vmr_ref, inv_Δ_ln_p_ref, inv_Δ_t_ref)
+ end
+ Adapt.@adapt_structure ReferencePoints
+ 
+diff --git a/RRTMGP.jl/src/optics/gas_optics.jl b/RRTMGP.jl-mod/src/optics/gas_optics.jl
+index bf6757b..273867b 100644
+--- a/RRTMGP.jl/src/optics/gas_optics.jl
++++ b/RRTMGP.jl-mod/src/optics/gas_optics.jl
+@@ -80,37 +80,36 @@ function compute_relative_humidity_kernel!(
+ end
+ 
+ """
+-    compute_interp_frac_temp(t_ref, t_lay)
++    compute_interp_frac_temp(ref_points, t_lay)
+ 
+ Compute interpolation fraction for temperature.
+ """
+-@inline function compute_interp_frac_temp(t_ref, t_lay)
+-    @inbounds Δ_t_ref = t_ref[2] - t_ref[1]
++@inline function compute_interp_frac_temp(ref_points, t_lay)
++    (; t_ref, inv_Δ_t_ref) = ref_points
+     n_t_ref = length(t_ref)
+-    @inbounds jtemp = loc_lower(t_lay, Δ_t_ref, n_t_ref, t_ref)
+-    @inbounds ftemp = (t_lay - t_ref[jtemp]) / Δ_t_ref
++    @inbounds jtemp = loc_lower_inv(t_lay, inv_Δ_t_ref, n_t_ref, t_ref)
++    @inbounds ftemp = (t_lay - t_ref[jtemp]) * inv_Δ_t_ref
+     return (jtemp, ftemp)
+ end
+ 
+ """
+-    compute_interp_frac_press(ln_p_ref, p_lay, tropo)
++    compute_interp_frac_press(ref_points, p_lay, tropo)
+ 
+ Compute interpolation fraction for pressure.
+ """
+ @inline function compute_interp_frac_press(ln_p_ref, p_lay, tropo)
+-    @inbounds Δ_ln_p_ref = ln_p_ref[1] - ln_p_ref[2]
+     n_p_ref = length(ln_p_ref)
+     log_p_lay = log(p_lay)
+     @inbounds jpress = Int(
+         min(
+             max(
+-                unsafe_trunc(Int, (ln_p_ref[1] - log_p_lay) / Δ_ln_p_ref) + 1,
++                unsafe_trunc(Int, (ln_p_ref[1] - log_p_lay) * inv_Δ_ln_p_ref) + 1,
+                 1,
+             ),
+             n_p_ref - 1,
+         ) + 1,
+     )
+-    @inbounds fpress = (ln_p_ref[jpress - 1] - log_p_lay) / Δ_ln_p_ref
++    @inbounds fpress = (ln_p_ref[jpress - 1] - log_p_lay) * inv_Δ_ln_p_ref
+     return (jpress + tropo - 1, fpress)
+ end
+ 
+@@ -189,8 +188,8 @@ end
+     # volume mixing ratio of h2o
+     vmr_h2o = get_vmr(vmr, lkp.idx_h2o, glay, gcol)
+ 
+-    jftemp = compute_interp_frac_temp(lkp.ref_points.t_ref, t_lay)
+-    jfpress = compute_interp_frac_press(lkp.ref_points.ln_p_ref, p_lay, tropo)
++    jftemp = compute_interp_frac_temp(lkp.ref_points, t_lay)
++    jfpress = compute_interp_frac_press(lkp.ref_points, p_lay, tropo)
+ 
+     @inbounds kmajor = view(lkp.kmajor, :, :, :, igpt)
+     n_η = size(kmajor, 1)
+diff --git a/RRTMGP.jl/src/optics/optics_utils.jl b/RRTMGP.jl-mod/src/optics/optics_utils.jl
+index 90b1c7f..fd3ee7b 100644
+--- a/RRTMGP.jl/src/optics/optics_utils.jl
++++ b/RRTMGP.jl-mod/src/optics/optics_utils.jl
+@@ -4,6 +4,14 @@
+ 
+ Return the location of the left (lower) point of the interval in which `xi` is located in vector `x`, assuming uniform `Δx`.
+ """
++# `inv_Δx` variant: the caller holds the reciprocal of the uniform spacing, so
++# this multiplies where the four-argument form divides.
++@inline function loc_lower_inv(xi, inv_Δx, n, x)
++    @inbounds xi ≤ x[1] && return 1
++    @inbounds xi >= x[n] && return n - 1
++    return @inbounds min(unsafe_trunc(Int, (xi - x[1]) * inv_Δx) + 1, n - 1)
++end
++
+ @inline function loc_lower(xi, Δx, n, x)
+     @inbounds xi ≤ x[1] && return 1
+     @inbounds xi >= x[n] && return n - 1
