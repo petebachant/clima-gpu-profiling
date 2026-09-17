@@ -2181,3 +2181,59 @@ since has been scheduling, register budgets, caching, or arithmetic the compiler
 was already handling. The kernel is latency-bound at 0.25 eligible warps per
 scheduler with no divergence to recover (§4u) and occupancy hard-capped by real
 register demand. **Further gains need the algorithm to change, not the code.**
+
+## 6. The GPU is idle 40% of a step, and it is not the kernels' fault
+
+Every experiment in this project so far has optimized kernel time. Kernel time is
+not what the simulation is waiting on.
+
+From `results/nsys/baseline.sqlite`, 120 steps:
+
+| | |
+|---|---|
+| kernel launches | 396,122 (**3,301 per step**) |
+| GPU busy | 29,350 ms (245 ms/step) |
+| host time between kernels | 4,674 ms (39 ms/step) |
+| **launch overhead share of step time** | **14%** |
+| mean gap between kernels | 11.8 us |
+| mean kernel duration | 74 us |
+
+Utilization over the whole captured span is 33.9%, but that includes JIT and a
+20-second output phase; over the stepping windows it is 60-70%. The remaining
+30-40% is host-side time between kernels.
+
+### Half the launches cost more host time than GPU time
+
+| kernel duration | launches | share | GPU ms | host ms |
+|---|---|---|---|---|
+| < 25 us | **208,420** | **52.6%** | 2,305 | ~2,460 |
+| 25-100 us | 164,838 | 41.6% | 8,211 | ~1,945 |
+| > 100 us | 22,864 | 5.8% | 18,835 | ~270 |
+
+Sub-25us kernels are over half of all launches, produce 7.9% of the GPU work, and
+cost more in host time than they produce. The gap (11.8 us) exceeds the duration
+of every kernel in that band.
+
+Biggest producers, launches per step:
+
+    set_covariance_cache_and_cloud_fraction   142/step at 10.3 us
+    copy_ (ClimaCore Fields broadcast)        105/step at  6.3 us
+    compute_jacobian                           54/step at  9.6 us
+    ClimaDiagnostics compute_field             47/step at 18.5 us
+    single_field_solve                         47/step at  6.8 us
+
+### Why this reframes the project
+
+Radiation is 36.5% of GPU kernel time, so a 10% cut there is 3.7% of GPU time and
+about 3% of step time. Launch overhead is 14% of step time *today*, needs no
+science review, and halving the launch count is worth roughly 7%.
+
+It also explains the Amdahl ceiling that kept appearing: the microphysics work
+was -7.49% on its kernel and about +0.5% SYPD, because kernel time is only ~86%
+of step time and that kernel is 13% of kernel time.
+
+**Note on the 11.8 us figure**: it is host time between kernels, not the CUDA
+launch API cost alone -- Julia-side work between broadcasts is in there too.
+Fusing reduces the count; it does not necessarily remove all of the per-gap cost.
+The honest claim is that launch count and host gap time are proportional, not
+that fusion recovers 11.8 us per removed launch.
