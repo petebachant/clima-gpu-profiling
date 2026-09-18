@@ -1,0 +1,66 @@
+{
+  "small_kernel_threshold_us": 25,
+  "launches": 516122,
+  "gpu_busy_ms": 30219.2,
+  "host_gap_ms": 6877.4,
+  "gap_count": 515523,
+  "mean_gap_us": 13.34,
+  "sub25us_kernel_kinds": 250,
+  "sub25us_launches": 328420,
+  "api": {
+    "cuStreamSynchronize": {
+      "calls": 2266,
+      "ms": 16132.7,
+      "calls_per_launch": 0.0,
+      "us_per_launch": 31.26
+    },
+    "cuLaunchKernel": {
+      "calls": 516122,
+      "ms": 4085.5,
+      "calls_per_launch": 1.0,
+      "us_per_launch": 7.92
+    },
+    "cuCtxGetId": {
+      "calls": 11558816,
+      "ms": 1692.5,
+      "calls_per_launch": 22.4,
+      "us_per_launch": 3.28
+    },
+    "cuStreamGetCaptureInfo": {
+      "calls": 4750378,
+      "ms": 758.2,
+      "calls_per_launch": 9.2,
+      "us_per_launch": 1.47
+    },
+    "cuMemAlloc_v2": {
+      "calls": 6228,
+      "ms": 295.5,
+      "calls_per_launch": 0.01,
+      "us_per_launch": 0.57
+    },
+    "cuMemFree_v2": {
+      "calls": 5457,
+      "ms": 114.0,
+      "calls_per_launch": 0.01,
+      "us_per_launch": 0.22
+    },
+    "cuMemcpyDtoHAsync_v2": {
+      "calls": 316,
+      "ms": 58.6,
+      "calls_per_launch": 0.0,
+      "us_per_launch": 0.11
+    },
+    "cuMemsetD32Async": {
+      "calls": 4234,
+      "ms": 52.2,
+      "calls_per_launch": 0.01,
+      "us_per_launch": 0.1
+    }
+  },
+  "source": {
+    "description": "nsys profile of the mod arm carrying the launch-cost probe: 1000 extra trivial broadcasts per step, added to ClimaAtmos set_covariance_cache_and_cloud_fraction!.",
+    "probe_launches_added_per_call": 1000,
+    "dvc_md5": "f2643058e2315825bfd79ac1e1ff3710",
+    "note": "The profile is transient: results/nsys/mod.sqlite is overwritten by the next experiment, and making it a stage dependency causes the pipeline to regenerate it WITHOUT the probe. Its statistics are committed here so the marginal-cost figures stay reproducible."
+  }
+}

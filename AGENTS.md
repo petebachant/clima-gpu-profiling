@@ -1,5 +1,40 @@
 # Agent instructions
 
+## Numbers in prose must be injected, not typed
+
+A figure in `docs/`, `calkit.yaml` answers, or a commit message must come from a
+file the pipeline produced. `docs/learnings.md` accumulated dozens of hand-typed
+numbers that nothing could check, which is how a published tag ended up citing
+figures its own results file did not contain.
+
+The mechanism is calkit's Markdown stage. The analysis lives in an annotated
+code block that writes a JSON output, and the prose refers to it by key:
+
+```md
+The marginal cost is <!-- calkit value key=marginal.host_us_per_launch
+path=results/launch-overhead.json -->18.51<!-- /calkit value --> us.
+```
+
+Values are rewritten from the results file on every run, so the prose cannot
+drift from the calculation, and the rendered numbers stay visible in Git.
+`docs/experiments/launch-overhead.md` is the worked example.
+
+One experiment, one document under `docs/experiments/`, registered as a
+`kind: markdown` stage and cited from a `calkit.yaml` question so
+`scripts/verify-evidence.py` checks it. `docs/learnings.md` keeps the reasoning
+and links to those documents; it should stop carrying figures of its own.
+
+### A transient artifact cannot be a stage dependency
+
+`results/nsys/mod.sqlite` holds whichever experiment ran last. The launch-cost
+probe measured it, and making it an input to the write-up caused the pipeline to
+regenerate the mod profile WITHOUT the probe, destroying the measurement --- and
+the recovered figures came from a cache file whose `dvc.lock` entry had never
+been committed.
+
+When an experiment's artifact is transient, commit its derived statistics as
+their own small results file (`results/launch-probe.json`) and depend on that.
+
 ## Assert that every scripted edit matched
 
 `str.replace()` returns the string unchanged when the pattern is absent, so a

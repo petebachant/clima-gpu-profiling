@@ -594,8 +594,8 @@ stages:
       nfiles: 100
     - path: ClimaAtmos.jl-mod/src
       hash: md5
-      md5: 1bf4b11b74ebcfb043fdcc4c270be51f.dir
-      size: 2148722
+      md5: 61f97bb862ff21daef012a911538d56e.dir
+      size: 2147952
       nfiles: 159
     - path: ClimaCore.jl-mod/ext
       hash: md5
@@ -656,16 +656,16 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/mod-nsys.out
       hash: md5
-      md5: 05e0bd9148815c58fb2824372f852c6d
-      size: 177464
+      md5: 554746bf0c4495ad087b4e3231f344d1
+      size: 232757
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: b82e6c00440d60038cf3cda38a6b7f07
-      size: 334394805
+      md5: 18997c03bfb82190b8ff7fe113b0aac7
+      size: 294410995
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: f2643058e2315825bfd79ac1e1ff3710
-      size: 776851456
+      md5: 6a7b58a7ecfae75ab9f35acc6b59d301
+      size: 682573824
   mod-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep -t sqlite
       -o results/nsys/mod.sqlite"'
@@ -1866,3 +1866,33 @@ stages:
       hash: md5
       md5: 71feb5dc8020c7fa4cf50ad34aa3155d
       size: 292
+  launch-overhead-doc/measure:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/experiments/launch-overhead.md/measure.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: cd569ef50836446fc837bb706d220836.dir
+      size: 2090
+      nfiles: 2
+    - path: .calkit/markdown/docs/experiments/launch-overhead.md/measure.py
+      hash: md5
+      md5: 78ee5fa85722c1c71641726a91d670e2
+      size: 1127
+    - path: results/launch-probe.json
+      hash: md5
+      md5: 899e47e1c1a834952538864f84317361
+      size: 1872
+    - path: results/nsys/baseline.sqlite
+      hash: md5
+      md5: 90619ebd078d8d5db90ec700eef65fac
+      size: 679768064
+    - path: scripts/measure_launch_overhead.py
+      hash: md5
+      md5: b90ea38b46d64278d0e5316ca3d4d51f
+      size: 4197
+    outs:
+    - path: results/launch-overhead.json
+      hash: md5
+      md5: 20e6a13dc79855c5a8d5618214b2ee5e
+      size: 3755
