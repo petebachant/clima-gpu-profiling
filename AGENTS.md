@@ -24,6 +24,20 @@ One experiment, one document under `docs/experiments/`, registered as a
 `scripts/verify-evidence.py` checks it. `docs/learnings.md` keeps the reasoning
 and links to those documents; it should stop carrying figures of its own.
 
+### Keep value markers inline, one sentence per line
+
+A `<!-- calkit value ... -->` that starts a line ends the paragraph and opens an
+HTML block, so the rendered preview breaks apart and the document becomes hard
+to read. The markers are long, which makes wrapping a sentence around them the
+natural thing to do, and it is wrong.
+
+Write one sentence per line and let the line run long. No line may begin with a
+marker. `docs/experiments/launch-overhead.md` is the worked example.
+
+Values are re-injected on every `calkit run`, even when the stage itself is
+skipped as unchanged --- verified by corrupting a value and watching it be
+rewritten. So the prose cannot drift even between runs of the analysis.
+
 ### Freeze an experiment's document on main, leave it live at its tag
 
 An experiment's document is generated from artifacts that the next experiment
