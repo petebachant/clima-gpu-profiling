@@ -38,6 +38,29 @@ Values are re-injected on every `calkit run`, even when the stage itself is
 skipped as unchanged --- verified by corrupting a value and watching it be
 rewritten. So the prose cannot drift even between runs of the analysis.
 
+### An experiment document declares its own profiling stages
+
+Copy `docs/experiments/TEMPLATE.md`. The document declares the nsys runs it
+needs, writing to `results/experiments/<slug>/`, so the experiment owns every
+artifact it cites. Nothing is shared, so nothing can be overwritten by the next
+experiment, and freezing the file freezes the whole experiment at once ---
+`frozen` applies to every stage a Markdown file declares.
+
+This removes the failure rather than compensating for it. The earlier
+arrangement had the write-up read `results/nsys/baseline.sqlite`, which holds
+whichever experiment profiled last; keeping it honest then needed a freeze AND a
+separate statistics snapshot, and getting that wrong once destroyed a
+measurement outright.
+
+Storage: a profile pair is about 1.9 GB, which is affordable only because it is
+a cache rather than the record. The stage can regenerate it from the tag, so
+profiles may be garbage-collected (`calkit dvc gc --workspace` after pushing);
+the durable record is the statistics JSON, stored in Git at a few kilobytes.
+
+`launch-overhead.md` predates this and still reads the shared paths, which is
+why it carries both a freeze and `results/launch-probe.json`. New experiments
+should not copy it.
+
 ### Freeze an experiment's document on main, leave it live at its tag
 
 An experiment's document is generated from artifacts that the next experiment
