@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Refuse a bare `git push` that would leave DVC-tracked results behind.
+#
+# The pipeline's real outputs -- nsys reports, their sqlite databases, ncu
+# exports -- are DVC-tracked. `git push` sends none of them, and it fails
+# silently: git status is clean, the local clone works because the cache is
+# right there, and it breaks only for someone else, only when they open a
+# report.
+#
+# `calkit push` sends DVC first and Git second, so by the time it invokes this
+# hook the cache is already in sync and the check passes. Only a bare `git push`
+# with unsynced data is blocked.
+#
+# Override with `git push --no-verify` when you genuinely mean Git only.
+set -uo pipefail
+
+out=$(calkit dvc status --cloud 2>/dev/null)
+if printf '%s' "$out" | grep -qiE "in sync|up to date|^$"; then
+    exit 0
+fi
+
+cat >&2 <<MSG
+
+  BLOCKED: DVC-tracked data is not on the remote.
+
+$(printf '%s' "$out" | head -12)
+
+  Use 'calkit push', which sends DVC data and then Git.
+  If you really mean Git only: git push --no-verify
+MSG
+exit 1

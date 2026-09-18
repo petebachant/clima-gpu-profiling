@@ -225,6 +225,15 @@ The same applies to any future pair of arm-specific stages.
 
 ## Use `calkit push`, not `git push`
 
+**Enforced by a hook.** Run `bash scripts/install-git-hooks.sh` once per clone.
+The `pre-push` hook refuses a bare `git push` while DVC-tracked data is missing
+from the remote. `calkit push` sends DVC first and Git second, so it passes the
+hook; `git push --no-verify` overrides it when Git-only is genuinely meant.
+
+The hook exists because knowing the rule was not enough: on 2026-09-17 a whole
+session's commits went out with `git push` inside compound commands, and the
+user had to run `calkit push` by hand to ship the artifacts.
+
 `git push` sends the git objects only. The pipeline's real outputs -- nsys
 reports, their sqlite databases, the ncu exports -- are DVC-tracked, so they stay
 in the local cache and reach nobody. `calkit push` sends both.
