@@ -6,6 +6,60 @@ git_repo_url: https://github.com/petebachant/clima-gpu-profiling
 
 questions:
   - question: >-
+      How much of a timestep is spent launching kernels rather than running
+      them, and is that a bigger target than the kernels themselves?
+    answer: >-
+      Launch overhead is about 14% of a step, and yes it is the bigger target.
+
+      The run issues 3,301 kernel launches per step. The GPU is busy 244.6 ms
+      per step and 38.8 ms per step passes in sub-millisecond gaps between
+      kernels, waiting on the host. Over half the launches (208,420 of 396,122)
+      come from kernels averaging under 25 microseconds, which cost more host
+      time than they produce in GPU work.
+
+      The marginal cost of a launch was measured as a slope rather than inferred
+      from the mean gap, by adding 120,000 trivial launches and re-profiling:
+      18.51 microseconds of host time each, 25.75 of wall time. The marginal
+      cost EXCEEDS the 11.77 microsecond mean gap, which means the host cannot
+      queue launches as fast as the GPU drains them.
+
+      Of that, the CUDA driver is asked which context is current 25.54 times per
+      launch and whether a graph capture is active 10.78 times per launch.
+      Neither computes anything. cuLaunchKernel itself is 8.19 microseconds.
+
+      For scale: halving the launch count is worth roughly 10.8% of a step,
+      against radiation at 36.5% of kernel time with nothing available after
+      four rejected attempts, and the microphysics cache kernel win at about
+      +0.5% SYPD. Upgrading CUDA.jl is blocked -- it resolves to v6, but
+      ClimaCore's CUDA extension extends CUDA.shfl_recurse, which v6 removed.
+    explanation: docs/experiments/launch-overhead.md
+    evidence:
+      - kind: table
+        path: docs/experiments/launch-overhead.md
+        git_ref: meas/2026-09-17-launch-overhead
+        explanation: >-
+          The write-up. Every figure in it is injected from
+          results/launch-overhead.json by a calkit value marker and rewritten
+          whenever the stage runs, so the prose cannot drift from the
+          calculation. The analysis is the annotated code block in the same
+          file.
+      - kind: result
+        path: results/launch-overhead.json
+        key: marginal.host_us_per_launch
+        git_ref: meas/2026-09-17-launch-overhead
+        explanation: >-
+          The marginal host cost per launch, from the slope. Its inputs are the
+          baseline profile and results/launch-probe.json.
+      - kind: result
+        path: results/launch-probe.json
+        key: launches
+        git_ref: meas/2026-09-17-launch-overhead
+        explanation: >-
+          Statistics of the probe profile, committed because the profile itself
+          is transient: results/nsys/mod.sqlite is overwritten by the next
+          experiment, and depending on it made the pipeline regenerate the mod
+          arm WITHOUT the probe and destroy the measurement.
+  - question: >-
       Can the SGS microphysics cache kernel be made faster from inside a single
       package, and how much is that worth?
     answer: >-
@@ -1461,6 +1515,13 @@ pipeline:
       kind: markdown
       target_path: docs/experiments/launch-overhead.md
       environment: py
+      # Frozen on main, unfrozen at meas/2026-09-17-launch-overhead, following
+      # compile-time-study. results/nsys/baseline.sqlite holds whatever profiled
+      # last, so leaving this live would regenerate the write-up against a
+      # different run and silently restate the experiment. The probe half is
+      # already immune -- it reads the committed results/launch-probe.json
+      # rather than the transient mod profile -- but the baseline half is not.
+      frozen: true
     sgs-degeneracy:
       kind: shell-script
       environment: clima

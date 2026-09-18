@@ -24,6 +24,30 @@ One experiment, one document under `docs/experiments/`, registered as a
 `scripts/verify-evidence.py` checks it. `docs/learnings.md` keeps the reasoning
 and links to those documents; it should stop carrying figures of its own.
 
+### Freeze an experiment's document on main, leave it live at its tag
+
+An experiment's document is generated from artifacts that the next experiment
+overwrites. Two mechanisms keep it honest, and both are needed:
+
+  * **Snapshot** the small derived numbers into their own committed results
+    file, so the write-up does not depend on a 648 MB profile still being in
+    the DVC cache (`results/launch-probe.json`).
+  * **Freeze the stage on main** and tag the experiment. At the tag the stage is
+    not frozen and its inputs exist, so `git checkout <tag> && calkit run <stage>`
+    reproduces it; on main `calkit run` leaves it alone instead of regenerating
+    the write-up against a different run. `compile-time-study` established this
+    pattern; `launch-overhead-doc` follows it.
+
+Question evidence then cites the document and its results file with
+`git_ref: <tag>`, which is what `git_ref` is for: the claim is pinned to the rev
+where it can be checked, not to whatever main happens to hold.
+
+Freezing has a failure mode this project has already hit (see the ncu stages
+above): a frozen stage goes quietly stale and its output can be mismatched with
+whatever it is displayed beside. So a frozen snapshot must record its own
+provenance --- source commit, input hashes, what was being measured --- inside
+the file, as `results/launch-probe.json` does.
+
 ### A transient artifact cannot be a stage dependency
 
 `results/nsys/mod.sqlite` holds whichever experiment ran last. The launch-cost
