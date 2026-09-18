@@ -65,6 +65,9 @@ def in_answer(value, answer: str) -> bool:
         f"{value * 100:.2f}", f"{value * 100:.1f}",
         f"{abs(value):.2f}", f"{abs(value) * 100:.2f}",
         str(int(value)) if float(value).is_integer() else "",
+        # Prose writes large counts with thousands separators.
+        f"{int(value):,}" if float(value).is_integer() else "",
+        f"{value:,.1f}", f"{value:,.2f}",
     }
     return any(c and c in text for c in candidates)
 
