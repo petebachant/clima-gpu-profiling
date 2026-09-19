@@ -411,6 +411,20 @@ Both cases arose in this project and resolved oppositely:
 The rule: check whether any tag's pointer lands inside the range before
 rewriting it. If one does, push the history as-is.
 
+## A stage that reports git state must always run
+
+`record-treatment` records submodule SHAs, refs and whether a tree was dirty.
+DVC decides staleness from file contents, and committing a submodule changes no
+content, so the stage was skipped as unchanged while exactly what it reports had
+changed --- it kept reporting a stale SHA and a dirty tree that was no longer
+dirty, and `reproducible` stayed false after the problem was fixed.
+
+It now carries `always_run: true`. It is CPU-only and takes seconds.
+
+The general rule: if a stage's output depends on something DVC cannot hash ---
+git metadata, the wall clock, the machine --- declaring inputs will not keep it
+honest, so make it always run.
+
 ## Commit before running anything meant for the record
 
 `experiments.csv` advertises that any row can be reproduced with

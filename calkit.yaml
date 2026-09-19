@@ -1162,6 +1162,13 @@ environments:
 pipeline:
   stages:
     record-treatment:
+      # Reports git state -- submodule SHAs, refs, whether a tree was dirty --
+      # which DVC cannot see, because its declared inputs are file contents.
+      # Committing a submodule changes no content, so the stage was skipped as
+      # unchanged while the very thing it records had changed, and it kept
+      # reporting a stale SHA and a dirty tree that was no longer dirty.
+      # It is CPU-only and takes seconds, so it runs every time.
+      always_run: true
       kind: python-script
       environment: py
       script_path: scripts/record-treatment.py
