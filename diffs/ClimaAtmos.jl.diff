@@ -1,8 +1,8 @@
 diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/cloud_fraction.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/cloud_fraction.jl
-index a231fff..8fe41f6 100644
+index a231fff..897682f 100644
 --- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/cloud_fraction.jl
 +++ b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/cloud_fraction.jl
-@@ -108,9 +108,26 @@ function set_covariance_cache_and_cloud_fraction!(Y, p)
+@@ -108,9 +108,29 @@ function set_covariance_cache_and_cloud_fraction!(Y, p)
      # microphysics SGS moments (σ_S, λ_lagrange) using the final covariance.
      set_sgs_moments_and_cloud_fraction!(Y, p)
  
@@ -24,7 +24,10 @@ index a231fff..8fe41f6 100644
  end
  
 +# Extra launches per call for the probe above.
-+const LAUNCH_PROBE_COUNT = Ref(1000)
++# 5000, not 1000. At roughly 7 us per launch the smaller probe moves SYPD about
++# 2.3%, which sits on the +-2% noise floor of a full AMIP run. A larger probe
++# puts the effect well clear of it; the cost per launch is then the slope.
++const LAUNCH_PROBE_COUNT = Ref(5000)
 +
  """
      _aitken_picard_helper(c0, c1, c2)
