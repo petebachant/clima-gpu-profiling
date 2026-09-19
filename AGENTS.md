@@ -1,5 +1,22 @@
 # Agent instructions
 
+## Read docs/learnings.md before proposing a direction
+
+On 2026-09-17 a day of work went into GPU idle and launch overhead measured from
+nsys. Section 2b-i, written six weeks earlier, had already established that
+profiled idle is dominated by the profiler and that "the GPU idles X%, therefore
+launch-count work is worth Y" is unsupported. The conclusion was in the file the
+whole time.
+
+Before starting a line of work, search `docs/learnings.md` for the quantity you
+are about to rely on. The file is long, so grep it --- for the metric, for the
+subsystem, and for the word "wrong" or "unsupported", since its corrections are
+written as corrections.
+
+Device-side numbers from nsys (kernel times, launch counts) are trustworthy.
+Host-side numbers from nsys (idle, gaps between kernels) are not a model of the
+real run. Wall-clock questions are answered by the unprofiled AMIP stages.
+
 ## Numbers in prose must be injected, not typed
 
 A figure in `docs/`, `calkit.yaml` answers, or a commit message must come from a

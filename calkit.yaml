@@ -9,7 +9,17 @@ questions:
       What is the ceiling on kernel fusion, and which package would have to
       deliver it?
     answer: >-
-      About 3% of a step, and no single package can deliver it.
+      At most about 3% of a step, and no single package can deliver it --- but
+      the figure is measured under a profiler that inflates exactly this
+      quantity, so treat it as an upper bound.
+
+      CAVEAT FIRST. Host-side timing taken from an nsys profile is not a
+      measurement of the real run: most of the profiled GPU idle is the
+      profiler, whose tracing runs to roughly 33 CUDA API calls per kernel
+      launch (docs/learnings.md 2b-i). The per-launch cost below therefore
+      includes injection overhead and is an upper bound. Pricing a launch
+      honestly means running the probe through the unprofiled AMIP stages and
+      reading SYPD, which has not been done.
 
       Of 3,301 kernel launches per step, 1,737 (52.6%) come from kernels
       averaging under 25 microseconds, which is the band where the host time
@@ -71,7 +81,11 @@ questions:
       How much of a timestep is spent launching kernels rather than running
       them, and is that a bigger target than the kernels themselves?
     answer: >-
-      Launch overhead is about 14% of a step, and yes it is the bigger target.
+      SUPERSEDED, and mostly unsupported. The figures here come from nsys gap
+      analysis, and docs/learnings.md 2b-i establishes that profiled GPU idle is
+      dominated by the profiler rather than the model. Launch and kernel COUNTS
+      below stand, because they are device-side; the idle and gap TIMES do not.
+      See the fusion-ceiling question for what survives.
 
       The run issues 3,301 kernel launches per step. The GPU is busy 244.6 ms
       per step and 38.8 ms per step passes in sub-millisecond gaps between

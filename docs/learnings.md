@@ -2193,65 +2193,69 @@ was already handling. The kernel is latency-bound at 0.25 eligible warps per
 scheduler with no divergence to recover (§4u) and occupancy hard-capped by real
 register demand. **Further gains need the algorithm to change, not the code.**
 
-## 6. The host, not the kernels, is what the simulation waits on
+## 6. Launch-overhead work, and why most of it is unsupported
 
-Figures for this section live in `docs/experiments/launch-cost.md` and are
-injected from `results/experiments/launch-cost/stats.json`. They are not
-repeated here, because the first version of this section carried typed numbers
-that were later withdrawn and the prose kept asserting them.
+Figures live in `docs/experiments/launch-cost.md`, injected from
+`results/experiments/launch-cost/stats.json`. Read section 2b-i before using any
+of them.
 
-Every performance experiment in this project until now optimized kernel time.
-Kernel time is about 86% of a step; the rest is the host failing to keep the GPU
-fed. Over half of all kernel launches are short enough that the host time around
-them exceeds the GPU time inside them.
+### 6a. This line of work repeated a mistake the project had already made
 
-### 6a. Host-side timing is not comparable across sessions
+On 2026-09-17 I measured GPU idle and host gaps from an nsys profile, concluded
+the host was starving the GPU for about 14% of a step, and built a case for
+kernel fusion on it. **Section 2b-i, written on 2026-09-01, had already ruled
+that out**: most of the idle in an nsys profile is the profiler. The tracing
+volume is roughly 33 traced CUDA API calls per kernel launch, each carrying
+injection cost that is smeared across the timeline, and the profiled window does
+not even run at the same rate as the unprofiled one.
 
-This is the important one, and it cost a headline result.
+Its conclusion is unambiguous, and I did not check it:
 
-The marginal cost of a kernel launch was first measured by adding launches to
-one run and comparing against a baseline profiled **the previous day**. It gave
-18.51 us per launch, and a claim that halving the launch count was worth 10.8%
-of a step. Both are **withdrawn**.
+> Any "the GPU idles 31%, therefore fusion/launch-count work is worth X"
+> argument built on the numbers in 2b is unsupported. Kernel times from nsys
+> remain trustworthy; the gaps between them are not a model of the real run's
+> host behavior.
 
-Profiling identical code on three separate occasions gave host gaps of 4,656,
-6,837 and 6,214 ms --- a spread near 30% with no code change at all, driven by
-node load. The probe's entire effect was 809 ms, comfortably inside that spread,
-so the original comparison had no power to detect what it claimed to measure.
+What that invalidates, and what survives:
 
-Re-measured as an adjacent pair produced from one invocation, a launch costs
-6.74 us of host time. The ceiling on fusing every short launch four-to-one is
-about 3% of a step, not 8-10%.
+| claim | status |
+|---|---|
+| 3,301 launches/step; 1,737 under 25 us | **stands** --- device-side counts |
+| kernel times, per-kernel comparisons | **stands** --- device-side |
+| driver calls per launch (25.5 `cuCtxGetId`, 10.8 `cuStreamGetCaptureInfo`) | counts stand; the time attributed to them does not |
+| GPU idle ~40% of a step | **unsupported** --- largely profiler |
+| host gap is ~14% of step time | **unsupported** |
+| marginal launch cost 6.74 us | **contaminated** --- measured under nsys, so it includes per-launch injection cost, and is an upper bound |
+| fusion ceiling ~3% of a step | **upper bound at best**, since it is priced with the above |
 
-Two rules follow:
+The earlier 18.51 us figure was withdrawn for a different reason --- it compared
+runs profiled a day apart, and host gap varies about 30% between sessions
+(4,656 / 6,837 / 6,214 ms for identical code). Both retractions have the same
+root: **host-side timing taken from nsys is not a measurement of the real run.**
 
-  * Never compare host-side timing across sessions. GPU kernel times are stable
-    across sessions to under 1%; host gaps are not, and the difference is large
-    enough to invent or erase an effect.
-  * An experiment that needs two profiles must declare both and produce them
-    from one invocation, which is what `docs/experiments/TEMPLATE.md` enforces.
+### 6b. How to price a launch honestly
 
-The same confound produced a phantom ClimaCore 1.0 regression: +46.9% on host
-gap against a tagged baseline from a previous day, and -0.1% when 1.0 and 0.16.2
-were profiled in the same session. There was no regression.
+Not under nsys. Section 2b-i names the ground truth: the unprofiled AMIP stage,
+whose wall time is what SYPD is computed from. The probe already exists as a
+ClimaAtmos branch that adds a known number of launches per step; running it
+through `amip-baseline`/`amip-mod` instead of the nsys stages gives a SYPD
+difference attributable to launch count, with no profiler in the path.
 
-### 6b. Per-launch driver overhead
+That has not been done. Until it is, the fusion ceiling should be quoted as "at
+most about 3%, measured under a profiler that inflates exactly this quantity",
+and the honest summary is that we do not yet know what a launch costs in a real
+run.
 
-CUDA.jl asks the driver which context is current about 25 times per kernel
-launch, and whether a graph capture is active about 11 times. Those counts are
-ratios within a single profile, so unlike the timings above they were unaffected
-by the retraction.
+### 6c. What still points at the host
 
-They are worth less than they first appeared, though: the measured marginal cost
-of a launch, 6.74 us, is below the 8.19 us that `cuLaunchKernel` itself occupies
-in the profile, which means much of the per-launch cost overlaps with GPU
-execution rather than adding to the critical path. A newer CUDA.jl is the
-obvious remedy and is blocked: v6 removes `CUDA.shfl_recurse`, which ClimaCore's
-CUDA extension extends.
+Two things survive independently of the profiler argument:
 
-### What this means for where to work
+  * The conversion ratio in section 3a, from unprofiled AMIP runs: -5.37% of GPU
+    kernel time bought +1.87% SYPD, about 35% pass-through. Kernel time is
+    therefore not the whole story, whatever the profiler says about gaps.
+  * CUDA.jl really does issue about 25 context queries and 11 capture queries
+    per launch. Those are calls the library makes; nsys reports them rather than
+    causing them. Whether they cost enough to matter is unmeasured.
 
-Fusion is the largest science-free target that remains, and it is a whole-stack
-effort worth about 3%, spread over seven packages, with no single repository
-able to deliver it. See `docs/experiments/launch-cost.md` for the per-package
-and per-file attribution, and CliMA/ClimaAtmos.jl#4261 for the upstream issue.
+A newer CUDA.jl is blocked regardless: v6 removes `CUDA.shfl_recurse`, which
+ClimaCore's CUDA extension extends.
