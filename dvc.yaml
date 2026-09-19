@@ -602,6 +602,92 @@ stages:
           cache: false
     desc: Automatically generated from the 'analyze-logs' stage in calkit.yaml.
       Changes made here will be overwritten.
+  launch-cost/baseline:
+    cmd: calkit scheduler batch --name launch-cost/baseline --environment clima
+      --dep scripts/run-nsys.sh --dep scripts/run.jl --dep ClimaCoupler.jl/src
+      --dep
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep ClimaCore.jl/src
+      --dep ClimaCore.jl/ext --dep ClimaAtmos.jl/src --dep RRTMGP.jl/src --dep
+      .calkit/env-locks/clima --out
+      results/experiments/launch-cost/baseline.nsys-rep --out
+      results/experiments/launch-cost/baseline.sqlite --option --gpus=1 --option
+      --time=180 -- .calkit/markdown/docs/experiments/launch-cost.md/baseline.sh
+    deps:
+      - .calkit/markdown/docs/experiments/launch-cost.md/baseline.sh
+      - scripts/run-nsys.sh
+      - scripts/run.jl
+      - ClimaCoupler.jl/src
+      - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
+      - ClimaCore.jl/src
+      - ClimaCore.jl/ext
+      - ClimaAtmos.jl/src
+      - RRTMGP.jl/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/experiments/launch-cost/baseline.nsys-rep:
+          persist: true
+      - results/experiments/launch-cost/baseline.sqlite:
+          persist: true
+      - .calkit/scheduler/logs/launch-cost/baseline.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'launch-cost/baseline' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  launch-cost/probe:
+    cmd: calkit scheduler batch --name launch-cost/probe --environment clima
+      --dep scripts/run-nsys.sh --dep scripts/run.jl --dep
+      ClimaCoupler.jl-mod/src --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCore.jl-mod/src --dep ClimaCore.jl-mod/ext --dep
+      ClimaAtmos.jl-mod/src --dep RRTMGP.jl-mod/src --dep
+      .calkit/env-locks/clima --out
+      results/experiments/launch-cost/probe.nsys-rep --out
+      results/experiments/launch-cost/probe.sqlite --option --gpus=1 --option
+      --time=180 -- .calkit/markdown/docs/experiments/launch-cost.md/probe.sh
+    deps:
+      - .calkit/markdown/docs/experiments/launch-cost.md/probe.sh
+      - scripts/run-nsys.sh
+      - scripts/run.jl
+      - ClimaCoupler.jl-mod/src
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCore.jl-mod/src
+      - ClimaCore.jl-mod/ext
+      - ClimaAtmos.jl-mod/src
+      - RRTMGP.jl-mod/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/experiments/launch-cost/probe.nsys-rep:
+          persist: true
+      - results/experiments/launch-cost/probe.sqlite:
+          persist: true
+      - .calkit/scheduler/logs/launch-cost/probe.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'launch-cost/probe' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  launch-cost/analyze:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/launch-cost.md/analyze.py
+    deps:
+      - .calkit/markdown/docs/experiments/launch-cost.md/analyze.py
+      - scripts/measure_launch_overhead.py
+      - results/experiments/launch-cost/baseline.sqlite
+      - results/experiments/launch-cost/probe.sqlite
+      - .calkit/env-locks/py
+    outs:
+      - results/experiments/launch-cost/stats.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'launch-cost/analyze' stage in
+      calkit.yaml. Changes made here will be overwritten.
   launch-overhead-doc/measure:
     cmd: calkit xenv -n py --no-check -- python
       .calkit/markdown/docs/experiments/launch-overhead.md/measure.py
