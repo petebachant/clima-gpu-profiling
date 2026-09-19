@@ -59,10 +59,33 @@ json.dump(out, open("results/experiments/launch-cost/stats.json", "w"), indent=2
 
 ## Result
 
-The baseline issues <!-- calkit value key=baseline.launches format="{:,}" -->0<!-- /calkit value --> kernel launches over <!-- calkit value key=steps -->0<!-- /calkit value --> steps, or <!-- calkit value key=baseline_launches_per_step format="{:,.0f}" -->0<!-- /calkit value --> per step, with the GPU busy <!-- calkit value key=baseline_gpu_busy_ms_per_step -->0<!-- /calkit value --> ms per step and <!-- calkit value key=baseline_host_gap_ms_per_step -->0<!-- /calkit value --> ms per step spent in sub-millisecond gaps between kernels.
-The probe arm adds <!-- calkit value key=marginal.added_launches format="{:,}" -->0<!-- /calkit value --> launches, which raises the host gap by <!-- calkit value key=marginal.added_host_gap_ms format="{:,}" -->0<!-- /calkit value --> ms and GPU time by <!-- calkit value key=marginal.added_gpu_busy_ms format="{:,}" -->0<!-- /calkit value --> ms.
-That prices a launch at **<!-- calkit value key=marginal.host_us_per_launch -->0<!-- /calkit value --> us of host time**, or <!-- calkit value key=marginal.wall_us_per_launch -->0<!-- /calkit value --> us of wall time once the added GPU work is counted.
+The baseline issues <!-- calkit value key=baseline.launches format="{:,}" -->396,122<!-- /calkit value --> kernel launches over <!-- calkit value key=steps -->120<!-- /calkit value --> steps, or <!-- calkit value key=baseline_launches_per_step format="{:,.0f}" -->3,301<!-- /calkit value --> per step, with the GPU busy <!-- calkit value key=baseline_gpu_busy_ms_per_step -->245.3<!-- /calkit value --> ms per step and <!-- calkit value key=baseline_host_gap_ms_per_step -->51.8<!-- /calkit value --> ms per step spent in sub-millisecond gaps between kernels.
+The probe arm adds <!-- calkit value key=marginal.added_launches format="{:,}" -->120,000<!-- /calkit value --> launches, which raises the host gap by <!-- calkit value key=marginal.added_host_gap_ms format="{:,}" -->809.3<!-- /calkit value --> ms and GPU time by <!-- calkit value key=marginal.added_gpu_busy_ms format="{:,}" -->739.8<!-- /calkit value --> ms.
+That prices a launch at **<!-- calkit value key=marginal.host_us_per_launch -->6.74<!-- /calkit value --> us of host time**, or <!-- calkit value key=marginal.wall_us_per_launch -->12.91<!-- /calkit value --> us of wall time once the added GPU work is counted.
 
 ## Verdict
 
-To be written once the pair has run.
+A launch costs about 7 us of host time, not the 18.51 us reported from the
+cross-day comparison. That earlier figure was inflated roughly 2.7x by node
+load, and is withdrawn.
+
+Profiling identical code on three occasions gave host gaps of 4,656, 6,837 and
+6,214 ms, a spread of about 30% with no code change at all. The probe's whole
+effect here is 809 ms, well inside that spread, so this measurement is
+trustworthy only because both profiles were produced back to back from one
+invocation. Host-side timing must never be compared across sessions.
+
+What it is worth: halving the launch count saves about 11 ms of a 297 ms step,
+so **roughly 4% of step time**, not the 10.8% claimed before. Fusing the
+sub-25 us band 4:1 -- 53% of all launches -- is worth about 3%.
+
+That keeps kernel fusion a real, science-free target, and a larger one than
+anything left in the radiation kernels, but it is a third of what it looked
+like. It does not on its own justify a fusion campaign across ClimaCore and
+ClimaAtmos; it justifies fusing where the launches are densest and measuring
+again.
+
+Note also that 6.74 us sits below the 8.19 us that `cuLaunchKernel` itself
+occupies in the baseline profile, which suggests the marginal launch is mostly
+driver cost rather than Julia-side broadcast machinery, and that some of it
+overlaps with GPU execution.

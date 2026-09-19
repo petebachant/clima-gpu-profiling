@@ -1356,8 +1356,8 @@ stages:
       nfiles: 2
     - path: calkit.yaml
       hash: md5
-      md5: 9539262a0003d974fc48f80eaf1aaf36
-      size: 98948
+      md5: 03de5386e4e15d1a7d003cd606803b09
+      size: 99509
     - path: diffs
       hash: md5
       md5: 2e59f6747eacc28b786b0e512ea2b3b8.dir
@@ -1370,7 +1370,7 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: 1b5374a81235d1ed3a437b1a5188677c
+      md5: 6a8083b365c9f264aa9d5d3ea9a45784
       size: 31091
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
@@ -1896,3 +1896,196 @@ stages:
       hash: md5
       md5: 20e6a13dc79855c5a8d5618214b2ee5e
       size: 3755
+  launch-cost/baseline:
+    cmd: calkit scheduler batch --name launch-cost/baseline --environment clima 
+      --dep scripts/run-nsys.sh --dep scripts/run.jl --dep ClimaCoupler.jl/src 
+      --dep 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml 
+      --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep ClimaCore.jl/src 
+      --dep ClimaCore.jl/ext --dep ClimaAtmos.jl/src --dep RRTMGP.jl/src --dep 
+      .calkit/env-locks/clima --out 
+      results/experiments/launch-cost/baseline.nsys-rep --out 
+      results/experiments/launch-cost/baseline.sqlite --option --gpus=1 --option
+      --time=180 -- .calkit/markdown/docs/experiments/launch-cost.md/baseline.sh
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: .calkit/markdown/docs/experiments/launch-cost.md/baseline.sh
+      hash: md5
+      md5: 14a2e1935f6b3e5679a2cb626626887f
+      size: 191
+    - path: ClimaAtmos.jl/src
+      hash: md5
+      md5: 7ca16f27bb4a1a221aae6f4ea4d6942e.dir
+      size: 2153825
+      nfiles: 159
+    - path: ClimaCore.jl/ext
+      hash: md5
+      md5: bcf5ff64469299fee681dda394442960.dir
+      size: 232766
+      nfiles: 28
+    - path: ClimaCore.jl/src
+      hash: md5
+      md5: b0046c80a2dd67121a317d407828ab4e.dir
+      size: 1354312
+      nfiles: 103
+    - path: 
+        ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: d68284726a77e4fc85e1ba0768977f19
+      size: 2035
+    - path: ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: 703ce6c06a989f214bc95cf96bbd4937
+      size: 122683
+    - path: ClimaCoupler.jl/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: ClimaCoupler.jl/src
+      hash: md5
+      md5: f2ed10dd11c630a3361c05b903c765d7.dir
+      size: 305758
+      nfiles: 22
+    - path: RRTMGP.jl/src
+      hash: md5
+      md5: 6a74031094807992c3eba1abbbddbc07.dir
+      size: 305932
+      nfiles: 43
+    - path: scripts/run-nsys.sh
+      hash: md5
+      md5: d7bdb9eab2fe3f2124e6c21273de727b
+      size: 2062
+    - path: scripts/run.jl
+      hash: md5
+      md5: be954b869488b6a8ed40f499008bcf9b
+      size: 3583
+    outs:
+    - path: .calkit/scheduler/logs/launch-cost/baseline.out
+      hash: md5
+      md5: 9e998058da6cbd4ca03b04404bbfb1f4
+      size: 176562
+    - path: results/experiments/launch-cost/baseline.nsys-rep
+      hash: md5
+      md5: 88ef4a845752d61041594bd9a50fe7c6
+      size: 294068397
+    - path: results/experiments/launch-cost/baseline.sqlite
+      hash: md5
+      md5: d3a04d0112313b9f3fccdc23d09c77f5
+      size: 680951808
+  launch-cost/probe:
+    cmd: calkit scheduler batch --name launch-cost/probe --environment clima 
+      --dep scripts/run-nsys.sh --dep scripts/run.jl --dep 
+      ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCore.jl-mod/src --dep ClimaCore.jl-mod/ext --dep 
+      ClimaAtmos.jl-mod/src --dep RRTMGP.jl-mod/src --dep 
+      .calkit/env-locks/clima --out 
+      results/experiments/launch-cost/probe.nsys-rep --out 
+      results/experiments/launch-cost/probe.sqlite --option --gpus=1 --option 
+      --time=180 -- .calkit/markdown/docs/experiments/launch-cost.md/probe.sh
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: .calkit/markdown/docs/experiments/launch-cost.md/probe.sh
+      hash: md5
+      md5: 8588c8a5ae88a7f7689a4c5ba82fb0af
+      size: 196
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: 4dc2eff11c397292b1f88f09bc852f17.dir
+      size: 2154640
+      nfiles: 159
+    - path: ClimaCore.jl-mod/ext
+      hash: md5
+      md5: bcf5ff64469299fee681dda394442960.dir
+      size: 232766
+      nfiles: 28
+    - path: ClimaCore.jl-mod/src
+      hash: md5
+      md5: b0046c80a2dd67121a317d407828ab4e.dir
+      size: 1354312
+      nfiles: 103
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: d68284726a77e4fc85e1ba0768977f19
+      size: 2035
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: 651f20b503971eb8bede18d14c41fe02
+      size: 122695
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: ClimaCoupler.jl-mod/src
+      hash: md5
+      md5: f2ed10dd11c630a3361c05b903c765d7.dir
+      size: 305758
+      nfiles: 22
+    - path: RRTMGP.jl-mod/src
+      hash: md5
+      md5: 6a74031094807992c3eba1abbbddbc07.dir
+      size: 305932
+      nfiles: 43
+    - path: scripts/run-nsys.sh
+      hash: md5
+      md5: d7bdb9eab2fe3f2124e6c21273de727b
+      size: 2062
+    - path: scripts/run.jl
+      hash: md5
+      md5: be954b869488b6a8ed40f499008bcf9b
+      size: 3583
+    outs:
+    - path: .calkit/scheduler/logs/launch-cost/probe.out
+      hash: md5
+      md5: bc6d10af62889babedda2417cf22df82
+      size: 179439
+    - path: results/experiments/launch-cost/probe.nsys-rep
+      hash: md5
+      md5: 2e733502eed9010da15334d612c60531
+      size: 334145468
+    - path: results/experiments/launch-cost/probe.sqlite
+      hash: md5
+      md5: 253941687a13d1835b3799d085fbd84d
+      size: 776380416
+  launch-cost/analyze:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/experiments/launch-cost.md/analyze.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: cd569ef50836446fc837bb706d220836.dir
+      size: 2090
+      nfiles: 2
+    - path: .calkit/markdown/docs/experiments/launch-cost.md/analyze.py
+      hash: md5
+      md5: da3b4303c8fb8cb450c2cb91de63121e
+      size: 1044
+    - path: results/experiments/launch-cost/baseline.sqlite
+      hash: md5
+      md5: d3a04d0112313b9f3fccdc23d09c77f5
+      size: 680951808
+    - path: results/experiments/launch-cost/probe.sqlite
+      hash: md5
+      md5: 253941687a13d1835b3799d085fbd84d
+      size: 776380416
+    - path: scripts/measure_launch_overhead.py
+      hash: md5
+      md5: b90ea38b46d64278d0e5316ca3d4d51f
+      size: 4197
+    outs:
+    - path: results/experiments/launch-cost/stats.json
+      hash: md5
+      md5: b800ab9c65b831291ccb89cbb8d2f14d
+      size: 3192

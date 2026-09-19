@@ -17,22 +17,31 @@ questions:
       come from kernels averaging under 25 microseconds, which cost more host
       time than they produce in GPU work.
 
-      The marginal cost of a launch was measured as a slope rather than inferred
-      from the mean gap, by adding 120,000 trivial launches and re-profiling
-      (516,122 launches against the baseline's 396,122): 18.51 microseconds of
-      host time each, 25.75 of wall time. The marginal
-      cost EXCEEDS the 11.77 microsecond mean gap, which means the host cannot
-      queue launches as fast as the GPU drains them.
+      The marginal cost of a launch was measured as a slope, by adding 120,000
+      trivial launches and re-profiling (516,122 launches against the baseline's
+      396,122). A first attempt compared those runs ACROSS DAYS and reported
+      18.51 microseconds; that figure is WITHDRAWN. Identical code profiled on
+      three occasions gave host gaps of 4,656, 6,837 and 6,214 ms, a spread near
+      30% with no code change, which swamps the effect. Re-measured as an
+      adjacent pair from one invocation, a launch costs 6.74 microseconds of
+      host time and 12.91 of wall time.
 
       Of that, the CUDA driver is asked which context is current 25.54 times per
       launch and whether a graph capture is active 10.78 times per launch.
       Neither computes anything. cuLaunchKernel itself is 8.19 microseconds.
 
-      For scale: halving the launch count is worth roughly 10.8% of a step,
-      against radiation at 36.5% of kernel time with nothing available after
-      four rejected attempts, and the microphysics cache kernel win at about
-      +0.5% SYPD. Upgrading CUDA.jl is blocked -- it resolves to v6, but
-      ClimaCore's CUDA extension extends CUDA.shfl_recurse, which v6 removed.
+      For scale: halving the launch count is worth roughly 4% of a step, and
+      fusing the sub-25 microsecond band 4:1 about 3% -- a third of what the
+      withdrawn figure implied, but still larger than anything left in the
+      radiation kernels, which returned nothing across four rejected attempts,
+      and than the microphysics cache kernel at about +0.5% SYPD. Upgrading
+      CUDA.jl is blocked: it resolves to v6, but ClimaCore's CUDA extension
+      extends CUDA.shfl_recurse, which v6 removed.
+
+      ClimaCore 1.0 was suspected of a large regression on this path. It is not:
+      a same-session A/B against 0.16.2 puts it at -0.1% on busy-plus-gap per
+      step, inside the 3.4% null band. The apparent +46.9% was node load between
+      sessions.
     explanation: docs/experiments/launch-overhead.md
     evidence:
       - kind: table
@@ -45,9 +54,9 @@ questions:
           calculation. The analysis is the annotated code block in the same
           file.
       - kind: result
-        path: results/launch-overhead.json
+        path: results/experiments/launch-cost/stats.json
         key: marginal.host_us_per_launch
-        git_ref: meas/2026-09-17-launch-overhead
+        git_ref: meas/2026-09-19-launch-cost
         explanation: >-
           The marginal host cost per launch, from the slope. Its inputs are the
           baseline profile and results/launch-probe.json.
