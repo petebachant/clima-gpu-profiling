@@ -6,6 +6,68 @@ git_repo_url: https://github.com/petebachant/clima-gpu-profiling
 
 questions:
   - question: >-
+      What is the ceiling on kernel fusion, and which package would have to
+      deliver it?
+    answer: >-
+      About 3% of a step, and no single package can deliver it.
+
+      Of 3,301 kernel launches per step, 1,737 (52.6%) come from kernels
+      averaging under 25 microseconds, which is the band where the host time
+      around a launch exceeds the GPU time inside it. At 6.74 microseconds of
+      host time per launch, fusing that whole band four-to-one saves 2.96% of a
+      297.1 ms step. Making every short launch vanish outright -- which no real
+      change achieves -- saves 3.94%. Those are the ceilings.
+
+      The band is spread across seven packages, so the ceiling is a sum over the
+      whole stack rather than a target for one repository. ClimaAtmos holds the
+      largest share at 791.8 launches per step, worth 1.35% if fused
+      four-to-one; ClimaCore 169.1 and 0.29%; ClimaCoupler 147.0 and 0.25%;
+      ClimaLand 124.3 and 0.21%; ClimaDiagnostics 93.6 and 0.16%.
+
+      Within ClimaAtmos the densest source is cache/microphysics_cache.jl at
+      296.2 launches per step, worth 0.5%. CliMA/ClimaAtmos.jl#4261 proposes
+      starting at cache/precomputed_quantities.jl, which is 62.4 launches per
+      step and worth 0.11%: the cache folder is the right instinct, but the
+      microphysics cache is the bigger half of it.
+
+      This matters mainly as a guard against over-investment. Under the
+      withdrawn 18.51 microsecond estimate the same band read as 8% of a step,
+      which would have made single-file work look worthwhile. At the measured
+      6.74 it does not: a week spent on any one file returns a fraction of a
+      percent, while the 3% exists only as a whole-stack effort.
+    explanation: docs/experiments/launch-cost.md
+    evidence:
+      - kind: result
+        path: results/experiments/launch-cost/stats.json
+        key: fusion.ceiling_fuse_4to1_pct
+        git_ref: meas/2026-09-19-launch-cost
+        explanation: >-
+          The ceiling for fusing the sub-25 microsecond band four-to-one, priced
+          at the marginal host cost measured from the adjacent probe pair in the
+          same document.
+      - kind: result
+        path: results/experiments/launch-cost/stats.json
+        key: fusion.ceiling_all_removed_pct
+        git_ref: meas/2026-09-19-launch-cost
+        explanation: >-
+          The absolute bound, where every short launch disappears. Quoted so the
+          ceiling cannot be mistaken for a target.
+      - kind: result
+        path: results/experiments/launch-cost/stats.json
+        key: marginal.host_us_per_launch
+        git_ref: meas/2026-09-19-launch-cost
+        explanation: >-
+          The price everything above rests on, from a baseline and probe
+          profiled back to back in one invocation. The earlier cross-day
+          estimate of 18.51 would have inflated every figure here by 2.7x.
+      - kind: table
+        path: docs/experiments/launch-cost.md
+        git_ref: meas/2026-09-19-launch-cost
+        explanation: >-
+          The experiment. It declares both profiling stages itself, so the pair
+          cannot be split across sessions, and every figure in its prose is
+          injected from the stats file rather than typed.
+  - question: >-
       How much of a timestep is spent launching kernels rather than running
       them, and is that a bigger target than the kernels themselves?
     answer: >-
