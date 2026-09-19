@@ -8,6 +8,17 @@ attempts, and the measurements that are too long to live there.
 Every number below came from a run in this repository. Where a result is a
 single measurement rather than a reproduced one, it says so.
 
+> **Figures belong in experiment documents, not here.** Numbers typed into this
+> file cannot be checked, and the habit produced a published tag citing figures
+> its own results file did not contain, and a headline launch-cost result that
+> had to be withdrawn. New work goes in `docs/experiments/<slug>.md` --- a
+> `kind: markdown` stage whose analysis block writes a results file and whose
+> prose is injected from it, so it cannot drift. Copy
+> `docs/experiments/TEMPLATE.md`. Sections here written before that convention
+> still carry their numbers inline; treat those as historical, and check the
+> date on the section. Where an experiment document exists, this file links to
+> it rather than restating it.
+
 > **A note on how this is wired up.** `calkit.yaml` points at this file with a
 > question-level `explanation: docs/learnings.md`, not as an entry in the
 > question's `evidence` list. That distinction is the point: evidence is data
@@ -2182,136 +2193,65 @@ was already handling. The kernel is latency-bound at 0.25 eligible warps per
 scheduler with no divergence to recover (§4u) and occupancy hard-capped by real
 register demand. **Further gains need the algorithm to change, not the code.**
 
-## 6. The GPU is idle 40% of a step, and it is not the kernels' fault
+## 6. The host, not the kernels, is what the simulation waits on
 
-Every experiment in this project so far has optimized kernel time. Kernel time is
-not what the simulation is waiting on.
+Figures for this section live in `docs/experiments/launch-cost.md` and are
+injected from `results/experiments/launch-cost/stats.json`. They are not
+repeated here, because the first version of this section carried typed numbers
+that were later withdrawn and the prose kept asserting them.
 
-From `results/nsys/baseline.sqlite`, 120 steps:
+Every performance experiment in this project until now optimized kernel time.
+Kernel time is about 86% of a step; the rest is the host failing to keep the GPU
+fed. Over half of all kernel launches are short enough that the host time around
+them exceeds the GPU time inside them.
 
-| | |
-|---|---|
-| kernel launches | 396,122 (**3,301 per step**) |
-| GPU busy | 29,350 ms (245 ms/step) |
-| host time between kernels | 4,674 ms (39 ms/step) |
-| **launch overhead share of step time** | **14%** |
-| mean gap between kernels | 11.8 us |
-| mean kernel duration | 74 us |
+### 6a. Host-side timing is not comparable across sessions
 
-Utilization over the whole captured span is 33.9%, but that includes JIT and a
-20-second output phase; over the stepping windows it is 60-70%. The remaining
-30-40% is host-side time between kernels.
+This is the important one, and it cost a headline result.
 
-### Half the launches cost more host time than GPU time
+The marginal cost of a kernel launch was first measured by adding launches to
+one run and comparing against a baseline profiled **the previous day**. It gave
+18.51 us per launch, and a claim that halving the launch count was worth 10.8%
+of a step. Both are **withdrawn**.
 
-| kernel duration | launches | share | GPU ms | host ms |
-|---|---|---|---|---|
-| < 25 us | **208,420** | **52.6%** | 2,305 | ~2,460 |
-| 25-100 us | 164,838 | 41.6% | 8,211 | ~1,945 |
-| > 100 us | 22,864 | 5.8% | 18,835 | ~270 |
+Profiling identical code on three separate occasions gave host gaps of 4,656,
+6,837 and 6,214 ms --- a spread near 30% with no code change at all, driven by
+node load. The probe's entire effect was 809 ms, comfortably inside that spread,
+so the original comparison had no power to detect what it claimed to measure.
 
-Sub-25us kernels are over half of all launches, produce 7.9% of the GPU work, and
-cost more in host time than they produce. The gap (11.8 us) exceeds the duration
-of every kernel in that band.
+Re-measured as an adjacent pair produced from one invocation, a launch costs
+6.74 us of host time. The ceiling on fusing every short launch four-to-one is
+about 3% of a step, not 8-10%.
 
-Biggest producers, launches per step:
+Two rules follow:
 
-    set_covariance_cache_and_cloud_fraction   142/step at 10.3 us
-    copy_ (ClimaCore Fields broadcast)        105/step at  6.3 us
-    compute_jacobian                           54/step at  9.6 us
-    ClimaDiagnostics compute_field             47/step at 18.5 us
-    single_field_solve                         47/step at  6.8 us
+  * Never compare host-side timing across sessions. GPU kernel times are stable
+    across sessions to under 1%; host gaps are not, and the difference is large
+    enough to invent or erase an effect.
+  * An experiment that needs two profiles must declare both and produce them
+    from one invocation, which is what `docs/experiments/TEMPLATE.md` enforces.
 
-### Why this reframes the project
+The same confound produced a phantom ClimaCore 1.0 regression: +46.9% on host
+gap against a tagged baseline from a previous day, and -0.1% when 1.0 and 0.16.2
+were profiled in the same session. There was no regression.
 
-Radiation is 36.5% of GPU kernel time, so a 10% cut there is 3.7% of GPU time and
-about 3% of step time. Launch overhead is 14% of step time *today*, needs no
-science review, and halving the launch count is worth roughly 7%.
+### 6b. Per-launch driver overhead
 
-It also explains the Amdahl ceiling that kept appearing: the microphysics work
-was -7.49% on its kernel and about +0.5% SYPD, because kernel time is only ~86%
-of step time and that kernel is 13% of kernel time.
+CUDA.jl asks the driver which context is current about 25 times per kernel
+launch, and whether a graph capture is active about 11 times. Those counts are
+ratios within a single profile, so unlike the timings above they were unaffected
+by the retraction.
 
-**Note on the 11.8 us figure**: it is host time between kernels, not the CUDA
-launch API cost alone -- Julia-side work between broadcasts is in there too.
-Fusing reduces the count; it does not necessarily remove all of the per-gap cost.
-The honest claim is that launch count and host gap time are proportional, not
-that fusion recovers 11.8 us per removed launch.
+They are worth less than they first appeared, though: the measured marginal cost
+of a launch, 6.74 us, is below the 8.19 us that `cuLaunchKernel` itself occupies
+in the profile, which means much of the per-launch cost overlaps with GPU
+execution rather than adding to the critical path. A newer CUDA.jl is the
+obvious remedy and is blocked: v6 removes `CUDA.shfl_recurse`, which ClimaCore's
+CUDA extension extends.
 
-### 6a. A kernel launch costs ~18.5 us of host time, measured as a slope
+### What this means for where to work
 
-The 11.8 us mean inter-kernel gap could not be used to predict what fusion would
-recover, because it mixes CUDA launch cost with genuine Julia work between
-broadcasts. Measured directly instead, by adding a known number of trivial
-launches per step and taking the slope:
-
-| | baseline | +1000 launches/step | delta |
-|---|---|---|---|
-| launches | 396,122 | 516,122 | +120,000 |
-| GPU busy | 29,350 ms | 30,219 ms | +869 ms |
-| host gap (<1 ms) | 4,656 ms | 6,877 ms | +2,222 ms |
-
-**Marginal host cost per launch: 18.5 us**, and 25.8 us of wall time once the
-added GPU work is counted. The marginal cost EXCEEDS the mean gap, which means
-the host cannot queue launches as fast as the GPU drains them even for a 7.2 us
-copy: the host is the limiter, not the device.
-
-That is far above a bare CUDA launch (~5 us), so most of it is Julia-side
-broadcast machinery -- the same category as the `cufunction`-per-launch problem
-in §5, where per-launch host cost went 6.95 -> 11.47 us and cost ~19% SYPD.
-
-### What it is worth
-
-Halving the 396,122 launches saves ~3,667 ms over 120 steps = **30.6 ms/step**,
-about **10.8% of a ~284 ms step**. For comparison, radiation is 36.5% of kernel
-time and has no available win after eight attempts (4x), and the microphysics
-cache kernel win was +0.5% SYPD.
-
-Sub-25 us kernels are 52.6% of launches and 7.9% of GPU work. Fusing that band
-alone, if it collapsed 4:1, would remove ~156,000 launches: ~2,900 ms over 120
-steps, ~8.5% of step time.
-
-**Caveat**: the probe adds launches in a tight loop, where nothing overlaps
-them. Real launches may overlap slightly better, so 18.5 us is an upper bound on
-what each removed launch returns. The direction and order of magnitude are not
-in doubt.
-
-### 6b. 14.4 million driver calls asking which context we are in
-
-The 18.51 us marginal host cost per launch (§6a) decomposes from the profile's
-CUDA runtime table:
-
-| | calls per launch | us per launch |
-|---|---|---|
-| `cuLaunchKernel` | 1.0 | 8.19 |
-| **`cuCtxGetId`** | **25.5** | 3.44 |
-| **`cuStreamGetCaptureInfo`** | **10.8** | 1.85 |
-| memory ops | — | ~1.0 |
-| Julia broadcast machinery | — | ~4.0 (residual) |
-
-CUDA.jl asks the driver which context it is in **25 times per kernel launch**,
-and whether a graph capture is active **11 times per launch**. Over the window
-that is **14,389,192 calls costing 2,094 ms = 17.5 ms/step = 6.1% of a 284 ms
-step**, and it computes nothing.
-
-This is per-launch overhead, so it is additive with fusion rather than an
-alternative to it: fusing halves the count, and cutting the per-launch queries
-makes every remaining launch cheaper.
-
-The environment pins **CUDA.jl 5.11.3**; 6.4.0 is current. Whether the newer
-version reduces these queries is unknown and is the cheapest thing to check
-next, since it needs no code change -- only a manifest bump in one arm.
-
-Precedent from §5: a per-launch host cost regression of 6.95 -> 11.47 us (a
-`cufunction` call per launch, to build a cache key) cost ~19% SYPD. Per-launch
-host cost in this stack has a large SYPD lever attached to it.
-
-**Where this leaves the search for non-science optimizations**, in order of
-measured value:
-
-| target | worth | needs |
-|---|---|---|
-| per-launch driver queries | ~6% of step time | CUDA.jl bump or upstream fix |
-| halving launch count by fusion | ~10.8% of step time | mechanical `@fused_direct` work |
-| radiation kernels | nothing available | 4 attempts, all rejected |
-| microphysics cache kernel | +0.5% SYPD | done, tagged |
+Fusion is the largest science-free target that remains, and it is a whole-stack
+effort worth about 3%, spread over seven packages, with no single repository
+able to deliver it. See `docs/experiments/launch-cost.md` for the per-package
+and per-file attribution, and CliMA/ClimaAtmos.jl#4261 for the upstream issue.
