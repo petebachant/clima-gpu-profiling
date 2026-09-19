@@ -17,11 +17,13 @@ invocation, and written to paths this experiment owns, so no later experiment ca
 overwrite them and no cross-session comparison can creep in.
 
 ```sh calkit stage name=baseline environment=clima outputs=[results/experiments/launch-cost/baseline.nsys-rep, results/experiments/launch-cost/baseline.sqlite] inputs=[scripts/run-nsys.sh, scripts/run.jl, ClimaCoupler.jl/src, ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml, ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml, ClimaCoupler.jl/experiments/AMIP/code_loading.jl, ClimaCore.jl/src, ClimaCore.jl/ext, ClimaAtmos.jl/src, RRTMGP.jl/src] scheduler={options: [--gpus=1, --time=180]}
-scripts/run-nsys.sh results/experiments/launch-cost/baseline ClimaCoupler.jl/experiments/AMIP ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+#!/usr/bin/env bash
+bash scripts/run-nsys.sh results/experiments/launch-cost/baseline ClimaCoupler.jl/experiments/AMIP ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
 ```
 
 ```sh calkit stage name=probe environment=clima outputs=[results/experiments/launch-cost/probe.nsys-rep, results/experiments/launch-cost/probe.sqlite] inputs=[scripts/run-nsys.sh, scripts/run.jl, ClimaCoupler.jl-mod/src, ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml, ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml, ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl, ClimaCore.jl-mod/src, ClimaCore.jl-mod/ext, ClimaAtmos.jl-mod/src, RRTMGP.jl-mod/src] scheduler={options: [--gpus=1, --time=180]}
-scripts/run-nsys.sh results/experiments/launch-cost/probe ClimaCoupler.jl-mod/experiments/AMIP ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+#!/usr/bin/env bash
+bash scripts/run-nsys.sh results/experiments/launch-cost/probe ClimaCoupler.jl-mod/experiments/AMIP ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
 ```
 
 ```python calkit stage name=analyze environment=py outputs=[{path: results/experiments/launch-cost/stats.json, storage: git}] inputs=[scripts/measure_launch_overhead.py, results/experiments/launch-cost/baseline.sqlite, results/experiments/launch-cost/probe.sqlite]

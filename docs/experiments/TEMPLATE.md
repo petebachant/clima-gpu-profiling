@@ -15,6 +15,11 @@ run it, tag the experiment, then set `frozen: true`.
 
 ## Why the profiling stages live here
 
+A shell block that becomes a scheduled stage is handed straight to `sbatch`, so
+it must begin with a shebang, and it invokes helper scripts through `bash`
+because `scripts/*.sh` are not executable in this repo.
+
+
 An experiment that reads `results/nsys/baseline.sqlite` does not own its inputs:
 the next experiment overwrites that path, and the write-up silently restates
 itself against a different run. Declaring the profiling stages in this file, with
@@ -28,13 +33,15 @@ file, so they may be garbage-collected. The record is the statistics JSON below,
 which is stored in Git and is a few kilobytes.
 
 ```sh calkit stage name=baseline environment=clima outputs=[results/experiments/<slug>/baseline.nsys-rep, results/experiments/<slug>/baseline.sqlite] inputs=[scripts/run-nsys.sh, scripts/run.jl, ClimaCoupler.jl/src, ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml, ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml, ClimaCore.jl/src, ClimaCore.jl/ext, ClimaAtmos.jl/src, RRTMGP.jl/src] scheduler={options: [--gpus=1, --time=120]}
-scripts/run-nsys.sh results/experiments/<slug>/baseline \
+#!/usr/bin/env bash
+bash scripts/run-nsys.sh results/experiments/<slug>/baseline \
   ClimaCoupler.jl/experiments/AMIP \
   ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
 ```
 
 ```sh calkit stage name=mod environment=clima outputs=[results/experiments/<slug>/mod.nsys-rep, results/experiments/<slug>/mod.sqlite] inputs=[scripts/run-nsys.sh, scripts/run.jl, ClimaCoupler.jl-mod/src, ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml, ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml, ClimaCore.jl-mod/src, ClimaCore.jl-mod/ext, ClimaAtmos.jl-mod/src, RRTMGP.jl-mod/src] scheduler={options: [--gpus=1, --time=120]}
-scripts/run-nsys.sh results/experiments/<slug>/mod \
+#!/usr/bin/env bash
+bash scripts/run-nsys.sh results/experiments/<slug>/mod \
   ClimaCoupler.jl-mod/experiments/AMIP \
   ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
 ```
