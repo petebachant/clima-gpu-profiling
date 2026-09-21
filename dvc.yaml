@@ -602,6 +602,19 @@ stages:
           cache: false
     desc: Automatically generated from the 'analyze-logs' stage in calkit.yaml.
       Changes made here will be overwritten.
+  compile-time-doc/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/compile-time.md/values.py
+    deps:
+      - .calkit/markdown/docs/compile-time.md/values.py
+      - results/compile-time/compile-time.toml
+      - .calkit/env-locks/py
+    outs:
+      - results/compile-time/doc-values.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'compile-time-doc/values' stage in
+      calkit.yaml. Changes made here will be overwritten.
   launch-cost/baseline:
     cmd: calkit scheduler batch --name launch-cost/baseline --environment clima
       --dep scripts/run-nsys.sh --dep scripts/run.jl --dep ClimaCoupler.jl/src

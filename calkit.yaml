@@ -5,66 +5,46 @@ description: Profiling GPU performance for CliMA.
 git_repo_url: https://github.com/petebachant/clima-gpu-profiling
 
 questions:
+  # Answers are one sentence pointing at reproducible evidence; the reasoning
+  # lives in docs/. Numbers are templated from value evidence by name rather
+  # than typed -- but ONLY where the cited file is the same artifact in the
+  # working tree as at the pin, because rendering reads the working tree and
+  # ignores git_ref. A pinned citation of a regenerated artifact such as
+  # results/summary.json must therefore NOT be templated: it would render
+  # whichever run wrote that file last. Those figures stay typed and pinned.
   - question: >-
       What is the ceiling on kernel fusion, and which package would have to
       deliver it?
     answer: >-
-      At most about 3% of a step, and no single package can deliver it --- but
-      the figure is measured under a profiler that inflates exactly this
-      quantity, so treat it as an upper bound.
-
-      CAVEAT FIRST. Host-side timing taken from an nsys profile is not a
-      measurement of the real run: most of the profiled GPU idle is the
-      profiler, whose tracing runs to roughly 33 CUDA API calls per kernel
-      launch (docs/learnings.md 2b-i). The per-launch cost below therefore
-      includes injection overhead and is an upper bound. Pricing a launch
-      honestly means running the probe through the unprofiled AMIP stages and
-      reading SYPD, which has not been done.
-
-      Of 3,301 kernel launches per step, 1,737 (52.6%) come from kernels
-      averaging under 25 microseconds, which is the band where the host time
-      around a launch exceeds the GPU time inside it. At 6.74 microseconds of
-      host time per launch, fusing that whole band four-to-one saves 2.96% of a
-      297.1 ms step. Making every short launch vanish outright -- which no real
-      change achieves -- saves 3.94%. Those are the ceilings.
-
-      The band is spread across seven packages, so the ceiling is a sum over the
-      whole stack rather than a target for one repository. ClimaAtmos holds the
-      largest share at 791.8 launches per step, worth 1.35% if fused
-      four-to-one; ClimaCore 169.1 and 0.29%; ClimaCoupler 147.0 and 0.25%;
-      ClimaLand 124.3 and 0.21%; ClimaDiagnostics 93.6 and 0.16%.
-
-      Within ClimaAtmos the densest source is cache/microphysics_cache.jl at
-      296.2 launches per step, worth 0.5%. CliMA/ClimaAtmos.jl#4261 proposes
-      starting at cache/precomputed_quantities.jl, which is 62.4 launches per
-      step and worth 0.11%: the cache folder is the right instinct, but the
-      microphysics cache is the bigger half of it.
-
-      This matters mainly as a guard against over-investment. Under the
-      withdrawn 18.51 microsecond estimate the same band read as 8% of a step,
-      which would have made single-file work look worthwhile. At the measured
-      6.74 it does not: a week spent on any one file returns a fraction of a
-      percent, while the 3% exists only as a whole-stack effort.
+      At most {ceiling_fuse_4to1_pct}% of a step from fusing the sub-25
+      microsecond band four-to-one, or {ceiling_all_removed_pct}% if every short
+      launch vanished outright, priced at {host_us_per_launch} microseconds of
+      host time per launch -- an upper bound measured under a profiler that
+      inflates exactly this quantity, and spread across seven packages, so no
+      single repository can deliver it.
     explanation: docs/experiments/launch-cost.md
     evidence:
-      - kind: result
+      - kind: value
         path: results/experiments/launch-cost/stats.json
         key: fusion.ceiling_fuse_4to1_pct
+        name: ceiling_fuse_4to1_pct
         git_ref: meas/2026-09-19-launch-cost
         explanation: >-
           The ceiling for fusing the sub-25 microsecond band four-to-one, priced
-          at the marginal host cost measured from the adjacent probe pair in the
-          same document.
-      - kind: result
+          at the marginal host cost from the adjacent probe pair in the same
+          document.
+      - kind: value
         path: results/experiments/launch-cost/stats.json
         key: fusion.ceiling_all_removed_pct
+        name: ceiling_all_removed_pct
         git_ref: meas/2026-09-19-launch-cost
         explanation: >-
           The absolute bound, where every short launch disappears. Quoted so the
           ceiling cannot be mistaken for a target.
-      - kind: result
+      - kind: value
         path: results/experiments/launch-cost/stats.json
         key: marginal.host_us_per_launch
+        name: host_us_per_launch
         git_ref: meas/2026-09-19-launch-cost
         explanation: >-
           The price everything above rests on, from a baseline and probe
@@ -75,1132 +55,512 @@ questions:
         git_ref: meas/2026-09-19-launch-cost
         explanation: >-
           The experiment. It declares both profiling stages itself, so the pair
-          cannot be split across sessions, and every figure in its prose is
-          injected from the stats file rather than typed.
+          cannot be split across sessions.
   - question: >-
       How much of a timestep is spent launching kernels rather than running
       them, and is that a bigger target than the kernels themselves?
     answer: >-
-      SUPERSEDED, and mostly unsupported. The figures here come from nsys gap
-      analysis, and docs/learnings.md 2b-i establishes that profiled GPU idle is
-      dominated by the profiler rather than the model. Launch and kernel COUNTS
-      below stand, because they are device-side; the idle and gap TIMES do not.
-      See the fusion-ceiling question for what survives.
-
-      The run issues 3,301 kernel launches per step. The GPU is busy 244.6 ms
-      per step and 38.8 ms per step passes in sub-millisecond gaps between
-      kernels, waiting on the host. Over half the launches (208,420 of 396,122)
-      come from kernels averaging under 25 microseconds, which cost more host
-      time than they produce in GPU work.
-
-      The marginal cost of a launch was measured as a slope, by adding 120,000
-      trivial launches and re-profiling (516,122 launches against the baseline's
-      396,122). A first attempt compared those runs ACROSS DAYS and reported
-      18.51 microseconds; that figure is WITHDRAWN. Identical code profiled on
-      three occasions gave host gaps of 4,656, 6,837 and 6,214 ms, a spread near
-      30% with no code change, which swamps the effect. Re-measured as an
-      adjacent pair from one invocation, a launch costs 6.74 microseconds of
-      host time and 12.91 of wall time.
-
-      Of that, the CUDA driver is asked which context is current 25.54 times per
-      launch and whether a graph capture is active 10.78 times per launch.
-      Neither computes anything. cuLaunchKernel itself is 8.19 microseconds.
-
-      For scale: halving the launch count is worth roughly 4% of a step, and
-      fusing the sub-25 microsecond band 4:1 about 3% -- a third of what the
-      withdrawn figure implied, but still larger than anything left in the
-      radiation kernels, which returned nothing across four rejected attempts,
-      and than the microphysics cache kernel at about +0.5% SYPD. Upgrading
-      CUDA.jl is blocked: it resolves to v6, but ClimaCore's CUDA extension
-      extends CUDA.shfl_recurse, which v6 removed.
-
-      ClimaCore 1.0 was suspected of a large regression on this path. It is not:
-      a same-session A/B against 0.16.2 puts it at -0.1% on busy-plus-gap per
-      step, inside the 3.4% null band. The apparent +46.9% was node load between
-      sessions.
+      Superseded and mostly unsupported -- the launch and kernel counts stand
+      because they are device-side, but the idle and gap times come from nsys
+      gap analysis, which docs/learnings.md 2b-i shows is dominated by the
+      profiler rather than the model; a launch costs {host_us_per_launch}
+      microseconds of host time, and what survives is in the fusion-ceiling
+      question above.
     explanation: docs/experiments/launch-overhead.md
     evidence:
       - kind: table
         path: docs/experiments/launch-overhead.md
         git_ref: meas/2026-09-17-launch-overhead
         explanation: >-
-          The write-up. Every figure in it is injected from
-          results/launch-overhead.json by a calkit value marker and rewritten
-          whenever the stage runs, so the prose cannot drift from the
-          calculation. The analysis is the annotated code block in the same
-          file.
-      - kind: result
+          The write-up, with every figure injected from
+          results/launch-overhead.json rather than typed.
+      - kind: value
         path: results/experiments/launch-cost/stats.json
         key: marginal.host_us_per_launch
+        name: host_us_per_launch
         git_ref: meas/2026-09-19-launch-cost
         explanation: >-
-          The marginal host cost per launch, from the slope. Its inputs are the
-          baseline profile and results/launch-probe.json.
-      - kind: result
+          The re-measurement that replaced the withdrawn 18.51, taken as an
+          adjacent pair from one invocation.
+      - kind: value
         path: results/launch-probe.json
         key: launches
+        name: probe_launches
         git_ref: meas/2026-09-17-launch-overhead
         explanation: >-
           Statistics of the probe profile, committed because the profile itself
           is transient: results/nsys/mod.sqlite is overwritten by the next
-          experiment, and depending on it made the pipeline regenerate the mod
-          arm WITHOUT the probe and destroy the measurement.
+          experiment, and depending on it destroyed the measurement once.
   - question: >-
       Can the SGS microphysics cache kernel be made faster from inside a single
       package, and how much is that worth?
     answer: >-
-      Yes, -7.49% on the kernel, entirely within ClimaAtmos and bit-for-bit. It
-      is worth almost nothing in SYPD, and the reason is the useful part.
-
-      Two independent changes: a clear-air early-out skipping the
-      CloudMicrophysics call at quadrature points that are subsaturated with no
-      condensate and no precipitation (-3.27%), and dropping `mp`/`tps` from
-      `Microphysics1MEvaluator` so the per-point payload falls from 472 B to
-      40 B (~-4.2%, CliMA/ClimaAtmos.jl#4818). Measured against a null test on
-      the same base where this kernel moved +0.15%, so ~50x the kernel noise.
-
-      THIS IS A KERNEL RESULT AND MUST NOT BE QUOTED AS A SYPD RESULT. The
-      saving is 259 ms of a 22,148 ms window -- 1.17% of GPU kernel time, about
-      +0.53% SYPD against a full-AMIP noise floor near 2%. A 2-hour AMIP pair
-      would produce a number indistinguishable from zero.
-
-      The early-out is also where this line of work stops. It returned -21.5% in
-      August and -3.27% now, which looked like upstream #4779's refit of
-      `λ_lagrange` leaving tiny nonzero condensate where a bit-for-bit guard
-      needs exact zero. Over 13.9M quadrature points that is wrong: the guard
-      fires at 88.31% of them, MORE than August's 77.7%, and only 0.36% sit in
-      (0, 1e-10] where a threshold version would help. Skipping the microphysics
-      call at 88.31% of points for a 3.27% gain bounds that call at ~3.7% of the
-      kernel's cost. The kernel is bound by register pressure and memory
-      traffic, not arithmetic -- which is why slimming a struct beats skipping
-      88% of the physics. Skip-based work here is capped near 4%.
+      Yes -- a clear-air early-out plus a slimmer evaluator payload make the
+      kernel about 7.5% faster, bit-for-bit and entirely within ClimaAtmos --
+      but the guard already fires at {guard_fires_pct:.2f}% of quadrature
+      points, which caps skip-based work here near 4%, and the whole result is
+      worth roughly +0.5% SYPD, below the full-AMIP noise floor.
     explanation: docs/learnings.md
     evidence:
       - kind: table
         path: results/top-kernels.csv
         git_ref: exp/2026-09-15-microphysics-cache-atmos
         explanation: >-
-          set_microphysics_tendency_cache_ 3434.8 -> 3177.7 ms (-7.49%), both
-          microphysics kernels 3921.2 -> 3661.7 (-6.62%). The same file at the
-          null-test commit shows this kernel at +0.15% with identical arms,
-          which is what makes the effect meaningful.
-      - kind: result
+          set_microphysics_tendency_cache_ 3434.8 -> 3177.7 ms (-7.49%). The
+          same file at the null-test commit shows this kernel at +0.15% with
+          identical arms, which is what makes the effect meaningful.
+      - kind: value
         path: results/earlyout-hits.toml
         key: guard_fires_pct
+        name: guard_fires_pct
         git_ref: meas/2026-09-15-earlyout-hit-rate
         explanation: >-
-          88.31% of 13.9M quadrature points still take the early-out, so the
-          decay from -21.5% is not a hit-rate problem. zero_tendency_pct is
-          90.62%, the ceiling for any skip-based approach.
+          The share of 13.9M quadrature points still taking the early-out, so
+          the decay from August's -21.5% is not a hit-rate problem.
       - kind: table
         path: diffs/ClimaAtmos.jl.diff
         git_ref: exp/2026-09-15-microphysics-cache-atmos
         explanation: >-
-          The whole treatment. arms_differ_in is ['ClimaAtmos.jl-mod'] and
+          The whole treatment: arms_differ_in is ['ClimaAtmos.jl-mod'] and
           nothing else, which is what makes this a single-package result.
   - question: Can we improve the performance of the flagship AMIP simulation?
-    answer: >-
-      Yes, but far less than this project once claimed, and not where it looked.
-
-      SUPERSEDED FIGURES: the +4.24% and +8.05% below were measured on a
-      10-step profiling window in a 40-step run -- shorter than the gravity-wave
-      period, so neither scheme ever fired, with ~half the per-step cost being
-      first-call compilation. On a phase-independent 120-step window the
-      microphysics kernel those changes target is 10.3% of GPU kernel time, not
-      the dominant cost, and the three code changes together are worth roughly
-      1-2% SYPD.
-
-      The one clean, confound-free result is the ClimaAtmos evaluator payload
-      change: -5.46% on its kernel, bit-identical model state over 120 coupled
-      steps, ~0.56% of GPU time -- below the 0.6-0.8% SYPD noise floor.
-
-      The larger targets are the SGS quadrature order (a science decision, and
-      still the biggest single lever) and radiation, which is 43.9% of GPU time
-      and untouched. See the question on where GPU time actually goes.
+    answer:
+      "if speedup_pct > 5": >-
+        Yes -- the pipeline currently measures {speedup_pct:.2f}% SYPD for the
+        modified stack at {mod_sypd:.5f} SYPD, carried by the RRTMGP
+        aerosol-optics binary search rather than by the microphysics work this
+        project started with.
+      "elif speedup_pct > 0.5": >-
+        Marginally -- the pipeline currently measures {speedup_pct:.2f}% SYPD at
+        {mod_sypd:.5f} SYPD, above the noise floor but well short of what the
+        radiation work has shown.
+      "else": >-
+        Not at the revision currently measured -- the pipeline reads
+        {speedup_pct:.2f}% SYPD at {mod_sypd:.5f} SYPD, inside the run-to-run
+        spread, so there is no effect to claim here.
     explanation: docs/whole-stack.md
     evidence:
       - kind: figure
         path: figures/sypd-time-series.png
-      - kind: result
+      - kind: value
         path: results/summary.json
         key: speedup_pct
-      - kind: result
+        name: speedup_pct
+        explanation: >-
+          The end-to-end number for whatever revision last ran the pipeline.
+          Read the cumulative rows in experiments.csv as cumulative: no row
+          after the first is that change's own effect.
+      - kind: value
         path: results/summary.json
         key: mod.sypd
-        explanation: >-
-          The decomposition that the headline number hides. Measured ALONE
-          against an unmodified stack, the ClimaCore launch-bounds mechanism is
-          -0.016% (tag exp/2026-08-24-launch-bounds) -- a null, which is why the
-          pull request was closed as a dead end on 2026-08-31. Measured on top
-          of the CloudMicrophysics fusion the same unchanged mechanism is worth
-          +2.6 points (exp/2026-09-04-fuse-and-bounds at +2.56%,
-          exp/2026-09-04-16warps at +4.10%). The fusion alone is +1.87%
-          (exp/2026-09-01-cm-fuse). Read the cumulative rows as cumulative: no
-          row after the first is that change's own effect.
+        name: mod_sypd
+        explanation: Absolute throughput of the modified arm, for scale.
       - kind: table
         path: results/top-kernels.csv
         explanation: >-
-          Top 20 GPU kernels by baseline cost, for both arms of whichever
-          revision produced it. What the two arms actually were is recorded per
-          run in results/treatment.json rather than here, so this description
-          cannot go stale against the data: on a null-test revision the
-          kernel-by-kernel spread measures run-to-run variation, and on a
-          treatment revision it measures the treatment. Spill counts are not
-          collected by nsys; see results/kernel-resources.csv and results/ncu/
-          for those.
-
+          Top 20 GPU kernels by baseline cost for both arms. What the two arms
+          actually were is recorded per run in results/treatment.json rather
+          than here, so this description cannot go stale against the data.
   - question: >-
       Can the radiation kernels be made faster without changing results, and
       which change is responsible?
     answer: >-
-      Yes, substantially: **+8.70% SYPD** (0.21611 -> 0.23671), with the model
-      state **bit-identical over 120 coupled steps**. Radiation drops 26.8% and
-      total GPU kernel time 12.3%. That is roughly six times the combined SYPD of
-      this project's entire microphysics effort, and it comes from one function.
-
-      **One change is responsible.** Measured separately:
-
-      | change | radiation | all GPU kernel time |
-      |---|---|---|
-      | binary search alone | **-26.71%** | **-11.81%** |
-      | binary search + 64-thread blocks | -26.66% | -11.74% |
-      | 64-thread blocks contribute | **+0.05 points** | nothing |
-
-      The block-size change is NOT part of the proposal. It did help earlier --
-      shortwave went -2.63% to -4.04% on top of a night-column skip -- but that
-      was while the kernel was dominated by divergent scan work and load
-      imbalance mattered. Once the scan is gone the kernel is uniform enough
-      that finer scheduling has nothing to fix.
-
-      Note the split is only resolvable at kernel level: 0.05 points of
-      radiation is ~0.02% of GPU time, and even a real 1.5-point difference
-      would be ~0.7% SYPD, at this project's 0.6-0.8% SYPD noise floor.
-
-      The changes measured were:
-
-      (1) **A binary search replacing a linear scan** in `loc_lower`
-      (`src/optics/optics_utils.jl`). It is reached per layer, per g-point, per
-      aerosol species from `interp1d_loc_factor`, which interpolates relative
-      humidity in the MERRA aerosol optics. It returns the same index --
-      verified over 100,000 randomized cases and then bit-identical in the
-      coupled model. RRTMGP already used an O(1) index computation for
-      uniformly-spaced axes; this is the non-uniform path.
-
-      (2) **64-thread blocks** for the four `rte_*_2stream` kernels. Occupancy
-      is unchanged (at 255 registers an SM holds 256 threads either way), so
-      this only changes scheduling granularity.
-
-      The first carries all of it. Longwave fell 27.0% and the block change
-      touches only shortwave, so the shared optics code had to be responsible;
-      measuring the search alone confirmed it at +7.95% SYPD against +8.70% for
-      the pair, a gap inside the repeat spread. Only the search is proposed.
-
-      Two things worth knowing before profiling these kernels again.
-
-      **ncu's source attribution understated the hot lines by about 4x** -- it
-      put 7.2% of kernel time on the scan that turned out to be worth 27%.
-      Source-line sampling undercounts warp-divergent code: a sample lands on
-      the instruction a lane is stalled at, but the cost is the whole warp
-      waiting for its slowest lane. Read attribution as WHERE, not HOW MUCH.
-
-      **Occupancy is a dead end here and ncu ranks it first anyway** (74%
-      estimated). Raising it measured +3.93% WORSE. The reason is structural:
-      24,576 columns against 27,648 resident threads at 255 registers means the
-      whole problem is one resident wave at every block size, so a block
-      finishing early frees no capacity and kernel time is the slowest thread's
-      time. Load balancing cannot help either -- a night-column skip that is
-      45.96% warp-coherent bought only 2.63%.
+      Yes -- a binary search replacing a linear scan in RRTMGP's aerosol-optics
+      interpolation is worth +7.95% SYPD on its own and carries essentially all
+      of the +8.70% measured with a 64-thread block change added, with model
+      state bit-identical over 120 coupled steps.
     explanation: docs/learnings.md
     evidence:
-      - kind: result
+      - kind: value
         path: results/summary.json
         key: speedup_pct
+        name: rrtmgp_pair_speedup_pct
         git_ref: exp/2026-09-12-rrtmgp-optics
         explanation: >-
-          +8.70% SYPD end to end. RRTMGP is the only package differing between
-          arms: ClimaCore and ClimaAtmos are at identical commits and
-          CloudMicrophysics at the v0.38.3 tree the baseline manifest pins.
-          (`arms_differ_in` also lists CloudMicrophysics.jl-mod and
-          dev-package-set, which it reports for any dev'd package regardless of
-          content -- see docs/learnings.md 4i.)
+          +8.70% SYPD end to end for the pair. RRTMGP is the only package
+          differing between arms. NOT templated into the answer: rendering reads
+          the working tree, where results/summary.json holds a later run.
       - kind: table
         path: diffs/RRTMGP.jl.diff
         git_ref: exp/2026-09-12-rrtmgp-optics
         explanation: >-
-          The change itself, 69 lines across three files: the binary search in
-          src/optics/optics_utils.jl and the 64-thread launch configuration in
-          the two rte_*_2stream CUDA extensions. Reading the diff is the fastest
-          way to judge whether the result is plausible.
+          The change itself, 69 lines across three files.
       - kind: table
         path: results/top-kernels.csv
         git_ref: exp/2026-09-12-rrtmgp-optics
         explanation: >-
-          Per-kernel confirmation on the 120-step phase-independent window:
-          longwave 7768 -> 5668 ms (-27.0%) and shortwave 6781 -> 4988 ms
-          (-26.4%). Longwave moving is the attribution -- the block-size change
-          affects only shortwave, so the shared optics code carries the result.
-      - kind: result
+          Per-kernel confirmation: longwave -27.0% and shortwave -26.4%.
+          Longwave moving is the attribution, since the block-size change
+          affects only shortwave.
+      - kind: value
         path: results/summary.json
         key: speedup_pct
+        name: binary_search_speedup_pct
         git_ref: meas/2026-09-13-binary-search-alone
         explanation: >-
-          The isolation: block size left at RRTMGP's default of 256 in both
-          arms, so this is the binary search alone. +7.95% SYPD, against +8.70%
-          with the 64-thread block change added. The 0.75-point gap sits inside
-          the 0.6-0.8% repeat spread of this measurement, so the block change
-          cannot be claimed to contribute anything. It is not part of the
-          proposal.
+          The isolation, with block size left at RRTMGP's default in both arms:
+          +7.95% SYPD. The 0.75-point gap against the pair sits inside the
+          repeat spread, so the block change is not part of the proposal.
       - kind: table
         path: results/top-kernels.csv
         git_ref: meas/2026-09-13-binary-search-alone
         explanation: >-
-          Per-kernel, same isolation: radiation 14567.1 -> 10645.6 ms
-          (-26.92%), against -26.66% with the block change added. The search
-          alone is marginally BETTER on radiation than the pair, which is the
-          clearest statement that the block change is noise rather than a small
-          gain.
+          Same isolation per kernel: radiation -26.92%, against -26.66% with the
+          block change added, so the search alone is marginally better.
       - kind: table
         path: diffs/RRTMGP.jl-authored.diff
         git_ref: meas/2026-09-13-binary-search-alone
         explanation: >-
-          The proposed change in full: 30 lines in one function. This is the
-          branch's own delta since it diverged from RRTMGP main, so it excludes
-          the vendored dev-guides that upstream landed after the baseline pin
-          and that dominate the base-vs-mod comparison.
-      - kind: result
+          The proposed change in full: 30 lines in one function, as the branch's
+          own delta since it diverged from RRTMGP main.
+      - kind: value
         path: results/state-rad-mod.toml
         key: steps
+        name: bit_identical_steps
         git_ref: meas/2026-09-12-rrtmgp-bit-identical
         explanation: >-
-          Bit-identity, not an accuracy trade. Comparing this against
-          results/state-rad-baseline.toml gives 0 of 12 prognostic fields
-          differing at every snapshot across 120 coupled steps, on a model shown
-          deterministic by the null test in docs/learnings.md 4i (baseline run
-          twice is bit-identical). The unit-level check -- 100,000 randomized
-          cases against the original scan -- is necessary but was not sufficient
-          on its own; the CloudMicrophysics episode in 4h/4i is why.
-
+          Bit-identity, not an accuracy trade: 0 of 12 prognostic fields differ
+          against results/state-rad-baseline.toml at every snapshot across these
+          coupled steps.
   - question: >-
       Where does the AMIP simulation's GPU time actually go, and is the
       microphysics kernel the right thing to optimize?
     answer: >-
-      No. On a representative window, **radiation is 43.9% of GPU kernel time**
-      -- four RRTMGP `rte_*_2stream` kernels -- against **10.3%** for
-      `set_microphysics_tendency_cache`, the kernel this project spent its effort
-      on. The earlier picture was an artefact of the profiling window, not of the
-      model.
-
-      The old window profiled 10 steps of a 40-step run. That is shorter than the
-      gravity-wave period (60 steps), so neither scheme ever fired; cloud
-      fraction and the diagnostics write (120 steps) never fired either; and the
-      model's own accounting put ~half the per-step cost in first-call
-      compilation (0.2767 s reported against 0.146 s measured in steady state).
-      In that window microphysics looked dominant and radiation marginal.
-
-      The window is now 120 steps = one simulated hour = LCM(20, 60, 120) of the
-      periodic processes, which makes it **phase-independent**: every process
-      fires its exact long-run share wherever the window starts, so the profile
-      needs no offsetting and no reweighting.
-
-      The consequence for this project's results is that the optimization ceiling
-      was overstated. Even eliminating the microphysics kernel entirely is worth
-      ~10% of GPU time; the three code changes together are worth roughly 1-2%
-      SYPD, not the +4.24% and +8.05% measured on the old window. The one clean,
-      confound-free result is the ClimaAtmos evaluator payload change at -5.46%
-      on its kernel, which is ~0.56% of GPU time -- real, and below the 0.6-0.8%
-      SYPD noise floor.
-
-      Radiation is untouched because it is invisible to this project's tooling:
-      RRTMGP launches its own kernels with `@cuda` rather than through
-      ClimaCore's `auto_launch!`, so it receives no occupancy targeting, no
-      launch-bounds machinery and no stack-trace naming -- which is why it
-      appears in every profile here as unnamed mangled symbols.
+      No -- radiation is the largest block at about 44% of GPU kernel time
+      against roughly 10% for the microphysics kernel this project targeted, and
+      with host time outside the GPU timeline at {gap_frac_of_wall:.3%} of wall
+      the run is densely GPU-bound, so kernel time is what there is to attack.
     explanation: docs/learnings.md
     evidence:
-      - kind: result
+      - kind: value
         path: results/step-breakdown.toml
         key: gap_frac_of_wall
+        name: gap_frac_of_wall
         explanation: >-
-          Measured WITHOUT a profiler, using CUDA events: host time outside the
-          GPU timeline is 0.0% of wall, and the GPU timeline is ~94% kernel
-          execution. So the model is densely GPU-bound and kernel time is the
-          thing to attack -- but also that scheduling changes such as CUDA graphs
-          have at most ~6% to give. nsys cannot answer this: its own
-          instrumentation dominates the idle measurement, reporting MORE idle for
-          the faster arm (docs/learnings.md 2b-i, 4f).
+          Measured WITHOUT a profiler, using CUDA events. nsys cannot answer
+          this: its own instrumentation dominates the idle measurement, and it
+          reports MORE idle for the faster arm (docs/learnings.md 2b-i, 4f).
       - kind: table
         path: results/top-kernels.csv
         explanation: >-
-          The per-kernel breakdown on the 120-step phase-independent window. The
-          four `rte_*_2stream` entries total 43.9% of GPU kernel time at 255
-          registers each -- the sm_80 hardware cap -- and 12.5% occupancy, with
-          ZERO local memory, so the register pressure is genuine demand. Asking
-          for two blocks per SM does reach 128 registers and 25% occupancy and
-          runs 3.93% SLOWER (tag meas/2026-09-11-radiation-occupancy): ptxas met
-          the budget by rematerializing rather than spilling, and the recompute
-          outweighed the occupancy.
-
+          The per-kernel breakdown on the 120-step phase-independent window,
+          which is LCM(20, 60, 120) of the periodic processes and so fires every
+          scheme at its exact long-run share. The earlier 40-step window was
+          shorter than the gravity-wave period and made microphysics look
+          dominant.
   - question: >-
       What CI checks would catch a kernel this inefficient before it reaches
       main, and block it until it is fixed?
     hypothesis: >-
-      The obvious gate -- benchmark the model and fail the build if it got
-      slower -- cannot work here, and this project has the numbers to say why.
-      Full-AMIP SYPD has a 0.43% noise floor at best and ~2% typically, while
-      the change that made the hot kernel 8.8% faster is worth ~0.3% SYPD. A
-      threshold loose enough to avoid false alarms would pass almost every
-      regression worth catching, and a tight one would fail constantly. The
-      quantities that actually diagnose these kernels are compile-time and
-      deterministic, so the gate should be built on those instead.
+      A benchmark-and-threshold gate cannot work here, because full-AMIP SYPD
+      noise is larger than the changes worth catching, so the gate has to be
+      built on compile-time quantities instead.
     answer: >-
-      Gate on per-kernel compile-time resource use, not on end-to-end timing:
-      registers per thread AND absolute local-memory bytes, recorded per kernel
-      as a checked-in baseline, with the build failing on regression or on
-      crossing an absolute limit. Both come from `CUDA.registers` and
-      `CUDA.memory` without running the kernel or needing a benchmark, so they
-      are exactly reproducible and cost seconds. Three specifics this project
-      learned the hard way, all of which a naive version of the check would get
-      wrong.
-
-      (1) **Registers alone are not enough, and are actively misleading.** A
-      kernel at the 255-register hardware cap reports 255 no matter how far over
-      it is, so register count cannot distinguish "fine" from "catastrophic",
-      and cannot show whether a fix helped. Three separate attempts here read as
-      no-ops for exactly this reason. Local-memory bytes must be recorded
-      alongside, in absolute terms.
-
-      (2) **Record absolutes, not differences.** The launch-bounds decision
-      originally logged only `spill_growth`, the difference between two
-      compiles. A difference cannot separate "demand fell" from "both compiles
-      moved together", and it hid a 30-register change that turned out to be the
-      compiler relabelling identical total cost.
-
-      (3) **Spilling at all is the signal worth alerting on.** The flagship
-      kernel spilled 32.9% of its memory traffic while looking unremarkable in
-      any timing table, because nsys does not collect spill data. Any kernel
-      compiling to nonzero local memory deserves a warning, and one at the
-      register cap deserves a hard failure.
-
-      Not yet implemented or validated here -- this is a design derived from the
-      measurements below, not a tested CI configuration. The natural place to
-      build it is ClimaCore's launch-bounds decision record, which already
-      computes every one of these numbers per kernel at compile time.
+      Gate on per-kernel compile-time resource use -- registers per thread AND
+      absolute local-memory bytes, from CUDA.registers and CUDA.memory, recorded
+      as a checked-in baseline -- never on end-to-end timing, which at this
+      project's noise floor can neither reward the changes worth making nor
+      catch their inverse; designed but not yet implemented.
+    explanation: docs/ci-kernel-gate.md
     evidence:
-      - kind: result
+      - kind: value
         path: results/cm-registers.toml
         key: layers.E microphysics_tendencies_1m (9-pt quadrature).registers
+        name: quad9_registers
+        git_ref: exp/2026-09-04-fuse-and-bounds
         explanation: >-
-          Why a register-only gate fails. This kernel sat at 255 -- the sm_80
-          hard cap -- through the fusion AND through three attempted fixes,
-          reporting an identical number each time while its actual local-memory
-          demand ranged from 1864 B down to 1432 B. The same file's
-          `unbounded_local_bytes` is the quantity that moved, and it was not
-          recorded at all until 2026-09-06.
+          Why a register-only gate fails: this kernel reports the sm_80 cap of
+          255 no matter how far over it is, so the count cannot distinguish
+          "fine" from "catastrophic" nor show whether a fix helped. Pinned
+          because the A-E broadcast layers are only produced when ClimaCore.jl-mod
+          is on pb/launch-bounds, so the key is absent from the current file.
+      - kind: value
+        path: results/cm-registers.toml
+        key: layers.E microphysics_tendencies_1m (9-pt quadrature).unbounded_local_bytes
+        name: quad9_local_bytes
+        git_ref: exp/2026-09-06-evaluator-param-args
+        explanation: >-
+          The quantity that actually moved while the register count sat still,
+          and which was not recorded at all until 2026-09-06. This is why the
+          gate must record absolute local-memory bytes, not just registers.
       - kind: table
         path: results/kernel-resources.csv
+        git_ref: exp/2026-09-07-evaluator-repeat
         explanation: >-
           The per-kernel table a CI check would compare against a stored
-          baseline: registers, spill requests, spill overhead, and achieved vs
-          theoretical occupancy for both arms. On the refreshed 2026-09-05
-          reports the hot kernel reads 255 registers and 32.92% spill overhead
-          in the baseline arm against 128 and 12.81% in the modified one --
-          a difference invisible in every timing-based table because nsys does
-          not collect spilling.
-      - kind: result
+          baseline. Pinned because the ncu stages that produce it are frozen, so
+          on main it describes whichever revision last ran them.
+      - kind: value
         path: results/summary.json
         key: speedup_pct
+        name: speedup_pct
         explanation: >-
-          Why the gate cannot be a model benchmark. This is the end-to-end
-          number, whose repeat spread is 0.43% at best and ~2% typically. The
-          ClimaAtmos change measured 8.8% faster on the target kernel and
-          ~0.3% here, i.e. below the floor -- so a SYPD gate would neither
-          reward it nor catch its inverse. By contrast the kernel-level
-          measurement repeats to 0.31%, resolving the same change at ~28x noise.
-
+          Why the gate cannot be a model benchmark: this is the end-to-end
+          number, whose repeat spread is 0.43% at best and ~2% typically, while
+          the kernel-level measurement repeats to 0.31%.
   - question: >-
       Which changes actually improve AMIP performance, by how much, and how do
       we know a result is real rather than run-to-run variation?
     answer: >-
-      Two changes have produced real gains, and they are complements rather than
-      alternatives. The CloudMicrophysics register-pressure work is worth ~5% on
-      its own: it removes the spilling in the hot
-      set_microphysics_tendency_cache kernel. ClimaCore's automatic per-kernel
-      register cap is worth ~0.1% on its own -- indistinguishable from zero --
-      because with stock CloudMicrophysics that kernel already spills at its
-      natural register count, so the cap declines to touch it. Together they are
-      worth ~9%: the CloudMicrophysics change creates the register headroom, and
-      the ClimaCore cap converts it into occupancy. Neither substitutes for the
-      other, and the combination beats the sum of the parts.
-
-      The noise floor is much tighter than previously assumed. Four runs in
-      which both arms were byte-identical (null tests) landed at -0.43%, -0.09%,
-      -0.06% and +0.21%, so run-to-run variation is a few tenths of a percent,
-      not the +/-2% this project worked to for months. Differences of ~0.5% are
-      therefore measurable, and results in that range should no longer be
-      dismissed as noise.
-
-      A third change now joins them, and it is the first to attack WORK rather
-      than occupancy. Fusing the 1M source-term evaluation into the
-      linearization (CloudMicrophysics `pb/1m-spill-fuse`) is worth +1.95% SYPD
-      on the current stack (`exp/2026-09-02-deps-and-fuse`): total GPU kernel
-      time -6.28%, the hot SGS-quadrature kernel -28.6%, launch count unchanged
-      to the unit and every other top-six kernel within 0.7%. It measured +1.87%
-      on the previous stack (`exp/2026-09-01-cm-fuse`), so it survives the
-      dependency update intact.
-
-      AND THE UPSTREAM UPDATE IS WORTH +4.36% BY ITSELF. Moving ClimaCore (24
-      commits), ClimaAtmos (2) and ClimaCoupler (63) to main took the BASELINE
-      arm from 0.27079 to 0.28312, independently confirming the ~4% seen in the
-      nightly. The mechanism is ClimaCore PR 2606: the CUDA.jl Cartesian
-      broadcast path collapsed from ~168 ms in the top ten alone to one kernel
-      kind at 0.4 ms. That is the BASELINE MOVING, not a result of ours: upstream
-      main is the floor this work builds on, it changes continuously, and a
-      baseline improvement belongs to whoever wrote the upstream PR. Our
-      contribution is only ever the mod-vs-baseline delta at a given revision,
-      which is what speedup_pct measures; the two must not be added into a
-      cumulative figure. The fusion survives the update intact -- its absolute
-      saving is unchanged at ~80 ms, since the baseline arm's hot kernel is
-      279.2 ms on both stacks. See docs/learnings.md sections 3b, 3c.
-
-      The fusion itself folds each 1M source term into the linearization
-      accumulators at its point of computation instead of materializing all
-      eighteen first, and is bit-for-bit identical because each accumulator
-      still receives its contributions in the same order.
-
-      AND THE PAIRING WORKED A THIRD TIME. Adding ClimaCore's launch-bounds
-      mechanism (`pb/launch-bounds-v2`, PR 2601 rebased) on top of the fusion
-      takes the hot kernel from 199.3 to 160.7 ms (-19.4%) at 168 registers and
-      12 warps/SM, worth +0.63% SYPD on top, +2.56% combined, total GPU kernel
-      time -9.06%. The same mechanism was worth a SYPD NULL on its own and was
-      actively harmful when forced pre-fusion (20.5% slower). It only became
-      viable because the fusion cut the spill cost of reaching 168 registers
-      from +344 bytes to +48, inside the guard's 256-byte budget.
-
-      That is the third instance of one pattern: occupancy machinery CONVERTS
-      register headroom and cannot CREATE it, while work removal creates
-      headroom without converting it. CM register work +1.107% and the ClimaCore
-      register cap +0.433% were +2.372% together; CM fusion +1.95% and launch
-      bounds (null alone) are +2.56% together. Never judge an occupancy-side
-      change by its standalone number -- on 2026-09-01 that reasoning nearly got
-      PR 2601 closed, two days before the fusion made it worth keeping.
-
-      THE NSYS SCREEN WAS SIGN-WRONG ON THIS ONE. Its estimated SYPD read the
-      mod arm as 3-4% SLOWER, and `nsys_speedup_pct` recorded -1.12% against the
-      AMIP stage's +1.87%. The documented process -- profile with mod-nsys and
-      only continue if estimated_sypd is significantly higher -- would have
-      discarded a real +1.87%. Treat that figure as diagnostic (per-kernel
-      times, launch counts), never as a stop rule.
-
-      The conversion ratio is the number worth carrying forward, and it now has
-      two samples rather than one: -5.37% kernel time bought +1.87% SYPD (35%
-      pass-through) on the old stack, and -6.28% bought +1.95% (31%) on the
-      current one. Against roughly 0% for launch bounds (-2.11% -> -0.016%). Use
-      about a third for a work-removing change and about nothing for a
-      rescheduling one.
-    # Long-form account of this answer; the entrypoint stays short.
+      Two lines of work, and they are complements rather than alternatives --
+      CloudMicrophysics register and fusion work removes work and creates
+      register headroom, ClimaCore's occupancy targeting converts headroom it
+      cannot create, so the pair beats the sum of its parts -- and four
+      byte-identical null tests put run-to-run variation at a few tenths of a
+      percent, which is what makes differences near 0.5% real.
     explanation: docs/learnings.md
     evidence:
       - kind: table
         path: experiments.csv
         explanation: >-
-          Every recorded experiment in this project's history, generated from
-          `exp/*` git tags by scripts/build-experiment-index.py. Each row is read
-          out of git at the tagged commit rather than maintained by hand, so the
-          index cannot drift from what was recorded, and any row can be
-          reproduced with `git checkout <commit> && git submodule update
-          --init --recursive && calkit run`. The `treatment` column comes from
-          results/treatment.json, which records what actually reached the run --
-          which packages each arm dev'd, whether any tree was dirty -- rather
-          than what a commit message claims. Rows marked "null test (arms
-          identical)" are the noise-floor measurements; rows marked
-          "unrecorded" predate that file.
-
-          THE `reproducible` COLUMN IS LOAD-BEARING. A run made against a dirty
-          working tree measured code that exists nowhere afterwards, so the
-          checkout recipe above restores the committed state and cannot
-          reproduce it -- the numbers may be perfectly sound, but the row is
-          not evidence anyone else can check. Such rows read
-          `NO (dirty tree)`; rows predating results/treatment.json read
-          `unknown`. Only submodule dirtiness counts, because the superproject
-          is dirty during every run (record-treatment executes mid-pipeline
-          while results and logs are being written), so counting it would flag
-          everything and mean nothing. Commit before running anything intended
-          for the record.
-      - kind: result
+          Every recorded experiment, generated from exp/* git tags by
+          scripts/build-experiment-index.py and read out of git at the tagged
+          commit, so it cannot drift. THE reproducible COLUMN IS LOAD-BEARING: a
+          run made against a dirty submodule tree measured code that exists
+          nowhere afterwards, so the checkout recipe cannot reproduce it.
+      - kind: value
         path: results/summary.json
         key: speedup_pct
-
+        name: speedup_pct
+        explanation: >-
+          The mod-vs-baseline delta at a given revision, which is the only thing
+          this project can claim. Upstream baseline movement -- +4.36% from one
+          dependency update -- belongs to whoever wrote the upstream PR and must
+          never be added into a cumulative figure.
   - question: >-
-      What actually limits the hot SGS-quadrature microphysics kernel -- the
-      largest single kernel at ~16% of GPU time -- and which of the available
-      levers can move it?
+      What actually limits the hot SGS-quadrature microphysics kernel, and which
+      of the available levers can move it?
     answer: >-
-      It is latency-bound at 12.5% occupancy, held there by register pressure,
-      and NOT by any of the things the usual GPU playbook targets: DRAM sits at
-      4.7%, there are ~1.55M independent points, and no pipe exceeds ~27%. The
-      dominant stall is fixed-latency execution dependency (42% of the cycles
-      between issued instructions) and IPC is 1.34 of 4.
-
-      THE QUADRATURE SCAFFOLDING IS NOW EXACTLY WHAT COSTS THE REGISTERS, which
-      reverses what this answer said before the fusion. Pre-fusion the
-      single-call kernel used 246 against the nine-point kernel's 255, so the
-      `@noinline` barrier held and nine evaluations cost 9 registers more than
-      one. Re-measured 2026-09-03 the single-call kernel is 153 and the
-      nine-point kernel is still 255: the fusion cut one by 93 registers and the
-      other by none, so the gap is 102, not 9. That is why L970 crossed to 12
-      warps/SM and L1013 did not.
-
-      And the 102 are the BROADCAST CONTEXT, not the physics. The identical
-      quadrature body compiles to 147 registers as a scalar kernel and 255
-      inside a ClimaCore broadcast; the direct form costs only +37 in the same
-      place. Field count is ruled out (seven fields cost fewer registers than
-      three). The leading hypothesis is that the 3x3 quadrature loop is unrolled
-      in the broadcast context -- ClimaCore compiles broadcasts with
-      `always_inline = true`, and `sum_over_quadrature_points` uses explicit
-      loops precisely so each iteration can release the previous one's
-      registers. Not yet confirmed against generated code, and layer E's 255 may
-      be the cap rather than a demand. On sm_80 the occupancy steps are 255 -> 8
-      warps/SM, 168 -> 12, 128 -> 16. See docs/learnings.md section 2a-i.
-
-      Where the 246 come from has been measured layer by layer, and the answer is
-      roughly 70/30 physics to framework. The figures below are for
-      CloudMicrophysics.jl-mod at 68007fb10 with ClimaCore.jl-mod on
-      `pb/launch-bounds`; the `cm-registers` stage re-runs against whatever is
-      checked out, so read its revision caveat before comparing against a fresh
-      file. Compiling one 1M evaluation standalone
-      puts the source terms at 32 registers, one linearized implicit step at 58,
-      and the full LinearizedAverage at 163 -- independent of the substep count.
-      Compiling ClimaCore's broadcast over the same AMIP layout puts the
-      framework at 68: 48 for the broadcast and indexing machinery, plus 20 to
-      hold the four output accumulators live. Field count is free (three inputs
-      to seven costs -2 registers), so none of the gap is field access.
-
-      TWO EARLIER READINGS OF THIS WERE WRONG AND ARE RECORDED SO THEY ARE NOT
-      REDISCOVERED. That the 246 are one indivisible CloudMicrophysics
-      evaluation: not supported, since 246-vs-255 separates the quadrature loop
-      from everything else, not the physics from the framework. And that most of
-      the 246 is framework rather than physics: that came from reading
-      LinearizedAverage as 101 registers and differencing. 101 is an artifact of
-      passing the parameter structs as `const` globals, which lets the compiler
-      fold their fields; passed as runtime kernel arguments, as a real kernel
-      does, the same evaluation is 163. Measuring the framework directly at 68
-      rather than by subtraction settles it the other way. 68 + 163 = 231 against
-      an observed 255, and 255 is the hardware ceiling, so true demand is higher
-      still -- consistent with the 2208-byte stack frame and 21% spill overhead.
-
-      The lever that works is asking ptxas for an occupancy target via
-      `__launch_bounds__` rather than capping registers with `maxregs`: a hard
-      cap makes it spill whatever does not fit, which is why the earlier
-      register-cap experiments landed at +0.43% and -5.51%. Measured at a 12
-      warps/SM target, the single-call kernel goes 246 -> 168 registers, 8 -> 12
-      warps/SM for +88 bytes of spill, and -22% in time; total CUDA kernel time
-      falls 2.11%.
-
-      OCCUPANCY WAS A DEAD END ONLY WHILE THE KERNEL HAD NO SLACK, and is not
-      one now. Pre-fusion ptxas could reach 168 registers but only at +344 bytes
-      of spill per thread, running 20.5% SLOWER (31.33 vs 26.00 ms), so the
-      guard rejected it. Post-fusion the same request costs +48 bytes, the guard
-      accepts it, and the kernel goes 199.3 -> 160.7 ms (-19.4%) at 168
-      registers and 12 warps/SM -- worth +0.63% SYPD on top of the fusion, for
-      +2.56% combined. Third instance of the same superadditive pattern: an
-      occupancy mechanism converts register headroom but cannot create it, so
-      judging one by its standalone number is a mistake. See
-      docs/learnings.md section 4a. The measurement below stands as recorded;
-      the conclusion drawn from it did not generalise. The spill-growth guard that rejects
-      it is therefore load-bearing: unguarded, the change is net negative, since
-      the hot kernel is 16% of GPU time against the 2.3% that benefits.
-
-      Note it is the GUARD that declines, not the kernel that fails: the
-      recorded decision has bounded_regs = 168 and bounded_warps = 12 against
-      target_warps = 12, so the occupancy check passes and the spill check is
-      what fires. The kernel has no slack to reschedule away -- demand of at
-      least 231 registers, already pinned at the 255 ceiling, already spilling --
-      so the whole reduction comes out as new spill. Kernels entering at 201
-      registers or below reach 12 warps/SM for 0 bytes of spill; all four
-      rejections in the run are at 254-255.
-
-      AND THE GAIN DOES NOT REACH SYPD. The same treatment measured -0.016% end
-      to end -- indistinguishable from zero -- because the benchmark's measured
-      window is short and dominated by first-call compilation, so a change that
-      only makes compiled kernels faster has little room to show. A tight noise
-      floor is not the same as sensitivity. To move SYPD by 5% requires removing
-      WORK, not rescheduling it; the binding constraint is 9 quadrature points x
-      2 substeps = 18 CloudMicrophysics evaluations per grid point per call,
-      which is a modeling choice rather than a compiler outcome.
-
-      THE MECHANISM IS NOT DISCARDED, IT IS WAITING ON A SUBSTRATE. What is dead
-      is occupancy on L1013 at its present register demand, not the occupancy
-      machinery: the study's decision table shows it correctly accepting 9 of 13
-      candidate kernels and rejecting the 4 that would spill, so it is already
-      converting headroom wherever headroom exists. Its value is conditional and
-      superadditive, the same shape experiments.csv recorded for the earlier
-      pair (ClimaCore register cap alone +0.433%, CloudMicrophysics alone
-      +1.107%, together +2.372%): bring one CloudMicrophysics evaluation from
-      163 registers to under 168 including the 68-register framework, and this
-      mechanism converts L1013 from 8 to 12 warps/SM with no further work.
-      Judged on its own it is worth ~2% of kernel time and nothing on SYPD;
-      judged as the converter for the register work in `docs/learnings.md`
-      section 6, it is the part that is already written and measured.
-
-      IT IS WRITTEN, NOT MERGED. The mechanism is ClimaCore PR 2601, two commits
-      on branch `pb/launch-bounds`, and as of 2026-08-31 it is not an ancestor of
-      `ClimaCore.jl-mod` HEAD -- both ClimaCore arms sit at the same upstream
-      commit, so the working tree carries no ClimaCore treatment. Re-pointing the
-      mod arm at that branch is a prerequisite for the lever above, not something
-      that comes free with it. The experiment is reproducible either way:
-      `exp/2026-08-24-launch-bounds` pins the commit, and results/treatment.json
-      there records the exact branch and SHA that reached the run.
-
-      THE QUADRATURE MAY NOT BE EARNING ITS 9x. Measured across all 1,548,288
-      cells, the SGS PDF sits a median of 449 standard deviations from the
-      saturation kink it exists to resolve, and 98.74% of points (83.22% of
-      warps, so it survives the divergence test) are more than 10 sigma clear of
-      it. Whether that means the covariance closure is producing variances that
-      are too small, or that the quadrature is genuinely unnecessary in this
-      configuration, is a question for the science owners rather than a
-      performance lever to exploit -- the two have different remedies. A
-      config-only bounding run prices it: collapsing the quadrature to one point
-      is worth +5.45% SYPD (0.29653 -> 0.31361, tagged exp/2026-09-08-quadrature-order-1;
-      an earlier run on a slower stack read +7.93%, 0.27596 -> 0.29973), so the question carries a
-      number. That bound is NOT a candidate -- it changes results and was
-      reverted -- and an adaptive collapse would capture roughly 0.83 of it. See
-      docs/learnings.md section 6a.
-
-      docs/learnings.md carries the rest: the cost model that splits the kernel
-      into ~52% fixed and ~48% substep work, the decompositions that were
-      measured and rejected (splitting per quadrature point, fusing the scratch
-      fields, unrolling the quadrature loop), why fast math is excluded on
-      reproducibility rather than performance grounds, the host-side launch
-      overhead that a first implementation of this mechanism introduced, and the
-      ranked list of remaining levers.
-    # Long-form account of this answer; the entrypoint stays short.
+      Register pressure rather than arithmetic or memory -- the kernel sits at
+      the 255-register sm_80 cap while a full CloudMicrophysics evaluation
+      compiles standalone to {linearized_avg_registers}, with docs/learnings.md
+      2c carrying the physics-to-framework split -- and the lever that works is
+      a __launch_bounds__ occupancy target rather than a hard register cap,
+      guarded by a spill budget without which it is net negative: forcing the
+      annotation onto the nine-point kernel takes it from {l1013_off_ms:.1f} to
+      {l1013_unguarded_ms:.1f} ms, i.e. slower.
     explanation: docs/learnings.md
     evidence:
-      - kind: result
+      - kind: value
         path: results/cm-registers.toml
         key: layers.LinearizedAverage nsub=2.registers
+        name: linearized_avg_registers
         explanation: >-
-          A full 1M CloudMicrophysics evaluation compiles to 163 registers -- 12
-          warps/SM, i.e. it clears the 168 threshold on its own -- against the
-          246 of the real single-call kernel. The same file measures the
-          framework side DIRECTLY rather than by differencing, which is what
-          makes this table decisive: a bare ClimaCore broadcast over the AMIP
-          layout is 48 registers, and adding the four-field NamedTuple output
-          brings it to 68. So the split is 163 physics to 68 framework, and the
-          physics dominates. Deriving the framework as 246 - 163 = 83 instead
-          would be reading a residual that also contains whatever the real
-          kernel's extra field reads and evaluator cost, and an earlier reading
-          along those lines inverted the conclusion. The layer breakdown (source
-          terms 32, one linearized implicit step 58) also shows the substep count
-          is free: 163 at nsub 1, 2 and 3 alike, so
-          microphysics_n_substeps_quadrature costs time but not occupancy.
-
-          METHOD NOTE, and the reason the `note` key sits in this file: pass the
-          parameter structs as kernel ARGUMENTS. As `const` globals the compiler
-          folds their fields and reports 101 instead of 163 -- understating
-          pressure by 62 registers, which is enough to invert a conclusion, and
-          did. Regenerated by the `cm-registers` stage in minutes rather than the
-          ~45 an AMIP stage takes.
-
-          READ THE REVISION BEFORE READING THE NUMBERS. This stage is cheap and
-          not frozen, so it re-runs against whatever is checked out, and both
-          halves of the decomposition move independently. The 163/68 split above
-          was measured with CloudMicrophysics.jl-mod at 68007fb10
-          (exp/2026-08-21-cm-and-core-mod) and ClimaCore.jl-mod on
-          `pb/launch-bounds`. A later run on 2026-08-31, with CloudMicrophysics
-          12 commits further along at cbfc5954 and ClimaCore back on upstream
-          main, produced a DIFFERENT AND PARTIAL file: LinearizedAverage at 112
-          registers with 480 bytes of local memory rather than 163 with 32, and
-          no A-D broadcast layers at all, because those need `pb/launch-bounds`
-          (see the stage comment). Two variables moved at once, so that file
-          does not supersede the reading above -- it is a confounded measurement
-          of a different revision pair. Whether 112 registers at 480 bytes is an
-          improvement over 163 at 32 is a question about spill traffic that a
-          register count alone cannot answer.
-      - kind: result
+          A full 1M CloudMicrophysics evaluation, compiled standalone with the
+          parameter structs passed as kernel ARGUMENTS -- as const globals the
+          compiler folds their fields and understates pressure enough to invert
+          the conclusion, which it once did. Independent of substep count, so
+          microphysics_n_substeps_quadrature costs time but not occupancy. This
+          stage is cheap and not frozen, so it re-runs against whatever is
+          checked out; read its revision before comparing.
+      - kind: value
         path: results/kernel-population.json
         key: baseline.gpu_idle_pct
+        name: gpu_idle_pct
         explanation: >-
-          The GPU is idle 30.9% of the profiled span, and 57.6% of launches are
-          under 25 microseconds while accounting for only 13.4% of kernel time.
-          Both are regenerated by the `kernel-population` stage from the nsys
-          SQLite exports, so they track whatever the arms currently are.
-
-          READ THIS AS A PROFILING ARTIFACT, NOT A TARGET. An earlier version of
-          this entry called idle "the half of the waste that occupancy work does
-          not touch" and claimed it converts to wall clock more directly than
-          kernel time. Measured on 2026-09-01, that is wrong. Julia GC is ruled
-          out (zero collections on every profiled step, host allocation flat at
-          7.9 MB/step), CUDA API activity is ruled out (1.3 ms inside 326.9 ms
-          of large-gap idle), OS calls account for 12% -- and the
-          PROFILER_OVERHEAD table accounts for 20.8% of all idle explicitly,
-          with CPU samples inside those gaps dominated by nsys's own
-          libToolsInjection64.so. The cause is tracing volume: 1,020,691 traced
-          CUDA API calls against 31,180 launches, 33 per launch. The profiled
-          window runs 222 ms/step against the unprofiled AMIP stage's 298
-          ms/step, so it is not a scaled version of the real run and its idle
-          fraction cannot be projected onto one. Kernel TIMES from nsys are
-          device-side and remain trustworthy; the gaps between them are not.
-          See docs/learnings.md section 2b-i.
-      - kind: table
-        path: results/kernel-resources.csv
-        explanation: >-
-          Registers, spill requests and their share of memory traffic, stack
-          frame, block-limit-registers, and achieved vs theoretical occupancy
-          for the profiled microphysics kernels. This is what establishes the
-          kernel as register-limited rather than memory-limited, and the
-          register figures are what the occupancy-step arithmetic above is
-          computed from. Pipe utilization and stall-reason breakdowns are not in
-          this table; they come from the full Nsight Compute report, exported
-          via `ncu --import results/ncu/baseline.ncu-rep --page raw --csv`.
-
-          STALE BY DESIGN. The ncu stages that produce this are frozen because
-          they cost more than the rest of the pipeline combined, so this table
-          describes whichever revision last ran them -- not necessarily the
-          current arms. results/treatment.json at that revision records which
-          those were. It is cited here for the CHARACTERISATION of the hot
-          kernel (register-limited, ~12.5% occupancy, spilling at the 255-register
-          cap), which is a property of the baseline kernel and has been stable
-          across revisions; it is NOT evidence for any particular treatment's
-          effect. Unfreeze both ncu stages together when a claim needs measured
-          spill or achieved occupancy for the current arms.
-      - kind: table
-        path: results/top-kernels.csv
-        explanation: >-
-          Supplies the comparison that pins the register cost on
-          CloudMicrophysics rather than on the quadrature: the single-call
-          updraft kernel and the nine-point environment kernel appear as
-          separate rows with their own register counts and total times, so
-          per-evaluation cost can be read off both. Figures are deliberately not
-          quoted in this description so it cannot go stale against the data.
-      - kind: result
+          READ AS A PROFILING ARTIFACT, NOT A TARGET. The profiler's own tracing
+          runs to ~33 CUDA API calls per launch and accounts for the bulk of
+          this idle; the profiled window does not even run at the same rate as
+          the real one. Kernel TIMES from nsys are device-side and trustworthy;
+          the gaps between them are not. See docs/learnings.md 2b-i.
+      - kind: value
         path: results/launch-bounds/launch-bounds.toml
         key: off.kernels.L1013.mean_ms
+        name: l1013_off_ms
+        git_ref: exp/2026-09-01-cm-fuse
         explanation: >-
           The reference every other phase is read against: the hot
           SGS-quadrature kernel with launch bounds disabled, which is what the
-          baseline arm runs. Measured in its own process, so the configuration
-          is set at ClimaCore load time exactly as a real run sets it.
-      - kind: result
+          baseline arm runs.
+      - kind: value
         path: results/launch-bounds/launch-bounds.toml
         key: unguarded.kernels.L1013.mean_ms
+        name: l1013_unguarded_ms
+        git_ref: exp/2026-09-01-cm-fuse
         explanation: >-
-          The counterfactual, and the reason this stage exists. With the spill
-          budget loosened until the annotation is accepted, L1013 reaches 168
-          registers and 12 warps/SM and gets SLOWER. A rejected configuration
-          never appears in an ordinary profiling run, so without this phase the
-          spill guard would look like an arbitrary constant instead of the part
-          that keeps the change from being net negative. Compare against
-          off.kernels.L1013.mean_ms.
-      - kind: result
+          The counterfactual, and the reason this stage exists: with the spill
+          budget loosened until the annotation is accepted, the kernel reaches
+          12 warps/SM and gets SLOWER. A rejected configuration never appears in
+          an ordinary profiling run.
+      - kind: value
         path: results/launch-bounds/launch-bounds.toml
         key: guarded.kernels.L970.mean_ms
+        name: l970_guarded_ms
+        git_ref: exp/2026-09-01-cm-fuse
         explanation: >-
           The gain, in the shipped configuration: the single-call microphysics
-          kernel annotated at 12 warps/SM for a small spill cost. Compare
-          against off.kernels.L970.mean_ms. The `guarded.decisions` array in the
-          same file records, per kernel, the registers and occupancy with and
-          without the annotation, the spill growth, and whether it was accepted
-          -- which is what distinguishes this kernel's outcome from L1013's.
-      - kind: result
+          kernel annotated at 12 warps/SM for a small spill cost. The
+          guarded.decisions array records, per kernel, what was accepted and why.
+      - kind: table
+        path: results/kernel-resources.csv
+        git_ref: exp/2026-09-07-evaluator-repeat
+        explanation: >-
+          What establishes the kernel as register-limited rather than
+          memory-limited. Pinned because the ncu stages are frozen; cited for
+          the characterization of the baseline kernel, which has been stable
+          across revisions, not as evidence for any treatment's effect.
+      - kind: value
         path: results/summary.json
         key: speedup_pct
+        name: speedup_pct
         explanation: >-
           The pipeline-level number this kernel work has to show up in
-          eventually. Kernel times are not SYPD: this stage establishes the
-          mechanism, and only the profiling and AMIP stages can say what it is
-          worth end to end.
-
+          eventually. Kernel times are not SYPD, and this mechanism measured a
+          SYPD null on its own.
   - question: >-
       Should the SGS quadrature order be reduced from 3 to 2, and what does that
       trade?
     answer: >-
-      Recommended, subject to science sign-off. Reducing the rule from 3x3 (nine
-      points) to 2x2 (four points) is worth **+6.14% SYPD on unmodified upstream
-      code** and **+8.05% with this project's numerics work**, against a
-      field-wide error in the microphysics tendencies of **0.65% of RMS for cloud
-      liquid and 1.20% for cloud ice**. Only 1.12% of cells change at all,
-      because the subgrid PDF sits a median 449 standard deviations from the
-      saturation kink the extra points exist to resolve, so in 98.9% of cells the
-      two rules agree bit for bit.
-
-      Order 2 rather than order 1: collapsing to a single point buys only 1.67
-      further points of SYPD (+9.72% vs +8.05%) while roughly tripling the cloud
-      liquid error (2.10% vs 0.65% of RMS), and gives up integrating over the PDF
-      at all. Order 2 remains a genuine quadrature.
-
-      Three caveats a reviewer should weigh, none of which profiling can settle.
-
-      (1) **The accuracy number is the direct effect, not the self-consistent
-      one.** `lambda_lagrange` is held at its 3x3 fit in the measurement; a real
-      order-2 run refits it, which would likely compensate in part. Settling this
-      needs two full runs diffed field by field.
-
-      (2) **Individual cells move a lot even though the field barely does.** The
-      worst cell shifts cloud ice by 1.72x the field's own RMS. The error is
-      concentrated in the ~1% of cells whose PDF actually reaches the kink, which
-      is exactly where the quadrature is doing its job. Whether a 1%-of-cells,
-      order-unity local change is acceptable is a physics judgement.
-
-      (3) **It is a real approximation, not a free lunch.** An adaptive scheme was
-      tried as the "free" alternative -- collapse only where the PDF is provably
-      clear of the kink -- and it failed: distance from the kink bounds the
-      smoothness of `max(0, .)` but not the curvature of deposition, sublimation
-      and snow processes, which stay strongly nonlinear far from saturation. It
-      cost 23.8% of RMS on cloud ice and is disabled. See docs/learnings.md 4e.
+      Recommended subject to science sign-off -- worth +6.14% SYPD on unmodified
+      upstream code and +8.05% with this project's numerics work, against a
+      field-wide cloud-ice tendency error of {order2_icl_rms_over_scale:.2%} of
+      RMS with only about 1% of cells changing at all -- but the accuracy figure
+      is the direct effect rather than the self-consistent one, and individual
+      cells move far more than the field does.
     explanation: docs/sgs-quadrature.md
     evidence:
-      - kind: result
+      - kind: value
         path: results/summary.json
         key: speedup_pct
+        name: order2_isolated_speedup_pct
         git_ref: exp/2026-09-08-quadrature-order-2-isolated
         explanation: >-
-          Standalone benefit: +6.135% on unmodified upstream code. A controlled
-          measurement -- ClimaCore.jl-mod and ClimaAtmos.jl-mod are
-          content-identical to the baseline arm and CloudMicrophysics.jl-mod is
-          checked out to v0.38.3, the exact tree the baseline manifest pins, so
-          the quadrature order is the only live difference. The hot kernel goes
-          274.3 -> 113.5 ms. This is the number that applies if the science
-          change lands on its own.
-      - kind: result
+          Standalone benefit on unmodified upstream code, with the quadrature
+          order the only live difference between arms. NOT templated: rendering
+          reads the working tree, where results/summary.json holds a later run.
+      - kind: value
         path: results/summary.json
         key: speedup_pct
+        name: order2_full_stack_speedup_pct
         git_ref: exp/2026-09-09-order2-full-stack
         explanation: >-
-          Benefit with the numerics work: +8.053%, with the CloudMicrophysics
-          source-term fusion, ClimaCore occupancy targeting and ClimaAtmos
-          evaluator payload change also in place. Hot kernel 68.4 ms.
-          Sub-additive against the two levers measured separately (+4.52% and
-          +6.14%, naive sum 10.66%) because they act on different factors -- the
-          numerics cut cost per quadrature point, the order cuts the number of
-          points. Note the corollary: the numerics work is worth +1.92 points ON
-          TOP of the order reduction, so it is not made redundant by this change.
-      - kind: result
+          Benefit with the numerics work also in place. Sub-additive against the
+          two levers separately, because the numerics cut cost per quadrature
+          point and the order cuts the number of points -- so the numerics work
+          is not made redundant by this change.
+      - kind: value
         path: results/quadrature-order-error.toml
         key: order_2.dq_icl_dt.rms_over_scale
+        name: order2_icl_rms_over_scale
         git_ref: meas/2026-09-09-quadrature-order-accuracy
         explanation: >-
-          The accuracy cost: 1.196e-2, i.e. 1.20% of the cloud-ice tendency's own
-          RMS over the whole field, with cloud liquid at 0.65%, snow at 0.096%
-          and rain at 0.0033%. Measured on a real AMIP state with BYTE-IDENTICAL
-          inputs -- the two rules are evaluated over the same scratch fields the
-          real cache function built, and the path is verified bit-identical to
-          that function before any comparison is made. The same file carries
-          `order_1` for the bracket (cloud liquid 2.10%) and `max_over_scale` for
-          the worst single cell (cloud ice 1.72x field RMS). `p99_over_scale` is
-          zero by construction and should not be read as an error estimate: the
-          percentile is taken over all cells and 98.9% of them are unchanged.
-
-          Tagged `meas/` rather than `exp/`: this is not a pipeline experiment and
-          deliberately does not appear in experiments.csv, which is built from
-          `exp/*` tags. The ref matters -- the two `exp/` tags above predate this
-          file, so citing one of them would point at a commit that does not
-          contain the data, which is the failure that left the earlier 7.93%
-          quadrature figure unbacked.
-
+          The accuracy cost, measured on a real AMIP state with byte-identical
+          inputs. The same file carries order_1 for the bracket and
+          max_over_scale for the worst single cell; p99_over_scale is zero by
+          construction and must not be read as an error estimate.
   - question: >-
       Is the nine-point SGS quadrature in the 1-moment microphysics earning the
-      5.45% of throughput it costs?
+      throughput it costs?
     answer: >-
-      Unresolved, and it belongs to the science owners rather than to profiling:
-      the subgrid PDF sits a median of 449 standard deviations from the
-      saturation kink the quadrature exists to resolve, which means either the
-      covariance closure is producing variances far smaller than intended or the
-      quadrature is unnecessary at this resolution. Collapsing it to a single
-      point is worth 5.45% SYPD and takes the hot kernel down 85%
-      (exp/2026-09-08-quadrature-order-1) -- larger than every code optimization
-      in this project combined.
-    # Write-up for the science team; the entrypoint stays one sentence.
+      Unresolved, and it belongs to the science owners rather than to profiling
+      -- the subgrid PDF sits a median of {mu_over_sigma_p50:.0f} standard
+      deviations from the saturation kink the quadrature exists to resolve, with
+      {clear_of_kink_10sigma_warp_frac:.2%} of warps entirely clear of it, so
+      either the covariance closure is producing variances far smaller than
+      intended or the quadrature is unnecessary at this resolution.
     explanation: docs/sgs-quadrature.md
     evidence:
-      - kind: result
+      - kind: value
         path: results/sgs-degeneracy.toml
         key: mu_over_sigma_percentiles.p50
+        name: mu_over_sigma_p50
         explanation: >-
-          Median |mu_S| / sigma_S across all 1,548,288 cells: how far the subgrid
-          PDF sits from the saturation kink, in units of its own spread. The same
-          file carries the p1 (7.8, so even the worst percentile is clear of the
-          kink) and the per-criterion point and warp fractions. Regenerated by
-          the `sgs-degeneracy` stage in minutes.
-      - kind: result
+          Median |mu_S| / sigma_S across all 1,548,288 cells. The same file
+          carries p1, so even the worst percentile is clear of the kink.
+      - kind: value
         path: results/sgs-degeneracy.toml
         key: criteria.clear_of_kink_10sigma.warp_frac
+        name: clear_of_kink_10sigma_warp_frac
         explanation: >-
-          The fraction of 32-cell groups in which EVERY cell is more than ten
-          sigma clear of the kink, 83.22%. This is the number that decides
-          whether collapsing the quadrature could pay on a GPU, since a warp
-          costs the maximum over its lanes -- a criterion true at scattered
-          points saves nothing. Contrast the clear-air early-out, where a 77.7%
-          point fraction returned 21.5%. It is a performance detail rather than a
-          physics one, but it is why the question is worth asking now.
+          The fraction of 32-cell groups in which EVERY cell is clear of the
+          kink, which is what decides whether collapsing could pay on a GPU: a
+          warp costs the maximum over its lanes, so a criterion true at
+          scattered points saves nothing.
       - kind: table
         path: experiments.csv
         explanation: >-
-          What the quadrature costs, measured and tagged rather than quoted.
-          Compare `2026-09-08-quadrature-order-1` (0.31361) against
-          `2026-09-07-evaluator-repeat` (0.29653), the same stack with the
-          nine-point quadrature: collapsing it to one point is worth **5.45%
-          SYPD**, and takes the hot kernel from 140.1 ms to 20.9 ms (-85%). A
-          configuration-only change that alters results and was reverted -- an
+          What the quadrature costs, measured and tagged rather than quoted:
+          compare 2026-09-08-quadrature-order-1 against
+          2026-09-07-evaluator-repeat, the same stack with the nine-point rule.
+          A configuration-only change that alters results and was reverted -- an
           upper bound attached to the question, not a proposal.
-
-          This evidence deliberately points at the tagged experiment index
-          rather than at `results/summary.json`, which every pipeline run
-          overwrites. It previously pointed there, and by 2026-09-08 the file
-          held an unrelated run, leaving the headline number with no backing at
-          all. Cite a tag, never a regenerated artefact.
-
   - question: >-
       How much of a GPU profiling job is compilation rather than computation,
       and can any caching strategy recover it between jobs?
     hypothesis: >-
-      Two successive hypotheses, both recorded here because both were tested and
-      both failed.
-
-      (1) Disk cache. Most of a profiling job is compilation, and a large share
-      of that is GPU kernel compilation thrown away at process exit. An
-      nsys stage takes ~40 minutes to produce ~1.8 s of measured stepping (30
-      coupler steps of NVTX-ranged time), and of the remainder only ~112 s is
-      Pkg.precompile and ~2 s is nsys post-processing. Julia caches host native
-      code across processes via pkgimages, but GPU kernels are compiled by
-      GPUCompiler at run time and discarded unless its `disk_cache` preference
-      is set -- and it defaults to "false" and is unset in every environment
-      here. If that accounts for a large fraction of the ~34 minutes of setup
-      and first-call compilation, enabling the cache should cut it sharply on
-      any job whose kernels have not changed, because the cache is keyed on the
-      CodeInstance and CompilerConfig and so invalidates only what changed.
-
-      (2) Warmup package. Given (1) failed and the cost turned out to be
-      host-side JIT, a local package (AMIPWarmup) carrying a PrecompileTools
-      workload should recover it. Julia caches native code into a *package's*
-      precompile image, and the AMIP experiment is a script, so none of that
-      work is kept today. A --trace-compile of a real job shows 89.4% of
-      runtime-compiled methods involve ClimaCore (ClimaAtmos 0.8%,
-      CloudMicrophysics 0.4%), so a workload building an AMIP-shaped ClimaCore
-      grid and exercising its operators should cover the bulk of it -- while
-      depending on neither package under active edit here, so ordinary work does
-      not invalidate the cache.
+      Most of a profiling job is compilation, and caching it between jobs --
+      first GPUCompiler's on-disk kernel cache, then a PrecompileTools warmup
+      package -- should recover a large part of it.
     answer: >-
-      Compilation is ~88% of the job and it is host-side Julia JIT, not GPU
-      kernel compilation. That share is highly reproducible: 88.3/88.2/88.4%
-      across the three disk-cache phases and 88.6/88.7% across the two warmup
-      phases, for a job that yields 0.6 s of steady-state stepping.
-
-      Neither caching strategy recovered any of it.
-
-      (1) GPUCompiler's on-disk kernel cache is a no-op in this stack. The
-      cache_warm phase was 2.2% faster than cache_off, but cache_cold -- which
-      does strictly more work, populating the cache -- was faster than both, so
-      that spread is noise. Direct diagnosis then showed why: with the
-      preference set, GPUCompiler.disk_cache_enabled() correctly returns true,
-      yet compiling a kernel leaves 0 files in disk_cache_path(). It cannot help
-      regardless of how much GPU compilation exists (Julia 1.11.5 / CUDA.jl
-      Wfi8S / GPUCompiler Yuvf5). Two candidate causes are visible in
-      GPUCompiler's `actual_compilation` -- a `nothing` CodeInstance bypasses
-      both the disk read and the write, or `cache_file` bails on its build-id
-      sentinel -- but which applies is not established.
-
-      (2) The AMIPWarmup PrecompileTools package made the job SLOWER: 1930.8 s
-      with it against 1836.4 s without, +94.4 s (+5.1%), both phases in one job
-      on one GPU (device 4), with "AMIPWarmup loaded" confirming the arm was
-      real. The penalty sits in CoupledSimulation (+78.6 s), precisely the phase
-      it was built to speed up. This was not a null result but a negative one.
-
-      The package does work in isolation -- loading it cuts an equivalent grid
-      build 45.4 -> 32.4 s and a first operator call 10.2 -> 1.8 s -- which is
-      the trap: ~21 s of provable saving is ~1% of a 1836 s job, so the ceiling
-      was inside the noise before the package was ever built. Doing that
-      arithmetic first would have been cheaper than the experiment. Why loading
-      it costs 94 s rather than saving 21 is not established; the leading
-      candidate is invalidation, since AMIPWarmup is precompiled against
-      ClimaCore alone and the coupler then loads packages that add methods to
-      it, discarding the cached code while still paying to load it.
-
-      What remains, none yet tested: reduced-resolution configs so setup and JIT
-      shrink together (attacks the 88% directly rather than caching it); a
-      PrecompileTools workload inside ClimaAtmos/ClimaCore themselves, where it
-      is not exposed to cross-package invalidation; or accepting the cycle time
-      and batching experiments. Caching the compile work from outside the
-      package stack has now failed twice, in two different ways.
-
-      REPRODUCING THIS RESULT. The measurement depends on state that is reverted
-      immediately after it was taken: AMIPWarmup is dev'd into both AMIP
-      environments and imported by scripts/run.jl, and keeping that wiring would
-      impose a measured ~5% penalty on every future profiling job. The state is
-      therefore frozen at the git tag `compile-time-warmup-ab`, which is
-      the only rev where this stage's inputs exist. To re-evaluate:
-
-        git checkout compile-time-warmup-ab
-        git submodule update --init --recursive   # the wiring lives in the
-                                                  # coupler submodules
-        calkit run compile-time-study
-
-      On main the stage is marked `frozen: true`, so `calkit run` leaves it and
-      its result alone; at the tag it is not frozen and runs normally, which is
-      what makes the recipe above work.
-
-      Rewinding this clone in place is the supported path. The coupler manifests
-      record AMIPWarmup by ABSOLUTE path
-      (/home/pbachant/calkit/clima-gpu-profiling/AMIPWarmup), so in a worktree
-      checked out elsewhere that entry resolves back to the original clone rather
-      than to the worktree's own copy -- re-point it with
-      Pkg.develop(path="<worktree>/AMIPWarmup") in both experiments/AMIP
-      environments before running, or the run either fails in instantiate or
-      silently measures whichever AMIPWarmup happens to sit at the old path.
-
-      At this rev the four profiling stages (baseline-nsys, mod-nsys,
-      amip-baseline, amip-mod) are intentionally stale. The wiring under test is
-      an input to all four, and it was never run through them precisely because
-      this result says it should not be. Their evidence belongs to the SYPD
-      question above and to the revs that answered it, not to this one.
+      Compilation is {compile_share_pct}% of the job and it is host-side Julia
+      JIT rather than GPU kernel compilation, so neither strategy recovered any
+      of it: GPUCompiler's disk cache writes zero files in this stack, and the
+      AMIPWarmup package made the job {warmup_penalty_pct}% slower, with the
+      penalty landing inside the very phase it was built to speed up.
+    explanation: docs/compile-time.md
     evidence:
-      - kind: result
+      - kind: value
         path: results/compile-time/compile-time.toml
         key: warmup_off.totals.wall_s
+        name: warmup_off_wall_s
+        git_ref: compile-time-warmup-ab
         explanation: >-
-          Frozen at git tag `compile-time-warmup-ab`; see the answer for
-          how to re-run it, and note that the state it measures does not exist on
-          main by design.
-
-          Status quo, and the reference the whole study rests on. Wall time for
-          code loading, simulation construction, and two steps without the
-          warmup package. Lands within ~5% of the same measurement taken
-          standalone weeks earlier, so the harness is measuring the same job it
-          did before.
-      - kind: result
+          Status quo, and the reference the whole study rests on. Pinned to the
+          only rev where this stage's inputs exist: the AMIPWarmup wiring was
+          reverted immediately after the measurement, because keeping it would
+          impose the measured penalty on every future profiling job. At that tag
+          the stage is not frozen, so calkit run compile-time-study reproduces it.
+      - kind: value
         path: results/compile-time/compile-time.toml
         key: warmup_on.totals.wall_s
+        name: warmup_on_wall_s
+        git_ref: compile-time-warmup-ab
         explanation: >-
-          The test. Identical code and config, with AMIPWarmup imported first so
-          its precompiled ClimaCore specializations are available. Higher than
-          warmup_off, which is the negative result. Both phases run in one SLURM
-          job on one GPU so the comparison is not confounded by node or device
-          variance, and warmup_on runs second -- the ordering that would flatter
-          it, if anything, via warmed filesystem caches.
-      - kind: result
+          The test, in the same SLURM job on the same GPU, running second --
+          the ordering that would flatter it if anything. Higher than
+          warmup_off, which is the negative result.
+      - kind: value
         path: results/compile-time/compile-time.toml
         key: warmup_on.coupled_simulation.wall_s
+        name: warmup_on_coupled_s
+        git_ref: compile-time-warmup-ab
         explanation: >-
-          Where the penalty is. Simulation construction is 78.6 s of the 94.4 s
-          regression and is the phase AMIPWarmup targets, so the cost is not
-          merely the price of loading an extra package -- it lands inside the
-          work that was supposed to get cheaper.
-      - kind: result
+          Where the penalty is: simulation construction, the phase AMIPWarmup
+          targets, so the cost is not merely the price of loading a package.
+      - kind: value
         path: results/compile-time/compile-time.toml
         key: warmup_off.totals.host_compile_s
+        name: warmup_off_host_compile_s
+        git_ref: compile-time-warmup-ab
         explanation: >-
-          Host-side JIT only, from Julia's own `@timed` compile_time accounting;
-          1628.0 s of the 1836.4 s job. GPU kernel compilation is NOT counted
-          here because GPUCompiler runs outside that accounting. This is what
-          establishes the cost as host-side and so rules out the entire class of
-          GPU-kernel-caching fixes, independently of the disk cache being broken.
-      - kind: result
+          Host-side JIT only, from Julia's own @timed compile_time accounting.
+          GPU kernel compilation is NOT counted here, since GPUCompiler runs
+          outside it -- which is what rules out the whole class of
+          GPU-kernel-caching fixes independently of the disk cache being broken.
+      - kind: value
         path: results/compile-time/compile-time.toml
         key: warmup_off.second_step.wall_s
+        name: warmup_off_second_step_s
+        git_ref: compile-time-warmup-ab
         explanation: >-
-          Steady-state cost of one step once everything is compiled. Bounds how
-          much of the first step was genuinely compute rather than compilation,
-          and is the 0.6 s that the surrounding ~1836 s exists to produce.
+          Steady-state cost of one step once everything is compiled -- the
+          fraction of a second that the surrounding half hour exists to produce.
+      - kind: value
+        path: results/compile-time/doc-values.json
+        key: warmup_off.compile_share_pct
+        name: compile_share_pct
+        explanation: >-
+          Host-side JIT as a share of the whole job, derived from the pinned
+          measurement above by the compile-time-doc stage. Unpinned on purpose:
+          this is the file the write-up injects from, so the answer and
+          docs/compile-time.md cannot disagree.
+      - kind: value
+        path: results/compile-time/doc-values.json
+        key: penalty.wall_pct
+        name: warmup_penalty_pct
+        explanation: >-
+          What AMIPWarmup cost, as a share of the job it was meant to speed up.
+          The sign is the result: this was a negative result, not a null one.
 
 tables:
   - path: results/top-kernels.csv
@@ -1604,6 +964,14 @@ pipeline:
       outputs:
         - path: results/earlyout-hits.toml
           storage: git
+    compile-time-doc:
+      kind: markdown
+      target_path: docs/compile-time.md
+      environment: py
+      # Live on main, unlike the experiment documents. Its only input is the
+      # committed results/compile-time/compile-time.toml, which the frozen
+      # compile-time-study stage does not regenerate here, so re-running this
+      # cannot restate the experiment against a different run.
     launch-cost:
       kind: markdown
       target_path: docs/experiments/launch-cost.md
