@@ -22,7 +22,6 @@ questions:
       host time per launch -- an upper bound measured under a profiler that
       inflates exactly this quantity, and spread across seven packages, so no
       single repository can deliver it.
-    explanation: docs/experiments/launch-cost.md
     evidence:
       - kind: value
         path: results/experiments/launch-cost/stats.json
@@ -50,7 +49,7 @@ questions:
           The price everything above rests on, from a baseline and probe
           profiled back to back in one invocation. The earlier cross-day
           estimate of 18.51 would have inflated every figure here by 2.7x.
-      - kind: table
+      - kind: publication
         path: docs/experiments/launch-cost.md
         git_ref: meas/2026-09-19-launch-cost
         explanation: >-
@@ -66,9 +65,13 @@ questions:
       profiler rather than the model; a launch costs {host_us_per_launch}
       microseconds of host time, and what survives is in the fusion-ceiling
       question above.
-    explanation: docs/experiments/launch-overhead.md
     evidence:
-      - kind: table
+      - kind: publication
+        path: docs/learnings.md
+        section: "2b-i"
+        explanation: >-
+          Why the gap and idle times are withdrawn: profiled idle is dominated by the profiler's own tracing, not the model.
+      - kind: publication
         path: docs/experiments/launch-overhead.md
         git_ref: meas/2026-09-17-launch-overhead
         explanation: >-
@@ -100,8 +103,12 @@ questions:
       but the guard already fires at {guard_fires_pct:.2f}% of quadrature
       points, which caps skip-based work here near 4%, and the whole result is
       worth roughly +0.5% SYPD, below the full-AMIP noise floor.
-    explanation: docs/learnings.md
     evidence:
+      - kind: publication
+        path: docs/learnings.md
+        section: "4r"
+        explanation: >-
+          Why the kernel is bound by register pressure and memory traffic rather than by the microphysics it computes, which is what caps skip-based work.
       - kind: table
         path: results/top-kernels.csv
         git_ref: exp/2026-09-15-microphysics-cache-atmos
@@ -138,8 +145,11 @@ questions:
         Not at the revision currently measured -- the pipeline reads
         {speedup_pct:.2f}% SYPD at {mod_sypd:.5f} SYPD, inside the run-to-run
         spread, so there is no effect to claim here.
-    explanation: docs/whole-stack.md
     evidence:
+      - kind: publication
+        path: docs/whole-stack.md
+        explanation: >-
+          How the headline number decomposes, and which rows of the experiment index are cumulative.
       - kind: figure
         path: figures/sypd-time-series.png
       - kind: value
@@ -169,8 +179,12 @@ questions:
       interpolation is worth +7.95% SYPD on its own and carries essentially all
       of the +8.70% measured with a 64-thread block change added, with model
       state bit-identical over 120 coupled steps.
-    explanation: docs/learnings.md
     evidence:
+      - kind: publication
+        path: docs/learnings.md
+        section: "4m"
+        explanation: >-
+          What the scan was, how it was found, and why ncu's source attribution understated it by about 4x.
       - kind: value
         path: results/summary.json
         key: speedup_pct
@@ -230,8 +244,12 @@ questions:
       against roughly 10% for the microphysics kernel this project targeted, and
       with host time outside the GPU timeline at {gap_frac_of_wall:.3%} of wall
       the run is densely GPU-bound, so kernel time is what there is to attack.
-    explanation: docs/learnings.md
     evidence:
+      - kind: publication
+        path: docs/learnings.md
+        section: "4k"
+        explanation: >-
+          The breakdown on the phase-independent window, and why occupancy is not radiation's lever either.
       - kind: value
         path: results/step-breakdown.toml
         key: gap_frac_of_wall
@@ -261,8 +279,11 @@ questions:
       as a checked-in baseline -- never on end-to-end timing, which at this
       project's noise floor can neither reward the changes worth making nor
       catch their inverse; designed but not yet implemented.
-    explanation: docs/ci-kernel-gate.md
     evidence:
+      - kind: publication
+        path: docs/ci-kernel-gate.md
+        explanation: >-
+          The gate design and the three things a naive version of it would get wrong.
       - kind: value
         path: results/cm-registers.toml
         key: layers.E microphysics_tendencies_1m (9-pt quadrature).registers
@@ -308,8 +329,12 @@ questions:
       cannot create, so the pair beats the sum of its parts -- and four
       byte-identical null tests put run-to-run variation at a few tenths of a
       percent, which is what makes differences near 0.5% real.
-    explanation: docs/learnings.md
     evidence:
+      - kind: publication
+        path: docs/learnings.md
+        section: "3a-3c"
+        explanation: >-
+          The fusion result, its re-measurement on the updated stack, and why upstream baseline movement is not ours to claim.
       - kind: table
         path: experiments.csv
         explanation: >-
@@ -339,8 +364,12 @@ questions:
       guarded by a spill budget without which it is net negative: forcing the
       annotation onto the nine-point kernel takes it from {l1013_off_ms:.1f} to
       {l1013_unguarded_ms:.1f} ms, i.e. slower.
-    explanation: docs/learnings.md
     evidence:
+      - kind: publication
+        path: docs/learnings.md
+        section: "2c"
+        explanation: >-
+          Where the registers go, layer by layer, and why the physics-to-framework split must be read against its revision.
       - kind: value
         path: results/cm-registers.toml
         key: layers.LinearizedAverage nsub=2.registers
@@ -417,8 +446,11 @@ questions:
       RMS with only about 1% of cells changing at all -- but the accuracy figure
       is the direct effect rather than the self-consistent one, and individual
       cells move far more than the field does.
-    explanation: docs/sgs-quadrature.md
     evidence:
+      - kind: publication
+        path: docs/sgs-quadrature.md
+        explanation: >-
+          The write-up for the science team, including the three caveats a reviewer must weigh.
       - kind: value
         path: results/summary.json
         key: speedup_pct
@@ -458,8 +490,16 @@ questions:
       {clear_of_kink_10sigma_warp_frac:.2%} of warps entirely clear of it, so
       either the covariance closure is producing variances far smaller than
       intended or the quadrature is unnecessary at this resolution.
-    explanation: docs/sgs-quadrature.md
     evidence:
+      - kind: publication
+        path: docs/sgs-quadrature.md
+        explanation: >-
+          The write-up for the science team.
+      - kind: publication
+        path: docs/learnings.md
+        section: "6a (How much work the SGS quadrature is actually doing)"
+        explanation: >-
+          The distribution, and why it survives the warp test.
       - kind: value
         path: results/sgs-degeneracy.toml
         key: mu_over_sigma_percentiles.p50
@@ -497,8 +537,11 @@ questions:
       of it: GPUCompiler's disk cache writes zero files in this stack, and the
       AMIPWarmup package made the job {warmup_penalty_pct}% slower, with the
       penalty landing inside the very phase it was built to speed up.
-    explanation: docs/compile-time.md
     evidence:
+      - kind: publication
+        path: docs/compile-time.md
+        explanation: >-
+          The measurement, both failed strategies, and the recipe for re-running the study at its tag.
       - kind: value
         path: results/compile-time/compile-time.toml
         key: warmup_off.totals.wall_s
