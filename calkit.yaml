@@ -976,6 +976,17 @@ pipeline:
       kind: markdown
       target_path: docs/experiments/launch-cost.md
       environment: py
+      # Frozen on main, live at meas/2026-09-19-launch-cost, following
+      # compile-time-study and launch-overhead-doc. The 2026-09-21 submodule
+      # update moved the whole stack, which makes both nsys stages this
+      # document declares stale. Re-running them here would re-profile for
+      # hours and then restate the experiment against a different stack --
+      # and because a templated value renders from the WORKING TREE rather
+      # than from its git_ref, the fusion-ceiling answers would quietly start
+      # displaying the new numbers while their evidence still checked against
+      # the tag. Re-measure by tagging a new experiment, not by re-running
+      # this one.
+      frozen: true
     launch-overhead-doc:
       kind: markdown
       target_path: docs/experiments/launch-overhead.md
