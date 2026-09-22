@@ -19,7 +19,9 @@ questions:
       At most {ceiling_fuse_4to1_pct}% of a step, and no one package can deliver it.
       {small_share_pct}% of the {launches_per_step:,.0f} kernel launches per step come from kernels short enough that the host time around a launch exceeds the GPU time inside it, and fusing that whole band four-to-one saves {ceiling_fuse_4to1_pct}% of a {step_ms} ms step; making every short launch vanish outright, which no real change achieves, saves {ceiling_all_removed_pct}%.
       ClimaAtmos holds the largest share at {climaatmos_launches_per_step:,.0f} launches per step, worth {climaatmos_fuse_4to1_pct}%, and within it cache/microphysics_cache.jl is the densest source at {mp_cache_launches_per_step:,.0f} per step and {mp_cache_fuse_4to1_pct}%, against {precomputed_launches_per_step:,.0f} and {precomputed_fuse_4to1_pct}% for the cache/precomputed_quantities.jl that CliMA/ClimaAtmos.jl#4261 proposes starting from -- the cache folder is the right instinct, and the microphysics cache is the bigger half of it.
-      Read all of these as upper bounds: the price per launch is {host_us_per_launch} microseconds of host time measured under nsys, whose own tracing runs to tens of CUDA API calls per launch and inflates exactly this quantity (docs/learnings.md 2b-i), and pricing a launch honestly needs the probe run through the unprofiled AMIP stages, which is parked on ClimaAtmos.jl-mod branch pb/launch-cost-probe.
+      Read all of these as upper bounds, and as only half the prize. They price the HOST side: the time around a launch, at {host_us_per_launch} microseconds each, measured under nsys, whose own tracing runs to tens of CUDA API calls per launch and inflates exactly this quantity (docs/learnings.md 2b-i); pricing a launch honestly needs the probe run through the unprofiled AMIP stages, parked on ClimaAtmos.jl-mod branch pb/launch-cost-probe.
+      Fusion also removes the intermediate arrays a chain of kernels writes and reads back, which is DEVICE time and independent of launch count: the same band is {small_band_pct_of_kernel_time}% of GPU kernel time, and this project's own fusion of the 1M source terms into the linearization accumulators cut kernel time 6.28% for +1.95% SYPD with the launch count identical to the unit (docs/learnings.md 3b).
+      So the two halves point at different work: fusing for launch count means merging adjacent short kernels, while fusing for memory traffic means merging the ones that hand arrays to each other, which is what the `@. lazy` and uncached-temporaries subtasks of #4261 do, and it is where the measured gain came from.
     evidence:
       - kind: value
         path: results/experiments/launch-cost/stats.json
@@ -110,6 +112,15 @@ questions:
         name: precomputed_fuse_4to1_pct
         git_ref: meas/2026-09-19-launch-cost
         explanation: What fusing it four-to-one would be worth.
+      - kind: value
+        path: results/kernel-shares.json
+        key: baseline.small_kernels.pct_of_kernel_time
+        name: small_band_pct_of_kernel_time
+        explanation: >-
+          What the sub-25 microsecond band costs on the DEVICE, from the
+          current stack's kernel population. This is the pool fusion can eat
+          into by not materializing intermediates, and it is unrelated to the
+          host-side launch overhead priced above.
       - kind: document
         path: docs/experiments/launch-cost.md
         git_ref: meas/2026-09-19-launch-cost
@@ -439,13 +450,10 @@ questions:
       Should the SGS quadrature order be reduced from 3 to 2, and what does that
       trade?
     answer: >-
-      Recommended subject to science sign-off -- worth +6.14% SYPD on unmodified
-      upstream code and +8.05% with this project's numerics work, against a
-      field-wide cloud-ice tendency error of {order2_icl_rms_over_scale:.2%} of
-      RMS with only about 1% of cells changing at all -- but the accuracy figure
-      is the direct effect rather than the self-consistent one, and individual
-      cells move far more than the field does. docs/sgs-quadrature.md carries
-      the three caveats a reviewer has to weigh.
+      Not on the current stack: the earlier recommendation is withdrawn.
+      Re-measured after the 2026-09-21 update to ClimaAtmos main, which re-enabled cloud ice formation and liquid freezing in the 1-moment scheme, dropping the rule from 3x3 to 2x2 changes {order2_changed_frac:.1%} of cells rather than the ~1% it changed before, for {order2_icl_rms_over_scale:.2%} of RMS on the cloud-ice tendency and {order2_lcl_rms_over_scale:.2%} on cloud liquid, with the worst single cell moving {order2_icl_max_over_scale:.1f}x the field's own RMS.
+      The throughput side is not comparable either: +6.14% SYPD on upstream code and +8.05% with this project's numerics work were both measured before that update, on the physics this measurement shows the quadrature now interacts with differently, so the trade cannot be struck until the cost is re-measured on the current configuration.
+      The accuracy figures remain the DIRECT effect, with lambda_lagrange held at its 3x3 fit; a real order-2 run refits it and would compensate in part. docs/sgs-quadrature.md is the write-up.
     evidence:
       - kind: value
         path: results/summary.json
@@ -470,24 +478,49 @@ questions:
         path: results/quadrature-order-error.toml
         key: order_2.dq_icl_dt.rms_over_scale
         name: order2_icl_rms_over_scale
-        git_ref: meas/2026-09-09-quadrature-order-accuracy
         explanation: >-
-          The accuracy cost, measured on a real AMIP state with byte-identical
-          inputs. The same file carries order_1 for the bracket and
-          max_over_scale for the worst single cell; p99_over_scale is zero by
-          construction and must not be read as an error estimate.
+          The accuracy cost on the current configuration, measured on a real
+          AMIP state with byte-identical inputs. Unpinned because the
+          quadrature-order-error stage now regenerates it: the same key read
+          1.20% before the 2026-09-21 update, on physics that no longer runs.
+      - kind: value
+        path: results/quadrature-order-error.toml
+        key: order_2.dq_lcl_dt.rms_over_scale
+        name: order2_lcl_rms_over_scale
+        explanation: The same for the cloud-liquid tendency, 0.65% before the update.
+      - kind: value
+        path: results/quadrature-order-error.toml
+        key: order_2.dq_icl_dt.max_over_scale
+        name: order2_icl_max_over_scale
+        explanation: >-
+          The worst single cell, in units of the field's own RMS. The error is
+          concentrated where the PDF reaches a kink, which is where the
+          quadrature is doing its job.
+      - kind: value
+        path: results/quadrature-order-error.toml
+        key: order_2.changed_frac
+        name: order2_changed_frac
+        explanation: >-
+          The share of cells whose tendencies change at all. This is the figure
+          that moved most: about 1% before the update, and the majority of the
+          field after it, which is what withdrew the recommendation.
   - question: >-
       Is the nine-point SGS quadrature in the 1-moment microphysics earning the
       throughput it costs?
-    notes: >-
-      For the science owners rather than for profiling. The subgrid PDF sits a
-      median of {mu_over_sigma_p50:.0f} standard deviations from the saturation kink
-      the quadrature exists to resolve, with {clear_of_kink_10sigma_warp_frac:.2%} of
-      warps entirely clear of it, so either the covariance closure produces variances
-      far smaller than intended or the quadrature is unnecessary at this
-      resolution. docs/sgs-quadrature.md is the write-up, and
-      docs/learnings.md 6a has the distribution.
+    answer: >-
+      Yes on the current stack, and the measurement that suggested otherwise was answering a narrower question than it appeared to.
+      The subgrid PDF still sits a median of {mu_over_sigma_p50:.0f} standard deviations from the SATURATION kink, with {clear_of_kink_10sigma_warp_frac:.2%} of warps entirely clear of it, so by that criterion the quadrature looks idle.
+      But reducing the rule to 2x2 changes {order2_changed_frac:.1%} of cells, so it is plainly integrating something: the cloud ice formation and liquid freezing that upstream re-enabled on 2026-09-21 are nonlinear in temperature away from saturation, and the quadrature integrates over temperature too.
+      Distance from the saturation kink is therefore necessary but not sufficient evidence that a quadrature is degenerate, which is the part worth carrying forward. docs/sgs-quadrature.md is the write-up, and docs/learnings.md 6a has the distribution.
     evidence:
+      - kind: value
+        path: results/quadrature-order-error.toml
+        key: order_2.changed_frac
+        name: order2_changed_frac
+        explanation: >-
+          What decides it: the share of cells whose tendencies change when the
+          rule is reduced. A quadrature integrating nothing would change none
+          of them.
       - kind: value
         path: results/sgs-degeneracy.toml
         key: mu_over_sigma_percentiles.p50
@@ -962,6 +995,7 @@ pipeline:
       environment: py
       inputs:
         - results/top-kernels.csv
+        - results/kernel-population.json
       outputs:
         - path: results/kernel-shares.json
           storage: git

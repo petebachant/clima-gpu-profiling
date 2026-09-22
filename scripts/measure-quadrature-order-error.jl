@@ -25,7 +25,10 @@ import ClimaComms
 ClimaComms.@import_required_backends
 import ClimaAtmos as CA
 import ClimaAtmos.Parameters as CAP
-import CloudMicrophysics.BulkMicrophysicsTendencies as BMT
+# Reached through ClimaAtmos: neither arm devs CloudMicrophysics since the
+# 2026-09-14 re-baseline, so it is in the manifest but not a direct
+# dependency, and importing it by name fails.
+const BMT = CA.BMT
 import TOML
 using Printf
 

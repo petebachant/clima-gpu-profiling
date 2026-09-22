@@ -2119,16 +2119,96 @@ stages:
       md5: cd569ef50836446fc837bb706d220836.dir
       size: 2090
       nfiles: 2
+    - path: results/kernel-population.json
+      hash: md5
+      md5: 8d4fcd79edb734cfbf98be37adc45abe
+      size: 8812
     - path: results/top-kernels.csv
       hash: md5
       md5: 869e3aa5bb3b371931c5a9ee44df5f65
       size: 2895
     - path: scripts/kernel-shares.py
       hash: md5
-      md5: ba1bed6374adfd3b0c4178397574680a
-      size: 816
+      md5: 70bac0d37d34fd21813b3567ae4b2990
+      size: 1753
     outs:
     - path: results/kernel-shares.json
       hash: md5
-      md5: a13fb2cfd2c3a88aa2d9e31fdc54d6f9
-      size: 303
+      md5: 355000d906d317214bf3f9b648e96c47
+      size: 649
+  quadrature-order-error:
+    cmd: calkit scheduler batch --name quadrature-order-error --environment 
+      clima --dep scripts/measure-quadrature-order-error.jl --dep 
+      ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
+      ClimaAtmos.jl-mod/src --dep CloudMicrophysics.jl-mod/src --dep 
+      .calkit/env-locks/clima --out results/quadrature-order-error.toml --option
+      --gpus=1 --option --time=120 -- scripts/run-julia-script.sh 
+      --project=ClimaCoupler.jl-mod/experiments/AMIP 
+      scripts/measure-quadrature-order-error.jl --config_file 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --out results/quadrature-order-error.toml
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: ffdef5e566ef1c6aeb21cdf51f26ac52.dir
+      size: 2160590
+      nfiles: 159
+    - path: ClimaCore.jl-mod/ext
+      hash: md5
+      md5: bcf5ff64469299fee681dda394442960.dir
+      size: 232766
+      nfiles: 28
+    - path: ClimaCore.jl-mod/src
+      hash: md5
+      md5: b0046c80a2dd67121a317d407828ab4e.dir
+      size: 1354312
+      nfiles: 103
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: d68284726a77e4fc85e1ba0768977f19
+      size: 2035
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: a5599225e1f5fbb6d64f0c8aeb5e4acf
+      size: 122720
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: ClimaCoupler.jl-mod/src
+      hash: md5
+      md5: f2ed10dd11c630a3361c05b903c765d7.dir
+      size: 305758
+      nfiles: 22
+    - path: CloudMicrophysics.jl-mod/src
+      hash: md5
+      md5: e1270641814cca2753b5eec407dabcf4.dir
+      size: 459784
+      nfiles: 57
+    - path: scripts/measure-quadrature-order-error.jl
+      hash: md5
+      md5: 104447e9e721d3b5cee22864988c72cd
+      size: 6541
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: a61880cfce301ad9069fbaddfa8d5ad5
+      size: 1033
+    outs:
+    - path: .calkit/scheduler/logs/quadrature-order-error.out
+      hash: md5
+      md5: ad012eb06dac851b78410b7e61e6cde0
+      size: 27547
+    - path: results/quadrature-order-error.toml
+      hash: md5
+      md5: 29440d69a80934e76fe40bccaf52cbb9
+      size: 1936
