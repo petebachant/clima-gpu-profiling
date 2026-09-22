@@ -240,16 +240,32 @@ questions:
       Where does the AMIP simulation's GPU time actually go, and is the
       microphysics kernel the right thing to optimize?
     answer: >-
-      No -- radiation is the largest block at about 44% of GPU kernel time
-      against roughly 10% for the microphysics kernel this project targeted, and
-      with host time outside the GPU timeline at {gap_frac_of_wall:.3%} of wall
-      the run is densely GPU-bound, so kernel time is what there is to attack.
+      No -- radiation is the largest block at {radiation_pct:.1f}% of GPU kernel
+      time against {microphysics_hot_kernel_pct:.1f}% for the microphysics kernel
+      this project targeted, and with host time outside the GPU timeline at
+      {gap_frac_of_wall:.3%} of wall the run is densely GPU-bound, so kernel time
+      is what there is to attack.
     evidence:
       - kind: publication
         path: docs/learnings.md
         section: "4k"
         explanation: >-
           The breakdown on the phase-independent window, and why occupancy is not radiation's lever either.
+      - kind: value
+        path: results/kernel-shares.json
+        key: baseline.radiation_pct
+        name: radiation_pct
+        explanation: >-
+          The four RRTMGP rte_*_2stream kernels together, baseline arm. The
+          binary search that merged upstream took this from 43.9% to where it is
+          now.
+      - kind: value
+        path: results/kernel-shares.json
+        key: baseline.microphysics_hot_kernel_pct
+        name: microphysics_hot_kernel_pct
+        explanation: >-
+          The largest set_microphysics_tendency_cache specialization, baseline
+          arm.
       - kind: value
         path: results/step-breakdown.toml
         key: gap_frac_of_wall
@@ -968,6 +984,15 @@ pipeline:
           storage: git
       html_storage: git
       executed_ipynb_storage: git
+    kernel-shares:
+      kind: python-script
+      script_path: scripts/kernel-shares.py
+      environment: py
+      inputs:
+        - results/top-kernels.csv
+      outputs:
+        - path: results/kernel-shares.json
+          storage: git
     export-kernel-resources:
       kind: python-script
       environment: py

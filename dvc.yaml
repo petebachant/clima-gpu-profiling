@@ -297,6 +297,18 @@ stages:
           cache: false
     desc: Automatically generated from the 'compare-kernels' stage in
       calkit.yaml. Changes made here will be overwritten.
+  kernel-shares:
+    cmd: calkit xenv -n py --no-check -- python scripts/kernel-shares.py
+    deps:
+      - scripts/kernel-shares.py
+      - results/top-kernels.csv
+      - .calkit/env-locks/py
+    outs:
+      - results/kernel-shares.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'kernel-shares' stage in calkit.yaml.
+      Changes made here will be overwritten.
   export-kernel-resources:
     cmd: calkit xenv -n py --no-check -- python
       scripts/export-kernel-resources.py
@@ -357,7 +369,7 @@ stages:
       ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
       ClimaAtmos.jl-mod/src --dep CloudMicrophysics.jl-mod/src --dep
       .calkit/env-locks/clima --out results/sgs-degeneracy.toml --option
-      --gpus=1 --option --time=60 -- scripts/run-julia-script.sh
+      --gpus=1 --option --time=120 -- scripts/run-julia-script.sh
       --project=ClimaCoupler.jl-mod/experiments/AMIP
       scripts/measure-sgs-degeneracy.jl --config_file
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml

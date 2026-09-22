@@ -30,15 +30,16 @@ Loading climacommon/2025_05_15
 │ In any other case, please file an issue.
 └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
 Precompiling ClimaAtmos...
-   2125.9 ms  ✓ RRTMGP → RRTMGPNCDatasetsExt
-  83936.8 ms  ✓ ClimaCore
-   5725.1 ms  ✓ ClimaCore → KrylovExt
-   5794.5 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreExt
-   6550.5 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreNCDatasetsExt
-   8630.4 ms  ✓ ClimaDiagnostics
-   9925.5 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreInterpolationsExt
-  24650.5 ms  ✓ ClimaAtmos
-  8 dependencies successfully precompiled in 125 seconds. 280 already precompiled.
+   2285.2 ms  ✓ RRTMGP → RRTMGPNCDatasetsExt
+  93376.2 ms  ✓ ClimaCore
+   7795.5 ms  ✓ ClimaCore → KrylovExt
+   7835.2 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreExt
+   9703.6 ms  ✓ ClimaTimeSteppers → ClimaTimeSteppersClimaCoreExt
+   7951.0 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreInterpolationsExt
+   7801.3 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreNCDatasetsExt
+   9351.9 ms  ✓ ClimaDiagnostics
+  25968.8 ms  ✓ ClimaAtmos
+  9 dependencies successfully precompiled in 141 seconds. 280 already precompiled.
 Precompiling ClimaCoreCUDAExt...
 Info Given ClimaCoreCUDAExt was explicitly requested, output will be shown live [0K
 [0K┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
@@ -68,7 +69,7 @@ Info Given ClimaCoreCUDAExt was explicitly requested, output will be shown live 
 [0K│ 
 [0K│ In any other case, please file an issue.
 [0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-   8329.3 ms  ✓ ClimaCore → ClimaCoreCUDAExt
+   8703.6 ms  ✓ ClimaCore → ClimaCoreCUDAExt
   1 dependency successfully precompiled in 10 seconds. 172 already precompiled.
   1 dependency had output during precompilation:
 ┌ ClimaCore → ClimaCoreCUDAExt
@@ -103,7 +104,7 @@ Info Given RRTMGPCUDAExt was explicitly requested, output will be shown live [0
 [0K│ 
 [0K│ In any other case, please file an issue.
 [0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-   4263.7 ms  ✓ RRTMGP → RRTMGPCUDAExt
+   4608.7 ms  ✓ RRTMGP → RRTMGPCUDAExt
   1 dependency successfully precompiled in 5 seconds. 94 already precompiled.
   1 dependency had output during precompilation:
 ┌ RRTMGP → RRTMGPCUDAExt
@@ -114,18 +115,18 @@ Info Given RRTMGPCUDAExt was explicitly requested, output will be shown live [0
 === registers, params passed as RUNTIME kernel arguments ===
 layer                           regs   local B  warps/SM
 source terms only               52     32       16
-+ aggregate (Instantaneous)     64     32       16
++ aggregate (Instantaneous)     62     32       16
 one linearized implicit step    76     32       16
-LinearizedAverage nsub=1        206    32       8
-LinearizedAverage nsub=2        206    32       8
-LinearizedAverage nsub=3        206    32       8
+LinearizedAverage nsub=1        207    32       8
+LinearizedAverage nsub=2        207    32       8
+LinearizedAverage nsub=3        207    32       8
 
 === can ptxas hit 12 warps/SM without spilling? ===
 compilation                       regs   local B  warps/SM
-unbounded                         255    704      8
-unbounded, always_inline=false    255    832      8
-__launch_bounds__ 12 warps/SM     168    1072     12
+unbounded                         255    760      8
+unbounded, always_inline=false    255    856      8
+__launch_bounds__ 12 warps/SM     168    1120     12
 
-spill growth asking for 12 warps/SM: 368 bytes  (OVER the 256 B budget -- ptxas is buying occupancy with spill)
+spill growth asking for 12 warps/SM: 360 bytes  (OVER the 256 B budget -- ptxas is buying occupancy with spill)
 
 BISECT DONE
