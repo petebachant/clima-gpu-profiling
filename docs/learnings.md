@@ -1866,6 +1866,16 @@ The exact threshold for 12 warps is 168, not 170: it needs
 
 ### 4n. A stage that does not declare an input is silently never stale
 
+> **SECOND INSTANCE (2026-09-22), and a worse one.** Thirteen stages declared
+> `config/benchmark_configs/amip_progedmf_1m_land_he16.yml` but not the
+> `config/atmos_configs/climaatmos_progedmf_1m.yml` it names in
+> `atmos_config_file` — which is where `rad`, `dt_rad` and `quadrature_order`
+> live. Setting `rad: allsky` in the mod arm left the whole pipeline reporting
+> nothing stale but `make-diffs`, so the treatment would have been "measured"
+> by reusing cached profiles of the untreated arm. Declared on all thirteen
+> now. A config a stage reads through another config is still an input.
+
+
 `make-diffs` listed the Coupler, Core, Atmos and CM submodules as inputs but not
 RRTMGP, even after `make-diffs.sh` was taught to enumerate RRTMGP. The script
 knew about the repo; the stage did not. So a radiation change never marked the
