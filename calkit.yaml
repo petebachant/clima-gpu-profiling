@@ -1099,7 +1099,7 @@ pipeline:
       target_path: docs/experiments/launch-cost.md
       environment: py
       # Frozen on main, live at meas/2026-09-19-launch-cost, following
-      # compile-time-study and launch-overhead-doc. The 2026-09-21 submodule
+      # compile-time-study. The 2026-09-21 submodule
       # update moved the whole stack, which makes both nsys stages this
       # document declares stale. Re-running them here would re-profile for
       # hours and then restate the experiment against a different stack --
@@ -1108,17 +1108,6 @@ pipeline:
       # displaying the new numbers while their evidence still checked against
       # the tag. Re-measure by tagging a new experiment, not by re-running
       # this one.
-      frozen: true
-    launch-overhead-doc:
-      kind: markdown
-      target_path: docs/experiments/launch-overhead.md
-      environment: py
-      # Frozen on main, unfrozen at meas/2026-09-17-launch-overhead, following
-      # compile-time-study. results/nsys/baseline.sqlite holds whatever profiled
-      # last, so leaving this live would regenerate the write-up against a
-      # different run and silently restate the experiment. The probe half is
-      # already immune -- it reads the committed results/launch-probe.json
-      # rather than the transient mod profile -- but the baseline half is not.
       frozen: true
     quadrature-order-error:
       kind: shell-script

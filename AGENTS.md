@@ -29,12 +29,12 @@ code block that writes a JSON output, and the prose refers to it by key:
 
 ```md
 The marginal cost is <!-- calkit value key=marginal.host_us_per_launch
-path=results/launch-overhead.json -->18.51<!-- /calkit value --> us.
+path=results/experiments/launch-cost/stats.json -->6.74<!-- /calkit value --> us.
 ```
 
 Values are rewritten from the results file on every run, so the prose cannot
 drift from the calculation, and the rendered numbers stay visible in Git.
-`docs/experiments/launch-overhead.md` is the worked example.
+`docs/experiments/launch-cost.md` is the worked example.
 
 One experiment, one document under `docs/experiments/`, registered as a
 `kind: markdown` stage and cited from a `calkit.yaml` question so
@@ -49,7 +49,7 @@ to read. The markers are long, which makes wrapping a sentence around them the
 natural thing to do, and it is wrong.
 
 Write one sentence per line and let the line run long. No line may begin with a
-marker. `docs/experiments/launch-overhead.md` is the worked example.
+marker. `docs/experiments/launch-cost.md` is the worked example.
 
 Values are re-injected on every `calkit run`, even when the stage itself is
 skipped as unchanged --- verified by corrupting a value and watching it be
@@ -74,9 +74,13 @@ a cache rather than the record. The stage can regenerate it from the tag, so
 profiles may be garbage-collected (`calkit dvc gc --workspace` after pushing);
 the durable record is the statistics JSON, stored in Git at a few kilobytes.
 
-`launch-overhead.md` predates this and still reads the shared paths, which is
-why it carries both a freeze and `results/launch-probe.json`. New experiments
-should not copy it.
+`launch-cost.md` is the worked example: it declares its own baseline and probe
+stages, writing under `results/experiments/launch-cost/`, so nothing it cites
+can be overwritten by the next experiment. The write-up it replaced read the
+shared `results/nsys/` paths instead and needed both a freeze and a snapshot
+file to stay honest; it was deleted on 2026-09-22 once its figures were
+withdrawn, and `meas/2026-09-17-launch-overhead` still has it. Do not copy that
+arrangement.
 
 ### Freeze an experiment's document on main, leave it live at its tag
 
@@ -90,7 +94,7 @@ overwrites. Two mechanisms keep it honest, and both are needed:
     not frozen and its inputs exist, so `git checkout <tag> && calkit run <stage>`
     reproduces it; on main `calkit run` leaves it alone instead of regenerating
     the write-up against a different run. `compile-time-study` established this
-    pattern; `launch-overhead-doc` follows it.
+    pattern; `launch-cost` follows it.
 
 Question evidence then cites the document and its results file with
 `git_ref: <tag>`, which is what `git_ref` is for: the claim is pinned to the rev

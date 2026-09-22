@@ -768,19 +768,3 @@ stages:
     frozen: true
     desc: Automatically generated from the 'launch-cost/analyze' stage in
       calkit.yaml. Changes made here will be overwritten.
-  launch-overhead-doc/measure:
-    cmd: calkit xenv -n py --no-check -- python
-      .calkit/markdown/docs/experiments/launch-overhead.md/measure.py
-    deps:
-      - .calkit/markdown/docs/experiments/launch-overhead.md/measure.py
-      - scripts/measure_launch_overhead.py
-      - results/nsys/baseline.sqlite
-      - results/launch-probe.json
-      - .calkit/env-locks/py
-    outs:
-      - results/launch-overhead.json:
-          cache: false
-          persist: false
-    frozen: true
-    desc: Automatically generated from the 'launch-overhead-doc/measure' stage
-      in calkit.yaml. Changes made here will be overwritten.
