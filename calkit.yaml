@@ -15,13 +15,14 @@ questions:
   - question: >-
       What is the ceiling on kernel fusion, and which package would have to
       deliver it?
-    answer: >-
-      At most {ceiling_fuse_4to1_pct}% of a step from fusing the sub-25
-      microsecond band four-to-one, or {ceiling_all_removed_pct}% if every short
-      launch vanished outright, priced at {host_us_per_launch} microseconds of
-      host time per launch -- an upper bound measured under a profiler that
-      inflates exactly this quantity, and spread across seven packages, so no
-      single repository can deliver it.
+    notes: >-
+      Open. The only measurement is an upper bound: fusing the sub-25
+      microsecond band four-to-one saves at most {ceiling_fuse_4to1_pct}% of a step,
+      priced at {host_us_per_launch} microseconds of host time per launch, but that
+      price is read from nsys, whose tracing inflates exactly this quantity
+      (docs/learnings.md 2b-i). Pricing a launch honestly needs the probe run through
+      the unprofiled AMIP stages; it is parked on ClimaAtmos.jl-mod branch
+      pb/launch-cost-probe.
     evidence:
       - kind: value
         path: results/experiments/launch-cost/stats.json
@@ -55,45 +56,6 @@ questions:
         explanation: >-
           The experiment. It declares both profiling stages itself, so the pair
           cannot be split across sessions.
-  - question: >-
-      How much of a timestep is spent launching kernels rather than running
-      them, and is that a bigger target than the kernels themselves?
-    answer: >-
-      Superseded and mostly unsupported -- the launch and kernel counts stand
-      because they are device-side, but the idle and gap times come from nsys
-      gap analysis, which docs/learnings.md 2b-i shows is dominated by the
-      profiler rather than the model; a launch costs {host_us_per_launch}
-      microseconds of host time, and what survives is in the fusion-ceiling
-      question above.
-    evidence:
-      - kind: publication
-        path: docs/learnings.md
-        section: "2b-i"
-        explanation: >-
-          Why the gap and idle times are withdrawn: profiled idle is dominated by the profiler's own tracing, not the model.
-      - kind: publication
-        path: docs/experiments/launch-overhead.md
-        git_ref: meas/2026-09-17-launch-overhead
-        explanation: >-
-          The write-up, with every figure injected from
-          results/launch-overhead.json rather than typed.
-      - kind: value
-        path: results/experiments/launch-cost/stats.json
-        key: marginal.host_us_per_launch
-        name: host_us_per_launch
-        git_ref: meas/2026-09-19-launch-cost
-        explanation: >-
-          The re-measurement that replaced the withdrawn 18.51, taken as an
-          adjacent pair from one invocation.
-      - kind: value
-        path: results/launch-probe.json
-        key: launches
-        name: probe_launches
-        git_ref: meas/2026-09-17-launch-overhead
-        explanation: >-
-          Statistics of the probe profile, committed because the profile itself
-          is transient: results/nsys/mod.sqlite is overwritten by the next
-          experiment, and depending on it destroyed the measurement once.
   - question: >-
       Can the SGS microphysics cache kernel be made faster from inside a single
       package, and how much is that worth?
@@ -131,20 +93,12 @@ questions:
           The whole treatment: arms_differ_in is ['ClimaAtmos.jl-mod'] and
           nothing else, which is what makes this a single-package result.
   - question: Can we improve the performance of the flagship AMIP simulation?
-    answer:
-      "if speedup_pct > 5": >-
-        Yes -- the pipeline currently measures {speedup_pct:.2f}% SYPD for the
-        modified stack at {mod_sypd:.5f} SYPD, carried by the RRTMGP
-        aerosol-optics binary search rather than by the microphysics work this
-        project started with.
-      "elif speedup_pct > 0.5": >-
-        Marginally -- the pipeline currently measures {speedup_pct:.2f}% SYPD at
-        {mod_sypd:.5f} SYPD, above the noise floor but well short of what the
-        radiation work has shown.
-      "else": >-
-        Not at the revision currently measured -- the pipeline reads
-        {speedup_pct:.2f}% SYPD at {mod_sypd:.5f} SYPD, inside the run-to-run
-        spread, so there is no effect to claim here.
+    notes: >-
+      Open. After the 2026-09-21 update to main the arms are identical, and the
+      null test measured {speedup_pct:+.3f}% SYPD at {mod_sypd:.5f} SYPD, so there is
+      no treatment in the pipeline to answer this with. The largest result so far,
+      the RRTMGP aerosol-optics binary search, merged upstream as
+      CliMA/RRTMGP.jl#628 and is part of the baseline now.
     evidence:
       - kind: publication
         path: docs/whole-stack.md
@@ -178,7 +132,8 @@ questions:
       Yes -- a binary search replacing a linear scan in RRTMGP's aerosol-optics
       interpolation is worth +7.95% SYPD on its own and carries essentially all
       of the +8.70% measured with a 64-thread block change added, with model
-      state bit-identical over 120 coupled steps.
+      state bit-identical over 120 coupled steps; it has since merged upstream as
+      CliMA/RRTMGP.jl#628, so it is part of the baseline now.
     evidence:
       - kind: publication
         path: docs/learnings.md
@@ -289,12 +244,11 @@ questions:
       A benchmark-and-threshold gate cannot work here, because full-AMIP SYPD
       noise is larger than the changes worth catching, so the gate has to be
       built on compile-time quantities instead.
-    answer: >-
-      Gate on per-kernel compile-time resource use -- registers per thread AND
-      absolute local-memory bytes, from CUDA.registers and CUDA.memory, recorded
-      as a checked-in baseline -- never on end-to-end timing, which at this
-      project's noise floor can neither reward the changes worth making nor
-      catch their inverse; designed but not yet implemented.
+    notes: >-
+      Proposed, not implemented or validated: gate on per-kernel compile-time
+      resource use -- registers per thread AND absolute local-memory bytes, from
+      CUDA.registers and CUDA.memory, recorded as a checked-in baseline -- rather
+      than on end-to-end timing. The design is in docs/ci-kernel-gate.md.
     evidence:
       - kind: publication
         path: docs/ci-kernel-gate.md
@@ -338,13 +292,13 @@ questions:
   - question: >-
       Which changes actually improve AMIP performance, by how much, and how do
       we know a result is real rather than run-to-run variation?
-    answer: >-
-      Two lines of work, and they are complements rather than alternatives --
-      CloudMicrophysics register and fusion work removes work and creates
-      register headroom, ClimaCore's occupancy targeting converts headroom it
-      cannot create, so the pair beats the sum of its parts -- and four
-      byte-identical null tests put run-to-run variation at a few tenths of a
-      percent, which is what makes differences near 0.5% real.
+    notes: >-
+      The earlier answer described the CloudMicrophysics register and fusion
+      work and ClimaCore's occupancy targeting on stacks that no longer exist, and
+      predates the RRTMGP binary search, which is upstream now; it needs
+      re-measuring on the current stack. The second half is answered: identical arms
+      on the current stack differ by {speedup_pct:+.3f}% SYPD, consistent with the
+      earlier null tests in experiments.csv.
     evidence:
       - kind: publication
         path: docs/learnings.md
@@ -371,15 +325,13 @@ questions:
   - question: >-
       What actually limits the hot SGS-quadrature microphysics kernel, and which
       of the available levers can move it?
-    answer: >-
-      Register pressure rather than arithmetic or memory -- the kernel sits at
-      the 255-register sm_80 cap while a full CloudMicrophysics evaluation
-      compiles standalone to {linearized_avg_registers}, with docs/learnings.md
-      2c carrying the physics-to-framework split -- and the lever that works is
-      a __launch_bounds__ occupancy target rather than a hard register cap,
-      guarded by a spill budget without which it is net negative: forcing the
-      annotation onto the nine-point kernel takes it from {l1013_off_ms:.1f} to
-      {l1013_unguarded_ms:.1f} ms, i.e. slower.
+    notes: >-
+      Answered for the stack before the 2026-09-21 update in docs/learnings.md 2c
+      and 4a: register pressure at the 255-register cap, with a guarded
+      __launch_bounds__ occupancy target as the lever that works. That update
+      re-enabled cloud ice formation and liquid freezing in the 1M microphysics,
+      which changes this kernel, so it needs re-measuring; the ncu stages that would
+      show its registers and spilling are frozen.
     evidence:
       - kind: publication
         path: docs/learnings.md
@@ -499,13 +451,13 @@ questions:
   - question: >-
       Is the nine-point SGS quadrature in the 1-moment microphysics earning the
       throughput it costs?
-    answer: >-
-      Unresolved, and it belongs to the science owners rather than to profiling
-      -- the subgrid PDF sits a median of {mu_over_sigma_p50:.0f} standard
-      deviations from the saturation kink the quadrature exists to resolve, with
-      {clear_of_kink_10sigma_warp_frac:.2%} of warps entirely clear of it, so
-      either the covariance closure is producing variances far smaller than
-      intended or the quadrature is unnecessary at this resolution.
+    notes: >-
+      For the science owners rather than for profiling. The subgrid PDF sits a
+      median of {mu_over_sigma_p50:.0f} standard deviations from the saturation kink
+      the quadrature exists to resolve, with {clear_of_kink_10sigma_warp_frac:.2%} of
+      warps entirely clear of it, so either the covariance closure produces variances
+      far smaller than intended or the quadrature is unnecessary at this
+      resolution.
     evidence:
       - kind: publication
         path: docs/sgs-quadrature.md
