@@ -15,14 +15,11 @@ questions:
   - question: >-
       What is the ceiling on kernel fusion, and which package would have to
       deliver it?
-    notes: >-
-      Open. The only measurement is an upper bound: fusing the sub-25
-      microsecond band four-to-one saves at most {ceiling_fuse_4to1_pct}% of a step,
-      priced at {host_us_per_launch} microseconds of host time per launch, but that
-      price is read from nsys, whose tracing inflates exactly this quantity
-      (docs/learnings.md 2b-i). Pricing a launch honestly needs the probe run through
-      the unprofiled AMIP stages; it is parked on ClimaAtmos.jl-mod branch
-      pb/launch-cost-probe.
+    answer: >-
+      At most {ceiling_fuse_4to1_pct}% of a step, and no one package can deliver it.
+      {small_share_pct}% of the {launches_per_step:,.0f} kernel launches per step come from kernels short enough that the host time around a launch exceeds the GPU time inside it, and fusing that whole band four-to-one saves {ceiling_fuse_4to1_pct}% of a {step_ms} ms step; making every short launch vanish outright, which no real change achieves, saves {ceiling_all_removed_pct}%.
+      ClimaAtmos holds the largest share at {climaatmos_launches_per_step:,.0f} launches per step, worth {climaatmos_fuse_4to1_pct}%, and within it cache/microphysics_cache.jl is the densest source at {mp_cache_launches_per_step:,.0f} per step and {mp_cache_fuse_4to1_pct}%, against {precomputed_launches_per_step:,.0f} and {precomputed_fuse_4to1_pct}% for the cache/precomputed_quantities.jl that CliMA/ClimaAtmos.jl#4261 proposes starting from -- the cache folder is the right instinct, and the microphysics cache is the bigger half of it.
+      Read all of these as upper bounds: the price per launch is {host_us_per_launch} microseconds of host time measured under nsys, whose own tracing runs to tens of CUDA API calls per launch and inflates exactly this quantity (docs/learnings.md 2b-i), and pricing a launch honestly needs the probe run through the unprofiled AMIP stages, which is parked on ClimaAtmos.jl-mod branch pb/launch-cost-probe.
     evidence:
       - kind: value
         path: results/experiments/launch-cost/stats.json
@@ -50,6 +47,69 @@ questions:
           The price everything above rests on, from a baseline and probe
           profiled back to back in one invocation. The earlier cross-day
           estimate of 18.51 would have inflated every figure here by 2.7x.
+      - kind: value
+        path: results/experiments/launch-cost/stats.json
+        key: fusion.small_share_pct
+        name: small_share_pct
+        git_ref: meas/2026-09-19-launch-cost
+        explanation: >-
+          The share of launches in the sub-25 microsecond band, which is where
+          the host time around a launch exceeds the GPU time inside it.
+      - kind: value
+        path: results/experiments/launch-cost/stats.json
+        key: fusion.launches_per_step
+        name: launches_per_step
+        git_ref: meas/2026-09-19-launch-cost
+        explanation: Kernel launches per coupling step, device-side and so trustworthy.
+      - kind: value
+        path: results/experiments/launch-cost/stats.json
+        key: fusion.step_ms
+        name: step_ms
+        git_ref: meas/2026-09-19-launch-cost
+        explanation: The step the percentages above are shares of.
+      - kind: value
+        path: results/experiments/launch-cost/stats.json
+        key: fusion.by_package.ClimaAtmos.per_step
+        name: climaatmos_launches_per_step
+        git_ref: meas/2026-09-19-launch-cost
+        explanation: >-
+          ClimaAtmos's share of the band, attributed by the stack trace each
+          launch was issued from.
+      - kind: value
+        path: results/experiments/launch-cost/stats.json
+        key: fusion.by_package.ClimaAtmos.fuse_4to1_pct
+        name: climaatmos_fuse_4to1_pct
+        git_ref: meas/2026-09-19-launch-cost
+        explanation: >-
+          What fusing ClimaAtmos's whole share four-to-one would be worth. The
+          band is spread over seven packages, so this is the largest single
+          share rather than most of the ceiling.
+      - kind: value
+        path: results/experiments/launch-cost/stats.json
+        key: fusion.climaatmos_by_file.cache_microphysics_cache.per_step
+        name: mp_cache_launches_per_step
+        git_ref: meas/2026-09-19-launch-cost
+        explanation: The densest single file in ClimaAtmos.
+      - kind: value
+        path: results/experiments/launch-cost/stats.json
+        key: fusion.climaatmos_by_file.cache_microphysics_cache.fuse_4to1_pct
+        name: mp_cache_fuse_4to1_pct
+        git_ref: meas/2026-09-19-launch-cost
+        explanation: What fusing that file four-to-one would be worth.
+      - kind: value
+        path: results/experiments/launch-cost/stats.json
+        key: fusion.climaatmos_by_file.cache_precomputed_quantities.per_step
+        name: precomputed_launches_per_step
+        git_ref: meas/2026-09-19-launch-cost
+        explanation: >-
+          The file CliMA/ClimaAtmos.jl#4261 proposes starting from, for
+          comparison with the microphysics cache beside it.
+      - kind: value
+        path: results/experiments/launch-cost/stats.json
+        key: fusion.climaatmos_by_file.cache_precomputed_quantities.fuse_4to1_pct
+        name: precomputed_fuse_4to1_pct
+        git_ref: meas/2026-09-19-launch-cost
+        explanation: What fusing it four-to-one would be worth.
       - kind: document
         path: docs/experiments/launch-cost.md
         git_ref: meas/2026-09-19-launch-cost
@@ -978,6 +1038,41 @@ pipeline:
       # already immune -- it reads the committed results/launch-probe.json
       # rather than the transient mod profile -- but the baseline half is not.
       frozen: true
+    quadrature-order-error:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # The accuracy side of the quadrature-order decision: evaluate the
+      # microphysics cache with the shipped 3x3 rule, swap in 2x2 and 1-point
+      # rules, and diff the tendency fields. Was run by hand for
+      # meas/2026-09-09-quadrature-order-accuracy; a stage because the
+      # 2026-09-21 update re-enabled 1M processes whose tendencies this
+      # compares, so the old file describes different physics.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=120
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/measure-quadrature-order-error.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --out
+        - results/quadrature-order-error.toml
+      inputs:
+        - scripts/measure-quadrature-order-error.jl
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaAtmos.jl-mod/src
+        - CloudMicrophysics.jl-mod/src
+      outputs:
+        - path: results/quadrature-order-error.toml
+          storage: git
+
     sgs-degeneracy:
       kind: shell-script
       environment: clima
