@@ -165,8 +165,8 @@ questions:
       null test measured {speedup_pct:+.3f}% SYPD at {mod_sypd:.5f} SYPD, so there is
       no treatment in the pipeline to answer this with. The largest result so far,
       the RRTMGP aerosol-optics binary search, merged upstream as
-      CliMA/RRTMGP.jl#628 and is part of the baseline now.
-      docs/whole-stack.md has the decomposition.
+      CliMA/RRTMGP.jl#628 and is part of the baseline now. experiments.csv has
+      every recorded experiment, and docs/learnings.md 3a-3c the reasoning.
     evidence:
       - kind: figure
         path: figures/sypd-time-series.png
@@ -251,6 +251,36 @@ questions:
           Bit-identity, not an accuracy trade: 0 of 12 prognostic fields differ
           against results/state-rad-baseline.toml at every snapshot across these
           coupled steps.
+  - question: >-
+      How much of the radiation cost is clear-sky diagnostics rather than the
+      fluxes the model runs on?
+    answer: >-
+      Half of it: {clear_sky_pct}% of GPU kernel time against {all_sky_pct}% for the fluxes that drive the model, out of {radiation_pct}% for radiation as a whole.
+      The benchmark runs `rad: allskywithclear`, under which ClimaAtmos calls the RRTMGP solver twice per radiation step -- once with the cloud lookup passed as `nothing` -- so the profile carries two longwave and two shortwave kernels, told apart by whether their signature takes a LookUpCld argument rather than by cost.
+      That second pass buys the clear-sky fluxes that cloud radiative effect diagnostics are computed from, so whether it is worth half of radiation is a question for whoever uses those diagnostics, not a performance bug; what it would return in SYPD has not been measured, and the benchmark fires radiation every 20 steps against the nightly's 30, so radiation is over-weighted here relative to production.
+    evidence:
+      - kind: value
+        path: results/kernel-population.json
+        key: baseline.radiation.clear_sky.pct_of_kernel_time
+        name: clear_sky_pct
+        explanation: >-
+          The two solves with no LookUpCld argument, which is what makes this
+          an attribution rather than an inference from which kernel is cheaper.
+      - kind: value
+        path: results/kernel-population.json
+        key: baseline.radiation.all_sky.pct_of_kernel_time
+        name: all_sky_pct
+        explanation: The solves the model's own fluxes come from.
+      - kind: value
+        path: results/kernel-population.json
+        key: baseline.radiation.pct_of_kernel_time
+        name: radiation_pct
+        explanation: Radiation as a whole, for scale.
+      - kind: table
+        path: results/top-kernels.csv
+        explanation: >-
+          The four kernels as a profile shows them: two longwave and two
+          shortwave, six launches each over the window.
   - question: >-
       Where does the AMIP simulation's GPU time actually go, and is the
       microphysics kernel the right thing to optimize?
@@ -474,6 +504,12 @@ questions:
           two levers separately, because the numerics cut cost per quadrature
           point and the order cuts the number of points -- so the numerics work
           is not made redundant by this change.
+      - kind: document
+        path: docs/sgs-quadrature.md
+        explanation: >-
+          The decision record: what was measured, what was decided, and what
+          would change it. Built by a Markdown stage, so its figures and its
+          before/after comparison are injected rather than typed.
       - kind: value
         path: results/quadrature-order-error.toml
         key: order_2.dq_icl_dt.rms_over_scale
@@ -513,6 +549,11 @@ questions:
       But reducing the rule to 2x2 changes {order2_changed_frac:.1%} of cells, so it is plainly integrating something: the cloud ice formation and liquid freezing that upstream re-enabled on 2026-09-21 are nonlinear in temperature away from saturation, and the quadrature integrates over temperature too.
       Distance from the saturation kink is therefore necessary but not sufficient evidence that a quadrature is degenerate, which is the part worth carrying forward. docs/sgs-quadrature.md is the write-up, and docs/learnings.md 6a has the distribution.
     evidence:
+      - kind: document
+        path: docs/sgs-quadrature.md
+        explanation: >-
+          The decision record, including why the distance-from-kink argument
+          was not sufficient.
       - kind: value
         path: results/quadrature-order-error.toml
         key: order_2.changed_frac
@@ -1038,6 +1079,13 @@ pipeline:
       outputs:
         - path: results/earlyout-hits.toml
           storage: git
+    sgs-quadrature-doc:
+      kind: markdown
+      target_path: docs/sgs-quadrature.md
+      environment: py
+      # Live on main: its inputs are committed results files that their own
+      # stages regenerate, so re-running this restates the decision against
+      # the current measurement, which is the point of it.
     compile-time-doc:
       kind: markdown
       target_path: docs/compile-time.md

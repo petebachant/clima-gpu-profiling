@@ -1722,6 +1722,20 @@ viable.
 
 ## 6a. How much work the SGS quadrature is actually doing (2026-09-01)
 
+> **THE CONCLUSION BELOW IS OVERTURNED (2026-09-22), THOUGH THE MEASUREMENT
+> STANDS.** The distances from the saturation kink are still what this section
+> reports, and the quadrature still looks idle by that criterion. But reducing
+> the rule to 2×2 changes 58% of cells on the current configuration, against
+> ~1% before ClimaAtmos main re-enabled cloud ice formation and liquid freezing
+> on 2026-09-21 — so the quadrature is integrating structure this section never
+> looked at. Those processes are nonlinear in temperature away from saturation,
+> and the quadrature integrates over temperature too. **Distance from one kink
+> is necessary but not sufficient evidence that a quadrature is degenerate.**
+> The order-reduction diff is the test that settles it, and it is now the
+> `quadrature-order-error` stage. Decision record with the current figures:
+> `docs/sgs-quadrature.md`. The SYPD costs below also predate the update.
+
+
 Measured by `scripts/measure-sgs-degeneracy.jl` on a settled AMIP state (three
 steps in), reading `ᶜT′T′`, `ᶜq′q′`, `ᶜT⁰` and `ᶜq_tot_nonneg⁰` from
 `p.precomputed` and the prognostic `Y.c.ρ`. Log:

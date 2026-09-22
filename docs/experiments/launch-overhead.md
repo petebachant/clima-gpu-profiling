@@ -1,5 +1,16 @@
 # Host-side launch overhead in the AMIP benchmark
 
+> **SUPERSEDED (2026-09-19). Do not cite the figures below.** The per-launch
+> cost here was measured by comparing two profiles taken on different days, and
+> the spread between repeats of identical code swamps the effect. Re-measured as
+> an adjacent pair in one invocation, a launch costs 6.74 us of host time, not
+> the 18.51 us below. The host gap and idle figures rest on nsys timings that
+> `docs/learnings.md` 2b-i had already shown are dominated by the profiler.
+> `docs/experiments/launch-cost.md` replaces this. Kept because `AGENTS.md`
+> cites it as the worked example of the value-injection mechanism, and because
+> the tag `meas/2026-09-17-launch-overhead` reproduces it.
+
+
 Every performance experiment in this project until now optimized kernel time.
 This measures what the simulation is actually waiting on.
 

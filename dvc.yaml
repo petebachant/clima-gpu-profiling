@@ -651,6 +651,21 @@ stages:
           cache: false
     desc: Automatically generated from the 'analyze-logs' stage in calkit.yaml.
       Changes made here will be overwritten.
+  sgs-quadrature-doc/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/sgs-quadrature.md/values.py
+    deps:
+      - .calkit/markdown/docs/sgs-quadrature.md/values.py
+      - results/quadrature-order-error.toml
+      - results/sgs-degeneracy.toml
+      - results/kernel-shares.json
+      - .calkit/env-locks/py
+    outs:
+      - results/sgs-quadrature-values.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'sgs-quadrature-doc/values' stage in
+      calkit.yaml. Changes made here will be overwritten.
   compile-time-doc/values:
     cmd: calkit xenv -n py --no-check -- python
       .calkit/markdown/docs/compile-time.md/values.py

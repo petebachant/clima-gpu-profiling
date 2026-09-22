@@ -1,153 +1,124 @@
-# Is the SGS quadrature earning its cost?
+# Decision record: the SGS quadrature order in the 1-moment microphysics
 
-A note for whoever owns the subgrid covariance closure. This is a measurement
-report, not a proposal — the performance side can say what the quadrature costs
-and where the PDF sits, but not whether the variances are right, and the answer
-to that determines which remedy is correct.
+A note for whoever owns the subgrid covariance closure. It records what was
+measured, what was decided, and what would change the decision. It is not a
+proposal: the performance side can say what the quadrature costs and what
+reducing it changes, but not whether the resulting tendencies are acceptable.
 
-## The short version
+Every number here is injected from the results files by the block below, and
+rewritten whenever the pipeline runs, so this document cannot drift from the
+measurements. The pre-update figures are read out of the Git tag that recorded
+them rather than typed.
+
+```python calkit stage name=values environment=py outputs=[{path: results/sgs-quadrature-values.json, storage: git}] inputs=[results/quadrature-order-error.toml, results/sgs-degeneracy.toml, results/kernel-shares.json]
+import json, subprocess, tomllib
+
+BEFORE = "meas/2026-09-09-quadrature-order-accuracy"
+now = tomllib.load(open("results/quadrature-order-error.toml", "rb"))
+# The same measurement as it stood before the 2026-09-21 update, from the tag
+# that recorded it, so the comparison is not typed in
+before = tomllib.loads(
+    subprocess.check_output(
+        ["git", "show", f"{BEFORE}:results/quadrature-order-error.toml"]
+    ).decode()
+)
+degeneracy = tomllib.load(open("results/sgs-degeneracy.toml", "rb"))
+shares = json.load(open("results/kernel-shares.json"))["baseline"]
+
+def tendencies(src, order):
+    return {
+        name: {
+            "rms_pct": round(src[order][name]["rms_over_scale"] * 100, 2),
+            "max_x_rms": round(src[order][name]["max_over_scale"], 1),
+        }
+        for name in ("dq_lcl_dt", "dq_icl_dt", "dq_sno_dt", "dq_rai_dt")
+    }
+
+out = {
+    "cells": now["cells"],
+    "before_ref": BEFORE,
+    "now": {
+        "changed_pct": round(now["order_2"]["changed_frac"] * 100, 1),
+        "order_2": tendencies(now, "order_2"),
+        "order_1": tendencies(now, "order_1"),
+    },
+    "before": {
+        "changed_pct": round(before["order_2"]["changed_frac"] * 100, 2),
+        "order_2": tendencies(before, "order_2"),
+        "order_1": tendencies(before, "order_1"),
+    },
+    "degeneracy": {
+        "mu_over_sigma_p50": round(degeneracy["mu_over_sigma_percentiles"]["p50"]),
+        "mu_over_sigma_p1": round(degeneracy["mu_over_sigma_percentiles"]["p1"], 1),
+        "clear_warp_pct": round(
+            degeneracy["criteria"]["clear_of_kink_10sigma"]["warp_frac"] * 100, 2
+        ),
+    },
+    "cost": {"hot_kernel_pct_of_gpu_time": shares["microphysics_hot_kernel_pct"]},
+}
+json.dump(out, open("results/sgs-quadrature-values.json", "w"), indent=2)
+```
+
+<!-- calkit values path=results/sgs-quadrature-values.json -->
+
+## Decision
+
+**Do not reduce the quadrature order on the current configuration.** An earlier
+version of this document recommended 2x2 subject to sign-off. That
+recommendation is withdrawn.
+
+## Context
 
 In the flagship AMIP configuration (`amip_progedmf_1m_land_he16`: prognostic
 EDMF, 1-moment microphysics, `quadrature_order: 3`), the environment
-microphysics tendency is evaluated at 3×3 Gauss–Hermite points over the joint
-subgrid PDF of (T, q_tot). That quadrature exists to resolve the `max(0, ·)`
-kink at saturation, where the integrand is non-smooth.
+microphysics tendency is evaluated at 3x3 Gauss-Hermite points over the joint
+subgrid PDF of (T, q_tot). The kernel that does it is <!-- calkit value key=cost.hot_kernel_pct_of_gpu_time -->12.13<!-- /calkit value -->% of GPU kernel time, the largest single kernel in the run, so the rule's order is worth asking about.
 
-**Measured across all 1,548,288 grid cells on a settled state, the PDF sits a
-median of 449 standard deviations away from that kink.** The worst 1% of cells
-are still ~8σ clear of it.
+## What reducing it costs, on the current configuration
 
-**The quadrature costs 5.45% of simulated-years-per-day**, and takes the hot
-kernel from 140.1 ms to 20.9 ms — an 85% reduction in the largest single kernel
-in the run. That is larger than every code optimisation in this project
-combined.
+Measured over all <!-- calkit value key=cells format="{:,}" -->1,548,288<!-- /calkit value --> cells on a settled state, with byte-identical inputs and each error normalized by that tendency's own RMS over the whole field.
 
-So either the covariance closure is producing variances far smaller than
-intended, or the quadrature is not needed at this resolution. Those have
-opposite implications, which is why this is a question rather than a patch.
+| tendency | 2x2 RMS error | worst cell | 1-point RMS error |
+|---|---|---|---|
+| cloud liquid | <!-- calkit value key=now.order_2.dq_lcl_dt.rms_pct -->1.3<!-- /calkit value -->% | <!-- calkit value key=now.order_2.dq_lcl_dt.max_x_rms -->3.9<!-- /calkit value -->x | <!-- calkit value key=now.order_1.dq_lcl_dt.rms_pct -->2.75<!-- /calkit value -->% |
+| cloud ice | <!-- calkit value key=now.order_2.dq_icl_dt.rms_pct -->3.62<!-- /calkit value -->% | <!-- calkit value key=now.order_2.dq_icl_dt.max_x_rms -->13.1<!-- /calkit value -->x | <!-- calkit value key=now.order_1.dq_icl_dt.rms_pct -->7.14<!-- /calkit value -->% |
+| snow | <!-- calkit value key=now.order_2.dq_sno_dt.rms_pct -->0.48<!-- /calkit value -->% | <!-- calkit value key=now.order_2.dq_sno_dt.max_x_rms -->1.5<!-- /calkit value -->x | <!-- calkit value key=now.order_1.dq_sno_dt.rms_pct -->1.41<!-- /calkit value -->% |
+| rain | <!-- calkit value key=now.order_2.dq_rai_dt.rms_pct -->0.38<!-- /calkit value -->% | <!-- calkit value key=now.order_2.dq_rai_dt.max_x_rms -->2.4<!-- /calkit value -->x | <!-- calkit value key=now.order_1.dq_rai_dt.rms_pct -->1.76<!-- /calkit value -->% |
 
-## What was measured
+Reducing to 2x2 changes <!-- calkit value key=now.changed_pct -->58.1<!-- /calkit value -->% of cells at all.
 
-The quadrature reconstructs local condensate from the centred saturation excess
+## Why this reverses an earlier recommendation
 
-    S′ = (q_tot − q_sat(T, ρ)) − mu_S
+The same measurement at `meas/2026-09-09-quadrature-order-accuracy`, before
+ClimaAtmos main re-enabled cloud ice formation and liquid freezing in the
+1-moment scheme on 2026-09-21, read very differently.
 
-and partitions `max(0, λ_lagrange + α·S′)` by liquid fraction. The kink is at
-the zero of that argument. The quadrature therefore earns its cost only where
-the PDF has meaningful weight on both sides of it.
-
-The relevant comparison is the distance from saturation measured in units of the
-spread of the saturation excess:
-
-    mu_S  = q_tot − q_sat(T, ρ)                                    (already computed in the kernel)
-    σ_S²  = σ_q² + (∂q_sat/∂T)²σ_T² − 2·corr·σ_q·σ_T·(∂q_sat/∂T)
-
-with `σ_q = √q′q′`, `σ_T = √T′T′` taken from `p.precomputed`, `corr` from
-`correlation_Tq(params)`, and `∂q_sat/∂T` from Clausius–Clapeyron. Grid-mean
-density is used for `q_sat`; the environment density differs by the updraft area
-fraction, far below the decade-scale separations at issue.
-
-An earlier version of this measurement compared `σ_q` and `σ_T` against absolute
-constants and is not reported here — "σ is small" is dimensionally meaningless.
-A tiny σ still needs the quadrature if the mean sits on the kink; a large one
-does not if the cell is far from it. Only the ratio to `σ_S` says anything.
-
-## The distribution
-
-| quantity | median | max |
+| | before | now |
 |---|---|---|
-| `σ_T` | 0.0112 K | 0.465 K |
-| `σ_q` | 2.25e-7 | 1.07e-3 |
-| `σ_S` | 3.04e-6 | 0.0336 |
-| `\|mu_S\|` | 1.64e-3 | — |
+| cells changed | <!-- calkit value key=before.changed_pct -->1.12<!-- /calkit value -->% | <!-- calkit value key=now.changed_pct -->58.1<!-- /calkit value -->% |
+| cloud ice RMS | <!-- calkit value key=before.order_2.dq_icl_dt.rms_pct -->1.2<!-- /calkit value -->% | <!-- calkit value key=now.order_2.dq_icl_dt.rms_pct -->3.62<!-- /calkit value -->% |
+| cloud liquid RMS | <!-- calkit value key=before.order_2.dq_lcl_dt.rms_pct -->0.65<!-- /calkit value -->% | <!-- calkit value key=now.order_2.dq_lcl_dt.rms_pct -->1.3<!-- /calkit value -->% |
+| worst ice cell | <!-- calkit value key=before.order_2.dq_icl_dt.max_x_rms -->1.7<!-- /calkit value -->x | <!-- calkit value key=now.order_2.dq_icl_dt.max_x_rms -->13.1<!-- /calkit value -->x |
 
-`|mu_S| / σ_S` percentiles:
+Those processes are nonlinear in temperature away from saturation, and the quadrature integrates over temperature as well as over total water, so it is now resolving structure the earlier configuration did not have.
 
-| p1 | p5 | p25 | p50 | p75 | p95 |
-|---|---|---|---|---|---|
-| 7.8 | 42 | 266 | **449** | 899 | 2761 |
+## The degeneracy argument, and why it was not sufficient
 
-| criterion | cells | 32-cell groups where *all* qualify |
-|---|---|---|
-| `σ_T = 0` **and** `σ_q = 0` exactly | 0.00% | 0.00% |
-| `\|mu_S\| > 2·σ_S` | 99.76% | 94.30% |
-| `\|mu_S\| > 3·σ_S` | 99.63% | 92.24% |
-| `\|mu_S\| > 5·σ_S` | 99.36% | 89.12% |
-| `\|mu_S\| > 10·σ_S` | 98.74% | 83.22% |
+The case for reducing the order rested on where the subgrid PDF sits relative to the saturation kink that the quadrature exists to resolve. That measurement still holds: the PDF sits a median of <!-- calkit value key=degeneracy.mu_over_sigma_p50 -->448<!-- /calkit value --> standard deviations from the kink, the worst percentile is <!-- calkit value key=degeneracy.mu_over_sigma_p1 -->7.4<!-- /calkit value -->σ clear of it, and <!-- calkit value key=degeneracy.clear_warp_pct -->81.9<!-- /calkit value -->% of 32-cell warps are entirely clear.
 
-(The second column matters for the GPU: work is done in groups of 32 cells that
-share a cost, so a criterion true at scattered points saves nothing. Here it
-clusters vertically, so it would actually pay. That is a performance detail, not
-a physics one.)
+It was the inference that was wrong. Distance from the **saturation** kink bounds the non-smoothness of `max(0, ·)` and nothing else. The re-enabled processes add their own nonlinearities elsewhere in the integration domain, and the order-reduction measurement above sees them.
 
-## What it costs
+**Carry this forward: distance from one kink is necessary but not sufficient evidence that a quadrature is degenerate.** The test that settles it is reducing the rule and diffing the tendencies, which is cheap and is now a pipeline stage.
 
-Priced by a configuration-only run — `quadrature_order: 1`, collapsing 3×3
-points to 1 — against an otherwise identical model:
+## What would change the decision
 
-| configuration | SYPD | hot kernel |
-|---|---|---|
-| nine-point quadrature (shipped) | 0.29653 | 140.1 ms |
-| collapsed to one point | **0.31361 (+5.45%)** | **20.9 ms (−85%)** |
+1. **A cost measurement on the current configuration.** The throughput figures this decision would trade against (+6.14% SYPD on upstream code at `exp/2026-09-08-quadrature-order-2-isolated`, +8.05% with this project's numerics work at `exp/2026-09-09-order2-full-stack`) predate the update, so the trade cannot be struck yet.
+2. **A self-consistent run.** `lambda_lagrange` is held at its 3x3 fit here, so these are the direct effects of changing the rule. A real order-2 run refits it and would compensate in part; settling that needs two full runs diffed field by field.
+3. **A judgement about the worst cells rather than the field.** The error is concentrated where the PDF reaches a kink, which is exactly where the quadrature is doing its job.
 
-Tagged `exp/2026-09-08-quadrature-order-1`, reproducible from its commit. An
-upper bound, reverted immediately: it changes results and is not proposed as a
-change. It exists so the question carries a number.
-
-An earlier measurement of this put it at **7.93%** (0.27596 → 0.29973). Both are
-real; they were taken against different stacks. The cost fell because the
-microphysics kernel has since been optimised — fusion, occupancy targeting and
-the evaluator payload took roughly a third of the quadrature's cost off before
-this measurement was made. The remaining 5.45% is what is left on the table for
-the science decision, and it is the number to use. The 7.93% was never logged as
-an experiment and its evidence pointer had gone stale, which is why it is
-restated here rather than cited.
-
-For scale, the entire performance effort on this benchmark has produced +6.22%
-to date. The quadrature alone is larger than everything else combined.
-
-## The two readings, and why they differ
-
-**If the variances are too small** — the closure is not delivering the subgrid
-variability it is meant to represent, the quadrature is integrating a
-near-degenerate PDF, and it is doing nothing because it has been given nothing
-to do. Then the fix is in `_compute_sgs_moments` / the covariance closure, the
-quadrature stays, and the 5.45% is the price of a correctly functioning scheme.
-
-**If the variances are right** — subgrid variability genuinely is this small at
-h_elem 16, the PDF genuinely never straddles saturation, and a 3×3 rule is
-resolving a feature that is not there. Then the quadrature order is the thing to
-reconsider, and 5.45% is recoverable.
-
-We cannot distinguish these from the profile. A useful discriminator would be
-whether `σ_q` and `σ_T` here match what the closure is expected to produce for
-this resolution and these conditions, and whether the near-zero medians are
-concentrated in the dry upper atmosphere (plausible and harmless) or also
-present in the boundary layer and cloudy regions (not harmless).
-
-## Caveats worth stating plainly
-
-- **Cell counts are dominated by cells where nothing happens.** The median cell
-  is dry upper atmosphere. `σ_q` reaches 1.07e-3, comparable to `q_tot`, so the
-  cells that matter physically are the minority where σ is large — exactly the
-  ones the quadrature is for. A 98.74% point fraction is not "the quadrature is
-  useless 98.74% of the time" in any physically weighted sense.
-- **One state, one configuration.** Three steps into an AMIP run at h_elem 16,
-  Float32. Not a survey across resolutions, seasons, or configurations.
-- **Collapsing is an approximation, not an identity.** Even clear of the kink,
-  the evaporation and sublimation rates still vary across the PDF; the error is
-  O(σ²·f″) and should be small at these widths, but it is not zero and has not
-  been measured against the 9-point answer.
-- **An adaptive scheme would recover less than the full 5.45%** — roughly the
-  83% warp fraction of it (~4.5%), before the cost of the branch itself.
-
-## Reproducing
+## Reproducing this
 
 ```sh
-calkit run sgs-degeneracy      # writes results/sgs-degeneracy.toml
+calkit run quadrature-order-error   # the accuracy table
+calkit run sgs-degeneracy           # the distance-from-kink distribution
 ```
-
-Source: `scripts/measure-sgs-degeneracy.jl`. The cost figure comes from setting
-`quadrature_order: 1` in the benchmark config and re-running `amip-mod`.
-Performance-side detail, including the warp-clustering analysis and why the
-exact-degeneracy collapse is unavailable, is in `docs/learnings.md` §6a.

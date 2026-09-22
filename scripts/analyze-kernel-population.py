@@ -41,6 +41,16 @@ def analyze(db_path):
     rows = cur.execute(
         "SELECT start, end, shortName FROM CUPTI_ACTIVITY_KIND_KERNEL ORDER BY start"
     ).fetchall()
+    # Radiation is split by the demangled signature rather than by cost: with
+    # `rad: allskywithclear` the solver runs twice, and the clear-sky pass is
+    # the specialization with no cloud lookup, i.e. no LookUpCld argument.
+    rad_rows = cur.execute(
+        """SELECT s.value, COUNT(*), SUM(k.end - k.start)
+           FROM CUPTI_ACTIVITY_KIND_KERNEL k
+           JOIN StringIds s ON k.demangledName = s.id
+           WHERE s.value LIKE 'rte\\_%' ESCAPE '\\'
+           GROUP BY s.value"""
+    ).fetchall()
     con.close()
     if not rows:
         raise RuntimeError(f"no kernel rows in {db_path}")
@@ -98,6 +108,27 @@ def analyze(db_path):
         "pct_of_kernel_time": 100 * sum(time[k] for k in rest) / total_ns,
     }
 
+    def radiation_split(ns_total):
+        groups = {"clear_sky": [], "all_sky": []}
+        for name, n, ns in rad_rows:
+            groups["all_sky" if "LookUpCld" in name else "clear_sky"].append((n, ns))
+        out = {}
+        for label, items in groups.items():
+            out[label] = {
+                "kernels": len(items),
+                "launches": sum(n for n, _ in items),
+                "total_ms": round(sum(ns for _, ns in items) / 1e6, 1),
+                "pct_of_kernel_time": round(
+                    100 * sum(ns for _, ns in items) / ns_total, 2
+                ),
+            }
+        out["pct_of_kernel_time"] = round(
+            out["clear_sky"]["pct_of_kernel_time"]
+            + out["all_sky"]["pct_of_kernel_time"],
+            2,
+        )
+        return out
+
     return {
         "launches": len(rows),
         "launches_per_step": len(rows) / N_STEPS,
@@ -109,6 +140,7 @@ def analyze(db_path):
         "kernel_time_ms": total_ns / 1e6,
         "duration_histogram": hist,
         "subsystems": subsystems,
+        "radiation": radiation_split(total_ns),
         "top_by_launch_count": [
             {"kernel": k, "launches": c, "total_ms": time[k] / 1e6,
              "mean_us": time[k] / c / 1e3}

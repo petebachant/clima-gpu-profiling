@@ -1356,8 +1356,8 @@ stages:
       nfiles: 2
     - path: calkit.yaml
       hash: md5
-      md5: 6f07c4824dd2690ba5acb2466292673e
-      size: 63651
+      md5: 3a472b38fff270a330b24c5aec73b0b9
+      size: 72367
     - path: diffs
       hash: md5
       md5: faa85ec285fe4195629c0d32ceadc55e.dir
@@ -1370,7 +1370,7 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: 6a60856350d89fa688cc9921d09c9c13
+      md5: 549fed209e415ea41068eeb1301b7ca6
       size: 31106
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
@@ -1497,17 +1497,17 @@ stages:
       size: 681947136
     - path: scripts/analyze-kernel-population.py
       hash: md5
-      md5: d2fea398af48ff5ac6521ab48581536a
-      size: 5305
+      md5: f651f645e5c3ed9086b96ffe87b04463
+      size: 6666
     - path: scripts/analyze-kernel-population.py
       hash: md5
-      md5: d2fea398af48ff5ac6521ab48581536a
-      size: 5305
+      md5: f651f645e5c3ed9086b96ffe87b04463
+      size: 6666
     outs:
     - path: results/kernel-population.json
       hash: md5
-      md5: 8d4fcd79edb734cfbf98be37adc45abe
-      size: 8812
+      md5: 04c4995db6b5fcb87fa594485b47ea61
+      size: 9486
   cm-registers:
     cmd: calkit scheduler batch --name cm-registers --environment clima --dep 
       scripts/measure-cm-registers.jl --dep 
@@ -2121,8 +2121,8 @@ stages:
       nfiles: 2
     - path: results/kernel-population.json
       hash: md5
-      md5: 8d4fcd79edb734cfbf98be37adc45abe
-      size: 8812
+      md5: 04c4995db6b5fcb87fa594485b47ea61
+      size: 9486
     - path: results/top-kernels.csv
       hash: md5
       md5: 869e3aa5bb3b371931c5a9ee44df5f65
@@ -2212,3 +2212,33 @@ stages:
       hash: md5
       md5: 29440d69a80934e76fe40bccaf52cbb9
       size: 1936
+  sgs-quadrature-doc/values:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/sgs-quadrature.md/values.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: cd569ef50836446fc837bb706d220836.dir
+      size: 2090
+      nfiles: 2
+    - path: .calkit/markdown/docs/sgs-quadrature.md/values.py
+      hash: md5
+      md5: 99b38adbfea6e9cc51c642bb8f998b23
+      size: 1786
+    - path: results/kernel-shares.json
+      hash: md5
+      md5: 355000d906d317214bf3f9b648e96c47
+      size: 649
+    - path: results/quadrature-order-error.toml
+      hash: md5
+      md5: 29440d69a80934e76fe40bccaf52cbb9
+      size: 1936
+    - path: results/sgs-degeneracy.toml
+      hash: md5
+      md5: 790e64bc27af3d95983b46eb99a8f4c0
+      size: 1134
+    outs:
+    - path: results/sgs-quadrature-values.json
+      hash: md5
+      md5: ef4612dbae517cba73f48e0a1c8e4eeb
+      size: 1700
