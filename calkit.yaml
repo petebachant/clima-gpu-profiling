@@ -1177,6 +1177,12 @@ pipeline:
       # Live on main: its inputs are committed results files that their own
       # stages regenerate, so re-running this restates the decision against
       # the current measurement, which is the point of it.
+      #
+      # always_run because the analysis block also reads the pre-update figures
+      # out of meas/2026-09-09-quadrature-order-accuracy with git show, which
+      # is a dependency no input can express today (calkit/calkit#1720). Cheap:
+      # it is a few seconds of CPU.
+      always_run: true
     compile-time-doc:
       kind: markdown
       target_path: docs/compile-time.md
