@@ -310,6 +310,42 @@ questions:
           pass-through stage reads both halves of every ratio out of those
           tags with git show rather than from the working tree.
   - question: >-
+      Can the clear-sky diagnostics be had for less than a second radiation
+      solve?
+    answer: >-
+      Yes, and for most of the cost: the two passes differ only by the cloud increment, while the gas and aerosol optics they both recompute are {lw_optics_frac:.0%} of a longwave solve and {sw_optics_frac:.0%} of a shortwave one.
+      Computing those once and sweeping twice -- gas and aerosol optics, sweep, accumulate the clear sky, then add the cloud increment to the same optics, sweep again, accumulate the all-sky -- removes {lw_fused_saving:.0%} of the longwave pair.
+      Implemented for longwave in RRTMGP.jl-mod `pb/optics-split` as solve_lw_both!, called from update_lw_fluxes!, so nothing above RRTMGP changes: profiled at 5702.5 -> 3213.8 ms on the longwave kernels (-43.6%) and 29542 -> 27045 ms of GPU kernel time (-8.5%), with shortwave unchanged at -0.5% as the control.
+      This is the alternative to switching the diagnostics off, which buys +12.6% SYPD by deleting them: fusing both bands would recover most of that while keeping every diagnostic. SYPD for the longwave half is not yet measured, and shortwave is not yet implemented.
+    evidence:
+      - kind: value
+        path: results/radiation-split.toml
+        key: lw.optics_frac_of_allsky
+        name: lw_optics_frac
+        explanation: >-
+          The share of a longwave solve spent on optics rather than the
+          two-stream sweep, from timing the real solve against the same kernel
+          with the sweep and flux accumulation removed. This is what both
+          passes duplicate, and so what fusing them recovers.
+      - kind: value
+        path: results/radiation-split.toml
+        key: sw.optics_frac_of_allsky
+        name: sw_optics_frac
+        explanation: The same for shortwave, which is not yet fused.
+      - kind: value
+        path: results/radiation-split.toml
+        key: lw.fused_saving_frac_of_pair
+        name: lw_fused_saving
+        explanation: >-
+          One copy of the optics as a share of what the two longwave solves
+          cost together, i.e. what a fused solve removes.
+      - kind: table
+        path: results/top-kernels.csv
+        explanation: >-
+          The fused arm as a profile shows it: one longwave kernel where the
+          baseline has two, with shortwave untouched as the control that the
+          change did what it claims and nothing else.
+  - question: >-
       How much of the radiation cost is clear-sky diagnostics rather than the
       fluxes the model runs on?
     answer: >-
@@ -1240,6 +1276,41 @@ pipeline:
         - CloudMicrophysics.jl-mod/src
       outputs:
         - path: results/quadrature-order-error.toml
+          storage: git
+
+    fused-lw-check:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # Correctness for the fused longwave solve. The clear-sky fluxes feed the
+      # cloud radiative effect diagnostics and nothing else, so an error there
+      # never reaches the prognostic state: a state comparison would not catch
+      # it, and a run would look healthy while the diagnostics were wrong.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=120
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/verify-fused-lw.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --out
+        - results/fused-lw-check.toml
+      inputs:
+        - scripts/verify-fused-lw.jl
+        - RRTMGP.jl-mod/src
+        - RRTMGP.jl-mod/ext
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaAtmos.jl-mod/src
+      outputs:
+        - path: results/fused-lw-check.toml
           storage: git
 
     radiation-split:

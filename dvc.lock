@@ -647,13 +647,13 @@ stages:
       nfiles: 57
     - path: RRTMGP.jl-mod/ext
       hash: md5
-      md5: a4d7832a43077123653a6d0031c1a649.dir
-      size: 53880
+      md5: 44ffa7d741e664723a4ea79c9f6fa2a1.dir
+      size: 60607
       nfiles: 11
     - path: RRTMGP.jl-mod/src
       hash: md5
-      md5: 6a74031094807992c3eba1abbbddbc07.dir
-      size: 305932
+      md5: 0a778809d46ded6116bce5f140dbb285.dir
+      size: 312926
       nfiles: 43
     - path: scripts/run-nsys.sh
       hash: md5
@@ -666,16 +666,16 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/mod-nsys.out
       hash: md5
-      md5: 19f691981577c4e3b7488593a5b6031e
-      size: 180995
+      md5: 03fd7537de702f9e9ecc4d022c788ab1
+      size: 180470
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: e2991d541024c7cdb1ae1f85157fe109
-      size: 294179735
+      md5: ee2b76ff55116d642907d71de5262f7a
+      size: 295396852
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: b83976e760e4d64a41e18d7dfa716089
-      size: 681525248
+      md5: 6f393e661b853db0833cd52e489c2d54
+      size: 680189952
   mod-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep -t sqlite
       -o results/nsys/mod.sqlite"'
@@ -2392,3 +2392,88 @@ stages:
       hash: md5
       md5: d30f13fc038d739a87c5f5a88240bce2
       size: 747
+  fused-lw-check:
+    cmd: calkit scheduler batch --name fused-lw-check --environment clima --dep 
+      scripts/verify-fused-lw.jl --dep RRTMGP.jl-mod/src --dep RRTMGP.jl-mod/ext
+      --dep ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml 
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out 
+      results/fused-lw-check.toml --option --gpus=1 --option --time=120 -- 
+      scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
+      scripts/verify-fused-lw.jl --config_file 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --out results/fused-lw-check.toml
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: ffdef5e566ef1c6aeb21cdf51f26ac52.dir
+      size: 2160590
+      nfiles: 159
+    - path: ClimaCore.jl-mod/ext
+      hash: md5
+      md5: bcf5ff64469299fee681dda394442960.dir
+      size: 232766
+      nfiles: 28
+    - path: ClimaCore.jl-mod/src
+      hash: md5
+      md5: b0046c80a2dd67121a317d407828ab4e.dir
+      size: 1354312
+      nfiles: 103
+    - path: ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      hash: md5
+      md5: 57366d387e6034cf11192c346236c06c
+      size: 1150
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: d68284726a77e4fc85e1ba0768977f19
+      size: 2035
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: a5599225e1f5fbb6d64f0c8aeb5e4acf
+      size: 122720
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: ClimaCoupler.jl-mod/src
+      hash: md5
+      md5: f2ed10dd11c630a3361c05b903c765d7.dir
+      size: 305758
+      nfiles: 22
+    - path: RRTMGP.jl-mod/ext
+      hash: md5
+      md5: 44ffa7d741e664723a4ea79c9f6fa2a1.dir
+      size: 60607
+      nfiles: 11
+    - path: RRTMGP.jl-mod/src
+      hash: md5
+      md5: 0a778809d46ded6116bce5f140dbb285.dir
+      size: 312926
+      nfiles: 43
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: a61880cfce301ad9069fbaddfa8d5ad5
+      size: 1033
+    - path: scripts/verify-fused-lw.jl
+      hash: md5
+      md5: 3767f04f212a37f18b2b110b93af7d97
+      size: 3338
+    outs:
+    - path: .calkit/scheduler/logs/fused-lw-check.out
+      hash: md5
+      md5: ea59b634974d836f40f6f79671d5693d
+      size: 28066
+    - path: results/fused-lw-check.toml
+      hash: md5
+      md5: 0fe38fec6cf71fdaee5e21f77a376cc7
+      size: 661
