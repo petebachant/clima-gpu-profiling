@@ -257,7 +257,10 @@ questions:
     answer: >-
       Half of it: {clear_sky_pct}% of GPU kernel time against {all_sky_pct}% for the fluxes that drive the model, out of {radiation_pct}% for radiation as a whole.
       The benchmark runs `rad: allskywithclear`, under which ClimaAtmos calls the RRTMGP solver twice per radiation step -- once with the cloud lookup passed as `nothing` -- so the profile carries two longwave and two shortwave kernels, told apart by whether their signature takes a LookUpCld argument rather than by cost.
-      That second pass buys the clear-sky fluxes that cloud radiative effect diagnostics are computed from, so whether it is worth half of radiation is a question for whoever uses those diagnostics, not a performance bug; what it would return in SYPD has not been measured, and the benchmark fires radiation every 20 steps against the nightly's 30, so radiation is over-weighted here relative to production.
+      That second pass buys the clear-sky fluxes that cloud radiative effect diagnostics are computed from, so whether it is worth it is a question for whoever uses those diagnostics rather than a performance bug.
+      Priced by a config-only bounding run, it is worth **+12.6% SYPD** (0.22759 -> 0.26040, tag exp/2026-09-22-clearsky-bound): GPU kernel time falls 17.9% and the two cloud-free kernels disappear while the all-sky kernels move under 0.5%, so the run removes that work and nothing else.
+      Two caveats on reading that: it changes results, so it is a bound and not a proposal, and the benchmark fires radiation every 20 steps against the nightly's 30, so radiation is over-weighted here relative to production.
+      The conversion is the part worth carrying forward: 17.9% of kernel time bought 12.6% of SYPD, about 70%, where this project's earlier work converted at about a third -- removing a large dense block pays far better than rescheduling one.
     evidence:
       - kind: value
         path: results/kernel-population.json
@@ -276,11 +279,23 @@ questions:
         key: baseline.radiation.pct_of_kernel_time
         name: radiation_pct
         explanation: Radiation as a whole, for scale.
+      - kind: value
+        path: results/summary.json
+        key: speedup_pct
+        name: clearsky_bound_speedup_pct
+        git_ref: exp/2026-09-22-clearsky-bound
+        explanation: >-
+          What dropping the second solve is worth end to end, from the
+          unprofiled AMIP stages with both arms measured in one session. NOT
+          templated: rendering reads the working tree, where
+          results/summary.json holds whichever run wrote it last.
       - kind: table
         path: results/top-kernels.csv
+        git_ref: exp/2026-09-22-clearsky-bound
         explanation: >-
-          The four kernels as a profile shows them: two longwave and two
-          shortwave, six launches each over the window.
+          Per-kernel confirmation: the two solves with no cloud lookup vanish
+          and the all-sky pair is unchanged, which is what makes the SYPD
+          delta attributable to the clear-sky work alone.
   - question: >-
       Where does the AMIP simulation's GPU time actually go, and is the
       microphysics kernel the right thing to optimize?
