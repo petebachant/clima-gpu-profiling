@@ -9,7 +9,9 @@ population = json.load(open("results/kernel-population.json"))
 
 
 def arm(suffix):
-    pct = lambda r: float(r[f"pct_of_gpu_time_{suffix}"])
+    # A kernel absent from one arm has empty columns there, e.g. the clear-sky
+    # radiation solves under `rad: allsky`, and contributed nothing to it
+    pct = lambda r: float(r[f"pct_of_gpu_time_{suffix}"] or 0.0)
     rad = [r for r in rows if r["kernel"].startswith("rte_")]
     mp = [r for r in rows if r["kernel"].startswith("set_microphysics_tendency_cache")]
     return {

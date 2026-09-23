@@ -72,7 +72,7 @@ recommendation is withdrawn.
 In the flagship AMIP configuration (`amip_progedmf_1m_land_he16`: prognostic
 EDMF, 1-moment microphysics, `quadrature_order: 3`), the environment
 microphysics tendency is evaluated at 3x3 Gauss-Hermite points over the joint
-subgrid PDF of (T, q_tot). The kernel that does it is <!-- calkit value key=cost.hot_kernel_pct_of_gpu_time -->12.13<!-- /calkit value -->% of GPU kernel time, the largest single kernel in the run, so the rule's order is worth asking about.
+subgrid PDF of (T, q_tot). The kernel that does it is <!-- calkit value key=cost.hot_kernel_pct_of_gpu_time -->12.12<!-- /calkit value -->% of GPU kernel time, the largest single kernel in the run, so the rule's order is worth asking about.
 
 ## What reducing it costs, on the current configuration
 
