@@ -252,6 +252,64 @@ questions:
           against results/state-rad-baseline.toml at every snapshot across these
           coupled steps.
   - question: >-
+      How much of a GPU kernel-time saving actually reaches SYPD?
+    answer: >-
+      It depends on where the saving is, and the difference is large enough to change what is worth doing: radiation work converts at {radiation_mean:.0f}% ({radiation_min:.0f}-{radiation_max:.0f}% over {radiation_n} experiments), microphysics work at {microphysics_mean:.0f}% ({microphysics_min:.0f}-{microphysics_max:.0f}% over {microphysics_n}).
+      So the rule of thumb this project carried for months -- about a third of a kernel-time saving shows up end to end -- was measured entirely on microphysics and understates a radiation change by more than a factor of two.
+      Both halves of each ratio are read out of the tag that recorded them: kernel time from the profiled nsys stages, SYPD from the unprofiled AMIP ones, which is the only number that answers "is the model faster".
+      Why radiation converts better is NOT established. Plausible: radiation runs as a few very long kernels with nothing to overlap them against, while the microphysics kernel is one of thousands per step and its saving may be partly absorbed by whatever else is in flight. Treat the ratios as measured, the explanation as a hypothesis.
+    evidence:
+      - kind: value
+        path: results/pass-through.json
+        key: by_subsystem.radiation.mean_pct
+        name: radiation_mean
+        explanation: >-
+          Mean over the radiation experiments. Each ratio is the end-to-end
+          SYPD gain divided by the GPU kernel-time reduction that produced it.
+      - kind: value
+        path: results/pass-through.json
+        key: by_subsystem.radiation.min_pct
+        name: radiation_min
+        explanation: The narrowest radiation conversion measured.
+      - kind: value
+        path: results/pass-through.json
+        key: by_subsystem.radiation.max_pct
+        name: radiation_max
+        explanation: The widest.
+      - kind: value
+        path: results/pass-through.json
+        key: by_subsystem.radiation.n
+        name: radiation_n
+        explanation: How many tagged experiments the radiation range rests on.
+      - kind: value
+        path: results/pass-through.json
+        key: by_subsystem.microphysics.mean_pct
+        name: microphysics_mean
+        explanation: >-
+          Mean over the CloudMicrophysics fusion experiments, which is where
+          the "about a third" rule came from.
+      - kind: value
+        path: results/pass-through.json
+        key: by_subsystem.microphysics.min_pct
+        name: microphysics_min
+        explanation: The narrowest microphysics conversion measured.
+      - kind: value
+        path: results/pass-through.json
+        key: by_subsystem.microphysics.max_pct
+        name: microphysics_max
+        explanation: The widest.
+      - kind: value
+        path: results/pass-through.json
+        key: by_subsystem.microphysics.n
+        name: microphysics_n
+        explanation: How many tagged experiments the microphysics range rests on.
+      - kind: table
+        path: experiments.csv
+        explanation: >-
+          The experiments themselves, each reproducible from its tag. The
+          pass-through stage reads both halves of every ratio out of those
+          tags with git show rather than from the working tree.
+  - question: >-
       How much of the radiation cost is clear-sky diagnostics rather than the
       fluxes the model runs on?
     answer: >-
@@ -1051,6 +1109,17 @@ pipeline:
           storage: git
       html_storage: git
       executed_ipynb_storage: git
+    pass-through:
+      kind: python-script
+      script_path: scripts/pass-through.py
+      environment: py
+      # Reads each experiment out of its tag with git show, so it has no file
+      # inputs and nothing in the working tree can change what it reports.
+      always_run: true
+      outputs:
+        - path: results/pass-through.json
+          storage: git
+
     kernel-shares:
       kind: python-script
       script_path: scripts/kernel-shares.py

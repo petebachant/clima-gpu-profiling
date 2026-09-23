@@ -1,0 +1,58 @@
+{
+  "runs": [
+    {
+      "tag": "exp/2026-09-01-cm-fuse",
+      "subsystem": "microphysics",
+      "description": "1M source terms fused into the linearization",
+      "sypd_pct": 1.87,
+      "kernel_time_pct": -5.37,
+      "pass_through_pct": 34.8
+    },
+    {
+      "tag": "exp/2026-09-02-deps-and-fuse",
+      "subsystem": "microphysics",
+      "description": "the same fusion on the updated stack",
+      "sypd_pct": 1.95,
+      "kernel_time_pct": -6.28,
+      "pass_through_pct": 31.0
+    },
+    {
+      "tag": "exp/2026-09-12-rrtmgp-optics",
+      "subsystem": "radiation",
+      "description": "aerosol-optics binary search plus 64-thread blocks",
+      "sypd_pct": 8.7,
+      "kernel_time_pct": -11.74,
+      "pass_through_pct": 74.1
+    },
+    {
+      "tag": "meas/2026-09-13-binary-search-alone",
+      "subsystem": "radiation",
+      "description": "the binary search alone",
+      "sypd_pct": 7.95,
+      "kernel_time_pct": -11.91,
+      "pass_through_pct": 66.8
+    },
+    {
+      "tag": "exp/2026-09-22-clearsky-bound",
+      "subsystem": "radiation",
+      "description": "the clear-sky solves removed",
+      "sypd_pct": 12.6,
+      "kernel_time_pct": -17.86,
+      "pass_through_pct": 70.5
+    }
+  ],
+  "by_subsystem": {
+    "microphysics": {
+      "n": 2,
+      "min_pct": 31.0,
+      "max_pct": 34.8,
+      "mean_pct": 32.9
+    },
+    "radiation": {
+      "n": 3,
+      "min_pct": 66.8,
+      "max_pct": 74.1,
+      "mean_pct": 70.5
+    }
+  }
+}
