@@ -1242,6 +1242,42 @@ pipeline:
         - path: results/quadrature-order-error.toml
           storage: git
 
+    radiation-split:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # Sizes the fused-optics idea before anyone writes it: with
+      # rad: allskywithclear the solver runs twice and both passes recompute
+      # the gas and aerosol optics, so fusing them would save exactly one copy
+      # of the optics and nothing else. Times the real solve against the same
+      # kernel with the two-stream sweep removed.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=120
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/measure-radiation-split.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --out
+        - results/radiation-split.toml
+      inputs:
+        - scripts/measure-radiation-split.jl
+        - RRTMGP.jl-mod/src
+        - RRTMGP.jl-mod/ext
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaAtmos.jl-mod/src
+      outputs:
+        - path: results/radiation-split.toml
+          storage: git
+
     sgs-degeneracy:
       kind: shell-script
       environment: clima

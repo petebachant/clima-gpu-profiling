@@ -309,6 +309,18 @@ stages:
           cache: false
     desc: Automatically generated from the 'compare-kernels' stage in
       calkit.yaml. Changes made here will be overwritten.
+  pass-through:
+    cmd: calkit xenv -n py --no-check -- python scripts/pass-through.py
+    deps:
+      - scripts/pass-through.py
+      - .calkit/env-locks/py
+    outs:
+      - results/pass-through.json:
+          cache: false
+          persist: false
+    always_changed: true
+    desc: Automatically generated from the 'pass-through' stage in calkit.yaml.
+      Changes made here will be overwritten.
   kernel-shares:
     cmd: calkit xenv -n py --no-check -- python scripts/kernel-shares.py
     deps:
