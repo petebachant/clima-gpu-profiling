@@ -1,10 +1,16 @@
 # Does the fused longwave solve agree with the two solves it replaces?
 #
-# solve_lw_both! computes the gas and aerosol optics once and sweeps twice. It
-# is not bit-identical to two solve_lw! calls -- the cloud and aerosol
-# increments are weighted sums applied per component, so adding aerosol before
-# cloud rather than after changes summation order -- so the check is a bound on
-# the difference, not equality.
+# solve_lw_both! computes the gas and aerosol optics once and sweeps twice.
+#
+# It cannot be compared to two solve_lw! calls cell by cell. The cloud mask is
+# McICA-sampled with Random.rand(), keyed per kernel launch, so the fused solve
+# (one launch) draws a different cloud sample than the reference all-sky pass
+# (the second of two launches). Any two all-sky solves differ for that reason
+# alone.
+#
+# So the reference is compared against ITSELF -- two all-sky solves, differing
+# only by resampling -- and the fused solve has to sit inside that spread. The
+# clear sky has no cloud sampling and must match exactly.
 #
 # This matters more than a state comparison would: the clear-sky fluxes feed
 # the cloud radiative effect diagnostics and nothing else, so an error in them
@@ -50,6 +56,10 @@ RTE.solve_lw!(lws, as, lk.lookup_lw, nothing, lk.lookup_lw_aero, nothing)
 ref_clear = snap(lws.flux)
 RTE.solve_lw!(lws, as, lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, nothing)
 ref_allsky = snap(lws.flux)
+# The control: the same solve again. Whatever it differs from itself by is what
+# McICA resampling costs, and is the yardstick for the fused solve.
+RTE.solve_lw!(lws, as, lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, nothing)
+ref_allsky_again = snap(lws.flux)
 
 # The fused solve, filling both skies in one pass
 RTE.solve_lw_both!(
@@ -66,9 +76,14 @@ function compare(ref, got)
     for k in (:up, :dn, :net)
         r, g = getproperty(ref, k), getproperty(got, k)
         scale = maximum(abs, r)
+        n = length(r)
         out[String(k)] = Dict(
             "max_abs_diff" => Float64(maximum(abs, r .- g)),
             "max_rel_diff" => Float64(maximum(abs, r .- g) / max(scale, eps())),
+            # The field mean is what survives McICA sampling: individual cells
+            # are resampled, the field is not supposed to move
+            "mean_abs_diff" => Float64(sum(abs, r .- g) / n),
+            "mean_rel_diff" => Float64(sum(abs, r .- g) / n / max(scale, eps())),
             "field_max_abs" => Float64(scale),
         )
     end
@@ -81,32 +96,46 @@ sky_contrast = maximum(abs, ref_allsky.net .- ref_clear.net) /
                max(maximum(abs, ref_allsky.net), eps())
 
 results = Dict{String, Any}(
-    "note" => "fused solve_lw_both! against two solve_lw! calls; differences " *
-              "are expected at roundoff, not zero",
+    "note" => "the cloud mask is McICA-sampled per launch, so all-sky fluxes " *
+              "are compared against the reference resampled against itself, " *
+              "not against equality; the clear sky has no sampling and must " *
+              "match exactly",
     "warmup_steps" => WARMUP,
     "reference_sky_contrast" => Float64(sky_contrast),
     "allsky" => compare(ref_allsky, got_allsky),
+    "allsky_control" => compare(ref_allsky, ref_allsky_again),
     "clearsky" => compare(ref_clear, got_clear),
 )
-worst = maximum(
-    results[sky][k]["max_rel_diff"] for sky in ("allsky", "clearsky") for
-    k in ("up", "dn", "net")
-)
+# The fused all-sky against the reference, and the reference against itself
+fused_mean = maximum(results["allsky"][k]["mean_rel_diff"] for k in ("up", "dn", "net"))
+control_mean = maximum(results["allsky_control"][k]["mean_rel_diff"] for k in ("up", "dn", "net"))
+clear_worst = maximum(results["clearsky"][k]["max_rel_diff"] for k in ("up", "dn", "net"))
+worst = clear_worst
 results["worst_rel_diff"] = worst
 # Float32 roundoff over a 256-g-point accumulation; anything much larger is a
 # bug, not summation order
 # Both conditions: the fused result matches, AND the comparison was capable of
 # detecting a mismatch in the first place
 results["cloud_effect_present"] = sky_contrast > 1e-3
-results["passes"] = worst < 1e-4 && results["cloud_effect_present"]
+results["fused_mean_rel_diff"] = fused_mean
+results["control_mean_rel_diff"] = control_mean
+# Three conditions: the clear sky is exact, the all-sky sits within the
+# reference's own resampling spread, and clouds were actually doing something
+results["clearsky_exact"] = clear_worst < 1e-6
+results["allsky_within_resampling"] = fused_mean <= 2 * control_mean
+results["passes"] = results["clearsky_exact"] &&
+                    results["allsky_within_resampling"] &&
+                    results["cloud_effect_present"]
 
-for sky in ("allsky", "clearsky"), k in ("up", "dn", "net")
+for sky in ("allsky", "allsky_control", "clearsky"), k in ("up", "dn", "net")
     @printf("%-9s %-4s max rel diff %.3e (field max %.1f)\n", sky, k,
             results[sky][k]["max_rel_diff"], results[sky][k]["field_max_abs"])
 end
 @printf("reference all-sky vs clear-sky contrast %.3e (needs > 1e-3 to be a real test)\n",
         sky_contrast)
-@printf("worst %.3e -> %s\n", worst, results["passes"] ? "PASS" : "FAIL")
+@printf("fused mean rel diff %.3e vs resampling control %.3e\n", fused_mean, control_mean)
+@printf("clear sky max rel diff %.3e (must be exact)\n", clear_worst)
+@printf("-> %s\n", results["passes"] ? "PASS" : "FAIL")
 
 open(out_path, "w") do io
     TOML.print(io, results)

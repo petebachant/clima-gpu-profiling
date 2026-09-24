@@ -316,6 +316,8 @@ questions:
       Yes, and for most of the cost: the two passes differ only by the cloud increment, while the gas and aerosol optics they both recompute are {lw_optics_frac:.0%} of a longwave solve and {sw_optics_frac:.0%} of a shortwave one.
       Computing those once and sweeping twice -- gas and aerosol optics, sweep, accumulate the clear sky, then add the cloud increment to the same optics, sweep again, accumulate the all-sky -- removes {lw_fused_saving:.0%} of the longwave pair.
       Implemented for longwave in RRTMGP.jl-mod `pb/optics-split` as solve_lw_both!, called from update_lw_fluxes!, so nothing above RRTMGP changes: profiled at 5702.5 -> 3213.8 ms on the longwave kernels (-43.6%) and 29542 -> 27045 ms of GPU kernel time (-8.5%), with shortwave unchanged at -0.5% as the control.
+      It is correct in the only sense available: the cloud mask is McICA-sampled per kernel launch, so one fused launch draws a different cloud sample than the reference's two, and no cell-wise comparison can validate it.
+      Against the reference resampled against itself, the fused solve differs by {fused_mean_diff:.3e} where resampling alone differs by {control_mean_diff:.3e} -- indistinguishable -- while the clear sky, which has no sampling, matches exactly.
       This is the alternative to switching the diagnostics off, which buys +12.6% SYPD by deleting them: fusing both bands would recover most of that while keeping every diagnostic. SYPD for the longwave half is not yet measured, and shortwave is not yet implemented.
     evidence:
       - kind: value
@@ -339,6 +341,24 @@ questions:
         explanation: >-
           One copy of the optics as a share of what the two longwave solves
           cost together, i.e. what a fused solve removes.
+      - kind: value
+        path: results/fused-lw-check.toml
+        key: fused_mean_rel_diff
+        name: fused_mean_diff
+        explanation: >-
+          How far the fused all-sky fluxes sit from two separate solves, in the
+          mean over the field.
+      - kind: value
+        path: results/fused-lw-check.toml
+        key: control_mean_rel_diff
+        name: control_mean_diff
+        explanation: >-
+          The control that makes that number mean something: the reference
+          solved twice, differing only by McICA resampling. The fused solve
+          lands inside it. An earlier version of this check compared for
+          equality and failed at 14%, which was the sampling, not a defect;
+          an earlier one still ran with three warmup steps, had no clouds at
+          all, and passed while testing nothing.
       - kind: table
         path: results/top-kernels.csv
         explanation: >-
