@@ -17,6 +17,7 @@ EXPERIMENTS = [
     ("exp/2026-09-12-rrtmgp-optics", "radiation", "aerosol-optics binary search plus 64-thread blocks"),
     ("meas/2026-09-13-binary-search-alone", "radiation", "the binary search alone"),
     ("exp/2026-09-22-clearsky-bound", "radiation", "the clear-sky solves removed"),
+    ("exp/2026-09-23-fused-lw-optics", "radiation", "the longwave solves fused"),
 ]
 
 
