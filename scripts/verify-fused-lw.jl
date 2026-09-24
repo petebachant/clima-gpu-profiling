@@ -51,6 +51,7 @@ lk, as, lws = s.lookups, s.as, s.lws
 
 snap(f) = (up = Array(f.flux_up), dn = Array(f.flux_dn), net = Array(f.flux_net))
 
+# --- longwave --------------------------------------------------------------
 # Reference: the two solves the fused version replaces
 RTE.solve_lw!(lws, as, lk.lookup_lw, nothing, lk.lookup_lw_aero, nothing)
 ref_clear = snap(lws.flux)
@@ -123,9 +124,41 @@ results["control_mean_rel_diff"] = control_mean
 # reference's own resampling spread, and clouds were actually doing something
 results["clearsky_exact"] = clear_worst < 1e-6
 results["allsky_within_resampling"] = fused_mean <= 2 * control_mean
+# --- shortwave -------------------------------------------------------------
+sws = s.sws
+RTE.solve_sw!(sws, as, lk.lookup_sw, nothing, lk.lookup_sw_aero, nothing)
+sw_ref_clear = snap(sws.flux)
+RTE.solve_sw!(sws, as, lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, nothing)
+sw_ref_allsky = snap(sws.flux)
+RTE.solve_sw!(sws, as, lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, nothing)
+sw_ref_allsky_again = snap(sws.flux)
+RTE.solve_sw_both!(
+    sws, s.clear_acc_sw, as,
+    lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, nothing,
+)
+sw_got_allsky = snap(sws.flux)
+sw_got_clear = snap(s.clear_acc_sw)
+
+results["sw_allsky"] = compare(sw_ref_allsky, sw_got_allsky)
+results["sw_allsky_control"] = compare(sw_ref_allsky, sw_ref_allsky_again)
+results["sw_clearsky"] = compare(sw_ref_clear, sw_got_clear)
+sw_fused_mean = maximum(results["sw_allsky"][k]["mean_rel_diff"] for k in ("up", "dn", "net"))
+sw_control_mean = maximum(results["sw_allsky_control"][k]["mean_rel_diff"] for k in ("up", "dn", "net"))
+sw_clear_worst = maximum(results["sw_clearsky"][k]["max_rel_diff"] for k in ("up", "dn", "net"))
+results["sw_fused_mean_rel_diff"] = sw_fused_mean
+results["sw_control_mean_rel_diff"] = sw_control_mean
+results["sw_clearsky_exact"] = sw_clear_worst < 1e-6
+results["sw_allsky_within_resampling"] = sw_fused_mean <= 2 * sw_control_mean
+
+@printf("SW: fused mean rel diff %.3e vs resampling control %.3e\n",
+        sw_fused_mean, sw_control_mean)
+@printf("SW: clear sky max rel diff %.3e (must be exact)\n", sw_clear_worst)
+
 results["passes"] = results["clearsky_exact"] &&
                     results["allsky_within_resampling"] &&
-                    results["cloud_effect_present"]
+                    results["cloud_effect_present"] &&
+                    results["sw_clearsky_exact"] &&
+                    results["sw_allsky_within_resampling"]
 
 for sky in ("allsky", "allsky_control", "clearsky"), k in ("up", "dn", "net")
     @printf("%-9s %-4s max rel diff %.3e (field max %.1f)\n", sky, k,
