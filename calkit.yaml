@@ -318,8 +318,8 @@ questions:
       Implemented for longwave in RRTMGP.jl-mod `pb/optics-split` as solve_lw_both!, called from update_lw_fluxes!, so nothing above RRTMGP changes: profiled at 5702.5 -> 3213.8 ms on the longwave kernels (-43.6%) and 29542 -> 27045 ms of GPU kernel time (-8.5%), with shortwave unchanged at -0.5% as the control.
       It is correct in the only sense available: the cloud mask is McICA-sampled per kernel launch, so one fused launch draws a different cloud sample than the reference's two, and no cell-wise comparison can validate it.
       Against the reference resampled against itself, the fused solve differs by {fused_mean_diff:.3e} where resampling alone differs by {control_mean_diff:.3e} -- indistinguishable -- while the clear sky, which has no sampling, matches exactly.
-      End to end the longwave half is worth **+5.26% SYPD** (0.22759 -> 0.24023, tag exp/2026-09-23-fused-lw-optics), against +12.6% for deleting the diagnostics outright -- so fusing one band already recovers two fifths of that bound, and shortwave is the same change again for about as much more.
-      Shortwave is not yet implemented, and solve_lw_both! has no CPU method yet.
+      Both bands fused are worth **+10.94% SYPD** (0.22759 -> 0.25554, tag exp/2026-09-24-fused-radiation): GPU kernel time falls 15.2%, radiation from 36.4% to 25.0% of it, and four radiation kernels become two.
+      That is 87% of what deleting the clear-sky diagnostics buys (+12.6%), with the diagnostics kept -- so the question the bound posed to the science owners largely goes away.
     evidence:
       - kind: value
         path: results/radiation-split.toml
@@ -345,13 +345,14 @@ questions:
       - kind: value
         path: results/summary.json
         key: speedup_pct
-        name: fused_lw_speedup_pct
-        git_ref: exp/2026-09-23-fused-lw-optics
+        name: fused_speedup_pct
+        git_ref: exp/2026-09-24-fused-radiation
         explanation: >-
-          The longwave fusion end to end, from the unprofiled AMIP stages with
-          both arms measured in one session. NOT templated: rendering reads the
-          working tree, where results/summary.json holds whichever run wrote it
-          last.
+          Both bands fused, end to end, from the unprofiled AMIP stages with
+          both arms measured in one session. The longwave half alone was
+          +5.26% at exp/2026-09-23-fused-lw-optics. NOT templated: rendering
+          reads the working tree, where results/summary.json holds whichever
+          run wrote it last.
       - kind: value
         path: results/fused-lw-check.toml
         key: fused_mean_rel_diff
