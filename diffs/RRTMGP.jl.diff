@@ -1,0 +1,573 @@
+diff --git a/RRTMGP.jl/ext/RRTMGPCUDAExt.jl b/RRTMGP.jl-mod/ext/RRTMGPCUDAExt.jl
+index fb510f8..957eb74 100644
+--- a/RRTMGP.jl/ext/RRTMGPCUDAExt.jl
++++ b/RRTMGP.jl-mod/ext/RRTMGPCUDAExt.jl
+@@ -41,7 +41,11 @@ import RRTMGP.RTESolver: rte_sw_noscat_solve!
+ # device-agnostic per-(g-point, column) bodies shared with the CPU drivers
+ import RRTMGP.RTESolver: lw_noscat_gpt_col!, lw_2stream_gpt_col!
+ import RRTMGP.RTESolver: sw_noscat_gpt_col!, sw_2stream_gpt_col!
+-import RRTMGP.RTESolver: _compute_aero_mask!
++import RRTMGP.RTESolver: _compute_aero_mask!, _build_cloud_mask!
++import RRTMGP.RTESolver: rte_lw_2stream_optics_only!
++import RRTMGP.RTESolver: rte_lw_2stream_solve_both!
++import RRTMGP.RTESolver: lw_2stream_gpt_col_both!
++import RRTMGP.RTESolver: rte_sw_2stream_optics_only!
+ import CUDA: threadIdx, blockIdx, blockDim, @cuda
+ 
+ _max_threads_cuda() = 256
+diff --git a/RRTMGP.jl/ext/cuda/rte_longwave_2stream.jl b/RRTMGP.jl-mod/ext/cuda/rte_longwave_2stream.jl
+index 739c98c..7ea3aff 100644
+--- a/RRTMGP.jl/ext/cuda/rte_longwave_2stream.jl
++++ b/RRTMGP.jl-mod/ext/cuda/rte_longwave_2stream.jl
+@@ -139,3 +139,161 @@ function rte_lw_2stream_solve_CUDA!(
+     end
+     return nothing
+ end
++
++# Diagnostic; see solve_lw_optics_only! in src/rte/longwave_2stream.jl. The body
++# is the real kernel's per-column, per-g-point work with rte_lw_2stream! and the
++# flux accumulation removed, launched the same way so the comparison is fair.
++function rte_lw_2stream_optics_only!(
++    device::ClimaComms.CUDADevice,
++    op::TwoStream,
++    src_lw::SourceLW2Str,
++    as::AtmosphericState,
++    state_cache::Union{TransposedStateCache, Nothing},
++    lookup_lw::LookUpLW,
++    lookup_lw_cld::Union{LookUpCld, Nothing},
++    lookup_lw_aero::Union{LookUpAerosolMerra, Nothing},
++)
++    nlay, ncol = AtmosphericStates.get_dims(as)
++    tx, bx = _configure_threadblock(ncol)
++    args = (op, src_lw, ncol, as, state_cache, lookup_lw, lookup_lw_cld, lookup_lw_aero)
++    @cuda always_inline = true threads = (tx) blocks = (bx) rte_lw_2stream_optics_only_CUDA!(
++        args...,
++    )
++    return nothing
++end
++
++function rte_lw_2stream_optics_only_CUDA!(
++    op::TwoStream,
++    src_lw::SourceLW2Str,
++    ncol,
++    as::AtmosphericState,
++    state_cache::Union{TransposedStateCache, Nothing},
++    lookup_lw::LookUpLW,
++    lookup_lw_cld::Union{LookUpCld, Nothing},
++    lookup_lw_aero::Union{LookUpAerosolMerra, Nothing},
++)
++    gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x # global id
++    n_gpt = length(lookup_lw.band_data.major_gpt2bnd)
++    if gcol ≤ ncol
++        (; cloud_state, aerosol_state) = as
++        @inbounds begin
++            _compute_aero_mask!(aerosol_state, gcol)
++            for igpt in 1:n_gpt
++                _build_cloud_mask!(cloud_state, Val(:mask_lw), gcol)
++                compute_optical_props!(
++                    op,
++                    as,
++                    state_cache,
++                    src_lw,
++                    gcol,
++                    igpt,
++                    lookup_lw,
++                    lookup_lw_cld,
++                    lookup_lw_aero,
++                )
++            end
++        end
++    end
++    return nothing
++end
++
++# Fused all-sky + clear-sky longwave solve; see solve_lw_both! in
++# src/rte/longwave_2stream.jl for why this is equivalent to two solves.
++function rte_lw_2stream_solve_both!(
++    device::ClimaComms.CUDADevice,
++    flux::FluxLW,
++    flux_lw::FluxLW,
++    flux_lw_clear::FluxLW,
++    band_flux,
++    src_lw::SourceLW2Str,
++    bcs_lw::LwBCs,
++    op::TwoStream,
++    as::AtmosphericState,
++    state_cache::Union{TransposedStateCache, Nothing},
++    lookup_lw::LookUpLW,
++    lookup_lw_cld::Union{LookUpCld, Nothing},
++    lookup_lw_aero::Union{LookUpAerosolMerra, Nothing},
++)
++    nlay, ncol = AtmosphericStates.get_dims(as)
++    tx, bx = _configure_threadblock(ncol)
++    set_band_flux_to_zero!(band_flux)
++    args = (
++        flux,
++        flux_lw,
++        flux_lw_clear,
++        band_flux,
++        src_lw,
++        bcs_lw,
++        op,
++        nlay,
++        ncol,
++        as,
++        state_cache,
++        lookup_lw,
++        lookup_lw_cld,
++        lookup_lw_aero,
++    )
++    @cuda always_inline = true threads = (tx) blocks = (bx) rte_lw_2stream_solve_both_CUDA!(
++        args...,
++    )
++    return nothing
++end
++
++function rte_lw_2stream_solve_both_CUDA!(
++    flux::FluxLW,
++    flux_lw::FluxLW,
++    flux_lw_clear::FluxLW,
++    band_flux,
++    src_lw::SourceLW2Str,
++    bcs_lw::LwBCs,
++    op::TwoStream,
++    nlay,
++    ncol,
++    as::AtmosphericState,
++    state_cache::Union{TransposedStateCache, Nothing},
++    lookup_lw::LookUpLW,
++    lookup_lw_cld::Union{LookUpCld, Nothing},
++    lookup_lw_aero::Union{LookUpAerosolMerra, Nothing},
++)
++    gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x # global id
++    nlev = nlay + 1
++    (; major_gpt2bnd) = lookup_lw.band_data
++    n_gpt = length(major_gpt2bnd)
++    if gcol ≤ ncol
++        (; cloud_state, aerosol_state) = as
++        FT = eltype(flux_lw.flux_up)
++        _compute_aero_mask!(aerosol_state, gcol)
++        n_cloudy_gpts = 0  # thread-local counter for LW cloud cover
++        @inbounds for igpt in 1:n_gpt
++            cloudy = lw_2stream_gpt_col_both!(
++                igpt,
++                gcol,
++                flux,
++                flux_lw,
++                flux_lw_clear,
++                band_flux,
++                src_lw,
++                bcs_lw,
++                op,
++                as,
++                state_cache,
++                lookup_lw,
++                lookup_lw_cld,
++                lookup_lw_aero,
++                major_gpt2bnd[igpt],
++                nlev,
++                ncol,
++            )
++            n_cloudy_gpts += cloudy ? 1 : 0
++        end
++        @inbounds begin
++            compute_net_flux!(flux_lw, gcol, nlev)
++            compute_net_flux!(flux_lw_clear, gcol, nlev)
++            if cloud_state isa CloudState &&
++               !isnothing(cloud_state.cld_cover_lw)
++                cloud_state.cld_cover_lw[gcol] = FT(n_cloudy_gpts) / n_gpt
++            end
++        end
++    end
++    return nothing
++end
+diff --git a/RRTMGP.jl/ext/cuda/rte_shortwave_2stream.jl b/RRTMGP.jl-mod/ext/cuda/rte_shortwave_2stream.jl
+index 5c82ebd..04f4cac 100644
+--- a/RRTMGP.jl/ext/cuda/rte_shortwave_2stream.jl
++++ b/RRTMGP.jl-mod/ext/cuda/rte_shortwave_2stream.jl
+@@ -155,3 +155,55 @@ function rte_sw_2stream_solve_CUDA!(
+     end
+     return nothing
+ end
++
++# Diagnostic; see solve_sw_optics_only! in src/rte/shortwave_2stream.jl.
++function rte_sw_2stream_optics_only!(
++    device::ClimaComms.CUDADevice,
++    op::TwoStream,
++    as::AtmosphericState,
++    state_cache::Union{TransposedStateCache, Nothing},
++    lookup_sw::LookUpSW,
++    lookup_sw_cld::Union{LookUpCld, Nothing},
++    lookup_sw_aero::Union{LookUpAerosolMerra, Nothing},
++)
++    nlay, ncol = AtmosphericStates.get_dims(as)
++    tx, bx = _configure_threadblock(ncol)
++    args = (op, ncol, as, state_cache, lookup_sw, lookup_sw_cld, lookup_sw_aero)
++    @cuda always_inline = true threads = (tx) blocks = (bx) rte_sw_2stream_optics_only_CUDA!(
++        args...,
++    )
++    return nothing
++end
++
++function rte_sw_2stream_optics_only_CUDA!(
++    op::TwoStream,
++    ncol,
++    as::AtmosphericState,
++    state_cache::Union{TransposedStateCache, Nothing},
++    lookup_sw::LookUpSW,
++    lookup_sw_cld::Union{LookUpCld, Nothing},
++    lookup_sw_aero::Union{LookUpAerosolMerra, Nothing},
++)
++    gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x # global id
++    n_gpt = length(lookup_sw.band_data.major_gpt2bnd)
++    if gcol ≤ ncol
++        (; cloud_state, aerosol_state) = as
++        @inbounds begin
++            _compute_aero_mask!(aerosol_state, gcol)
++            for igpt in 1:n_gpt
++                _build_cloud_mask!(cloud_state, Val(:mask_sw), gcol)
++                compute_optical_props!(
++                    op,
++                    as,
++                    state_cache,
++                    gcol,
++                    igpt,
++                    lookup_sw,
++                    lookup_sw_cld,
++                    lookup_sw_aero,
++                )
++            end
++        end
++    end
++    return nothing
++end
+diff --git a/RRTMGP.jl/src/api/solver.jl b/RRTMGP.jl-mod/src/api/solver.jl
+index b2b8a02..ef80471 100644
+--- a/RRTMGP.jl/src/api/solver.jl
++++ b/RRTMGP.jl-mod/src/api/solver.jl
+@@ -111,6 +111,8 @@ struct RRTMGPSolver{
+     MS <: Union{AbstractArray, Nothing},
+     NF,
+     CNF,
++    CALW,
++    CASW,
+ }
+     grid_params::S
+     radiation_method::RM
+@@ -130,6 +132,12 @@ struct RRTMGPSolver{
+     deep_atmosphere_inverse_scaling::MS
+     net_flux_buffer::NF
+     clear_net_flux_buffer::CNF
++    # Compute-layout (ncol, nlev) accumulators for the clear-sky half of a
++    # fused solve. The clear_flux_* fields above are the (nlev, ncol)
++    # presentation the getters read; these are what the kernel accumulates
++    # into, and are transposed into those at the end of the solve.
++    clear_acc_lw::CALW
++    clear_acc_sw::CASW
+ end
+ Adapt.@adapt_structure RRTMGPSolver
+ 
+@@ -240,10 +248,16 @@ function RRTMGPSolver(
+         clear_flux_lw = Fluxes.FluxPresentation(grid_params; direct = false)
+         clear_flux_sw = Fluxes.FluxPresentation(grid_params; direct = true)
+         clear_net_flux_buffer = similar(presented_flux_lw.flux_net)
++        # The fused solve accumulates both skies in one pass over the g-points,
++        # so the clear half needs an accumulator of its own
++        clear_acc_lw = Fluxes.FluxLW(grid_params)
++        clear_acc_sw = Fluxes.FluxSW(grid_params)
+     else
+         clear_flux_lw = nothing
+         clear_flux_sw = nothing
+         clear_net_flux_buffer = nothing
++        clear_acc_lw = nothing
++        clear_acc_sw = nothing
+     end
+ 
+     # Optional per-band (spectrally-resolved) flux buffers, allocated only on request.
+@@ -327,6 +341,8 @@ function RRTMGPSolver(
+         deep_atmosphere_inverse_scaling,
+         net_flux_buffer,
+         clear_net_flux_buffer,
++        clear_acc_lw,
++        clear_acc_sw,
+     )
+ end
+ 
+diff --git a/RRTMGP.jl/src/api/update_fluxes.jl b/RRTMGP.jl-mod/src/api/update_fluxes.jl
+index 6f2541b..fc743e3 100644
+--- a/RRTMGP.jl/src/api/update_fluxes.jl
++++ b/RRTMGP.jl-mod/src/api/update_fluxes.jl
+@@ -44,24 +44,19 @@ function update_lw_fluxes!(
+     lookups = _lookup_tables(s)
+     lw_solver = _longwave_solver(s)
+     ms = _deep_atmosphere_inverse_scaling(s)
+-    RTESolver.solve_lw!(
+-        lw_solver,
+-        as,
+-        lookups.lookup_lw,
+-        nothing,
+-        lookups.lookup_lw_aero,
+-        ms,
+-    )
+-    # snapshot the clear-sky fluxes into their (nlev, ncol) presentation
+-    Fluxes.update_presentation!(s.clear_flux_lw, s.lws.flux)
+-    RTESolver.solve_lw!(
++    # One pass over the g-points fills both skies: the shared gas and aerosol
++    # optics, which are 88% of a solve, are computed once instead of twice.
++    RTESolver.solve_lw_both!(
+         lw_solver,
++        s.clear_acc_lw,
+         as,
+         lookups.lookup_lw,
+         lookups.lookup_lw_cld,
+         lookups.lookup_lw_aero,
+         ms,
+     )
++    # snapshot the clear-sky fluxes into their (nlev, ncol) presentation
++    Fluxes.update_presentation!(s.clear_flux_lw, s.clear_acc_lw)
+ end
+ 
+ """
+diff --git a/RRTMGP.jl/src/optics/Optics.jl b/RRTMGP.jl-mod/src/optics/Optics.jl
+index 9037009..bc3f881 100644
+--- a/RRTMGP.jl/src/optics/Optics.jl
++++ b/RRTMGP.jl-mod/src/optics/Optics.jl
+@@ -18,7 +18,8 @@ export AbstractOpticalProps,
+     TwoStream,
+     compute_col_gas!,
+     compute_relative_humidity!,
+-    compute_optical_props!
++    compute_optical_props!,
++    add_cloud_optics_lw!
+ 
+ """
+     AbstractOpticalProps
+diff --git a/RRTMGP.jl/src/optics/compute_optical_props.jl b/RRTMGP.jl-mod/src/optics/compute_optical_props.jl
+index 3b879f4..5da0b7f 100644
+--- a/RRTMGP.jl/src/optics/compute_optical_props.jl
++++ b/RRTMGP.jl-mod/src/optics/compute_optical_props.jl
+@@ -386,3 +386,41 @@ end
+     end
+     return nothing
+ end
++
++"""
++    add_cloud_optics_lw!(op, as, gcol, lkp_cld, ibnd)
++
++Add the longwave cloud increment to optical properties that already hold the
++gas and aerosol contributions for column `gcol`.
++
++Split out of `compute_optical_props!` so a fused all-sky/clear-sky solve can
++compute the shared optics once, sweep for the clear sky, then add clouds and
++sweep again. The increment is the same one `compute_optical_props!` applies,
++with the same `delta_scaling`.
++"""
++@inline function add_cloud_optics_lw!(
++    op::TwoStream,
++    as::AtmosphericState,
++    gcol::Int,
++    lkp_cld::LookUpCld,
++    ibnd::Int,
++)
++    cloud_state = as.cloud_state
++    @inbounds begin
++        add_cloud_optics_2stream!(
++            view(op.τ, gcol, :),
++            view(op.ssa, gcol, :),
++            view(op.g, gcol, :),
++            view(cloud_state.mask_lw, :, gcol),
++            view(cloud_state.cld_r_eff_liq, :, gcol),
++            view(cloud_state.cld_r_eff_ice, :, gcol),
++            view(cloud_state.cld_path_liq, :, gcol),
++            view(cloud_state.cld_path_ice, :, gcol),
++            cloud_state.ice_rgh,
++            lkp_cld,
++            ibnd;
++            delta_scaling = false,
++        )
++    end
++    return nothing
++end
+diff --git a/RRTMGP.jl/src/rte/RTESolver.jl b/RRTMGP.jl-mod/src/rte/RTESolver.jl
+index 40b358f..c9504aa 100644
+--- a/RRTMGP.jl/src/rte/RTESolver.jl
++++ b/RRTMGP.jl-mod/src/rte/RTESolver.jl
+@@ -15,6 +15,8 @@ using ..Optics
+ using ..LookUpTables
+ 
+ export solve_lw!, solve_sw!
++export solve_lw_optics_only!, solve_sw_optics_only!
++export solve_lw_both!
+ 
+ include("driver_utils.jl")
+ include("longwave_noscat.jl")
+diff --git a/RRTMGP.jl/src/rte/longwave_2stream.jl b/RRTMGP.jl-mod/src/rte/longwave_2stream.jl
+index ffbd1b4..fce6b54 100644
+--- a/RRTMGP.jl/src/rte/longwave_2stream.jl
++++ b/RRTMGP.jl-mod/src/rte/longwave_2stream.jl
+@@ -332,3 +332,134 @@ Equations are after Shonk and Hogan 2008, doi:10.1175/2007JCLI1940.1 (SH08)
+         ilev -= 1
+     end
+ end
++
++# --- diagnostic: the optics half of a solve -------------------------------
++#
++# With `rad: allskywithclear` the solver runs twice per radiation step and both
++# passes recompute the gas and aerosol optics; only the cloud increment differs.
++# Fusing them would save exactly one copy of the optics, so the optics share of
++# a solve is the prize. These entry points do the same per-column, per-g-point
++# optics with the two-stream sweep and flux accumulation removed, so that share
++# can be measured. Nothing in the model calls them.
++
++function rte_lw_2stream_optics_only! end
++
++function solve_lw_optics_only!(
++    (; context, src, op, state_cache)::TwoStreamLWRTE,
++    as::AtmosphericState,
++    lookup_lw::LookUpLW,
++    lookup_lw_cld::Union{LookUpCld, Nothing} = nothing,
++    lookup_lw_aero::Union{LookUpAerosolMerra, Nothing} = nothing,
++)
++    AtmosphericStates.refresh_transposed_state!(state_cache, as)
++    rte_lw_2stream_optics_only!(
++        context.device,
++        op,
++        src,
++        as,
++        state_cache,
++        lookup_lw,
++        lookup_lw_cld,
++        lookup_lw_aero,
++    )
++    return nothing
++end
++
++# --- fused all-sky + clear-sky solve ---------------------------------------
++#
++# With `rad: allskywithclear` the solver runs twice per radiation step and both
++# passes recompute the gas and aerosol optics; only the cloud increment differs.
++# Measured on the AMIP benchmark, that shared optics is 88% of a longwave solve,
++# so computing it once and sweeping twice removes ~44% of the pair.
++#
++# The sweep is safe to run twice against one optics computation: rte_lw_2stream!
++# writes only `albedo` and `src` as scratch, both recomputed from `lev_source`
++# and `sfc_source`, which only the optics pass writes.
++#
++# Results differ from two separate solves at roundoff only: the cloud and
++# aerosol increments are weighted sums applied per component, so adding aerosol
++# before cloud rather than after changes summation order and nothing else.
++
++function rte_lw_2stream_solve_both! end
++
++@inline function lw_2stream_gpt_col_both!(
++    igpt,
++    gcol,
++    flux,
++    flux_lw,
++    flux_lw_clear,
++    band_flux,
++    src_lw,
++    bcs_lw,
++    op,
++    as,
++    state_cache,
++    lookup_lw,
++    lookup_lw_cld,
++    lookup_lw_aero,
++    ibnd,
++    nlev,
++    ncol,
++)
++    cloudy = _build_cloud_mask!(as.cloud_state, Val(:mask_lw), gcol)
++    # Gas and aerosol only: this is the clear sky, and the shared half
++    compute_optical_props!(
++        op,
++        as,
++        state_cache,
++        src_lw,
++        gcol,
++        igpt,
++        lookup_lw,
++        nothing,
++        lookup_lw_aero,
++    )
++    rte_lw_2stream!(op, flux, src_lw, bcs_lw, gcol, igpt, ibnd, nlev, ncol)
++    _accumulate_fluxes!(flux_lw_clear, flux, gcol, nlev, igpt)
++    # Add the cloud increment on top of the same optics and sweep again
++    if !isnothing(lookup_lw_cld)
++        add_cloud_optics_lw!(op, as, gcol, lookup_lw_cld, ibnd)
++    end
++    rte_lw_2stream!(op, flux, src_lw, bcs_lw, gcol, igpt, ibnd, nlev, ncol)
++    _accumulate_fluxes!(flux_lw, flux, gcol, nlev, igpt)
++    accumulate_band_flux!(band_flux, flux.flux_up, flux.flux_dn, gcol, ibnd, nlev)
++    return cloudy
++end
++
++"""
++    solve_lw_both!(lw, flux_lw_clear, as, lookup_lw, lookup_lw_cld, lookup_lw_aero, metric_scaling)
++
++Solve the longwave problem for both skies in one pass over the g-points,
++accumulating the clear sky into `flux_lw_clear` and the all-sky into the
++solver's own flux. Equivalent to two `solve_lw!` calls, to roundoff.
++"""
++function solve_lw_both!(
++    (; context, fluxb, flux, band_flux, src, bcs, op, state_cache)::TwoStreamLWRTE,
++    flux_lw_clear::FluxLW,
++    as::AtmosphericState,
++    lookup_lw::LookUpLW,
++    lookup_lw_cld::Union{LookUpCld, Nothing} = nothing,
++    lookup_lw_aero::Union{LookUpAerosolMerra, Nothing} = nothing,
++    metric_scaling::M = nothing,
++) where {M}
++    AtmosphericStates.refresh_transposed_state!(state_cache, as)
++    rte_lw_2stream_solve_both!(
++        context.device,
++        fluxb,
++        flux,
++        flux_lw_clear,
++        band_flux,
++        src,
++        bcs,
++        op,
++        as,
++        state_cache,
++        lookup_lw,
++        lookup_lw_cld,
++        lookup_lw_aero,
++    )
++    apply_metric_scaling!(flux, metric_scaling)
++    apply_metric_scaling!(flux_lw_clear, metric_scaling)
++    apply_metric_scaling!(band_flux, metric_scaling)
++    return nothing
++end
+diff --git a/RRTMGP.jl/src/rte/shortwave_2stream.jl b/RRTMGP.jl-mod/src/rte/shortwave_2stream.jl
+index f4bdec4..6233593 100644
+--- a/RRTMGP.jl/src/rte/shortwave_2stream.jl
++++ b/RRTMGP.jl-mod/src/rte/shortwave_2stream.jl
+@@ -390,3 +390,26 @@ Equations are after Shonk and Hogan 2008, doi:10.1175/2007JCLI1940.1 (SH08)
+     end
+     return nothing
+ end
++
++# Shortwave counterpart of solve_lw_optics_only!; see longwave_2stream.jl.
++function rte_sw_2stream_optics_only! end
++
++function solve_sw_optics_only!(
++    (; context, op, state_cache)::TwoStreamSWRTE,
++    as::AtmosphericState,
++    lookup_sw::LookUpSW,
++    lookup_sw_cld::Union{LookUpCld, Nothing} = nothing,
++    lookup_sw_aero::Union{LookUpAerosolMerra, Nothing} = nothing,
++)
++    AtmosphericStates.refresh_transposed_state!(state_cache, as)
++    rte_sw_2stream_optics_only!(
++        context.device,
++        op,
++        as,
++        state_cache,
++        lookup_sw,
++        lookup_sw_cld,
++        lookup_sw_aero,
++    )
++    return nothing
++end
