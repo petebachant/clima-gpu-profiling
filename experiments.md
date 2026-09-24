@@ -30,6 +30,7 @@ calkit run
 
 | experiment | date | treatment | speedup_pct | baseline_sypd | mod_sypd | commit | reproducible | note |
 |---|---|---|---|---|---|---|---|---|
+| 2026-09-23-fused-lw-optics | 2026-09-23 | RRTMGP | 5.260 | 0.22759 | 0.24023 | 39ba8baba | yes | Fused longwave solve: +5.26% SYPD, diagnostics intact |
 | 2026-09-22-clearsky-bound | 2026-09-23 | ClimaCoupler | 12.600 | 0.22759 | 0.26040 | 1a831230a | yes | Price the clear-sky radiation diagnostics: +12.6% SYPD |
 | 2026-09-22-main-null-test | 2026-09-22 | null test (arms identical) | 0.087 | 0.22750 | 0.22770 | b94b38e71 | yes | Null test on the stack updated to main: +0.087%, arms identical |
 | 2026-09-15-microphysics-cache-atmos | 2026-09-15 | ClimaAtmos | 7.952 | 0.21611 | 0.23478 | d5b3be1b1 | yes | Microphysics cache kernel, ClimaAtmos only: -7.49% |
