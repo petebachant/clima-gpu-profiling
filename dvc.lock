@@ -2762,6 +2762,10 @@ stages:
       hash: md5
       md5: 262ece4ede780e1310c0aba610b50e45
       size: 10108
+    - path: results/state-fused-reseeded2.toml
+      hash: md5
+      md5: 9239dfb6c80deeb13987ce309f13571e
+      size: 10127
     - path: results/state-fused.toml
       hash: md5
       md5: 18ae8ba57c747f103b722a9cfabc7e3b
@@ -2772,10 +2776,96 @@ stages:
       size: 10110
     - path: scripts/compare-state-divergence.py
       hash: md5
-      md5: e5294254bf1d087162482d8f15151ffb
-      size: 3411
+      md5: 49e4e86074f95ee3d5257344b21fd668
+      size: 6118
     outs:
     - path: results/state-divergence.json
       hash: md5
-      md5: 18589702b26b5590ccc0702daf8c1eef
-      size: 1359
+      md5: 22bae6b2c6fde0d806b0995c9cc63f10
+      size: 4356
+  state-fused-reseeded2:
+    cmd: calkit scheduler batch --name state-fused-reseeded2 --environment clima
+      --dep scripts/measure-state-divergence.jl --dep RRTMGP.jl-mod/src --dep 
+      RRTMGP.jl-mod/ext --dep ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml 
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep 
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out 
+      results/state-fused-reseeded2.toml --option --gpus=1 --option --time=120 
+      -- scripts/run-julia-script.sh 
+      --project=ClimaCoupler.jl-mod/experiments/AMIP 
+      scripts/measure-state-divergence.jl --config_file 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --out results/state-fused-reseeded2.toml --steps 120 --seed-offset 2
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: 9004ba088bf9ff7171572c7f23f4cb6e.dir
+      size: 2160969
+      nfiles: 159
+    - path: ClimaCore.jl-mod/ext
+      hash: md5
+      md5: bcf5ff64469299fee681dda394442960.dir
+      size: 232766
+      nfiles: 28
+    - path: ClimaCore.jl-mod/src
+      hash: md5
+      md5: b0046c80a2dd67121a317d407828ab4e.dir
+      size: 1354312
+      nfiles: 103
+    - path: ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      hash: md5
+      md5: 57366d387e6034cf11192c346236c06c
+      size: 1150
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: d68284726a77e4fc85e1ba0768977f19
+      size: 2035
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: a5599225e1f5fbb6d64f0c8aeb5e4acf
+      size: 122720
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: ClimaCoupler.jl-mod/src
+      hash: md5
+      md5: f2ed10dd11c630a3361c05b903c765d7.dir
+      size: 305758
+      nfiles: 22
+    - path: RRTMGP.jl-mod/ext
+      hash: md5
+      md5: 97e4c8b25574c623d768dc4ef3d6097a.dir
+      size: 63997
+      nfiles: 11
+    - path: RRTMGP.jl-mod/src
+      hash: md5
+      md5: 49abd8bb261bf9ad41bfe183cd7bb09b.dir
+      size: 321787
+      nfiles: 43
+    - path: scripts/measure-state-divergence.jl
+      hash: md5
+      md5: 04e86f2226545d37bbf5509652e3a4de
+      size: 3514
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: a61880cfce301ad9069fbaddfa8d5ad5
+      size: 1033
+    outs:
+    - path: .calkit/scheduler/logs/state-fused-reseeded2.out
+      hash: md5
+      md5: 649f8ab822c7941b2cb6e5f277123a81
+      size: 26715
+    - path: results/state-fused-reseeded2.toml
+      hash: md5
+      md5: 9239dfb6c80deeb13987ce309f13571e
+      size: 10127

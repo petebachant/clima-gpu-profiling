@@ -425,6 +425,175 @@ stages:
           persist: true
     desc: Automatically generated from the 'quadrature-order-error' stage in
       calkit.yaml. Changes made here will be overwritten.
+  state-divergence:
+    cmd: calkit xenv -n py --no-check -- python
+      scripts/compare-state-divergence.py
+    deps:
+      - scripts/compare-state-divergence.py
+      - results/state-unfused.toml
+      - results/state-fused.toml
+      - results/state-fused-reseeded.toml
+      - results/state-fused-reseeded2.toml
+      - .calkit/env-locks/py
+    outs:
+      - results/state-divergence.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'state-divergence' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  state-unfused:
+    cmd: calkit scheduler batch --name state-unfused --environment clima --dep
+      scripts/measure-state-divergence.jl --dep RRTMGP.jl/src --dep
+      RRTMGP.jl/ext --dep ClimaCoupler.jl/src --dep
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl/config/atmos_configs/climaatmos_progedmf_1m.yml
+      --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep ClimaCore.jl/ext
+      --dep ClimaCore.jl/src --dep ClimaAtmos.jl/src --dep
+      .calkit/env-locks/clima --out results/state-unfused.toml --option --gpus=1
+      --option --time=120 -- scripts/run-julia-script.sh
+      --project=ClimaCoupler.jl/experiments/AMIP
+      scripts/measure-state-divergence.jl --config_file
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --out results/state-unfused.toml --steps 120
+    deps:
+      - scripts/run-julia-script.sh
+      - scripts/measure-state-divergence.jl
+      - RRTMGP.jl/src
+      - RRTMGP.jl/ext
+      - ClimaCoupler.jl/src
+      - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl/config/atmos_configs/climaatmos_progedmf_1m.yml
+      - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
+      - ClimaCore.jl/ext
+      - ClimaCore.jl/src
+      - ClimaAtmos.jl/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/state-unfused.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/state-unfused.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'state-unfused' stage in calkit.yaml.
+      Changes made here will be overwritten.
+  state-fused:
+    cmd: calkit scheduler batch --name state-fused --environment clima --dep
+      scripts/measure-state-divergence.jl --dep RRTMGP.jl-mod/src --dep
+      RRTMGP.jl-mod/ext --dep ClimaCoupler.jl-mod/src --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
+      results/state-fused.toml --option --gpus=1 --option --time=120 --
+      scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
+      scripts/measure-state-divergence.jl --config_file
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --out results/state-fused.toml --steps 120
+    deps:
+      - scripts/run-julia-script.sh
+      - scripts/measure-state-divergence.jl
+      - RRTMGP.jl-mod/src
+      - RRTMGP.jl-mod/ext
+      - ClimaCoupler.jl-mod/src
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCore.jl-mod/ext
+      - ClimaCore.jl-mod/src
+      - ClimaAtmos.jl-mod/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/state-fused.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/state-fused.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'state-fused' stage in calkit.yaml.
+      Changes made here will be overwritten.
+  state-fused-reseeded:
+    cmd: calkit scheduler batch --name state-fused-reseeded --environment clima
+      --dep scripts/measure-state-divergence.jl --dep RRTMGP.jl-mod/src --dep
+      RRTMGP.jl-mod/ext --dep ClimaCoupler.jl-mod/src --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
+      results/state-fused-reseeded.toml --option --gpus=1 --option --time=120 --
+      scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
+      scripts/measure-state-divergence.jl --config_file
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --out results/state-fused-reseeded.toml --steps 120 --seed-offset 1
+    deps:
+      - scripts/run-julia-script.sh
+      - scripts/measure-state-divergence.jl
+      - RRTMGP.jl-mod/src
+      - RRTMGP.jl-mod/ext
+      - ClimaCoupler.jl-mod/src
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCore.jl-mod/ext
+      - ClimaCore.jl-mod/src
+      - ClimaAtmos.jl-mod/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/state-fused-reseeded.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/state-fused-reseeded.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'state-fused-reseeded' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  state-fused-reseeded2:
+    cmd: calkit scheduler batch --name state-fused-reseeded2 --environment clima
+      --dep scripts/measure-state-divergence.jl --dep RRTMGP.jl-mod/src --dep
+      RRTMGP.jl-mod/ext --dep ClimaCoupler.jl-mod/src --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
+      results/state-fused-reseeded2.toml --option --gpus=1 --option --time=120
+      -- scripts/run-julia-script.sh
+      --project=ClimaCoupler.jl-mod/experiments/AMIP
+      scripts/measure-state-divergence.jl --config_file
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --out results/state-fused-reseeded2.toml --steps 120 --seed-offset 2
+    deps:
+      - scripts/run-julia-script.sh
+      - scripts/measure-state-divergence.jl
+      - RRTMGP.jl-mod/src
+      - RRTMGP.jl-mod/ext
+      - ClimaCoupler.jl-mod/src
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCore.jl-mod/ext
+      - ClimaCore.jl-mod/src
+      - ClimaAtmos.jl-mod/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/state-fused-reseeded2.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/state-fused-reseeded2.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'state-fused-reseeded2' stage in
+      calkit.yaml. Changes made here will be overwritten.
   fused-lw-check:
     cmd: calkit scheduler batch --name fused-lw-check --environment clima --dep
       scripts/verify-fused-lw.jl --dep RRTMGP.jl-mod/src --dep RRTMGP.jl-mod/ext
