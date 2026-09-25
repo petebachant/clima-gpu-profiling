@@ -7,6 +7,12 @@ stage that writes it had not re-run, and a presence-only check passed.
 
 Keyed evidence is compared against the answer text. Tables are reported with the
 figures a reader can check by eye, since their claim lives in prose.
+
+Since the answers moved to templated values, the check that matters is different:
+calkit injects a named value by rendering it from the WORKING TREE and ignoring
+`git_ref`, so a pinned citation can display one number while the tag it cites
+holds another. That is reported as DRIFT, and it found a real case --
+`guard_fires_pct` rendered 81.80% while citing a tag carrying 88.31%.
 """
 
 import json
@@ -42,10 +48,14 @@ def radiation_pct(blob: str) -> float | None:
     rows = list(csv.DictReader(io.StringIO(blob)))
     if not rows or "total_ms_baseline" not in rows[0]:
         return None
-    base = sum(
-        float(r["total_ms_baseline"]) for r in rows if "rte_" in r["kernel"]
-    )
-    mod = sum(float(r["total_ms_mod"]) for r in rows if "rte_" in r["kernel"])
+    # A cell is blank when a kernel exists in one arm only, which is what a
+    # successful fusion looks like: the clear-sky kernels are in the baseline
+    # column and absent from the mod one. Blank means zero time, not no data.
+    def ms(row, col):
+        return float(row[col] or 0.0)
+
+    base = sum(ms(r, "total_ms_baseline") for r in rows if "rte_" in r["kernel"])
+    mod = sum(ms(r, "total_ms_mod") for r in rows if "rte_" in r["kernel"])
     return None if base == 0 else 100 * (mod / base - 1)
 
 
@@ -93,10 +103,45 @@ def main() -> int:
                     print(f"KEY      {ref}:{path} {key}: {exc}")
                     bad += 1
                     continue
-                mark = "ok" if in_answer(value, answer) else "NOT IN ANSWER"
-                if mark != "ok":
+                name = e.get("name")
+                if name and "{" + name in answer:
+                    # Templated. The number in prose cannot drift from the
+                    # results file -- but calkit renders from the WORKING TREE
+                    # and ignores git_ref, so it can drift from the pinned ref,
+                    # which is the one the answer claims to rest on. That is
+                    # the failure this branch exists to catch.
+                    try:
+                        live = dig(open(path).read(), path, key)
+                    except Exception:
+                        live = None
+                    if live is None:
+                        mark, note = "NO LIVE VALUE", " (renders blank)"
+                    elif isinstance(value, float) and isinstance(live, float):
+                        drifted = abs(live - value) > 1e-9 * max(1.0, abs(value))
+                        mark = "DRIFT" if drifted else "ok"
+                        note = f" renders {live}" if drifted else ""
+                    else:
+                        mark = "ok" if live == value else "DRIFT"
+                        note = f" renders {live}" if mark == "DRIFT" else ""
+                elif name:
+                    # Declares a name the answer never uses: either a figure
+                    # meant to be injected and left typed, or a promise to
+                    # drop. Only clean if the literal is in the prose.
+                    mark = "ok" if in_answer(value, answer) else "NOT IN ANSWER"
+                    note = "" if mark == "ok" else (
+                        f" (declares name '{name}' that the answer never uses)"
+                    )
+                elif in_answer(value, answer):
+                    mark, note = "ok", ""
+                else:
+                    # No name and not quoted: supporting evidence, which is a
+                    # legitimate thing for an answer to rest on without
+                    # putting a number in prose. Reported, not failed -- a
+                    # check that cries wolf on these is a check nobody reads.
+                    mark, note = "supporting", ""
+                if mark not in ("ok", "supporting"):
                     bad += 1
-                print(f"{mark:14s} {ref}:{path} {key}={value}")
+                print(f"{mark:14s} {ref}:{path} {key}={value}{note}")
             else:
                 pct = radiation_pct(blob)
                 extra = "" if pct is None else f" radiation={pct:+.2f}%"

@@ -149,10 +149,17 @@ questions:
         path: results/earlyout-hits.toml
         key: guard_fires_pct
         name: guard_fires_pct
-        git_ref: meas/2026-09-15-earlyout-hit-rate
         explanation: >-
           The share of 13.9M quadrature points still taking the early-out, so
           the decay from August's -21.5% is not a hit-rate problem.
+          Deliberately NOT pinned. It was pinned to
+          meas/2026-09-15-earlyout-hit-rate, which holds 88.31%, while calkit
+          renders from the working tree, which holds 81.80% after the
+          2026-09-21 stack update -- so the answer displayed one number and
+          cited a tag carrying another. The stage is live and cheap, so the
+          working-tree value is reproducible and the two now agree.
+          The cap survives the move: it derives from the -3.27% kernel speedup
+          that skipping those points buys, so 3.27/0.818 is still near 4%.
       - kind: table
         path: diffs/ClimaAtmos.jl.diff
         git_ref: exp/2026-09-15-microphysics-cache-atmos
@@ -538,7 +545,6 @@ questions:
       - kind: value
         path: results/cm-registers.toml
         key: layers.E microphysics_tendencies_1m (9-pt quadrature).registers
-        name: quad9_registers
         git_ref: exp/2026-09-04-fuse-and-bounds
         explanation: >-
           Why a register-only gate fails: this kernel reports the sm_80 cap of
@@ -549,7 +555,6 @@ questions:
       - kind: value
         path: results/cm-registers.toml
         key: layers.E microphysics_tendencies_1m (9-pt quadrature).unbounded_local_bytes
-        name: quad9_local_bytes
         git_ref: exp/2026-09-06-evaluator-param-args
         explanation: >-
           The quantity that actually moved while the register count sat still,
@@ -635,7 +640,6 @@ questions:
       - kind: value
         path: results/launch-bounds/launch-bounds.toml
         key: off.kernels.L1013.mean_ms
-        name: l1013_off_ms
         git_ref: exp/2026-09-01-cm-fuse
         explanation: >-
           The reference every other phase is read against: the hot
@@ -644,7 +648,6 @@ questions:
       - kind: value
         path: results/launch-bounds/launch-bounds.toml
         key: unguarded.kernels.L1013.mean_ms
-        name: l1013_unguarded_ms
         git_ref: exp/2026-09-01-cm-fuse
         explanation: >-
           The counterfactual, and the reason this stage exists: with the spill
@@ -654,7 +657,6 @@ questions:
       - kind: value
         path: results/launch-bounds/launch-bounds.toml
         key: guarded.kernels.L970.mean_ms
-        name: l970_guarded_ms
         git_ref: exp/2026-09-01-cm-fuse
         explanation: >-
           The gain, in the shipped configuration: the single-call microphysics
@@ -812,7 +814,6 @@ questions:
       - kind: value
         path: results/compile-time/compile-time.toml
         key: warmup_off.totals.wall_s
-        name: warmup_off_wall_s
         git_ref: compile-time-warmup-ab
         explanation: >-
           Status quo, and the reference the whole study rests on. Pinned to the
@@ -823,7 +824,6 @@ questions:
       - kind: value
         path: results/compile-time/compile-time.toml
         key: warmup_on.totals.wall_s
-        name: warmup_on_wall_s
         git_ref: compile-time-warmup-ab
         explanation: >-
           The test, in the same SLURM job on the same GPU, running second --
@@ -832,7 +832,6 @@ questions:
       - kind: value
         path: results/compile-time/compile-time.toml
         key: warmup_on.coupled_simulation.wall_s
-        name: warmup_on_coupled_s
         git_ref: compile-time-warmup-ab
         explanation: >-
           Where the penalty is: simulation construction, the phase AMIPWarmup
@@ -840,7 +839,6 @@ questions:
       - kind: value
         path: results/compile-time/compile-time.toml
         key: warmup_off.totals.host_compile_s
-        name: warmup_off_host_compile_s
         git_ref: compile-time-warmup-ab
         explanation: >-
           Host-side JIT only, from Julia's own @timed compile_time accounting.
@@ -850,7 +848,6 @@ questions:
       - kind: value
         path: results/compile-time/compile-time.toml
         key: warmup_off.second_step.wall_s
-        name: warmup_off_second_step_s
         git_ref: compile-time-warmup-ab
         explanation: >-
           Steady-state cost of one step once everything is compiled -- the
