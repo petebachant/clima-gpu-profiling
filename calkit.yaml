@@ -439,10 +439,17 @@ questions:
         explanation: How long the trajectories were compared for.
       - kind: table
         path: results/top-kernels.csv
+        git_ref: exp/2026-09-24-fused-radiation
         explanation: >-
-          The fused arm as a profile shows it: one longwave kernel where the
-          baseline has two, with shortwave untouched as the control that the
-          change did what it claims and nothing else.
+          The baseline's four radiation kernels, two longwave and two shortwave.
+          Read their mod columns as the fusion: they are BLANK because the fused
+          solves are new symbols, and at this tag the table ranked kernels by
+          baseline cost and kept the top twenty, so a kernel existing only in the
+          mod arm could not appear in it at all. The mod arm's radiation total is
+          not here -- it is the 25.0% quoted above from
+          results/kernel-shares.json, which aggregates the profile by symbol
+          prefix instead of joining names. The notebook now ranks by whichever
+          arm is larger, so a later run of this table will show both.
   - question: >-
       How much of the radiation cost is clear-sky diagnostics rather than the
       fluxes the model runs on?
