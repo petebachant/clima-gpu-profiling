@@ -16,6 +16,7 @@ inside that spread.
 
 import itertools
 import json
+import statistics
 import tomllib
 
 FUSION = ("unfused", "fused")
@@ -64,21 +65,24 @@ per_step = {}
 for step in steps:
     f = fusion[step]["worst_rel_diff"]
     c = [controls[k][step]["worst_rel_diff"] for k in controls]
-    hi = max(c)
+    mid = statistics.median(c)
     per_step[step] = {
         "fusion_vs_unfused": f,
         "control_min": min(c),
-        "control_max": hi,
+        "control_median": mid,
+        "control_max": max(c),
         "controls": {k: controls[k][step]["worst_rel_diff"] for k in controls},
         "field": fusion[step]["field"],
-        # Against the top of the control spread, not a single draw
-        "ratio_to_control_max": (f / hi) if hi > 0 else None,
+        # Against the middle of the control spread, not its top: one control
+        # pair diverging unusually far would otherwise widen the envelope
+        # enough to clear a genuinely broken change.
+        "ratio_to_control_median": (f / mid) if mid > 0 else None,
         # Both zero at the early steps, before sampling has had an effect
-        "inside_control_spread": f <= hi if hi > 0 else f == 0.0,
+        "inside_control_spread": min(c) <= f <= max(c) if mid > 0 else f == 0.0,
     }
 
-ratios = [v["ratio_to_control_max"] for v in per_step.values()
-          if v["ratio_to_control_max"] is not None]
+ratios = [v["ratio_to_control_median"] for v in per_step.values()
+          if v["ratio_to_control_median"] is not None]
 final = steps[-1]
 results = {
     "note": "fused-vs-unfused state divergence against the same code reseeded. "
@@ -88,25 +92,46 @@ results = {
     "steps": int(state["fused"]["steps"]),
     "control_pairs": sorted(controls),
     "per_step": per_step,
-    "max_ratio_to_control_max": max(ratios) if ratios else None,
+    "max_ratio_to_control_median": max(ratios) if ratios else None,
     "final_step": final,
     "final_fusion_rel_diff": per_step[final]["fusion_vs_unfused"],
     "final_control_min": per_step[final]["control_min"],
+    "final_control_median": per_step[final]["control_median"],
     "final_control_max": per_step[final]["control_max"],
-    "final_ratio_to_control_max": per_step[final]["ratio_to_control_max"],
-    # The claim is that fusing is no worse than resampling. Allow a factor of
-    # two above the widest control pair to absorb the crossings that make any
-    # single-step ratio noisy; a real defect grows out of that band rather than
-    # touching it.
-    "passes": bool(ratios) and max(ratios) <= 2.0,
+    "final_ratio_to_control_median": per_step[final]["ratio_to_control_median"],
 }
+
+# The three control pairs come from three seeds of the same code, so they must
+# agree with each other to within the spread of a cloud draw. If one does not,
+# the median cannot be trusted either: an arm that is wrong -- a stale file, a
+# seed that did not take -- sits in two of the three pairs, so it moves the
+# median as readily as the maximum, and the comparison would be against noise
+# rather than against resampling. Checked at the last step, where the signal is
+# largest.
+spread = [per_step[final]["controls"][k] for k in sorted(controls)]
+results["control_spread_ratio"] = (max(spread) / min(spread)) if min(spread) > 0 else None
+results["controls_consistent"] = (
+    results["control_spread_ratio"] is not None
+    and results["control_spread_ratio"] <= 10.0
+)
+# The claim is that fusing is no worse than resampling. A factor of two on the
+# median control absorbs the crossings that make any single-step ratio noisy; a
+# real defect grows away from the controls rather than tracking them at a
+# constant offset.
+results["passes"] = (
+    bool(ratios) and max(ratios) <= 2.0 and results["controls_consistent"]
+)
 json.dump(results, open("results/state-divergence.json", "w"), indent=2)
 
 for step in steps:
     v = per_step[step]
-    ratio = "n/a" if v["ratio_to_control_max"] is None else f"{v['ratio_to_control_max']:.2f}"
+    r = v["ratio_to_control_median"]
+    ratio = "n/a" if r is None else f"{r:.2f}"
     print(f"{step:>10}  fusion {v['fusion_vs_unfused']:.3e}  "
-          f"control {v['control_min']:.3e}-{v['control_max']:.3e}  "
-          f"ratio {ratio:>5}  ({v['field']})")
-print(f"worst ratio to the control envelope {results['max_ratio_to_control_max']} "
+          f"control {v['control_min']:.3e}/{v['control_median']:.3e}/"
+          f"{v['control_max']:.3e}  ratio {ratio:>5}  ({v['field']})")
+agree = results["control_spread_ratio"]
+print(f"control pairs agree to {'n/a' if agree is None else f'{agree:.2f}x'} "
+      f"-> {'consistent' if results['controls_consistent'] else 'INCONSISTENT, median untrustworthy'}")
+print(f"worst ratio to the median control {results['max_ratio_to_control_median']} "
       f"-> {'PASS' if results['passes'] else 'FAIL'}")
