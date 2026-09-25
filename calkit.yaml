@@ -1316,6 +1316,113 @@ pipeline:
         - path: results/quadrature-order-error.toml
           storage: git
 
+    state-unfused:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # Reference: the baseline arm, which solves radiation twice.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=120
+      args:
+        - --project=ClimaCoupler.jl/experiments/AMIP
+        - scripts/measure-state-divergence.jl
+        - --config_file
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --out
+        - results/state-unfused.toml
+        - --steps
+        - "120"
+      inputs:
+        - scripts/measure-state-divergence.jl
+        - RRTMGP.jl/src
+        - RRTMGP.jl/ext
+        - ClimaCoupler.jl/src
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl/config/atmos_configs/climaatmos_progedmf_1m.yml
+        - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl/ext
+        - ClimaCore.jl/src
+        - ClimaAtmos.jl/src
+      outputs:
+        - path: results/state-unfused.toml
+          storage: git
+
+    state-fused:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # The fused arm, same seed.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=120
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/measure-state-divergence.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --out
+        - results/state-fused.toml
+        - --steps
+        - "120"
+      inputs:
+        - scripts/measure-state-divergence.jl
+        - RRTMGP.jl-mod/src
+        - RRTMGP.jl-mod/ext
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaAtmos.jl-mod/src
+      outputs:
+        - path: results/state-fused.toml
+          storage: git
+
+    state-fused-reseeded:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # The control. Fusing changes how McICA randomness is consumed, so the
+      # fused state diverges from the baseline like a different cloud draw
+      # would. This run is the fused code with the seed shifted: same physics,
+      # different draw. Whatever it diverges by is the yardstick.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=120
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/measure-state-divergence.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --out
+        - results/state-fused-reseeded.toml
+        - --steps
+        - "120"
+        - --seed-offset
+        - "1"
+      inputs:
+        - scripts/measure-state-divergence.jl
+        - RRTMGP.jl-mod/src
+        - RRTMGP.jl-mod/ext
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaAtmos.jl-mod/src
+      outputs:
+        - path: results/state-fused-reseeded.toml
+          storage: git
+
     fused-lw-check:
       kind: shell-script
       environment: clima

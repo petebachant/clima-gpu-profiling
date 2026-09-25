@@ -37,6 +37,17 @@ let i = findfirst(==("--steps"), ARGS)
     if !isnothing(i); global n_steps = parse(Int, ARGS[i+1]); deleteat!(ARGS, i:(i+1)); end
 end
 
+# Shift the McICA seed, for the control run: same physics, different cloud
+# draw. Read by ClimaAtmos's radiation callback; must be set before the
+# simulation is built.
+let i = findfirst(==("--seed-offset"), ARGS)
+    if !isnothing(i)
+        ENV["CLIMA_RAD_SEED_OFFSET"] = ARGS[i + 1]
+        deleteat!(ARGS, i:(i + 1))
+    end
+end
+@info "radiation seed offset" offset = get(ENV, "CLIMA_RAD_SEED_OFFSET", "0")
+
 config_file = Input.parse_commandline(Input.argparse_settings())["config_file"]
 cs = CoupledSimulation(config_file)
 
