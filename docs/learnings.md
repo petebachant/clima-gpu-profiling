@@ -2244,6 +2244,45 @@ The pattern is worth naming, because it is now 2 for 2 against 7 for 0 the other
 way: look for work the configuration performs twice before looking for a faster
 way to perform it once.
 
+### 4y. Hoisting the gas-optics fractions out of the g-point loop, priced
+
+ESTIMATED, NOT MEASURED. The figures below are arithmetic on numbers already in
+this file; nothing was run. Recorded so the next person can check the reasoning
+before spending a GPU on it.
+
+The fused kernel is one thread per column with `for igpt in 1:n_gpt` outermost
+and the layer loop inside the optics, so `compute_gas_optics_core` runs n_gpt x
+nlay times per column -- 256 x 63 for longwave. Of what it computes, `tropo`,
+`jftemp`, `jfpress` and `vmr_h2o` depend only on (layer, column), and the eta
+fractions only on (layer, band). Only the two table lookups, `kmajor` and the
+minor contribution, actually depend on the g-point. So roughly a 256-fold
+redundancy sits in plain sight, and the instinct is to cache it per (column,
+layer).
+
+The ledger argues the prize is smaller than it looks. The binary search in
+`loc_lower` bought -26.9%, and it was an optimization OF this same slice: it
+turned an O(59) scan into ~6 steps. Taking S as the original scan's share of
+kernel time, 0.898 S = 0.269 gives S ~= 0.30, so the pressure search now costs
+about 0.03 of the kernel -- eliminating it entirely is worth ~3%, because the
+binary search already collected that ground.
+
+What is left is not arithmetic but loads: per (layer, g-point) the core does
+roughly fifteen global reads (the `ln_p_ref` steps, `t_ref`, three `vmr`
+lookups, `vmr_ref`, `key_species`) where a cache would do about six. On a
+kernel that is latency-bound with 0.25 eligible warps per scheduler (4u),
+REMOVING dependent loads is the one lever that has not been tried -- 4s failed
+by ADDING stores, which is the opposite. Estimated ceiling: a 2:1 cut in the
+optics' memory operations, optics being 88% of a solve and radiation 25% of
+kernel time after the fusion, is 3-4% of kernel time, or about 2-3% SYPD at the
+69% radiation pass-through. Above the +-2% noise floor, but not far above it,
+against a substantial and error-prone implementation.
+
+So this is worth a counterfactual probe before an implementation: compute the
+fractions once per column, wrong on purpose, and time it. That bounds the prize
+in one run without threading a cache through three call layers. If the bound
+comes in under ~5% of the solve, the idea is dead and the ledger's closing
+sentence stands.
+
 ## 6. Launch-overhead work, and why most of it is unsupported
 
 Figures live in `docs/experiments/launch-cost.md`, injected from
