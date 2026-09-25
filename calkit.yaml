@@ -1316,6 +1316,19 @@ pipeline:
         - path: results/quadrature-order-error.toml
           storage: git
 
+    state-divergence:
+      kind: python-script
+      script_path: scripts/compare-state-divergence.py
+      environment: py
+      inputs:
+        - results/state-unfused.toml
+        - results/state-fused.toml
+        - results/state-fused-reseeded.toml
+        - results/state-fused-reseeded2.toml
+      outputs:
+        - path: results/state-divergence.json
+          storage: git
+
     state-unfused:
       kind: shell-script
       environment: clima
@@ -1421,6 +1434,46 @@ pipeline:
         - ClimaAtmos.jl-mod/src
       outputs:
         - path: results/state-fused-reseeded.toml
+          storage: git
+
+    state-fused-reseeded2:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # A second control draw. One reseed gives one sample, and two chaotic
+      # trajectories cross: at any single step the control divergence can dip
+      # near zero and make the fusion/control ratio arbitrarily large for no
+      # physical reason. Offsets {0,1,2} give three control pairs, so the
+      # comparison is against a spread rather than a point.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=120
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/measure-state-divergence.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --out
+        - results/state-fused-reseeded2.toml
+        - --steps
+        - "120"
+        - --seed-offset
+        - "2"
+      inputs:
+        - scripts/measure-state-divergence.jl
+        - RRTMGP.jl-mod/src
+        - RRTMGP.jl-mod/ext
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaAtmos.jl-mod/src
+      outputs:
+        - path: results/state-fused-reseeded2.toml
           storage: git
 
     fused-lw-check:
