@@ -381,6 +381,7 @@ questions:
       - kind: value
         path: results/state-divergence.json
         key: final_fusion_rel_diff
+        git_ref: meas/2026-09-25-fused-state-divergence
         name: final_fusion_diff
         explanation: >-
           How far the fused run's state sits from the baseline's after 120
@@ -391,6 +392,7 @@ questions:
       - kind: value
         path: results/state-divergence.json
         key: final_control_median
+        git_ref: meas/2026-09-25-fused-state-divergence
         name: control_median_diff
         explanation: >-
           The yardstick: the same fused code run at three radiation seeds, so
@@ -402,6 +404,7 @@ questions:
       - kind: value
         path: results/state-divergence.json
         key: max_ratio_to_control_median
+        git_ref: meas/2026-09-25-fused-state-divergence
         name: divergence_ratio
         explanation: >-
           The worst per-step ratio of the two, over the whole window. One near
@@ -412,6 +415,7 @@ questions:
       - kind: value
         path: results/state-divergence.json
         key: control_spread_ratio
+        git_ref: meas/2026-09-25-fused-state-divergence
         name: control_spread
         explanation: >-
           How far apart the three control pairs are from each other at the last
@@ -423,6 +427,7 @@ questions:
       - kind: value
         path: results/state-divergence.json
         key: steps
+        git_ref: meas/2026-09-25-fused-state-divergence
         name: divergence_steps
         explanation: How long the trajectories were compared for.
       - kind: table
@@ -1370,6 +1375,17 @@ pipeline:
           storage: git
 
     state-divergence:
+      # Frozen on main, live at meas/2026-09-25-fused-state-divergence.
+      # These runs need CLIMA_RAD_SEED_OFFSET, which exists only on
+      # ClimaAtmos.jl-mod pb/rad-seed-offset. That knob is a no-op when
+      # unset, but it changes ClimaAtmos.jl-mod/src by content hash and so
+      # invalidates radiation-split, sgs-degeneracy, step-breakdown and
+      # cm-registers -- four GPU stages, hours of cluster time, for a change
+      # that cannot affect their behavior. So main carries upstream content
+      # and the experiment lives at its tag:
+      #   git checkout meas/2026-09-25-fused-state-divergence && git submodule update --init --recursive
+      #   calkit run state-divergence
+      frozen: true
       kind: python-script
       script_path: scripts/compare-state-divergence.py
       environment: py
@@ -1383,6 +1399,17 @@ pipeline:
           storage: git
 
     state-unfused:
+      # Frozen on main, live at meas/2026-09-25-fused-state-divergence.
+      # These runs need CLIMA_RAD_SEED_OFFSET, which exists only on
+      # ClimaAtmos.jl-mod pb/rad-seed-offset. That knob is a no-op when
+      # unset, but it changes ClimaAtmos.jl-mod/src by content hash and so
+      # invalidates radiation-split, sgs-degeneracy, step-breakdown and
+      # cm-registers -- four GPU stages, hours of cluster time, for a change
+      # that cannot affect their behavior. So main carries upstream content
+      # and the experiment lives at its tag:
+      #   git checkout meas/2026-09-25-fused-state-divergence && git submodule update --init --recursive
+      #   calkit run state-divergence
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
@@ -1417,6 +1444,17 @@ pipeline:
           storage: git
 
     state-fused:
+      # Frozen on main, live at meas/2026-09-25-fused-state-divergence.
+      # These runs need CLIMA_RAD_SEED_OFFSET, which exists only on
+      # ClimaAtmos.jl-mod pb/rad-seed-offset. That knob is a no-op when
+      # unset, but it changes ClimaAtmos.jl-mod/src by content hash and so
+      # invalidates radiation-split, sgs-degeneracy, step-breakdown and
+      # cm-registers -- four GPU stages, hours of cluster time, for a change
+      # that cannot affect their behavior. So main carries upstream content
+      # and the experiment lives at its tag:
+      #   git checkout meas/2026-09-25-fused-state-divergence && git submodule update --init --recursive
+      #   calkit run state-divergence
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
@@ -1451,6 +1489,17 @@ pipeline:
           storage: git
 
     state-fused-reseeded:
+      # Frozen on main, live at meas/2026-09-25-fused-state-divergence.
+      # These runs need CLIMA_RAD_SEED_OFFSET, which exists only on
+      # ClimaAtmos.jl-mod pb/rad-seed-offset. That knob is a no-op when
+      # unset, but it changes ClimaAtmos.jl-mod/src by content hash and so
+      # invalidates radiation-split, sgs-degeneracy, step-breakdown and
+      # cm-registers -- four GPU stages, hours of cluster time, for a change
+      # that cannot affect their behavior. So main carries upstream content
+      # and the experiment lives at its tag:
+      #   git checkout meas/2026-09-25-fused-state-divergence && git submodule update --init --recursive
+      #   calkit run state-divergence
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
@@ -1490,6 +1539,17 @@ pipeline:
           storage: git
 
     state-fused-reseeded2:
+      # Frozen on main, live at meas/2026-09-25-fused-state-divergence.
+      # These runs need CLIMA_RAD_SEED_OFFSET, which exists only on
+      # ClimaAtmos.jl-mod pb/rad-seed-offset. That knob is a no-op when
+      # unset, but it changes ClimaAtmos.jl-mod/src by content hash and so
+      # invalidates radiation-split, sgs-degeneracy, step-breakdown and
+      # cm-registers -- four GPU stages, hours of cluster time, for a change
+      # that cannot affect their behavior. So main carries upstream content
+      # and the experiment lives at its tag:
+      #   git checkout meas/2026-09-25-fused-state-divergence && git submodule update --init --recursive
+      #   calkit run state-divergence
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
