@@ -1607,6 +1607,21 @@ run, which is why `launch-bounds-study` measures one deliberately.
 **Do the arithmetic before the experiment.** AMIPWarmup and the disk cache both
 had ceilings that were computable in advance and smaller than the noise.
 
+**One control draw is not a control.** When a change alters how a stochastic
+scheme consumes randomness, it cannot reproduce the baseline state step for step,
+so the only honest test is whether it diverges by more than a different draw of
+the same scheme does. The radiation fusion changes how McICA samples the cloud
+mask, and the first attempt at this compared fused-vs-baseline against a single
+reseeded run. That looked like a failure: at step 80 the ratio was 3.5. It was
+not. Two chaotic trajectories cross, so the control's divergence is
+non-monotonic and at any chosen step its denominator can dip near zero, which
+makes the ratio arbitrarily large for no physical reason --- the fusion curve
+grew smoothly the whole way and ended at the same magnitude as the control. Seed
+offsets {0, 1, 2} give three control pairs and a spread to sit inside, at the
+cost of one extra run. Note the failure mode is symmetric and the benign
+direction is the dangerous one: a control that happens to be large at the step
+you look at will clear a change that is actually broken.
+
 ## 6. Where the remaining headroom is
 
 The binding constraint is the number of CloudMicrophysics evaluations:
@@ -2210,12 +2225,24 @@ effect, and an empty column is easy to mistake for a missing kernel.
 | cache layer coefficients between sweeps | add memory | nothing (hit the 0.1% sweeps) |
 | cache log(p_lay) | add memory | +1.43% |
 | reciprocal multiplies | fewer instructions | not significant |
+| fuse the clear-sky and all-sky solves | do the shared optics once | **the second win** (`exp/2026-09-24-fused-radiation`) |
 
-One win, and it came from removing a genuinely redundant O(n) scan. Everything
-since has been scheduling, register budgets, caching, or arithmetic the compiler
-was already handling. The kernel is latency-bound at 0.25 eligible warps per
-scheduler with no divergence to recover (§4u) and occupancy hard-capped by real
-register demand. **Further gains need the algorithm to change, not the code.**
+Two wins, and both came from deleting redundant work rather than from making the
+same work faster. Everything in between was scheduling, register budgets,
+caching, or arithmetic the compiler was already handling. The kernel is
+latency-bound at 0.25 eligible warps per scheduler with no divergence to recover
+(§4u) and occupancy hard-capped by real register demand, so the sentence this
+ledger carried for weeks --- **further gains need the algorithm to change, not
+the code** --- was right, and the fusion is what changing the algorithm looked
+like: `rad: allskywithclear` ran the whole solver twice, and the two passes
+differ only by the cloud increment, so one copy of the gas and aerosol optics was
+pure duplication. Figures are pinned to the tag from the Q&A answer "Can the
+clear-sky diagnostics be had for less than a second radiation solve?" -- not
+repeated here.
+
+The pattern is worth naming, because it is now 2 for 2 against 7 for 0 the other
+way: look for work the configuration performs twice before looking for a faster
+way to perform it once.
 
 ## 6. Launch-overhead work, and why most of it is unsupported
 
