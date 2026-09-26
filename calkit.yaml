@@ -333,7 +333,6 @@ questions:
       - kind: value
         path: results/radiation-split.toml
         key: lw.optics_frac_of_allsky
-        git_ref: exp/2026-09-24-fused-radiation
         name: lw_optics_frac
         explanation: >-
           The share of a longwave solve spent on optics rather than the
@@ -343,13 +342,11 @@ questions:
       - kind: value
         path: results/radiation-split.toml
         key: sw.optics_frac_of_allsky
-        git_ref: exp/2026-09-24-fused-radiation
         name: sw_optics_frac
         explanation: The same for shortwave, which is not yet fused.
       - kind: value
         path: results/radiation-split.toml
         key: lw.fused_saving_frac_of_pair
-        git_ref: exp/2026-09-24-fused-radiation
         name: lw_fused_saving
         explanation: >-
           One copy of the optics as a share of what the two longwave solves
@@ -439,17 +436,16 @@ questions:
         explanation: How long the trajectories were compared for.
       - kind: table
         path: results/top-kernels.csv
-        git_ref: exp/2026-09-24-fused-radiation
         explanation: >-
-          The baseline's four radiation kernels, two longwave and two shortwave.
-          Read their mod columns as the fusion: they are BLANK because the fused
-          solves are new symbols, and at this tag the table ranked kernels by
-          baseline cost and kept the top twenty, so a kernel existing only in the
-          mod arm could not appear in it at all. The mod arm's radiation total is
-          not here -- it is the 25.0% quoted above from
-          results/kernel-shares.json, which aggregates the profile by symbol
-          prefix instead of joining names. The notebook now ranks by whichever
-          arm is larger, so a later run of this table will show both.
+          Six radiation rows that read as the fusion directly: four baseline
+          kernels, two longwave and two shortwave, against two fused mod kernels,
+          10753.6 ms becoming 6248.0 ms. Each arm's rows have a blank column on
+          the other side because the fused solves are new symbols, so the join
+          cannot pair them -- they are separate kernels, not a kernel that
+          changed. Unpinned deliberately: at exp/2026-09-24-fused-radiation this
+          table ranked by baseline cost and kept the top twenty, so the fused
+          kernels could not appear at all and the mod side was simply empty. It
+          now ranks by whichever arm is larger.
   - question: >-
       How much of the radiation cost is clear-sky diagnostics rather than the
       fluxes the model runs on?
