@@ -1607,6 +1607,19 @@ run, which is why `launch-bounds-study` measures one deliberately.
 **Do the arithmetic before the experiment.** AMIPWarmup and the disk cache both
 had ceilings that were computable in advance and smaller than the noise.
 
+**Run the upstream test suite before calling a change proposable.** The
+benchmark exercises one configuration, and a package supports many. The
+radiation fusion rewired `update_lw_fluxes!` to the fused solve
+unconditionally, but the fused solve existed only for the two-stream solvers;
+`NoScatLWRTE` hit a `MethodError` on the first case of RRTMGP's own
+`test/all_sky_with_aerosols.jl`. Nothing this project measures could have found
+it -- the AMIP config uses two-stream for both bands, so the broken path is
+never entered, and every profile, every state comparison and every SYPD number
+was valid while the change was unproposable. The suite is CPU-only and took
+three minutes. Force the device (`CLIMACOMMS_DEVICE=CPU`) when running it here:
+`ClimaComms.context()` would otherwise take a GPU on the login node, which is
+the same machine as the compute node.
+
 **One control draw is not a control.** When a change alters how a stochastic
 scheme consumes randomness, it cannot reproduce the baseline state step for step,
 so the only honest test is whether it diverges by more than a different draw of
