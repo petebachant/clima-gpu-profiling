@@ -23,95 +23,35 @@ questions:
       Fusion also removes the intermediate arrays a chain of kernels writes and reads back, which is DEVICE time and independent of launch count: the same band is {small_band_pct_of_kernel_time}% of GPU kernel time, and this project's own fusion of the 1M source terms into the linearization accumulators cut kernel time 6.28% for +1.95% SYPD with the launch count identical to the unit (docs/learnings.md 3b).
       So the two halves point at different work: fusing for launch count means merging adjacent short kernels, while fusing for memory traffic means merging the ones that hand arrays to each other, which is what the `@. lazy` and uncached-temporaries subtasks of #4261 do, and it is where the measured gain came from.
     evidence:
-      - kind: value
+      - kind: result
         path: results/experiments/launch-cost/stats.json
-        key: fusion.ceiling_fuse_4to1_pct
-        name: ceiling_fuse_4to1_pct
         git_ref: meas/2026-09-19-launch-cost
+        values:
+          ceiling_fuse_4to1_pct: fusion.ceiling_fuse_4to1_pct
+          ceiling_all_removed_pct: fusion.ceiling_all_removed_pct
+          host_us_per_launch: marginal.host_us_per_launch
+          small_share_pct: fusion.small_share_pct
+          launches_per_step: fusion.launches_per_step
+          step_ms: fusion.step_ms
+          climaatmos_launches_per_step: fusion.by_package.ClimaAtmos.per_step
+          climaatmos_fuse_4to1_pct: fusion.by_package.ClimaAtmos.fuse_4to1_pct
+          mp_cache_launches_per_step: fusion.climaatmos_by_file.cache_microphysics_cache.per_step
+          mp_cache_fuse_4to1_pct: fusion.climaatmos_by_file.cache_microphysics_cache.fuse_4to1_pct
+          precomputed_launches_per_step: fusion.climaatmos_by_file.cache_precomputed_quantities.per_step
+          precomputed_fuse_4to1_pct: fusion.climaatmos_by_file.cache_precomputed_quantities.fuse_4to1_pct
         explanation: >-
-          The ceiling for fusing the sub-25 microsecond band four-to-one, priced
-          at the marginal host cost from the adjacent probe pair in the same
-          document.
-      - kind: value
-        path: results/experiments/launch-cost/stats.json
-        key: fusion.ceiling_all_removed_pct
-        name: ceiling_all_removed_pct
-        git_ref: meas/2026-09-19-launch-cost
-        explanation: >-
-          The absolute bound, where every short launch disappears. Quoted so the
-          ceiling cannot be mistaken for a target.
-      - kind: value
-        path: results/experiments/launch-cost/stats.json
-        key: marginal.host_us_per_launch
-        name: host_us_per_launch
-        git_ref: meas/2026-09-19-launch-cost
-        explanation: >-
-          The price everything above rests on, from a baseline and probe
-          profiled back to back in one invocation. The earlier cross-day
-          estimate of 18.51 would have inflated every figure here by 2.7x.
-      - kind: value
-        path: results/experiments/launch-cost/stats.json
-        key: fusion.small_share_pct
-        name: small_share_pct
-        git_ref: meas/2026-09-19-launch-cost
-        explanation: >-
-          The share of launches in the sub-25 microsecond band, which is where
-          the host time around a launch exceeds the GPU time inside it.
-      - kind: value
-        path: results/experiments/launch-cost/stats.json
-        key: fusion.launches_per_step
-        name: launches_per_step
-        git_ref: meas/2026-09-19-launch-cost
-        explanation: Kernel launches per coupling step, device-side and so trustworthy.
-      - kind: value
-        path: results/experiments/launch-cost/stats.json
-        key: fusion.step_ms
-        name: step_ms
-        git_ref: meas/2026-09-19-launch-cost
-        explanation: The step the percentages above are shares of.
-      - kind: value
-        path: results/experiments/launch-cost/stats.json
-        key: fusion.by_package.ClimaAtmos.per_step
-        name: climaatmos_launches_per_step
-        git_ref: meas/2026-09-19-launch-cost
-        explanation: >-
-          ClimaAtmos's share of the band, attributed by the stack trace each
-          launch was issued from.
-      - kind: value
-        path: results/experiments/launch-cost/stats.json
-        key: fusion.by_package.ClimaAtmos.fuse_4to1_pct
-        name: climaatmos_fuse_4to1_pct
-        git_ref: meas/2026-09-19-launch-cost
-        explanation: >-
-          What fusing ClimaAtmos's whole share four-to-one would be worth. The
-          band is spread over seven packages, so this is the largest single
-          share rather than most of the ceiling.
-      - kind: value
-        path: results/experiments/launch-cost/stats.json
-        key: fusion.climaatmos_by_file.cache_microphysics_cache.per_step
-        name: mp_cache_launches_per_step
-        git_ref: meas/2026-09-19-launch-cost
-        explanation: The densest single file in ClimaAtmos.
-      - kind: value
-        path: results/experiments/launch-cost/stats.json
-        key: fusion.climaatmos_by_file.cache_microphysics_cache.fuse_4to1_pct
-        name: mp_cache_fuse_4to1_pct
-        git_ref: meas/2026-09-19-launch-cost
-        explanation: What fusing that file four-to-one would be worth.
-      - kind: value
-        path: results/experiments/launch-cost/stats.json
-        key: fusion.climaatmos_by_file.cache_precomputed_quantities.per_step
-        name: precomputed_launches_per_step
-        git_ref: meas/2026-09-19-launch-cost
-        explanation: >-
-          The file CliMA/ClimaAtmos.jl#4261 proposes starting from, for
-          comparison with the microphysics cache beside it.
-      - kind: value
-        path: results/experiments/launch-cost/stats.json
-        key: fusion.climaatmos_by_file.cache_precomputed_quantities.fuse_4to1_pct
-        name: precomputed_fuse_4to1_pct
-        git_ref: meas/2026-09-19-launch-cost
-        explanation: What fusing it four-to-one would be worth.
+          Every launch-count figure in this answer, from one profiled
+          baseline/probe pair. host_us_per_launch is the price the rest rests
+          on, measured back to back in a single invocation: an earlier
+          cross-day estimate of 18.51 us would have inflated all of it by 2.7x.
+          The band is the sub-25 microsecond launches, where host time around a
+          launch exceeds GPU time inside it, and ceiling_all_removed_pct is
+          quoted so the four-to-one ceiling cannot be read as a target.
+          Per-package and per-file shares are attributed by the stack trace
+          each launch was issued from; the band spans seven packages, so
+          ClimaAtmos's share is the largest single one rather than most of the
+          ceiling, and cache/precomputed_quantities.jl is here because
+          CliMA/ClimaAtmos.jl#4261 proposes starting there.
       - kind: value
         path: results/kernel-shares.json
         key: baseline.small_kernels.pct_of_kernel_time
@@ -177,19 +117,15 @@ questions:
     evidence:
       - kind: figure
         path: figures/sypd-time-series.png
-      - kind: value
+      - kind: result
         path: results/summary.json
-        key: speedup_pct
-        name: speedup_pct
+        values:
+          speedup_pct: speedup_pct
+          mod_sypd: mod.sypd
         explanation: >-
-          The end-to-end number for whatever revision last ran the pipeline.
-          Read the cumulative rows in experiments.csv as cumulative: no row
-          after the first is that change's own effect.
-      - kind: value
-        path: results/summary.json
-        key: mod.sypd
-        name: mod_sypd
-        explanation: Absolute throughput of the modified arm, for scale.
+          The end-to-end numbers for whatever revision last ran the pipeline,
+          with mod_sypd for absolute scale. Read the rows in experiments.csv as
+          cumulative: no row after the first is a treatment on its own.
       - kind: table
         path: results/top-kernels.csv
         explanation: >-
@@ -266,50 +202,24 @@ questions:
       Both halves of each ratio are read out of the tag that recorded them: kernel time from the profiled nsys stages, SYPD from the unprofiled AMIP ones, which is the only number that answers "is the model faster".
       Why radiation converts better is NOT established. Plausible: radiation runs as a few very long kernels with nothing to overlap them against, while the microphysics kernel is one of thousands per step and its saving may be partly absorbed by whatever else is in flight. Treat the ratios as measured, the explanation as a hypothesis.
     evidence:
-      - kind: value
+      - kind: result
         path: results/pass-through.json
-        key: by_subsystem.radiation.mean_pct
-        name: radiation_mean
+        values:
+          radiation_mean: by_subsystem.radiation.mean_pct
+          radiation_min: by_subsystem.radiation.min_pct
+          radiation_max: by_subsystem.radiation.max_pct
+          radiation_n: by_subsystem.radiation.n
+          microphysics_mean: by_subsystem.microphysics.mean_pct
+          microphysics_min: by_subsystem.microphysics.min_pct
+          microphysics_max: by_subsystem.microphysics.max_pct
+          microphysics_n: by_subsystem.microphysics.n
         explanation: >-
-          Mean over the radiation experiments. Each ratio is the end-to-end
-          SYPD gain divided by the GPU kernel-time reduction that produced it.
-      - kind: value
-        path: results/pass-through.json
-        key: by_subsystem.radiation.min_pct
-        name: radiation_min
-        explanation: The narrowest radiation conversion measured.
-      - kind: value
-        path: results/pass-through.json
-        key: by_subsystem.radiation.max_pct
-        name: radiation_max
-        explanation: The widest.
-      - kind: value
-        path: results/pass-through.json
-        key: by_subsystem.radiation.n
-        name: radiation_n
-        explanation: How many tagged experiments the radiation range rests on.
-      - kind: value
-        path: results/pass-through.json
-        key: by_subsystem.microphysics.mean_pct
-        name: microphysics_mean
-        explanation: >-
-          Mean over the CloudMicrophysics fusion experiments, which is where
-          the "about a third" rule came from.
-      - kind: value
-        path: results/pass-through.json
-        key: by_subsystem.microphysics.min_pct
-        name: microphysics_min
-        explanation: The narrowest microphysics conversion measured.
-      - kind: value
-        path: results/pass-through.json
-        key: by_subsystem.microphysics.max_pct
-        name: microphysics_max
-        explanation: The widest.
-      - kind: value
-        path: results/pass-through.json
-        key: by_subsystem.microphysics.n
-        name: microphysics_n
-        explanation: How many tagged experiments the microphysics range rests on.
+          Both subsystems' conversion ratios, as mean, range and sample count.
+          Each ratio is an end-to-end SYPD gain divided by the GPU kernel-time
+          reduction that produced it, and the pass-through stage reads both
+          halves out of the experiment tags with git show rather than from the
+          working tree. The microphysics mean is where the "about a third" rule
+          came from; radiation converts at roughly twice that.
       - kind: table
         path: experiments.csv
         explanation: >-
@@ -331,33 +241,21 @@ questions:
       Both bands fused are worth **+10.94% SYPD** (0.22759 -> 0.25554, tag exp/2026-09-24-fused-radiation): GPU kernel time falls 15.2%, radiation from 36.4% to 25.0% of it, and four radiation kernels become two.
       That is 87% of what deleting the clear-sky diagnostics buys (+12.6%), with the diagnostics kept -- so the question the bound posed to the science owners largely goes away.
     evidence:
-      - kind: value
+      - kind: result
         path: results/radiation-split.toml
-        key: lw.optics_frac_of_allsky
-        name: lw_optics_frac
+        values:
+          lw_optics_frac: lw.optics_frac_of_allsky
+          sw_optics_frac: sw.optics_frac_of_allsky
+          lw_fused_saving: lw.fused_saving_frac_of_pair
         explanation: >-
-          The share of a longwave solve spent on optics rather than the
-          two-stream sweep, from timing the real solve against the same kernel
-          with the sweep and flux accumulation removed. This is what both
-          passes duplicate, and so what fusing them recovers.
-      - kind: value
-        path: results/radiation-split.toml
-        key: sw.optics_frac_of_allsky
-        name: sw_optics_frac
-        explanation: >-
-          The same for shortwave, which is fused too. Each band came within a
-          couple of points of its own ceiling: half the optics share bounds what
-          fusing a pair can save, so at most 44.3% for longwave against 43.6%
-          measured, and at most 41.5% for shortwave against 39.8%. There is no
-          meaningful residual in either band -- the gap is the cloud-mask build
-          and the flux accumulation, which a fused solve still does twice.
-      - kind: value
-        path: results/radiation-split.toml
-        key: lw.fused_saving_frac_of_pair
-        name: lw_fused_saving
-        explanation: >-
-          One copy of the optics as a share of what the two longwave solves
-          cost together, i.e. what a fused solve removes.
+          What each band's two passes duplicate, from timing the real solve
+          against the same kernel with the two-stream sweep and flux
+          accumulation removed. Both bands are fused, and each came within a
+          couple of points of its own ceiling: half the optics share bounds
+          what fusing a pair can save, so at most 44.3% for longwave against
+          43.6% measured, and 41.5% for shortwave against 39.8%. Unpinned
+          because this stage is live, and a pinned templated value renders the
+          working tree's number while citing the tag's.
       - kind: value
         path: results/summary.json
         key: speedup_pct
@@ -369,106 +267,47 @@ questions:
           +5.26% at exp/2026-09-23-fused-lw-optics. NOT templated: rendering
           reads the working tree, where results/summary.json holds whichever
           run wrote it last.
-      - kind: value
+      - kind: result
         path: results/fused-lw-check.toml
-        key: fused_mean_rel_diff
         git_ref: exp/2026-09-24-fused-radiation
-        name: fused_mean_diff
+        values:
+          fused_mean_diff: fused_mean_rel_diff
+          control_mean_diff: control_mean_rel_diff
+          lw_max_abs: allsky.net.max_abs_diff
+          lw_control_max_abs: allsky_control.net.max_abs_diff
+          sw_max_abs: sw_allsky.net.max_abs_diff
+          sw_control_max_abs: sw_allsky_control.net.max_abs_diff
         explanation: >-
-          How far the fused all-sky fluxes sit from two separate solves, in the
-          mean over the field.
-      - kind: value
-        path: results/fused-lw-check.toml
-        key: control_mean_rel_diff
-        git_ref: exp/2026-09-24-fused-radiation
-        name: control_mean_diff
-        explanation: >-
-          The control that makes that number mean something: the reference
-          solved twice, differing only by McICA resampling. The fused solve
-          lands inside it. An earlier version of this check compared for
-          equality and failed at 14%, which was the sampling, not a defect;
-          an earlier one still ran with three warmup steps, had no clouds at
-          all, and passed while testing nothing.
-      - kind: value
+          Per-call flux agreement with its control. The mean pair reads as more
+          agreement than there is, so the single-cell maxima are here too:
+          longwave net moves up to 51 W/m2 on a field peaking at 321, shortwave
+          up to 201 on 1328, against 53 and 221 for the reference resampled
+          against itself. That control is what makes any of it readable, since
+          the cloud mask is McICA-sampled per launch and the baseline carries
+          the same noise. An earlier version of this check compared for
+          equality and failed at 14%, which was the sampling; an earlier one
+          still ran three warmup steps, had no clouds at all, and passed while
+          testing nothing.
+      - kind: result
         path: results/state-divergence.json
-        key: final_fusion_rel_diff
         git_ref: meas/2026-09-25-fused-state-divergence
-        name: final_fusion_diff
+        values:
+          final_fusion_diff: final_fusion_rel_diff
+          control_median_diff: final_control_median
+          divergence_ratio: max_ratio_to_control_median
+          control_spread: control_spread_ratio
+          divergence_steps: steps
         explanation: >-
-          How far the fused run's state sits from the baseline's after 120
-          coupler steps, as the worst relative difference in any prognostic
-          field's mass-weighted sum. Fusing changes how McICA consumes
-          randomness, so this number cannot be zero and its size alone says
-          nothing -- it is only readable against the controls below.
-      - kind: value
-        path: results/state-divergence.json
-        key: final_control_median
-        git_ref: meas/2026-09-25-fused-state-divergence
-        name: control_median_diff
-        explanation: >-
-          The yardstick: the same fused code run at three radiation seeds, so
+          The trajectory-level check, over 120 coupler steps. final_fusion_diff
+          cannot be zero and says nothing on its own: it is read against
+          control_median_diff, the same fused code at three radiation seeds, so
           the only difference between those runs is the cloud draw. The median
-          of the three pairs, not the maximum -- with three arms a single bad
-          arm sits in two pairs and moves the median as readily as the widest
-          point, so the three are also checked against each other and an
-          inconsistent spread fails the comparison.
-      - kind: value
-        path: results/state-divergence.json
-        key: max_ratio_to_control_median
-        git_ref: meas/2026-09-25-fused-state-divergence
-        name: divergence_ratio
-        explanation: >-
-          The worst per-step ratio of the two, over the whole window. One near
-          one means fusing is indistinguishable from a different cloud draw. An
-          earlier version of this check used a single control draw and reported
-          3.5 at step 80, which was the control dipping as two chaotic
-          trajectories crossed, not a defect.
-      - kind: value
-        path: results/state-divergence.json
-        key: control_spread_ratio
-        git_ref: meas/2026-09-25-fused-state-divergence
-        name: control_spread
-        explanation: >-
-          How far apart the three control pairs are from each other at the last
-          step. It is the guard on the comparison, not a result: three seeds of
-          one code must agree, and if they do not then the median is measuring
-          something other than resampling. It is also the scale that makes the
-          ratio readable -- the fused run ends just above the widest control
-          pair, which is a smaller gap than the controls have among themselves.
-      - kind: value
-        path: results/state-divergence.json
-        key: steps
-        git_ref: meas/2026-09-25-fused-state-divergence
-        name: divergence_steps
-        explanation: How long the trajectories were compared for.
-      - kind: value
-        path: results/fused-lw-check.toml
-        key: allsky.net.max_abs_diff
-        git_ref: exp/2026-09-24-fused-radiation
-        name: lw_max_abs
-        explanation: >-
-          The worst single-cell disagreement in longwave net flux, on a field peaking at 321 W/m2. Quoted because the mean alone reads as more agreement than there is.
-      - kind: value
-        path: results/fused-lw-check.toml
-        key: allsky_control.net.max_abs_diff
-        git_ref: exp/2026-09-24-fused-radiation
-        name: lw_control_max_abs
-        explanation: >-
-          The same statistic for the reference resampled against itself, which is what makes the number above readable: the baseline does this too.
-      - kind: value
-        path: results/fused-lw-check.toml
-        key: sw_allsky.net.max_abs_diff
-        git_ref: exp/2026-09-24-fused-radiation
-        name: sw_max_abs
-        explanation: >-
-          Shortwave net, on a field peaking at 1328 W/m2.
-      - kind: value
-        path: results/fused-lw-check.toml
-        key: sw_allsky_control.net.max_abs_diff
-        git_ref: exp/2026-09-24-fused-radiation
-        name: sw_control_max_abs
-        explanation: >-
-          Its resampling control.
+          rather than the maximum, because with three arms one bad arm sits in
+          two pairs and moves the maximum as readily; control_spread is the
+          guard that the three agree at all, and a spread failing it fails the
+          comparison. An earlier version used a single control draw and
+          reported 3.5 at step 80, which was two chaotic trajectories crossing
+          rather than a defect.
       - kind: table
         path: results/top-kernels.csv
         explanation: >-
@@ -492,23 +331,17 @@ questions:
       Two caveats on reading that: it changes results, so it is a bound and not a proposal, and the benchmark fires radiation every 20 steps against the nightly's 30, so radiation is over-weighted here relative to production.
       The conversion is the part worth carrying forward: 17.9% of kernel time bought 12.6% of SYPD, about 70%, where this project's earlier work converted at about a third -- removing a large dense block pays far better than rescheduling one.
     evidence:
-      - kind: value
+      - kind: result
         path: results/kernel-population.json
-        key: baseline.radiation.clear_sky.pct_of_kernel_time
-        name: clear_sky_pct
+        values:
+          clear_sky_pct: baseline.radiation.clear_sky.pct_of_kernel_time
+          all_sky_pct: baseline.radiation.all_sky.pct_of_kernel_time
+          radiation_pct: baseline.radiation.pct_of_kernel_time
         explanation: >-
-          The two solves with no LookUpCld argument, which is what makes this
-          an attribution rather than an inference from which kernel is cheaper.
-      - kind: value
-        path: results/kernel-population.json
-        key: baseline.radiation.all_sky.pct_of_kernel_time
-        name: all_sky_pct
-        explanation: The solves the model's own fluxes come from.
-      - kind: value
-        path: results/kernel-population.json
-        key: baseline.radiation.pct_of_kernel_time
-        name: radiation_pct
-        explanation: Radiation as a whole, for scale.
+          Radiation split by whether the solve takes a LookUpCld argument,
+          which makes this an attribution from the kernel signature rather than
+          an inference from which kernel happens to be cheaper, with radiation
+          as a whole for scale.
       - kind: value
         path: results/summary.json
         key: speedup_pct
@@ -536,21 +369,16 @@ questions:
       {gap_frac_of_wall:.3%} of wall the run is densely GPU-bound, so kernel time
       is what there is to attack. See docs/learnings.md 4k.
     evidence:
-      - kind: value
+      - kind: result
         path: results/kernel-shares.json
-        key: baseline.radiation_pct
-        name: radiation_pct
+        values:
+          radiation_pct: baseline.radiation_pct
+          microphysics_hot_kernel_pct: baseline.microphysics_hot_kernel_pct
         explanation: >-
-          The four RRTMGP rte_*_2stream kernels together, baseline arm. The
-          binary search that merged upstream took this from 43.9% to where it is
-          now.
-      - kind: value
-        path: results/kernel-shares.json
-        key: baseline.microphysics_hot_kernel_pct
-        name: microphysics_hot_kernel_pct
-        explanation: >-
-          The largest set_microphysics_tendency_cache specialization, baseline
-          arm.
+          Baseline-arm shares of GPU kernel time: the four RRTMGP rte_*_2stream
+          kernels together, and the largest set_microphysics_tendency_cache
+          specialization. The binary search that merged upstream took radiation
+          from 43.9% to where it is now.
       - kind: value
         path: results/step-breakdown.toml
         key: gap_frac_of_wall
@@ -675,31 +503,18 @@ questions:
           this idle; the profiled window does not even run at the same rate as
           the real one. Kernel TIMES from nsys are device-side and trustworthy;
           the gaps between them are not. See docs/learnings.md 2b-i.
-      - kind: value
+      - kind: result
         path: results/launch-bounds/launch-bounds.toml
-        key: off.kernels.L1013.mean_ms
         git_ref: exp/2026-09-01-cm-fuse
         explanation: >-
-          The reference every other phase is read against: the hot
-          SGS-quadrature kernel with launch bounds disabled, which is what the
-          baseline arm runs.
-      - kind: value
-        path: results/launch-bounds/launch-bounds.toml
-        key: unguarded.kernels.L1013.mean_ms
-        git_ref: exp/2026-09-01-cm-fuse
-        explanation: >-
-          The counterfactual, and the reason this stage exists: with the spill
-          budget loosened until the annotation is accepted, the kernel reaches
-          12 warps/SM and gets SLOWER. A rejected configuration never appears in
-          an ordinary profiling run.
-      - kind: value
-        path: results/launch-bounds/launch-bounds.toml
-        key: guarded.kernels.L970.mean_ms
-        git_ref: exp/2026-09-01-cm-fuse
-        explanation: >-
-          The gain, in the shipped configuration: the single-call microphysics
-          kernel annotated at 12 warps/SM for a small spill cost. The
-          guarded.decisions array records, per kernel, what was accepted and why.
+          The three phases this answer compares, in one file: the hot
+          SGS-quadrature kernel with launch bounds off, which is what the
+          baseline arm runs; the counterfactual with the spill budget loosened
+          until the annotation is accepted, reaching 12 warps/SM; and the
+          shipped configuration, where the single-call kernel is annotated for
+          a small spill cost. guarded.decisions records which kernels were
+          accepted. Measuring the rejected configuration deliberately is the
+          point, and is what showed the guard was right rather than arbitrary.
       - kind: table
         path: results/kernel-resources.csv
         git_ref: exp/2026-09-07-evaluator-repeat
@@ -750,36 +565,22 @@ questions:
           The decision record: what was measured, what was decided, and what
           would change it. Built by a Markdown stage, so its figures and its
           before/after comparison are injected rather than typed.
-      - kind: value
+      - kind: result
         path: results/quadrature-order-error.toml
-        key: order_2.dq_icl_dt.rms_over_scale
-        name: order2_icl_rms_over_scale
+        values:
+          order2_icl_rms_over_scale: order_2.dq_icl_dt.rms_over_scale
+          order2_lcl_rms_over_scale: order_2.dq_lcl_dt.rms_over_scale
+          order2_icl_max_over_scale: order_2.dq_icl_dt.max_over_scale
+          order2_changed_frac: order_2.changed_frac
         explanation: >-
-          The accuracy cost on the current configuration, measured on a real
-          AMIP state with byte-identical inputs. Unpinned because the
-          quadrature-order-error stage now regenerates it: the same key read
-          1.20% before the 2026-09-21 update, on physics that no longer runs.
-      - kind: value
-        path: results/quadrature-order-error.toml
-        key: order_2.dq_lcl_dt.rms_over_scale
-        name: order2_lcl_rms_over_scale
-        explanation: The same for the cloud-liquid tendency, 0.65% before the update.
-      - kind: value
-        path: results/quadrature-order-error.toml
-        key: order_2.dq_icl_dt.max_over_scale
-        name: order2_icl_max_over_scale
-        explanation: >-
-          The worst single cell, in units of the field's own RMS. The error is
-          concentrated where the PDF reaches a kink, which is where the
-          quadrature is doing its job.
-      - kind: value
-        path: results/quadrature-order-error.toml
-        key: order_2.changed_frac
-        name: order2_changed_frac
-        explanation: >-
-          The share of cells whose tendencies change at all. This is the figure
-          that moved most: about 1% before the update, and the majority of the
-          field after it, which is what withdrew the recommendation.
+          The accuracy cost of order 2 on the current configuration, measured
+          on a real AMIP state with byte-identical inputs: RMS over each
+          tendency's own scale, the worst single cell, and the share of cells
+          that change at all. That last is the figure that moved most, about 1%
+          before the 2026-09-21 stack update and the majority of the field
+          after, which is why the recommendation was withdrawn. The error
+          concentrates where the PDF reaches a kink, which is exactly where the
+          quadrature is doing its work.
   - question: >-
       Is the nine-point SGS quadrature in the 1-moment microphysics earning the
       throughput it costs?
@@ -802,22 +603,17 @@ questions:
           What decides it: the share of cells whose tendencies change when the
           rule is reduced. A quadrature integrating nothing would change none
           of them.
-      - kind: value
+      - kind: result
         path: results/sgs-degeneracy.toml
-        key: mu_over_sigma_percentiles.p50
-        name: mu_over_sigma_p50
+        values:
+          mu_over_sigma_p50: mu_over_sigma_percentiles.p50
+          clear_of_kink_10sigma_warp_frac: criteria.clear_of_kink_10sigma.warp_frac
         explanation: >-
-          Median |mu_S| / sigma_S across all 1,548,288 cells. The same file
-          carries p1, so even the worst percentile is clear of the kink.
-      - kind: value
-        path: results/sgs-degeneracy.toml
-        key: criteria.clear_of_kink_10sigma.warp_frac
-        name: clear_of_kink_10sigma_warp_frac
-        explanation: >-
-          The fraction of 32-cell groups in which EVERY cell is clear of the
-          kink, which is what decides whether collapsing could pay on a GPU: a
-          warp costs the maximum over its lanes, so a criterion true at
-          scattered points saves nothing.
+          Median |mu_S| / sigma_S across all 1,548,288 cells, and the fraction
+          of 32-cell groups in which every cell is clear of the kink. The warp
+          fraction is what decides whether collapsing could pay on a GPU, since
+          a warp costs the maximum over its lanes. The same file carries p1, so
+          even the worst percentile is clear of the kink.
       - kind: table
         path: experiments.csv
         explanation: >-
@@ -849,64 +645,29 @@ questions:
           so nothing would report it stale. Its only input is the pinned TOML above,
           so the pin is about naming which rendering this answer was written against,
           not about the figures, which cannot drift.
-      - kind: value
+      - kind: result
         path: results/compile-time/compile-time.toml
-        key: warmup_off.totals.wall_s
         git_ref: compile-time-warmup-ab
         explanation: >-
-          Status quo, and the reference the whole study rests on. Pinned to the
-          only rev where this stage's inputs exist: the AMIPWarmup wiring was
-          reverted immediately after the measurement, because keeping it would
-          impose the measured penalty on every future profiling job. At that tag
-          the stage is not frozen, so calkit run compile-time-study reproduces it.
-      - kind: value
-        path: results/compile-time/compile-time.toml
-        key: warmup_on.totals.wall_s
-        git_ref: compile-time-warmup-ab
-        explanation: >-
-          The test, in the same SLURM job on the same GPU, running second --
-          the ordering that would flatter it if anything. Higher than
-          warmup_off, which is the negative result.
-      - kind: value
-        path: results/compile-time/compile-time.toml
-        key: warmup_on.coupled_simulation.wall_s
-        git_ref: compile-time-warmup-ab
-        explanation: >-
-          Where the penalty is: simulation construction, the phase AMIPWarmup
-          targets, so the cost is not merely the price of loading a package.
-      - kind: value
-        path: results/compile-time/compile-time.toml
-        key: warmup_off.totals.host_compile_s
-        git_ref: compile-time-warmup-ab
-        explanation: >-
-          Host-side JIT only, from Julia's own @timed compile_time accounting.
-          GPU kernel compilation is NOT counted here, since GPUCompiler runs
-          outside it -- which is what rules out the whole class of
-          GPU-kernel-caching fixes independently of the disk cache being broken.
-      - kind: value
-        path: results/compile-time/compile-time.toml
-        key: warmup_off.second_step.wall_s
-        git_ref: compile-time-warmup-ab
-        explanation: >-
-          Steady-state cost of one step once everything is compiled -- the
-          fraction of a second that the surrounding half hour exists to produce.
-      - kind: value
+          The study's raw timings: the status quo, the AMIPWarmup test in the
+          same SLURM job on the same GPU running second (the ordering that
+          would flatter it if anything), where the penalty lands, host-side JIT
+          alone from Julia's own @timed accounting, and the steady-state cost
+          of one step once everything is compiled. Pinned to the only rev where
+          this stage's inputs exist, since the AMIPWarmup wiring was reverted
+          immediately. GPU kernel compilation is not in the host-compile
+          figure, because GPUCompiler runs outside that accounting.
+      - kind: result
         path: results/compile-time/doc-values.json
-        key: warmup_off.compile_share_pct
-        name: compile_share_pct
+        values:
+          compile_share_pct: warmup_off.compile_share_pct
+          warmup_penalty_pct: penalty.wall_pct
         explanation: >-
-          Host-side JIT as a share of the whole job, derived from the pinned
+          The two derived shares this answer quotes, computed from the pinned
           measurement above by the compile-time-doc stage. Unpinned on purpose:
           this is the file the write-up injects from, so the answer and
-          docs/compile-time.md cannot disagree.
-      - kind: value
-        path: results/compile-time/doc-values.json
-        key: penalty.wall_pct
-        name: warmup_penalty_pct
-        explanation: >-
-          What AMIPWarmup cost, as a share of the job it was meant to speed up.
-          The sign is the result: this was a negative result, not a null one.
-
+          docs/compile-time.md cannot disagree. The sign of the penalty is the
+          result -- this was a negative result, not a null one.
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod

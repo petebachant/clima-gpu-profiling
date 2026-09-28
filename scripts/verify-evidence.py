@@ -87,7 +87,19 @@ def main() -> int:
     bad = 0
     for q in info.get("questions", []):
         answer = str(q.get("answer", ""))
+        # A `result` carrying a `values` map is several values in one entry, and
+        # each templates into the answer exactly as `value` evidence does. Expand
+        # it here so every one still gets checked: collapsing entries for a
+        # tidier hub view must not quietly shrink what is verified.
+        expanded = []
         for e in q.get("evidence", []):
+            values = e.get("values") if e.get("kind") == "result" else None
+            if values:
+                for name, key in values.items():
+                    expanded.append(dict(e, key=key, name=name, values=None))
+            else:
+                expanded.append(e)
+        for e in expanded:
             ref, path, key = e.get("git_ref"), e.get("path"), e.get("key")
             if not ref:
                 continue
