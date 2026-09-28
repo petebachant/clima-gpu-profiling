@@ -1659,6 +1659,51 @@ pipeline:
         - path: results/fused-lw-check.toml
           storage: git
 
+    fused-flux-bias:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # Separates bias from noise in the fused all-sky flux, which the per-call
+      # check cannot: a systematically shifted estimator sits inside a single
+      # draw's spread just as happily as an unbiased one. Averages K McICA draws
+      # from each path on one atmospheric state -- sampling noise in the
+      # difference of the K-means falls as 1/sqrt(K), bias does not -- with the
+      # control drawing both sides from the reference path.
+      #
+      # This is the number the accuracy judgement needs, and it is not the
+      # merge gate: whether a different draw is acceptable at all is a call for
+      # the atmospheric scientists, not something a measurement settles.
+      #
+      # No stepping beyond warmup, since McICA redraws on every solve call.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=120
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/measure-fused-flux-bias.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --out
+        - results/fused-flux-bias.toml
+        - --draws
+        - "200"
+      inputs:
+        - scripts/measure-fused-flux-bias.jl
+        - RRTMGP.jl-mod/src
+        - RRTMGP.jl-mod/ext
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaAtmos.jl-mod/src
+      outputs:
+        - path: results/fused-flux-bias.toml
+          storage: git
+
     radiation-split:
       kind: shell-script
       environment: clima
