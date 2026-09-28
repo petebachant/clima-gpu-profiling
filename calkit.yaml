@@ -326,6 +326,7 @@ questions:
       The longwave half was measured on its own first, at -8.5% of GPU kernel time with shortwave unchanged at -0.5% as the control that the change did what it claimed and nothing else.
       It is correct in the only sense available: the cloud mask is McICA-sampled per kernel launch, so one fused launch draws a different cloud sample than the reference's two, and no cell-wise comparison can validate it.
       Against the reference resampled against itself, the fused solve differs by {fused_mean_diff:.3e} where resampling alone differs by {control_mean_diff:.3e} -- indistinguishable -- while the clear sky, which has no sampling, matches exactly.
+      That agreement is in the mean and the pointwise spread is far larger: a single cell's longwave net flux differs by up to {lw_max_abs:.0f} W/m2 against {lw_control_max_abs:.0f} W/m2 for resampling alone, and shortwave by {sw_max_abs:.0f} against {sw_control_max_abs:.0f}, which is McICA flipping whether a g-point sees cloud and is a property of the configuration rather than of this change.
       Carried into the coupled state over {divergence_steps:.0f} coupler steps it still holds, though at the top of the envelope rather than in the middle of it: the fused run ends {final_fusion_diff:.2e} from the baseline against a median {control_median_diff:.2e} for three reseeded draws of the fused code, whose own spread is {control_spread:.1f}x, so the worst per-step ratio is {divergence_ratio:.2f}.
       Both bands fused are worth **+10.94% SYPD** (0.22759 -> 0.25554, tag exp/2026-09-24-fused-radiation): GPU kernel time falls 15.2%, radiation from 36.4% to 25.0% of it, and four radiation kernels become two.
       That is 87% of what deleting the clear-sky diagnostics buys (+12.6%), with the diagnostics kept -- so the question the bound posed to the science owners largely goes away.
@@ -343,7 +344,13 @@ questions:
         path: results/radiation-split.toml
         key: sw.optics_frac_of_allsky
         name: sw_optics_frac
-        explanation: The same for shortwave, which is not yet fused.
+        explanation: >-
+          The same for shortwave, which is fused too. Each band came within a
+          couple of points of its own ceiling: half the optics share bounds what
+          fusing a pair can save, so at most 44.3% for longwave against 43.6%
+          measured, and at most 41.5% for shortwave against 39.8%. There is no
+          meaningful residual in either band -- the gap is the cloud-mask build
+          and the flux accumulation, which a fused solve still does twice.
       - kind: value
         path: results/radiation-split.toml
         key: lw.fused_saving_frac_of_pair
@@ -434,6 +441,34 @@ questions:
         git_ref: meas/2026-09-25-fused-state-divergence
         name: divergence_steps
         explanation: How long the trajectories were compared for.
+      - kind: value
+        path: results/fused-lw-check.toml
+        key: allsky.net.max_abs_diff
+        git_ref: exp/2026-09-24-fused-radiation
+        name: lw_max_abs
+        explanation: >-
+          The worst single-cell disagreement in longwave net flux, on a field peaking at 321 W/m2. Quoted because the mean alone reads as more agreement than there is.
+      - kind: value
+        path: results/fused-lw-check.toml
+        key: allsky_control.net.max_abs_diff
+        git_ref: exp/2026-09-24-fused-radiation
+        name: lw_control_max_abs
+        explanation: >-
+          The same statistic for the reference resampled against itself, which is what makes the number above readable: the baseline does this too.
+      - kind: value
+        path: results/fused-lw-check.toml
+        key: sw_allsky.net.max_abs_diff
+        git_ref: exp/2026-09-24-fused-radiation
+        name: sw_max_abs
+        explanation: >-
+          Shortwave net, on a field peaking at 1328 W/m2.
+      - kind: value
+        path: results/fused-lw-check.toml
+        key: sw_allsky_control.net.max_abs_diff
+        git_ref: exp/2026-09-24-fused-radiation
+        name: sw_control_max_abs
+        explanation: >-
+          Its resampling control.
       - kind: table
         path: results/top-kernels.csv
         explanation: >-
