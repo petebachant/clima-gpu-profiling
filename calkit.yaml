@@ -1420,6 +1420,50 @@ pipeline:
         - path: results/fused-lw-check.toml
           storage: git
 
+    keyed-mcica:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # Tests the fix for RRTMGP.jl#316 (open since 2022) and, as a side effect,
+      # removes the accuracy question blocking the fusion. The McICA cloud mask
+      # was drawn from the device RNG, whose state is keyed PER KERNEL LAUNCH, so
+      # the sample depended on how many kernels ran: two identical solves
+      # disagreed, and fusing two launches into one changed results. Keyed on
+      # (column, g-point, layer) instead, the fused path should reproduce the
+      # two-solve path EXACTLY -- equality, not a resampling band.
+      #
+      # REQUIRES RRTMGP.jl-mod on branch pb/keyed-mcica, which is not what the
+      # rest of the pipeline runs. Same situation as launch-bounds-study: with
+      # any other checkout this measures the unkeyed sampler and the equality
+      # assertions fail for a reason that has nothing to do with the code under
+      # test. Freeze it on main and run it at its tag.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=120
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/verify-keyed-mcica.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --out
+        - results/keyed-mcica.toml
+      inputs:
+        - scripts/verify-keyed-mcica.jl
+        - RRTMGP.jl-mod/src
+        - RRTMGP.jl-mod/ext
+        - ClimaCoupler.jl-mod/src
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl-mod/ext
+        - ClimaCore.jl-mod/src
+        - ClimaAtmos.jl-mod/src
+      outputs:
+        - path: results/keyed-mcica.toml
+          storage: git
+
     fused-flux-bias:
       kind: shell-script
       environment: clima
