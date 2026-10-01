@@ -89,12 +89,12 @@ two_allsky_lw = snap(lws.flux)
 RTE.solve_lw!(lws, as, lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, nothing)
 repeat_allsky_lw = snap(lws.flux)
 
-RTE.solve_lw_both!(
-    lws, s.clear_acc_lw, as,
+RTE.solve_lw_both_skies!(
+    lws, s.clear_flux_acc_lw, as,
     lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, nothing,
 )
 fused_allsky_lw = snap(lws.flux)
-fused_clear_lw = snap(s.clear_acc_lw)
+fused_clear_lw = snap(s.clear_flux_acc_lw)
 
 results["lw_repeat_vs_two"] =
     compare(two_allsky_lw, repeat_allsky_lw, "LW all-sky, solve twice")
@@ -110,12 +110,12 @@ two_allsky_sw = snap(sws.flux)
 RTE.solve_sw!(sws, as, lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, nothing)
 repeat_allsky_sw = snap(sws.flux)
 
-RTE.solve_sw_both!(
-    sws, s.clear_acc_sw, as,
+RTE.solve_sw_both_skies!(
+    sws, s.clear_flux_acc_sw, as,
     lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, nothing,
 )
 fused_allsky_sw = snap(sws.flux)
-fused_clear_sw = snap(s.clear_acc_sw)
+fused_clear_sw = snap(s.clear_flux_acc_sw)
 
 results["sw_repeat_vs_two"] =
     compare(two_allsky_sw, repeat_allsky_sw, "SW all-sky, solve twice")

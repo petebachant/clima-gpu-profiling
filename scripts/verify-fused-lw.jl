@@ -1,6 +1,6 @@
 # Does the fused longwave solve agree with the two solves it replaces?
 #
-# solve_lw_both! computes the gas and aerosol optics once and sweeps twice.
+# solve_lw_both_skies! computes the gas and aerosol optics once and sweeps twice.
 #
 # It cannot be compared to two solve_lw! calls cell by cell. The cloud mask is
 # McICA-sampled with Random.rand(), keyed per kernel launch, so the fused solve
@@ -63,12 +63,12 @@ RTE.solve_lw!(lws, as, lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, nothin
 ref_allsky_again = snap(lws.flux)
 
 # The fused solve, filling both skies in one pass
-RTE.solve_lw_both!(
-    lws, s.clear_acc_lw, as,
+RTE.solve_lw_both_skies!(
+    lws, s.clear_flux_acc_lw, as,
     lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, nothing,
 )
 got_allsky = snap(lws.flux)
-got_clear = snap(s.clear_acc_lw)
+got_clear = snap(s.clear_flux_acc_lw)
 
 # Relative to the field's own scale: fluxes span orders of magnitude, so an
 # absolute difference says nothing
@@ -132,12 +132,12 @@ RTE.solve_sw!(sws, as, lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, nothin
 sw_ref_allsky = snap(sws.flux)
 RTE.solve_sw!(sws, as, lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, nothing)
 sw_ref_allsky_again = snap(sws.flux)
-RTE.solve_sw_both!(
-    sws, s.clear_acc_sw, as,
+RTE.solve_sw_both_skies!(
+    sws, s.clear_flux_acc_sw, as,
     lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, nothing,
 )
 sw_got_allsky = snap(sws.flux)
-sw_got_clear = snap(s.clear_acc_sw)
+sw_got_clear = snap(s.clear_flux_acc_sw)
 
 results["sw_allsky"] = compare(sw_ref_allsky, sw_got_allsky)
 results["sw_allsky_control"] = compare(sw_ref_allsky, sw_ref_allsky_again)

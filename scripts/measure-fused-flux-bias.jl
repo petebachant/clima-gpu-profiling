@@ -116,8 +116,8 @@ lw = accumulate_draws(
     () -> RTE.solve_lw!(
         lws, as, lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, nothing,
     ),
-    () -> RTE.solve_lw_both!(
-        lws, s.clear_acc_lw, as,
+    () -> RTE.solve_lw_both_skies!(
+        lws, s.clear_flux_acc_lw, as,
         lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, nothing,
     ),
     () -> Array(lws.flux.flux_net),
@@ -130,8 +130,8 @@ sw = accumulate_draws(
     () -> RTE.solve_sw!(
         sws, as, lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, nothing,
     ),
-    () -> RTE.solve_sw_both!(
-        sws, s.clear_acc_sw, as,
+    () -> RTE.solve_sw_both_skies!(
+        sws, s.clear_flux_acc_sw, as,
         lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, nothing,
     ),
     () -> Array(sws.flux.flux_net),
