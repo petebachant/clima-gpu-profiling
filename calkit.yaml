@@ -1513,6 +1513,16 @@ pipeline:
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
+      # Frozen: needs solve_lw_optics_only! / solve_sw_optics_only!, which exist
+      # only on RRTMGP.jl-mod branch pb/optics-split. They are measurement
+      # scaffolding and were deliberately left off pb/fused-clear-sky, the branch
+      # proposed as CliMA/RRTMGP.jl#631, so the submodule now points somewhere
+      # this stage cannot run. Its recorded optics fractions still hold -- the
+      # keying does not change what the two passes duplicate.
+      #
+      # To re-measure: check out a rev whose RRTMGP.jl-mod pointer is on
+      # pb/optics-split, e.g. meas/2026-09-26-fused-remeasured, and run it there.
+      frozen: true
       # Sizes the fused-optics idea before anyone writes it: with
       # rad: allskywithclear the solver runs twice and both passes recompute
       # the gas and aerosol optics, so fusing them would save exactly one copy
