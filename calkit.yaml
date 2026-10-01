@@ -232,17 +232,19 @@ questions:
     answer: >-
       Yes, and for most of the cost: the two passes differ only by the cloud increment, while the gas and aerosol optics they both recompute are {lw_optics_frac:.0%} of a longwave solve and {sw_optics_frac:.0%} of a shortwave one.
       Computing those once and sweeping twice -- gas and aerosol optics, sweep, accumulate the clear sky, then add the cloud increment to the same optics, sweep again, accumulate the all-sky -- removes {lw_fused_saving:.0%} of the longwave pair.
-      Implemented for both bands in RRTMGP.jl-mod `pb/optics-split` as solve_lw_both! and solve_sw_both!, called from update_lw_fluxes! and update_sw_fluxes!, so nothing above RRTMGP changes: longwave 5702.5 -> 3216.7 ms (-43.6%) and shortwave 5051.0 -> 3038.2 ms (-39.8%), four radiation kernels becoming two.
+      Implemented for both bands on RRTMGP.jl branch `pb/fused-clear-sky`, proposed as CliMA/RRTMGP.jl#631, as solve_lw_both_skies! and solve_sw_both_skies! called from update_lw_fluxes! and update_sw_fluxes!, so nothing above RRTMGP changes: longwave 5702.5 -> 3216.7 ms (-43.6%) and shortwave 5051.0 -> 3038.2 ms (-39.8%), four radiation kernels becoming two.
       The longwave half was measured on its own first, at -8.5% of GPU kernel time with shortwave unchanged at -0.5% as the control that the change did what it claimed and nothing else.
-      It is correct in the only sense available: the cloud mask is McICA-sampled per kernel launch, so one fused launch draws a different cloud sample than the reference's two, and no cell-wise comparison can validate it.
-      Against the reference resampled against itself, the fused solve differs by {fused_mean_diff:.3e} where resampling alone differs by {control_mean_diff:.3e} -- indistinguishable -- while the clear sky, which has no sampling, matches exactly.
-      That agreement is in the mean and the pointwise spread is far larger: a single cell's longwave net flux differs by up to {lw_max_abs:.0f} W/m2 against {lw_control_max_abs:.0f} W/m2 for resampling alone, and shortwave by {sw_max_abs:.0f} against {sw_control_max_abs:.0f}, which is McICA flipping whether a g-point sees cloud and is a property of the configuration rather than of this change.
+      It is now correct in the strong sense, which it could not be before: the same PR keys McICA sampling on (key, column, g-point, layer), so the fused pass and two separate solves draw the SAME cloud mask and can be compared cell by cell.
+      They agree to {fused_mean_diff:.2e} in the mean and {lw_max_abs:.1e} W/m2 in the worst longwave cell, which is the arithmetic order of applying the cloud increment to already-swept optics, not a different draw.
+      Under the per-launch sampling this replaced, the same comparison gave 3.34e-3 and 51 W/m2 -- a different cloud field, indistinguishable from reseeding the reference, and unvalidatable by any cell-wise test.
+      The clear sky, which involves no sampling, matches exactly in both regimes.
       Carried into the coupled state over {divergence_steps:.0f} coupler steps it still holds, though at the top of the envelope rather than in the middle of it: the fused run ends {final_fusion_diff:.2e} from the baseline against a median {control_median_diff:.2e} for three reseeded draws of the fused code, whose own spread is {control_spread:.1f}x, so the worst per-step ratio is {divergence_ratio:.2f}.
       Both bands fused are worth **+10.94% SYPD** (0.22759 -> 0.25554, tag exp/2026-09-24-fused-radiation): GPU kernel time falls 15.2%, radiation from 36.4% to 25.0% of it, and four radiation kernels become two.
       That is 87% of what deleting the clear-sky diagnostics buys (+12.6%), with the diagnostics kept -- so the question the bound posed to the science owners largely goes away.
     evidence:
       - kind: result
         path: results/radiation-split.toml
+        git_ref: meas/2026-09-26-fused-remeasured
         values:
           lw_optics_frac: lw.optics_frac_of_allsky
           sw_optics_frac: sw.optics_frac_of_allsky
@@ -269,25 +271,19 @@ questions:
           run wrote it last.
       - kind: result
         path: results/fused-lw-check.toml
-        git_ref: exp/2026-09-24-fused-radiation
         values:
           fused_mean_diff: fused_mean_rel_diff
-          control_mean_diff: control_mean_rel_diff
           lw_max_abs: allsky.net.max_abs_diff
-          lw_control_max_abs: allsky_control.net.max_abs_diff
-          sw_max_abs: sw_allsky.net.max_abs_diff
-          sw_control_max_abs: sw_allsky_control.net.max_abs_diff
         explanation: >-
-          Per-call flux agreement with its control. The mean pair reads as more
-          agreement than there is, so the single-cell maxima are here too:
-          longwave net moves up to 51 W/m2 on a field peaking at 321, shortwave
-          up to 201 on 1328, against 53 and 221 for the reference resampled
-          against itself. That control is what makes any of it readable, since
-          the cloud mask is McICA-sampled per launch and the baseline carries
-          the same noise. An earlier version of this check compared for
-          equality and failed at 14%, which was the sampling; an earlier one
-          still ran three warmup steps, had no clouds at all, and passed while
-          testing nothing.
+          Per-call agreement between the fused solve and the two it replaces, on
+          a real AMIP state after 60 steps. Keyed sampling makes both draw the
+          same cloud mask, so this is a cell-wise comparison and what remains is
+          the arithmetic order of applying the cloud increment. The same file
+          records the clear sky as exactly equal in both bands, and a clear/
+          all-sky contrast of 0.61 -- which is what shows the cloud increment
+          did something, rather than the check passing on a clear sky. Unpinned
+          because the stage is live: a pinned templated value renders this run's
+          number while citing an older one.
       - kind: result
         path: results/state-divergence.json
         git_ref: meas/2026-09-25-fused-state-divergence
@@ -1462,51 +1458,6 @@ pipeline:
         - ClimaAtmos.jl-mod/src
       outputs:
         - path: results/keyed-mcica.toml
-          storage: git
-
-    fused-flux-bias:
-      kind: shell-script
-      environment: clima
-      script_path: scripts/run-julia-script.sh
-      # Separates bias from noise in the fused all-sky flux, which the per-call
-      # check cannot: a systematically shifted estimator sits inside a single
-      # draw's spread just as happily as an unbiased one. Averages K McICA draws
-      # from each path on one atmospheric state -- sampling noise in the
-      # difference of the K-means falls as 1/sqrt(K), bias does not -- with the
-      # control drawing both sides from the reference path.
-      #
-      # This is the number the accuracy judgement needs, and it is not the
-      # merge gate: whether a different draw is acceptable at all is a call for
-      # the atmospheric scientists, not something a measurement settles.
-      #
-      # No stepping beyond warmup, since McICA redraws on every solve call.
-      scheduler:
-        options:
-          - --gpus=1
-          - --time=120
-      args:
-        - --project=ClimaCoupler.jl-mod/experiments/AMIP
-        - scripts/measure-fused-flux-bias.jl
-        - --config_file
-        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - --out
-        - results/fused-flux-bias.toml
-        - --draws
-        - "200"
-      inputs:
-        - scripts/measure-fused-flux-bias.jl
-        - RRTMGP.jl-mod/src
-        - RRTMGP.jl-mod/ext
-        - ClimaCoupler.jl-mod/src
-        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
-        - ClimaCore.jl-mod/ext
-        - ClimaCore.jl-mod/src
-        - ClimaAtmos.jl-mod/src
-      outputs:
-        - path: results/fused-flux-bias.toml
           storage: git
 
     radiation-split:

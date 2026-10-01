@@ -123,7 +123,12 @@ results["control_mean_rel_diff"] = control_mean
 # Three conditions: the clear sky is exact, the all-sky sits within the
 # reference's own resampling spread, and clouds were actually doing something
 results["clearsky_exact"] = clear_worst < 1e-6
-results["allsky_within_resampling"] = fused_mean <= 2 * control_mean
+# Keyed sampling makes the reference reproducible, so control_mean is 0 and
+# the old "inside the resampling band" test degenerates into demanding
+# bit-equality. The fused path applies the cloud increment to optics it has
+# already swept, so it agrees to roundoff, not exactly. 64 ulp of Float32 is
+# still four orders below what a different cloud draw produced (0.33%).
+results["allsky_within_roundoff"] = fused_mean <= 64 * eps(Float32)
 # --- shortwave -------------------------------------------------------------
 sws = s.sws
 RTE.solve_sw!(sws, as, lk.lookup_sw, nothing, lk.lookup_sw_aero, nothing)
@@ -148,17 +153,17 @@ sw_clear_worst = maximum(results["sw_clearsky"][k]["max_rel_diff"] for k in ("up
 results["sw_fused_mean_rel_diff"] = sw_fused_mean
 results["sw_control_mean_rel_diff"] = sw_control_mean
 results["sw_clearsky_exact"] = sw_clear_worst < 1e-6
-results["sw_allsky_within_resampling"] = sw_fused_mean <= 2 * sw_control_mean
+results["sw_allsky_within_roundoff"] = sw_fused_mean <= 64 * eps(Float32)
 
 @printf("SW: fused mean rel diff %.3e vs resampling control %.3e\n",
         sw_fused_mean, sw_control_mean)
 @printf("SW: clear sky max rel diff %.3e (must be exact)\n", sw_clear_worst)
 
 results["passes"] = results["clearsky_exact"] &&
-                    results["allsky_within_resampling"] &&
+                    results["allsky_within_roundoff"] &&
                     results["cloud_effect_present"] &&
                     results["sw_clearsky_exact"] &&
-                    results["sw_allsky_within_resampling"]
+                    results["sw_allsky_within_roundoff"]
 
 for sky in ("allsky", "allsky_control", "clearsky"), k in ("up", "dn", "net")
     @printf("%-9s %-4s max rel diff %.3e (field max %.1f)\n", sky, k,
