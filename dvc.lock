@@ -549,16 +549,16 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/baseline-nsys.out
       hash: md5
-      md5: cfa300700a93e104cabd227ed9772a14
-      size: 175991
+      md5: 51013d9806efe8deb087bf102d5cdb55
+      size: 180291
     - path: results/nsys/baseline.nsys-rep
       hash: md5
-      md5: c4b5dd0f4b222e005e6ada23f36f1a5b
-      size: 294423689
+      md5: a0935da973b75102b3004af0b4522e10
+      size: 294078949
     - path: results/nsys/baseline.sqlite
       hash: md5
-      md5: 3be677f088217ee0d479d10969797645
-      size: 681705472
+      md5: 8a96b3637f27801a16befbc5423e53dc
+      size: 680923136
   baseline-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/baseline.nsys-rep
       -t sqlite -o results/nsys/baseline.sqlite"'
@@ -666,16 +666,16 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/mod-nsys.out
       hash: md5
-      md5: c8ce3997592825d026c0864adeba1150
-      size: 180976
+      md5: e12ce82f1d6639fe77369bea5d764605
+      size: 179295
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: 8e26fdb5016e128762732e8789295e26
-      size: 295698751
+      md5: 701ac9f8fc9073eb411e71bca5d4d758
+      size: 296081382
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: bb40fe02b1906d44955ef1dca9b3e711
-      size: 680349696
+      md5: 11df37786247ad77bac684a334e1d105
+      size: 680235008
   mod-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep -t sqlite
       -o results/nsys/mod.sqlite"'
@@ -796,20 +796,20 @@ stages:
       nfiles: 2
     - path: .calkit/scheduler/logs/amip-baseline.out
       hash: md5
-      md5: e70bf0c92b10a7f1fbd0ecdc62820662
-      size: 45104
+      md5: 2dbc73e685111dd662366b00ee22779a
+      size: 45110
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: cfeea85c2dd48b5fd603a2493d77e3a6
-      size: 45113
+      md5: 53782823722e8bb9343858efcb3d37ce
+      size: 45115
     - path: results/nsys/baseline.sqlite
       hash: md5
-      md5: 3be677f088217ee0d479d10969797645
-      size: 681705472
+      md5: 8a96b3637f27801a16befbc5423e53dc
+      size: 680923136
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: bb40fe02b1906d44955ef1dca9b3e711
-      size: 680349696
+      md5: 11df37786247ad77bac684a334e1d105
+      size: 680235008
     - path: scripts/summarize.py
       hash: md5
       md5: f8dda50a87d3635eaaa42feae31ed48f
@@ -817,8 +817,8 @@ stages:
     outs:
     - path: results/summary.json
       hash: md5
-      md5: 9f34eea14089c8aaec6c0435c1a27ef5
-      size: 544
+      md5: ee823f0341b4990790ff1d72675eb775
+      size: 546
   mod-ncu:
     cmd: calkit scheduler batch --name mod-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -1011,8 +1011,8 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/amip-baseline.out
       hash: md5
-      md5: e70bf0c92b10a7f1fbd0ecdc62820662
-      size: 45104
+      md5: 2dbc73e685111dd662366b00ee22779a
+      size: 45110
   amip-mod:
     cmd: calkit scheduler batch --name amip-mod --environment clima --dep 
       RRTMGP.jl-mod/src --dep RRTMGP.jl-mod/ext --dep 
@@ -1114,8 +1114,8 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: cfeea85c2dd48b5fd603a2493d77e3a6
-      size: 45113
+      md5: 53782823722e8bb9343858efcb3d37ce
+      size: 45115
   make-diffs:
     cmd: bash --noprofile --norc scripts/make-diffs.sh
     deps:
@@ -1161,9 +1161,9 @@ stages:
       nfiles: 204
     - path: RRTMGP.jl-mod
       hash: md5
-      md5: eae89600a3ad230e9ced2f9769a35796.dir
-      size: 1305795
-      nfiles: 205
+      md5: 8ebc98dd7c1821cb0fac24eaf02c4342.dir
+      size: 1309671
+      nfiles: 206
     - path: scripts/make-diffs.sh
       hash: md5
       md5: 02ddf1a1af902b94f6a7495766afe3ad
@@ -1172,8 +1172,8 @@ stages:
     outs:
     - path: diffs
       hash: md5
-      md5: 9d06405a11d04995797d56933fb27eac.dir
-      size: 70398
+      md5: a8670e7e1973c20eb65533a63b10776f.dir
+      size: 75107
       nfiles: 6
   compare-kernels:
     cmd: calkit nb execute --environment py --no-check --to html 
@@ -1391,12 +1391,12 @@ stages:
       nfiles: 2
     - path: calkit.yaml
       hash: md5
-      md5: 50a1f69098466500d5bb23015ab127ba
-      size: 96210
+      md5: e64532cbbd86f5f23782b0b8e87d9c67
+      size: 93979
     - path: diffs
       hash: md5
-      md5: 9d06405a11d04995797d56933fb27eac.dir
-      size: 70398
+      md5: a8670e7e1973c20eb65533a63b10776f.dir
+      size: 75107
       nfiles: 6
     - path: scripts/record-treatment.py
       hash: md5
@@ -1405,8 +1405,8 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: 774c933d5d551c8f7a927fa75c9765e8
-      size: 31143
+      md5: cd4ddb5dd94115eeef3eec2102e8b575
+      size: 31283
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
       scripts/build-experiment-index.py
@@ -2466,17 +2466,17 @@ stages:
       size: 1033
     - path: scripts/verify-fused-lw.jl
       hash: md5
-      md5: ea8c82e54d92d09f48692a63012fe2c5
-      size: 8036
+      md5: 65a18d327cdecf7d13eb7efc817253a7
+      size: 8399
     outs:
     - path: .calkit/scheduler/logs/fused-lw-check.out
       hash: md5
-      md5: e202ce65bc3a9ed8ab47766d25947aa8
-      size: 27459
+      md5: 47cd38606fd0048e27c6842eed8937eb
+      size: 27458
     - path: results/fused-lw-check.toml
       hash: md5
-      md5: 674c27b05b38cf417a42de28e241ade6
-      size: 3330
+      md5: a05f3343dc1faa145d1dc5fe2879a59c
+      size: 3323
   pass-through:
     cmd: calkit xenv -n py --no-check -- python scripts/pass-through.py
     deps:
