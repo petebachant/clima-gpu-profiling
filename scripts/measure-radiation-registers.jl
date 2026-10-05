@@ -106,9 +106,10 @@ record!("lw_fused_bare",
         lw_args(nothing, nothing))
 
 println("\n=== fused shortwave ===")
+# Shortwave orders these as op, bcs, src where longwave has src, bcs, op.
 sw_args(cld, aero) = (
-    sws.fluxb, sws.flux, s.clear_flux_acc_sw, sws.band_flux, sws.src, sws.bcs,
-    sws.op, nlay, ncol, as, sws.state_cache, lk.lookup_sw, cld, aero,
+    sws.fluxb, sws.flux, s.clear_flux_acc_sw, sws.band_flux, sws.op, sws.bcs,
+    sws.src, nlay, ncol, as, sws.state_cache, lk.lookup_sw, cld, aero,
 )
 record!("sw_fused_cloud_aerosol",
         ext.rte_sw_2stream_solve_both_skies_CUDA!,
@@ -119,6 +120,13 @@ record!("sw_fused_cloud_only",
 record!("sw_fused_bare",
         ext.rte_sw_2stream_solve_both_skies_CUDA!,
         sw_args(nothing, nothing))
+
+println("\n=== unfused, for comparison ===")
+record!("lw_unfused_cloud_aerosol",
+        ext.rte_lw_2stream_solve_CUDA!,
+        (lws.fluxb, lws.flux, lws.band_flux, lws.src, lws.bcs, lws.op, nlay,
+         ncol, as, lws.state_cache, lk.lookup_lw, lk.lookup_lw_cld,
+         lk.lookup_lw_aero))
 
 # What the aerosol and cloud lookups cost in registers. If these are large, the
 # budget is going on descriptors and a slimmer payload is worth building; if

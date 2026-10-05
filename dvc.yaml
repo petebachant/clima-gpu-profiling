@@ -637,6 +637,44 @@ stages:
           persist: true
     desc: Automatically generated from the 'fused-lw-check' stage in
       calkit.yaml. Changes made here will be overwritten.
+  radiation-registers:
+    cmd: calkit scheduler batch --name radiation-registers --environment clima
+      --dep scripts/measure-radiation-registers.jl --dep RRTMGP.jl-mod/src --dep
+      RRTMGP.jl-mod/ext --dep ClimaCoupler.jl-mod/src --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
+      results/radiation-registers.toml --option --gpus=1 --option --time=90 --
+      scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
+      scripts/measure-radiation-registers.jl --config_file
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --out results/radiation-registers.toml
+    deps:
+      - scripts/run-julia-script.sh
+      - scripts/measure-radiation-registers.jl
+      - RRTMGP.jl-mod/src
+      - RRTMGP.jl-mod/ext
+      - ClimaCoupler.jl-mod/src
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCore.jl-mod/ext
+      - ClimaCore.jl-mod/src
+      - ClimaAtmos.jl-mod/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/radiation-registers.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/radiation-registers.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'radiation-registers' stage in
+      calkit.yaml. Changes made here will be overwritten.
   keyed-mcica:
     cmd: calkit scheduler batch --name keyed-mcica --environment clima --dep
       scripts/verify-keyed-mcica.jl --dep RRTMGP.jl-mod/src --dep
@@ -675,44 +713,6 @@ stages:
           persist: true
     desc: Automatically generated from the 'keyed-mcica' stage in calkit.yaml.
       Changes made here will be overwritten.
-  fused-flux-bias:
-    cmd: calkit scheduler batch --name fused-flux-bias --environment clima --dep
-      scripts/measure-fused-flux-bias.jl --dep RRTMGP.jl-mod/src --dep
-      RRTMGP.jl-mod/ext --dep ClimaCoupler.jl-mod/src --dep
-      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
-      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
-      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
-      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
-      results/fused-flux-bias.toml --option --gpus=1 --option --time=120 --
-      scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
-      scripts/measure-fused-flux-bias.jl --config_file
-      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --out results/fused-flux-bias.toml --draws 200
-    deps:
-      - scripts/run-julia-script.sh
-      - scripts/measure-fused-flux-bias.jl
-      - RRTMGP.jl-mod/src
-      - RRTMGP.jl-mod/ext
-      - ClimaCoupler.jl-mod/src
-      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
-      - ClimaCore.jl-mod/ext
-      - ClimaCore.jl-mod/src
-      - ClimaAtmos.jl-mod/src
-      - .calkit/env-locks/clima
-    outs:
-      - results/fused-flux-bias.toml:
-          cache: false
-          persist: true
-      - .calkit/scheduler/logs/fused-flux-bias.out:
-          cache: false
-          persist: true
-    desc: Automatically generated from the 'fused-flux-bias' stage in
-      calkit.yaml. Changes made here will be overwritten.
   radiation-split:
     cmd: calkit scheduler batch --name radiation-split --environment clima --dep
       scripts/measure-radiation-split.jl --dep RRTMGP.jl-mod/src --dep
@@ -806,7 +806,6 @@ stages:
       --launch-skip 2 --launch-count 2
     deps:
       - scripts/run-ncu.sh
-      - scripts/run-ncu.sh
       - scripts/run.jl
       - ClimaCoupler.jl/src
       - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -896,7 +895,6 @@ stages:
     cmd: calkit xenv -n py --no-check -- python
       scripts/analyze-kernel-population.py
     deps:
-      - scripts/analyze-kernel-population.py
       - scripts/analyze-kernel-population.py
       - results/nsys/baseline.sqlite
       - results/nsys/mod.sqlite

@@ -2239,6 +2239,7 @@ effect, and an empty column is easy to mistake for a missing kernel.
 | cache log(p_lay) | add memory | +1.43% |
 | reciprocal multiplies | fewer instructions | not significant |
 | fuse the clear-sky and all-sky solves | do the shared optics once | **the second win** (`exp/2026-09-24-fused-radiation`) |
+| slim the kernel's payload | fewer registers | nothing: descriptors cost 0 registers |
 
 Two wins, and both came from deleting redundant work rather than from making the
 same work faster. Everything in between was scheduling, register budgets,
@@ -2295,6 +2296,40 @@ fractions once per column, wrong on purpose, and time it. That bounds the prize
 in one run without threading a cache through three call layers. If the bound
 comes in under ~5% of the solve, the idea is dead and the ledger's closing
 sentence stands.
+
+### 4z. The radiation kernels' registers are arithmetic, not payload
+
+`results/radiation-registers.toml`, compiled with `launch=false` so nothing runs.
+
+| variant | registers | spill |
+|---|---|---|
+| longwave fused, cloud + aerosol | 255 | 216 B |
+| longwave fused, cloud only | 255 | 112 B |
+| longwave fused, neither | 255 | 56 B |
+| shortwave fused, cloud + aerosol | 255 | 256 B |
+| longwave UNFUSED, cloud + aerosol | 255 | 192 B |
+
+Dropping the entire aerosol lookup -- eleven array fields -- frees zero
+registers, as does dropping the cloud lookup. Array descriptors live in
+parameter space, so a slimmer payload buys nothing here. That closes the
+question "are we spending registers on data we do not use", which was worth
+asking because the microphysics kernel answered it the other way: there,
+parameters as const globals took 246 registers to 101, and slimming the
+evaluator struct beat skipping 88% of the physics (4r).
+
+Folding the one foldable payload cannot reach the step either. `RRTMGPParameters`
+is seven Float32 scalars riding inside the source struct, and the next occupancy
+step is 170 registers, so the shortfall is 85. Capping registers to force that
+step was measured at 2.91% slower (4v).
+
+Two corrections. Radiation does **not** run at 255 with zero spill, which this
+repo asserted in the `radiation-ncu` stage comment: every variant spills, even
+with no cloud or aerosol lookups. And fusing the two skies added 24 bytes of
+spill (192 -> 216), not the large increase its +10% might suggest -- the
+unfused kernel was already over budget.
+
+So the occupancy lever is closed from both ends, and the ledger's closing
+sentence holds for a third mechanism.
 
 ## 6. Launch-overhead work, and why most of it is unsupported
 

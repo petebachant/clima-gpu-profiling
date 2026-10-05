@@ -142,6 +142,10 @@ questions:
       state bit-identical over 120 coupled steps; it has since merged upstream as
       CliMA/RRTMGP.jl#628, so it is part of the baseline now. docs/learnings.md
       4m has the attribution.
+      The register route is closed, which is worth stating because ncu points straight at it: these kernels are latency-bound, occupancy is pinned at the ceiling their register count sets, and fewer registers is the only thing that would buy warps to hide the latency with.
+      Compiling them with the optional lookups present and absent shows that payload costs {lw_aerosol_cost:.0f} registers -- dropping the entire aerosol lookup, eleven array fields, frees nothing, because array descriptors live in parameter space rather than registers.
+      All {lw_registers:.0f} are live arithmetic and the next occupancy step needs 170, so the shortfall is 85 registers rather than the handful that folding scalar parameters into compile-time constants could recover; capping registers to force that step was measured at 2.91% slower (docs/learnings.md 4v).
+      The same run corrects two beliefs this project held: every variant spills, so radiation at "255 registers with zero spill" was wrong, and fusing the two skies added 24 bytes of spill rather than materially worsening pressure.
     evidence:
       - kind: value
         path: results/summary.json
@@ -185,6 +189,19 @@ questions:
         explanation: >-
           The proposed change in full: 30 lines in one function, as the branch's
           own delta since it diverged from RRTMGP main.
+      - kind: result
+        path: results/radiation-registers.toml
+        values:
+          lw_registers: lw_fused_cloud_aerosol.registers
+          lw_aerosol_cost: lw_aerosol_register_cost
+        explanation: >-
+          Registers per thread for each radiation kernel, compiled with
+          launch=false so nothing runs, varying only which optional lookups are
+          passed. The deltas are the point: both are zero, which is what rules
+          out slimming the payload. The file also carries local_bytes per
+          variant, which is how the spill came to light -- 216 bytes fused and
+          192 unfused for longwave, 256 shortwave, and non-zero even with no
+          cloud or aerosol lookups at all.
       - kind: value
         path: results/state-rad-mod.toml
         key: steps
@@ -1589,7 +1606,8 @@ pipeline:
       kind: shell-script
       environment: clima
       # Radiation is 43.9% of GPU kernel time -- four rte_*_2stream kernels at
-      # 255 registers and 12.5% occupancy with zero spill (docs/learnings.md 4k).
+      # 255 registers and 12.5% occupancy, spilling (docs/learnings.md 4k;
+      # results/radiation-registers.toml measured 192-256 bytes of spill).
       # Occupancy targeting was tried and rejected (+3.93%), so the next step is
       # to see what actually limits them rather than guess again: the
       # microphysics work went wrong repeatedly when it targeted from stale or
