@@ -1712,6 +1712,33 @@ pipeline:
         - path: results/step-breakdown.toml
           storage: git
 
+    val-params-registers:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-val-params-registers.sh
+      # Tests whether Val reaches what const globals reach. cm-registers
+      # recorded the same body at 246 registers with parameters as runtime
+      # arguments and 101 as const globals, which clears two occupancy steps --
+      # but const globals are not available to a model whose parameters come
+      # from configuration. Val is, and folds for the same reason.
+      #
+      # Compile-only and standalone: CMP.Microphysics1MParams constructs without
+      # a coupled simulation, so this is minutes rather than an hour.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=40
+      args:
+        - ClimaCoupler.jl-mod/experiments/AMIP
+      inputs:
+        - scripts/measure-val-params-registers.jl
+        - scripts/run-val-params-registers.sh
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaAtmos.jl-mod/src
+      outputs:
+        - path: results/val-params-registers.toml
+          storage: git
+
     cm-registers:
       kind: shell-script
       environment: clima

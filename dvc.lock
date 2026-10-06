@@ -3120,3 +3120,43 @@ stages:
       hash: md5
       md5: 4a01ceda03df891c01d531a16693c1cc
       size: 1190
+  val-params-registers:
+    cmd: calkit scheduler batch --name val-params-registers --environment clima 
+      --dep scripts/measure-val-params-registers.jl --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out 
+      results/val-params-registers.toml --option --gpus=1 --option --time=40 -- 
+      scripts/run-val-params-registers.sh ClimaCoupler.jl-mod/experiments/AMIP
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: ffdef5e566ef1c6aeb21cdf51f26ac52.dir
+      size: 2160590
+      nfiles: 159
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: a5599225e1f5fbb6d64f0c8aeb5e4acf
+      size: 122720
+    - path: scripts/measure-val-params-registers.jl
+      hash: md5
+      md5: 48bf99cb7d072811a8f59a4968335801
+      size: 4832
+    - path: scripts/run-val-params-registers.sh
+      hash: md5
+      md5: 40e53e525e277169357a85bee4a44558
+      size: 773
+      isexec: true
+    outs:
+    - path: .calkit/scheduler/logs/val-params-registers.out
+      hash: md5
+      md5: 00e3e9c231017361ab40b1ba64cda37b
+      size: 6727
+    - path: results/val-params-registers.toml
+      hash: md5
+      md5: 0d25bddb92b84c4ec083a1f584f922db
+      size: 651

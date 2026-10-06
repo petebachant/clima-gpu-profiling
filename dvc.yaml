@@ -866,6 +866,28 @@ stages:
           persist: true
     desc: Automatically generated from the 'step-breakdown' stage in
       calkit.yaml. Changes made here will be overwritten.
+  val-params-registers:
+    cmd: calkit scheduler batch --name val-params-registers --environment clima
+      --dep scripts/measure-val-params-registers.jl --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
+      results/val-params-registers.toml --option --gpus=1 --option --time=40 --
+      scripts/run-val-params-registers.sh ClimaCoupler.jl-mod/experiments/AMIP
+    deps:
+      - scripts/run-val-params-registers.sh
+      - scripts/measure-val-params-registers.jl
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaAtmos.jl-mod/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/val-params-registers.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/val-params-registers.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'val-params-registers' stage in
+      calkit.yaml. Changes made here will be overwritten.
   cm-registers:
     cmd: calkit scheduler batch --name cm-registers --environment clima --dep
       scripts/measure-cm-registers.jl --dep
