@@ -123,32 +123,6 @@ questions:
         explanation: >-
           The whole treatment: arms_differ_in is ['ClimaAtmos.jl-mod'] and
           nothing else, which is what makes this a single-package result.
-  - question: Can we improve the performance of the flagship AMIP simulation?
-    notes: >-
-      Open. After the 2026-09-21 update to main the arms are identical, and the
-      null test measured {speedup_pct:+.3f}% SYPD at {mod_sypd:.5f} SYPD, so there is
-      no treatment in the pipeline to answer this with. The largest result so far,
-      the RRTMGP aerosol-optics binary search, merged upstream as
-      CliMA/RRTMGP.jl#628 and is part of the baseline now. experiments.csv has
-      every recorded experiment, and docs/learnings.md 3a-3c the reasoning.
-    evidence:
-      - kind: figure
-        path: figures/sypd-time-series.png
-      - kind: result
-        path: results/summary.json
-        values:
-          speedup_pct: speedup_pct
-          mod_sypd: mod.sypd
-        explanation: >-
-          The end-to-end numbers for whatever revision last ran the pipeline,
-          with mod_sypd for absolute scale. Read the rows in experiments.csv as
-          cumulative: no row after the first is a treatment on its own.
-      - kind: table
-        path: results/top-kernels.csv
-        explanation: >-
-          Top 20 GPU kernels by baseline cost for both arms. What the two arms
-          actually were is recorded per run in results/treatment.json rather
-          than here, so this description cannot go stale against the data.
   - question: >-
       Can the radiation kernels be made faster without changing results, and
       which change is responsible?
@@ -426,83 +400,13 @@ questions:
           shorter than the gravity-wave period and made microphysics look
           dominant.
   - question: >-
-      What CI checks would catch a kernel this inefficient before it reaches
-      main, and block it until it is fixed?
-    hypothesis: >-
-      A benchmark-and-threshold gate cannot work here, because full-AMIP SYPD
-      noise is larger than the changes worth catching, so the gate has to be
-      built on compile-time quantities instead.
-    notes: >-
-      Proposed, not implemented or validated: gate on per-kernel compile-time
-      resource use -- registers per thread AND absolute local-memory bytes, from
-      CUDA.registers and CUDA.memory, recorded as a checked-in baseline -- rather
-      than on end-to-end timing. The design is in docs/ci-kernel-gate.md.
-    evidence:
-      - kind: value
-        path: results/cm-registers.toml
-        key: layers.E microphysics_tendencies_1m (9-pt quadrature).registers
-        git_ref: exp/2026-09-04-fuse-and-bounds
-        explanation: >-
-          Why a register-only gate fails: this kernel reports the sm_80 cap of
-          255 no matter how far over it is, so the count cannot distinguish
-          "fine" from "catastrophic" nor show whether a fix helped. Pinned
-          because the A-E broadcast layers are only produced when ClimaCore.jl-mod
-          is on pb/launch-bounds, so the key is absent from the current file.
-      - kind: value
-        path: results/cm-registers.toml
-        key: layers.E microphysics_tendencies_1m (9-pt quadrature).unbounded_local_bytes
-        git_ref: exp/2026-09-06-evaluator-param-args
-        explanation: >-
-          The quantity that actually moved while the register count sat still,
-          and which was not recorded at all until 2026-09-06. This is why the
-          gate must record absolute local-memory bytes, not just registers.
-      - kind: table
-        path: results/kernel-resources.csv
-        git_ref: exp/2026-09-07-evaluator-repeat
-        explanation: >-
-          The per-kernel table a CI check would compare against a stored
-          baseline. Pinned because the ncu stages that produce it are frozen, so
-          on main it describes whichever revision last ran them.
-      - kind: value
-        path: results/summary.json
-        key: speedup_pct
-        name: speedup_pct
-        explanation: >-
-          Why the gate cannot be a model benchmark: this is the end-to-end
-          number, whose repeat spread is 0.43% at best and ~2% typically, while
-          the kernel-level measurement repeats to 0.31%.
-  - question: >-
-      Which changes actually improve AMIP performance, by how much, and how do
-      we know a result is real rather than run-to-run variation?
-    notes: >-
-      The earlier answer described the CloudMicrophysics register and fusion
-      work and ClimaCore's occupancy targeting on stacks that no longer exist, and
-      predates the RRTMGP binary search, which is upstream now; it needs
-      re-measuring on the current stack. The second half is answered: identical arms
-      on the current stack differ by {speedup_pct:+.3f}% SYPD, consistent with the
-      earlier null tests in experiments.csv. docs/learnings.md 3a-3c has what
-      the earlier stacks showed.
-    evidence:
-      - kind: table
-        path: experiments.csv
-        explanation: >-
-          Every recorded experiment, generated from exp/* git tags by
-          scripts/build-experiment-index.py and read out of git at the tagged
-          commit, so it cannot drift. THE reproducible COLUMN IS LOAD-BEARING: a
-          run made against a dirty submodule tree measured code that exists
-          nowhere afterwards, so the checkout recipe cannot reproduce it.
-      - kind: value
-        path: results/summary.json
-        key: speedup_pct
-        name: speedup_pct
-        explanation: >-
-          The mod-vs-baseline delta at a given revision, which is the only thing
-          this project can claim. Upstream baseline movement -- +4.36% from one
-          dependency update -- belongs to whoever wrote the upstream PR and must
-          never be added into a cumulative figure.
-  - question: >-
       What actually limits the hot SGS-quadrature microphysics kernel, and which
       of the available levers can move it?
+    answer: >-
+      Register pressure, and the demand is well above the cap rather than merely at it.
+      The kernel the model runs compiles to {quad_args:.0f} registers -- the hardware maximum per thread -- while still spilling {quad_spill:.0f} bytes to local memory, so what limits it is the nine-point quadrature's live state rather than anything that can be trimmed from what it carries.
+      The payload lever is now measured shut: folding the microphysics parameters into the type, the one route needing no CloudMicrophysics release, takes an isolated evaluation body from {val_args:.0f} registers to {val_val:.0f} and clears two occupancy steps, yet buys nothing at all on the real path because the freed registers are immediately taken by the loop.
+      What has worked here is occupancy targeting through launch bounds and slimming the evaluator struct; what remains is reducing the live state itself -- fewer quadrature points, which was priced and withdrawn, or fewer live values per point.
     notes: >-
       Answered for the stack before the 2026-09-21 update in docs/learnings.md 2c
       and 4a: register pressure at the 255-register cap, with a guarded
@@ -595,56 +499,6 @@ questions:
           The pipeline-level number this kernel work has to show up in
           eventually. Kernel times are not SYPD, and this mechanism measured a
           SYPD null on its own.
-  - question: >-
-      Should the SGS quadrature order be reduced from 3 to 2, and what does that
-      trade?
-    answer: >-
-      Not on the current stack: the earlier recommendation is withdrawn.
-      Re-measured after the 2026-09-21 update to ClimaAtmos main, which re-enabled cloud ice formation and liquid freezing in the 1-moment scheme, dropping the rule from 3x3 to 2x2 changes {order2_changed_frac:.1%} of cells rather than the ~1% it changed before, for {order2_icl_rms_over_scale:.2%} of RMS on the cloud-ice tendency and {order2_lcl_rms_over_scale:.2%} on cloud liquid, with the worst single cell moving {order2_icl_max_over_scale:.1f}x the field's own RMS.
-      The throughput side is not comparable either: +6.14% SYPD on upstream code and +8.05% with this project's numerics work were both measured before that update, on the physics this measurement shows the quadrature now interacts with differently, so the trade cannot be struck until the cost is re-measured on the current configuration.
-      The accuracy figures remain the DIRECT effect, with lambda_lagrange held at its 3x3 fit; a real order-2 run refits it and would compensate in part. docs/sgs-quadrature.md is the write-up.
-    evidence:
-      - kind: value
-        path: results/summary.json
-        key: speedup_pct
-        name: order2_isolated_speedup_pct
-        git_ref: exp/2026-09-08-quadrature-order-2-isolated
-        explanation: >-
-          Standalone benefit on unmodified upstream code, with the quadrature
-          order the only live difference between arms. NOT templated: rendering
-          reads the working tree, where results/summary.json holds a later run.
-      - kind: value
-        path: results/summary.json
-        key: speedup_pct
-        name: order2_full_stack_speedup_pct
-        git_ref: exp/2026-09-09-order2-full-stack
-        explanation: >-
-          Benefit with the numerics work also in place. Sub-additive against the
-          two levers separately, because the numerics cut cost per quadrature
-          point and the order cuts the number of points -- so the numerics work
-          is not made redundant by this change.
-      - kind: document
-        path: docs/sgs-quadrature.md
-        explanation: >-
-          The decision record: what was measured, what was decided, and what
-          would change it. Built by a Markdown stage, so its figures and its
-          before/after comparison are injected rather than typed.
-      - kind: result
-        path: results/quadrature-order-error.toml
-        values:
-          order2_icl_rms_over_scale: order_2.dq_icl_dt.rms_over_scale
-          order2_lcl_rms_over_scale: order_2.dq_lcl_dt.rms_over_scale
-          order2_icl_max_over_scale: order_2.dq_icl_dt.max_over_scale
-          order2_changed_frac: order_2.changed_frac
-        explanation: >-
-          The accuracy cost of order 2 on the current configuration, measured
-          on a real AMIP state with byte-identical inputs: RMS over each
-          tendency's own scale, the worst single cell, and the share of cells
-          that change at all. That last is the figure that moved most, about 1%
-          before the 2026-09-21 stack update and the majority of the field
-          after, which is why the recommendation was withdrawn. The error
-          concentrates where the PDF reaches a kink, which is exactly where the
-          quadrature is doing its work.
   - question: >-
       Is the nine-point SGS quadrature in the 1-moment microphysics earning the
       throughput it costs?
