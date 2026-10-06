@@ -3160,3 +3160,72 @@ stages:
       hash: md5
       md5: 2a2ec689c7dd97152aebf283032848a4
       size: 981
+  pointwise-registers:
+    cmd: calkit scheduler batch --name pointwise-registers --environment clima 
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out 
+      results/ncu/pointwise.ncu-rep --out results/ncu/pointwise-details.csv 
+      --option --gpus=1 --option --time=240 -- scripts/run-ncu-pointwise.sh 
+      results/ncu/pointwise --project ClimaCoupler.jl-mod/experiments/AMIP 
+      --config 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --launch-count 1500
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: ffdef5e566ef1c6aeb21cdf51f26ac52.dir
+      size: 2160590
+      nfiles: 159
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: a5599225e1f5fbb6d64f0c8aeb5e4acf
+      size: 122720
+    - path: scripts/run-ncu-pointwise.sh
+      hash: md5
+      md5: 80cfec795013a0d3b851f94fed6de829
+      size: 4149
+      isexec: true
+    outs:
+    - path: .calkit/scheduler/logs/pointwise-registers.out
+      hash: md5
+      md5: b9075291332ae62e54721f3c789946cf
+      size: 194217
+    - path: results/ncu/pointwise-details.csv
+      hash: md5
+      md5: ef930397499ec8e258796aa1993eeb14
+      size: 4370853
+    - path: results/ncu/pointwise.ncu-rep
+      hash: md5
+      md5: 072d645cdb06a0cca58e542fa08d9915
+      size: 47841294
+  export-pointwise-registers:
+    cmd: calkit xenv -n py --no-check -- python 
+      scripts/export-pointwise-registers.py results/ncu/pointwise-details.csv
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: cd569ef50836446fc837bb706d220836.dir
+      size: 2090
+      nfiles: 2
+    - path: results/ncu/pointwise-details.csv
+      hash: md5
+      md5: ef930397499ec8e258796aa1993eeb14
+      size: 4370853
+    - path: scripts/export-pointwise-registers.py
+      hash: md5
+      md5: 5020ae1eb0e38a0daff8c1b229a7d6f6
+      size: 7891
+    outs:
+    - path: results/pointwise-registers.csv
+      hash: md5
+      md5: a6c6e03deeb5a2c131884954beef195b
+      size: 66420
+    - path: results/pointwise-registers.json
+      hash: md5
+      md5: b15399174a4200f933a7e24532e0b3a1
+      size: 1059

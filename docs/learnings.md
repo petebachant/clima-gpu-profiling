@@ -2332,6 +2332,48 @@ unfused kernel was already over budget.
 So the occupancy lever is closed from both ends, and the ledger's closing
 sentence holds for a third mechanism.
 
+### 4ab. Registers cap occupancy for most kernels, but only a third usefully
+
+`results/pointwise-registers.json`, from a wide ncu run with static launch
+metrics only (no kernel replay, so the whole population costs one job).
+
+| | kernels |
+|---|---|
+| profiled in a 120-step run | 241 |
+| registers are the binding occupancy limit | 213 |
+| already at full occupancy | 98 |
+| **capped by registers alone AND below full occupancy** | **86 (35.7%)** |
+| of those, sitting at the 255 cap | 5 |
+
+The middle two rows are the trap. "Register-limited" sounds like 88% of the
+population is addressable, and the first version of this analysis reported
+exactly that -- but a register limit that still permits full occupancy costs
+nothing, and 98 kernels were already at 100%. The number that matters is 86.
+
+Two corrections to §4aa fall out, and the second is a correction to a
+correction:
+
+  * The kernels at the cap are named now: two `set_microphysics_tendency_cache`
+    kernels and both fused radiation kernels, all at 255 registers and 12.5%
+    occupancy, with `non_orographic_gravity_wave_forcing` beside them.
+  * The 255 figure from the compile-only probe was **right**, and the frozen
+    `results/kernel-resources.csv` showing 32-128 registers for that cache was
+    the stale thing. I had used the stale table to call my own probe an artifact
+    of `always_inline`, which was the wrong way round. A frozen table pinned to
+    `exp/2026-09-07-evaluator-repeat` predates the 2026-09-21 stack update; it
+    is not evidence about current code, and treating it as such reversed a
+    conclusion. This is the failure mode AGENTS.md warns about for frozen
+    stages, arriving from the direction nobody watches: the stale artifact was
+    not displayed beside something mismatched, it was used to overturn a fresh
+    measurement.
+
+What it means for the Val idea: payload folding is worth testing on the
+addressable kernels BELOW the cap, where a saving can still convert to
+occupancy. For the five AT the cap -- the ones worth the most -- the live state
+has to come down instead, which is what splitting a kernel does. §4r and the
+comments in `microphysics_cache.jl` record that hoisting invariants out of the
+quadrature was already worth doing twice.
+
 ### 4aa. Folding the microphysics parameters is huge in isolation and nothing in place
 
 `results/val-params-registers.toml`, compiled with `launch=false`.

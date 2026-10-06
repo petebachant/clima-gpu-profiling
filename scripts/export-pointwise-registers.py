@@ -116,6 +116,12 @@ def main():
     # Registers can only be the lever where they bind ALONE; a tie means
     # something else caps occupancy at the same point.
     sole = [r for r in reg_limited if not r["limiter_tied"]]
+    # And only where the cap costs something. A register limit that still
+    # permits full occupancy is not holding the kernel back, so counting it
+    # overstates the reachable population -- the first run of this script said
+    # 88% were register-limited while 98 of those kernels were already at 100%.
+    below = [r for r in rows if (r.get("max_warps_pct") or 0) < 99]
+    addressable = [r for r in below if r["register_limited"] and not r["limiter_tied"]]
     at_cap = [r for r in rows if (r.get("registers") or 0) >= 255]
     full_occ = [r for r in rows if (r.get("max_warps_pct") or 0) >= 99]
     pointwise = [r for r in rows if re.search(r"cache|broadcast|copyto", r["kernel"], re.I)]
@@ -128,6 +134,15 @@ def main():
         "register_limited_pct": round(100 * len(reg_limited) / len(rows), 2),
         "register_limited_solely": len(sole),
         "register_limited_solely_pct": round(100 * len(sole) / len(rows), 2),
+        "below_full_occupancy": len(below),
+        "addressable": len(addressable),
+        "addressable_pct": round(100 * len(addressable) / len(rows), 2),
+        "addressable_max_registers": max(
+            (r.get("registers") or 0) for r in addressable
+        ) if addressable else None,
+        "addressable_at_cap": sum(
+            1 for r in addressable if (r.get("registers") or 0) >= 255
+        ),
         "at_register_cap": len(at_cap),
         "at_full_occupancy": len(full_occ),
         "at_full_occupancy_pct": round(100 * len(full_occ) / len(rows), 2),
@@ -141,8 +156,11 @@ def main():
         "note": (
             "A kernel gains from cheaper registers only where registers are "
             "what caps its occupancy, and only where they cap it alone. "
-            "register_limited_solely_pct is therefore the ceiling on how much "
-            "of the population folding parameters into types could help."
+            "`addressable` is the count that matters: capped by registers "
+            "alone AND below full occupancy. Being addressable means a "
+            "register saving COULD raise occupancy, not that folding "
+            "parameters produces one -- a kernel over the 255 cap spends any "
+            "freed register on its live state."
         ),
     }
     OUT_JSON.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
@@ -153,6 +171,9 @@ def main():
     print(f"  register-limited alone:  {len(sole)}/{len(rows)} "
           f"({summary['register_limited_solely_pct']}%)")
     print(f"  already at full occupancy: {len(full_occ)}")
+    print(f"  ADDRESSABLE (capped by registers alone, below full occupancy): "
+          f"{len(addressable)}/{len(rows)} ({summary['addressable_pct']}%), "
+          f"{summary['addressable_at_cap']} of them at the 255 cap")
     print(f"  limiters: {summary['limiter_counts']}")
 
 

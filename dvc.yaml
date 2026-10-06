@@ -866,6 +866,49 @@ stages:
           persist: true
     desc: Automatically generated from the 'step-breakdown' stage in
       calkit.yaml. Changes made here will be overwritten.
+  pointwise-registers:
+    cmd: calkit scheduler batch --name pointwise-registers --environment clima
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
+      results/ncu/pointwise.ncu-rep --out results/ncu/pointwise-details.csv
+      --option --gpus=1 --option --time=240 -- scripts/run-ncu-pointwise.sh
+      results/ncu/pointwise --project ClimaCoupler.jl-mod/experiments/AMIP
+      --config
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --launch-count 1500
+    deps:
+      - scripts/run-ncu-pointwise.sh
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaAtmos.jl-mod/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/ncu/pointwise.ncu-rep:
+          cache: true
+          persist: true
+      - results/ncu/pointwise-details.csv:
+          cache: true
+          persist: true
+      - .calkit/scheduler/logs/pointwise-registers.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'pointwise-registers' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  export-pointwise-registers:
+    cmd: calkit xenv -n py --no-check -- python
+      scripts/export-pointwise-registers.py results/ncu/pointwise-details.csv
+    deps:
+      - scripts/export-pointwise-registers.py
+      - results/ncu/pointwise-details.csv
+      - .calkit/env-locks/py
+    outs:
+      - results/pointwise-registers.csv:
+          cache: false
+          persist: false
+      - results/pointwise-registers.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'export-pointwise-registers' stage in
+      calkit.yaml. Changes made here will be overwritten.
   val-params-registers:
     cmd: calkit scheduler batch --name val-params-registers --environment clima
       --dep scripts/measure-val-params-registers.jl --dep

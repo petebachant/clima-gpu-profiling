@@ -502,12 +502,12 @@ questions:
   - question: >-
       Does putting the parameters in `Val` make pointwise kernels measurably faster across the board, as CliMA/ClimaCore.jl#2676 asks?
     answer: >-
-      Not established, and this measurement cannot establish it: it covers one subsystem, and the two conditions a gain needs are not known for pointwise kernels generally.
-      What is settled is the mechanism -- Val folds an isbits parameter set to literals and lands on the const-global register count exactly, taking an isolated microphysics evaluation body from {val_args:.0f} registers to {val_val:.0f}, {arg_warps:.0f} to {val_warps:.0f} warps per SM.
-      A saving only becomes speed where the kernel is register-limited AND latency-bound, so that more resident warps hide more latency; a pointwise kernel that is bandwidth-bound, or already at full occupancy, gains nothing from cheaper registers.
-      Both failure modes are visible in the one file measured end to end: compiled as a single always_inline kernel the SGS quadrature sits at {quad_args:.0f} registers and the fold changes nothing, spilling {quad_spill:.0f} bytes against {quad_val_spill:.0f}, while ncu shows what ClimaCore actually generates for that cache is several smaller kernels at 32 to 128 registers, two of them already at 100% theoretical occupancy.
-      That disagreement is the warning this question exists to carry: a standalone always_inline compile is not the kernel the model runs, so register probes of either kind answer for the body they compile and not for the broadcast.
-      Answering the issue as asked needs a representative sample of pointwise kernels compiled both ways, paired with each one's occupancy limiter, rather than an extrapolation from microphysics.
+      Partly, and the limit is not the one this question first reported: registers are what caps occupancy for most of the population, so the precondition the idea needs is common rather than rare.
+      Of {kernels:.0f} kernels profiled, {addressable:.0f} ({addressable_pct}%) are capped by registers alone AND below full occupancy, which is where a register saving could become speed; {at_full_occupancy:.0f} are already at full occupancy and can gain nothing however well their parameters fold.
+      The mechanism itself is settled: Val folds an isbits parameter set to literals and lands on the const-global register count exactly, taking an isolated microphysics evaluation body from {val_args:.0f} registers to {val_val:.0f}, {arg_warps:.0f} to {val_warps:.0f} warps per SM.
+      What is NOT settled is whether folding reduces the registers of a kernel that matters, and the one case measured end to end says no: the SGS quadrature compiles to {quad_args:.0f} registers with or without the fold, spilling {quad_spill:.0f} bytes against {quad_val_spill:.0f}, because a kernel over the cap spends any freed register on its live state.
+      That failure mode is concentrated where the prize is: {addressable_at_cap:.0f} of the addressable kernels sit at the 255-register cap at 12.5% occupancy, among them two microphysics cache kernels and both fused radiation kernels, and for radiation the registers are already known to be live arithmetic rather than payload.
+      So the honest read is that payload folding is worth testing on the addressable kernels BELOW the cap, while the ones at it need their live state reduced instead -- which is what splitting a kernel does, and what this file already does twice by hoisting invariants out of the quadrature.
     evidence:
       - kind: result
         path: results/val-params-registers.toml
@@ -531,17 +531,23 @@ questions:
           target is itself the register cap. Compile-only with
           `CUDA.@cuda launch=false`, so nothing executes, and standalone, so it
           needs no coupled simulation: the stage is minutes.
-      - kind: table
-        path: results/kernel-resources.csv
-        git_ref: exp/2026-09-07-evaluator-repeat
+      - kind: result
+        path: results/pointwise-registers.json
+        values:
+          kernels: kernels
+          addressable: addressable
+          addressable_pct: addressable_pct
+          addressable_at_cap: addressable_at_cap
+          at_full_occupancy: at_full_occupancy
+          register_limited: register_limited
         explanation: >-
-          What ClimaCore actually generates for the microphysics cache, from
-          ncu: several kernels at 32 to 128 registers with theoretical occupancy
-          from 25% to 100%, not one kernel at the cap. Two at full occupancy can
-          gain nothing from cheaper registers and one at 128 is register-limited,
-          which is the spread the issue's question turns on. Pinned to an older
-          revision, so it predates the 2026-09-21 stack update and is evidence
-          about the SHAPE of the population rather than current figures.
+          The population the question asks about, measured rather than
+          extrapolated: for every kernel in a 120-step run, its registers and
+          which of the four occupancy limits binds. Static launch metrics only,
+          so ncu needs no kernel replay and the whole population costs one job
+          instead of the ninety minutes per six kernels that the frozen --set
+          full stages cost. results/pointwise-registers.csv has the per-kernel
+          rows behind it, including which kernels sit at the cap.
       - kind: value
         path: results/cm-registers.toml
         key: layers.LinearizedAverage nsub=2.registers
@@ -1681,20 +1687,23 @@ pipeline:
       # Static launch/occupancy metrics only, so ncu needs no kernel replay --
       # minutes over every kernel, where the frozen --set full stages cost an
       # hour and a half for six.
+      #
+      # No --launch-skip: ncu intercepts every launch it skips, and skipping
+      # 4000 of them burned a 90-minute allocation without profiling anything.
+      # These metrics are properties of the compiled kernel rather than of the
+      # run, so a warm model buys nothing here.
       scheduler:
         options:
           - --gpus=1
-          - --time=90
+          - --time=240
       args:
         - results/ncu/pointwise
         - --project
         - ClimaCoupler.jl-mod/experiments/AMIP
         - --config
         - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - --launch-skip
-        - "4000"
         - --launch-count
-        - "1200"
+        - "1500"
       inputs:
         - scripts/run-ncu-pointwise.sh
         - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
