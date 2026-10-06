@@ -1669,6 +1669,57 @@ pipeline:
         - path: results/step-breakdown.toml
           storage: git
 
+    pointwise-registers:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-ncu-pointwise.sh
+      # Answers the half of CliMA/ClimaCore.jl#2676 that needs no code change:
+      # across the whole kernel population, which kernels are capped by
+      # registers at all? Val can only pay where they are, so this bounds the
+      # answer before anyone wraps a parameter.
+      #
+      # Static launch/occupancy metrics only, so ncu needs no kernel replay --
+      # minutes over every kernel, where the frozen --set full stages cost an
+      # hour and a half for six.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=90
+      args:
+        - results/ncu/pointwise
+        - --project
+        - ClimaCoupler.jl-mod/experiments/AMIP
+        - --config
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - --launch-skip
+        - "4000"
+        - --launch-count
+        - "1200"
+      inputs:
+        - scripts/run-ncu-pointwise.sh
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaAtmos.jl-mod/src
+      outputs:
+        - path: results/ncu/pointwise.ncu-rep
+          storage: dvc
+        - path: results/ncu/pointwise-details.csv
+          storage: dvc
+
+    export-pointwise-registers:
+      kind: python-script
+      environment: py
+      script_path: scripts/export-pointwise-registers.py
+      args:
+        - results/ncu/pointwise-details.csv
+      inputs:
+        - scripts/export-pointwise-registers.py
+        - results/ncu/pointwise-details.csv
+      outputs:
+        - path: results/pointwise-registers.csv
+          storage: git
+        - path: results/pointwise-registers.json
+          storage: git
+
     val-params-registers:
       kind: shell-script
       environment: clima
