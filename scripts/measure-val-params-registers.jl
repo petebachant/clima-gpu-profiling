@@ -162,6 +162,28 @@ results["quad_val_gains_occupancy_step"] = warps(qr_val) > warps(qr_arg)
     warps(qr_val) > warps(qr_arg) ? "  (gains a step)" : "  (no step)",
 )
 
+# --- is the 255 an unroll, rather than a payload? -------------------------
+# The quadrature's point count is a type parameter, so the nine evaluations can
+# inline into one body and each one's live values compete for the same
+# registers. If that is what pins the kernel at 255, neither folding the
+# parameters nor splitting the loop per point addresses it -- an inlining
+# barrier does, which is what cut this kernel 54% once before.
+#
+# Compiling the same body with always_inline off is the cheapest way to ask.
+println("\n=== the same quadrature body, without forced inlining ===")
+qn_arg = record!("quad_noinline_arguments",
+                 CUDA.@cuda launch = false q_arg(out, ST, MP, TPS))
+qn_val = record!("quad_noinline_val",
+                 CUDA.@cuda launch = false q_val(out, ST, Val(MP), Val(TPS)))
+
+results["quad_inlining_cost_registers"] = qr_arg - qn_arg
+results["quad_noinline_gains_step"] = warps(qn_arg) > warps(qr_arg)
+results["quad_noinline_val_gains_step"] = warps(qn_val) > warps(qr_arg)
+@printf(
+    "\nforced inlining costs %d registers (%d -> %d); warps/SM %d -> %d, and %d folded\n",
+    qr_arg - qn_arg, qr_arg, qn_arg, warps(qr_arg), warps(qn_arg), warps(qn_val),
+)
+
 open(out_path, "w") do io
     TOML.print(io, results; sorted = true)
 end

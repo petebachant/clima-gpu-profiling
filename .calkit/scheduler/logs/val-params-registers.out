@@ -1,4 +1,4 @@
-gpu-guard: running on GPU(s) [1] -- OK (avoiding [])
+gpu-guard: running on GPU(s) [0] -- OK (avoiding [])
 Loading climacommon/2025_05_15
   Loading requirement: climaauth/2025_05_15 openmpi/4.1.5-mpitrampoline
     julia/1.11.5 cuda/julia-pref
@@ -46,3 +46,9 @@ quad_const_globals         regs=255  local=  736 B  warps/SM= 8
 quad_val_type_parameters   regs=255  local=  736 B  warps/SM= 8
 
 quadrature: Val saves 0 registers (const globals 0); warps/SM 8 -> 8  (no step)
+
+=== the same quadrature body, without forced inlining ===
+quad_noinline_arguments    regs=255  local=  824 B  warps/SM= 8
+quad_noinline_val          regs=255  local=  824 B  warps/SM= 8
+
+forced inlining costs 0 registers (255 -> 255); warps/SM 8 -> 8, and 8 folded
