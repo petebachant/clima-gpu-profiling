@@ -405,7 +405,7 @@ questions:
     answer: >-
       Register pressure, and the demand is well above the cap rather than merely at it.
       The kernel the model runs compiles to {quad_args:.0f} registers -- the hardware maximum per thread -- while still spilling {quad_spill:.0f} bytes to local memory, so what limits it is the nine-point quadrature's live state rather than anything that can be trimmed from what it carries.
-      The payload lever is now measured shut: folding the microphysics parameters into the type, the one route needing no CloudMicrophysics release, takes an isolated evaluation body from {val_args:.0f} registers to {val_val:.0f} and clears two occupancy steps, yet buys nothing at all on the real path because the freed registers are immediately taken by the loop.
+      The payload lever is measured shut: folding the parameters into the type buys nothing here, because the freed registers are immediately taken by the loop (see the question on Val and CliMA/ClimaCore.jl#2676).
       What has worked here is occupancy targeting through launch bounds and slimming the evaluator struct; what remains is reducing the live state itself -- fewer quadrature points, which was priced and withdrawn, or fewer live values per point.
     notes: >-
       Answered for the stack before the 2026-09-21 update in docs/learnings.md 2c
@@ -499,6 +499,47 @@ questions:
           The pipeline-level number this kernel work has to show up in
           eventually. Kernel times are not SYPD, and this mechanism measured a
           SYPD null on its own.
+  - question: >-
+      Does putting the parameters in `Val` make pointwise kernels measurably faster across the board, as CliMA/ClimaCore.jl#2676 asks?
+    answer: >-
+      The mechanism works and the gain does not generalize: it is real only where a kernel has register headroom, and absent exactly where register pressure is worst.
+      Val folds as intended -- an isbits parameter set in the type is seen as literals -- and lands on the const-global register count exactly, taking an isolated microphysics evaluation body from {val_args:.0f} registers to {val_val:.0f} and its occupancy from {arg_warps:.0f} to {val_warps:.0f} warps per SM, two steps.
+      The same fold applied to the kernel the model actually runs, the nine-point SGS quadrature, changes nothing: {quad_args:.0f} registers before and {quad_val:.0f} after, with spilling only falling from {quad_spill:.0f} to {quad_val_spill:.0f} bytes.
+      The reason is general rather than specific to microphysics: that kernel is already at the 255-register cap with its live state over the limit, so registers freed from the payload are immediately taken by the loop, and a kernel below the cap is the only kind where the saving can show up as occupancy.
+      Legality is not the constraint -- the parameter sets are isbits at {mp_bytes:.0f} and {tps_bytes:.0f} bytes -- and neither is package boundaries, since ClimaAtmos owns the wrapper that would do the wrapping; the costs are a fresh specialization per distinct parameter value and type names that carry every field.
+    evidence:
+      - kind: result
+        path: results/val-params-registers.toml
+        values:
+          val_args: runtime_arguments.registers
+          val_val: val_type_parameters.registers
+          arg_warps: runtime_arguments.warps_per_sm
+          val_warps: val_type_parameters.warps_per_sm
+          quad_args: quad_runtime_arguments.registers
+          quad_val: quad_val_type_parameters.registers
+          quad_spill: quad_runtime_arguments.local_bytes
+          quad_val_spill: quad_val_type_parameters.local_bytes
+          mp_bytes: mp_sizeof_bytes
+          tps_bytes: tps_sizeof_bytes
+        explanation: >-
+          One microphysics body compiled three ways -- parameters as runtime
+          arguments, as const globals, and folded through Val -- for an isolated
+          evaluation and for the quadrature path the model calls. The
+          const-global column is the target, so Val matching it is the mechanism
+          working rather than a coincidence, and in the quadrature case that
+          target is itself the register cap. Compile-only with
+          `CUDA.@cuda launch=false`, so nothing executes, and standalone, so it
+          needs no coupled simulation: the stage is minutes.
+      - kind: value
+        path: results/cm-registers.toml
+        key: layers.LinearizedAverage nsub=2.registers
+        name: linearized_avg_registers
+        explanation: >-
+          Why the isolated figure is the misleading one. A layer compiled on its
+          own has room for a payload saving to appear in its register count; the
+          kernel the model runs is clipped at the cap, so the same saving shows
+          up as a little less spilling and nothing else. Any register experiment
+          run on a layer rather than on the kernel can mislead this way.
   - question: >-
       Is the nine-point SGS quadrature in the 1-moment microphysics earning the
       throughput it costs?
