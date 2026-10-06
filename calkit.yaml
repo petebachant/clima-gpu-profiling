@@ -493,7 +493,41 @@ questions:
       re-enabled cloud ice formation and liquid freezing in the 1M microphysics,
       which changes this kernel, so it needs re-measuring; the ncu stages that would
       show its registers and spilling are frozen.
+
+      One lever is now ruled out by measurement rather than argument. The
+      kernel's parameters -- CloudMicrophysics 1M params at 348 bytes and
+      thermodynamics params at 104 -- are isbits, so Julia accepts them as type
+      parameters, and folding them that way is something ClimaAtmos can do
+      alone: microphysics_tendencies_1m, Microphysics1MEvaluator and
+      integrate_over_sgs are all ClimaAtmos code, so no CloudMicrophysics
+      release is involved. In isolation the fold is dramatic, taking one
+      evaluation body from {val_args:.0f} registers to {val_val:.0f} and
+      clearing two occupancy steps.
+
+      On the path the model runs it buys nothing: the quadrature body sits at
+      {quad_args:.0f} registers with or without the fold, spilling
+      {quad_spill:.0f} bytes, because the nine-point loop's live state already
+      exceeds the 255-register cap and freed parameter registers are
+      immediately consumed. That settles what docs/learnings.md left open about
+      whether the 255 is a demand or the cap: it is the cap, and the demand is
+      well above it. The limit is the quadrature's live state, not its payload.
     evidence:
+      - kind: result
+        path: results/val-params-registers.toml
+        values:
+          val_args: runtime_arguments.registers
+          val_val: val_type_parameters.registers
+          quad_args: quad_runtime_arguments.registers
+          quad_spill: quad_runtime_arguments.local_bytes
+        explanation: >-
+          One microphysics body compiled three ways -- parameters as runtime
+          arguments, as const globals, and folded through Val -- for an isolated
+          evaluation and for the quadrature path the model actually calls. The
+          isolated columns are why the idea looked promising and the quadrature
+          columns are why it is dead: Val lands exactly on the const-global
+          figure in both, which is the mechanism working, and in the quadrature
+          case that figure is the 255-register cap. Compile-only, so nothing
+          runs, and standalone, so it needs no coupled simulation.
       - kind: value
         path: results/cm-registers.toml
         key: layers.LinearizedAverage nsub=2.registers

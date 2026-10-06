@@ -122,6 +122,46 @@ results["val_gains_occupancy_step"] = warps(r_val) > warps(r_arg)
     warps(r_val) > warps(r_arg) ? "  (gains an occupancy step)" : "  (no step gained)",
 )
 
+# --- the path the model actually runs -----------------------------------
+# microphysics_tendencies_1m with a quadrature, which builds a
+# Microphysics1MEvaluator holding cmp and thp and loops the SGS points. All of
+# it is ClimaAtmos code, so a change here needs no CloudMicrophysics release.
+const QUAD = ClimaAtmos.SGSQuadrature(FT; quadrature_order = 3)
+const AUX = (T2 = FT(0.5), q2 = FT(1.0e-8), corr = FT(0.3),
+             lam = FT(0.5), alpha = FT(1.0), nsubs = 3)
+
+@inline function quad_body(o, s, mp, tps)
+    r = ClimaAtmos.microphysics_tendencies_1m(
+        BMT.Microphysics1Moment(), QUAD, mp, tps,
+        s.ρ, s.T, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno,
+        AUX.T2, AUX.q2, AUX.corr, AUX.lam, AUX.alpha, DT, AUX.nsubs,
+    )
+    o[1] = r.dq_lcl_dt
+    return nothing
+end
+
+q_arg(o, s, mp, tps) = quad_body(o, s, mp, tps)
+q_const(o, s) = quad_body(o, s, MP, TPS)
+q_val(o, s, ::Val{M}, ::Val{T}) where {M, T} = quad_body(o, s, M, T)
+
+println("\n=== the quadrature path (9 points), as the model calls it ===")
+qr_arg = record!("quad_runtime_arguments",
+                 CUDA.@cuda launch = false always_inline = true q_arg(out, ST, MP, TPS))
+qr_const = record!("quad_const_globals",
+                   CUDA.@cuda launch = false always_inline = true q_const(out, ST))
+qr_val = record!("quad_val_type_parameters",
+                 CUDA.@cuda launch = false always_inline = true q_val(
+                     out, ST, Val(MP), Val(TPS)))
+
+results["quad_val_matches_const"] = qr_val <= qr_const
+results["quad_val_saving_vs_arguments"] = qr_arg - qr_val
+results["quad_val_gains_occupancy_step"] = warps(qr_val) > warps(qr_arg)
+@printf(
+    "\nquadrature: Val saves %d registers (const globals %d); warps/SM %d -> %d%s\n",
+    qr_arg - qr_val, qr_arg - qr_const, warps(qr_arg), warps(qr_val),
+    warps(qr_val) > warps(qr_arg) ? "  (gains a step)" : "  (no step)",
+)
+
 open(out_path, "w") do io
     TOML.print(io, results; sorted = true)
 end

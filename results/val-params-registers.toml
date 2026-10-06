@@ -2,6 +2,9 @@ const_saving_vs_arguments = 115
 mp_isbits = true
 mp_sizeof_bytes = 348
 note = "registers for one microphysics body compiled three ways: parameters as runtime arguments, as const globals, and via Val. The const-global column is the target Val is trying to reach; runtime arguments are what the model does today."
+quad_val_gains_occupancy_step = false
+quad_val_matches_const = true
+quad_val_saving_vs_arguments = 0
 tps_isbits = true
 tps_sizeof_bytes = 104
 val_gains_occupancy_step = true
@@ -12,6 +15,21 @@ val_saving_vs_arguments = 115
 local_bytes = 32
 registers = 91
 warps_per_sm = 16
+
+[quad_const_globals]
+local_bytes = 736
+registers = 255
+warps_per_sm = 8
+
+[quad_runtime_arguments]
+local_bytes = 760
+registers = 255
+warps_per_sm = 8
+
+[quad_val_type_parameters]
+local_bytes = 736
+registers = 255
+warps_per_sm = 8
 
 [runtime_arguments]
 local_bytes = 32

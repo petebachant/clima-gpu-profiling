@@ -164,9 +164,10 @@ right order of magnitude for +108.
 
 **Not yet established**, and both matter before acting:
 
-- Whether layer E's 255 is a demand or the hardware *cap*. The real kernel has
-  zero spill at 255 (ncu, §3a), so its demand is genuinely ≤255; layer E's
-  figure could be clipped.
+- ~~Whether layer E's 255 is a demand or the hardware *cap*.~~ **Settled: it is
+  the cap.** `results/val-params-registers.toml` compiles the quadrature body
+  and finds 255 registers with 760 bytes of spill, so the demand is well above
+  255. See 4aa.
 - Whether the loop is actually unrolled. This is inferred from a register count.
   `@device_code_llvm` on the scalar and broadcast contexts would settle it, and
   is cheap.
@@ -2330,6 +2331,42 @@ unfused kernel was already over budget.
 
 So the occupancy lever is closed from both ends, and the ledger's closing
 sentence holds for a third mechanism.
+
+### 4aa. Folding the microphysics parameters is huge in isolation and nothing in place
+
+`results/val-params-registers.toml`, compiled with `launch=false`.
+
+| body | parameters as | registers | spill | warps/SM |
+|---|---|---|---|---|
+| one evaluation | runtime arguments | 206 | 32 B | 8 |
+| one evaluation | const globals | 91 | 32 B | 16 |
+| one evaluation | **Val type parameters** | **91** | 32 B | **16** |
+| quadrature (9 points) | runtime arguments | 255 | 760 B | 8 |
+| quadrature (9 points) | const globals | 255 | 736 B | 8 |
+| quadrature (9 points) | **Val type parameters** | **255** | 736 B | **8** |
+
+Val reaches exactly what const globals reach, in both bodies, so the mechanism
+works: an isbits struct as a type parameter is folded to literals. Both
+parameter sets qualify -- 348 bytes for the 1M parameters, 104 for
+thermodynamics. And it needs no CloudMicrophysics release, which is what blocks
+most work here: `microphysics_tendencies_1m`, `Microphysics1MEvaluator` and
+`integrate_over_sgs` are all ClimaAtmos code.
+
+In isolation that is 115 registers and two occupancy steps. On the path the
+model runs it is **zero**, because the nine-point loop is already past the
+255-register cap and spilling 760 bytes; registers freed from the payload are
+immediately taken by the loop's live state.
+
+The lesson is about the measurement, not the mechanism. An isolated body at 206
+registers has room for a payload saving to show up in the register count. The
+real kernel is clipped at the cap, so the same saving shows up only as 24 bytes
+less spill. Any register experiment run on a layer rather than on the kernel can
+mislead this way, which is the caveat §2c flagged and this settles.
+
+What it leaves: the microphysics kernel is limited by the quadrature's live
+state, not its payload. Reducing that means fewer points or fewer live values
+per point -- and order 2 was priced and withdrawn, because it changes the
+majority of cells (6a).
 
 ## 6. Launch-overhead work, and why most of it is unsupported
 
