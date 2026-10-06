@@ -22,6 +22,11 @@ questions:
       Read all of these as upper bounds, and as only half the prize. They price the HOST side: the time around a launch, at {host_us_per_launch} microseconds each, measured under nsys, whose own tracing runs to tens of CUDA API calls per launch and inflates exactly this quantity (docs/learnings.md 2b-i); pricing a launch honestly needs the probe run through the unprofiled AMIP stages, parked on ClimaAtmos.jl-mod branch pb/launch-cost-probe.
       Fusion also removes the intermediate arrays a chain of kernels writes and reads back, which is DEVICE time and independent of launch count: the same band is {small_band_pct_of_kernel_time}% of GPU kernel time, and this project's own fusion of the 1M source terms into the linearization accumulators cut kernel time 6.28% for +1.95% SYPD with the launch count identical to the unit (docs/learnings.md 3b).
       So the two halves point at different work: fusing for launch count means merging adjacent short kernels, while fusing for memory traffic means merging the ones that hand arrays to each other, which is what the `@. lazy` and uncached-temporaries subtasks of #4261 do, and it is where the measured gain came from.
+      Attempted and declined on the arithmetic, which is worth recording so nobody re-derives it: the band is a long tail rather than a few fat kernels, so there is no bounded experiment in it.
+      The launches spread across {distinct_kernels:.0f} distinct kernels, and {other_launches:,.0f} of them over the profiled window come from call sites the attribution cannot name, so the band's share sits in that tail -- the ten largest by launch count contribute only a small part of it.
+      The densest cluster a single change could reach, the independent broadcasts in cache/microphysics_cache.jl, is seven launches per call and about a hundred and twenty calls in the window, which ClimaCore's Fields.@fused_direct would take to two: a saving of hundreds of launches out of hundreds of thousands, on kernels that cost microseconds.
+      The `@. lazy` half is worse than neutral there, and the code says why: the liquid fraction and the linearized saturation-excess mean are deliberately hoisted OUT of the quadrature because they are invariant across its nine points, so making them lazy recomputes them nine times per cell and adds live state to a kernel already clipped at the register cap and spilling (docs/learnings.md 4aa).
+      So capturing this band means hundreds of call sites, which is what CliMA/ClimaAtmos.jl#4261 is for, and not a kernel tweak.
     evidence:
       - kind: result
         path: results/experiments/launch-cost/stats.json
@@ -52,6 +57,18 @@ questions:
           ClimaAtmos's share is the largest single one rather than most of the
           ceiling, and cache/precomputed_quantities.jl is here because
           CliMA/ClimaAtmos.jl#4261 proposes starting there.
+      - kind: result
+        path: results/kernel-population.json
+        values:
+          distinct_kernels: mod.distinct_kernels
+          other_launches: mod.subsystems.other.launches
+        explanation: >-
+          The population the band is drawn from, which is what makes it a
+          programme rather than an experiment: the launches are spread across
+          many distinct kernels and mostly across call sites the attribution
+          cannot name. The same file carries top_by_launch_count, where the
+          largest in-band entries are a few tens of milliseconds each against
+          roughly 25 seconds of kernel time.
       - kind: value
         path: results/kernel-shares.json
         key: baseline.small_kernels.pct_of_kernel_time
