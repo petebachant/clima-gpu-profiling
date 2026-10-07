@@ -249,6 +249,25 @@ f_type(o, s) = begin
     nothing
 end
 
+# The variant that matches what the model now does: the Val reaches
+# microphysics_tendencies_1m still wrapped, so it is stored in the evaluator as a
+# zero-size singleton and the parameters fold. q_val above unwraps it first,
+# which puts a bare constant into the field and erases the fold -- the two look
+# almost identical and measure opposite things.
+q_wrapped(o, s, vm::Val, vt::Val) = quad_body(o, s, vm, vt)
+
+println("\n=== the quadrature path with Val carried INTO the wrapper ===")
+qw = record!("quad_val_carried_in",
+             CUDA.@cuda launch = false always_inline = true q_wrapped(
+                 out, ST, Val(MP), Val(TPS)))
+results["quad_val_carried_saving"] = qr_arg - qw
+results["quad_val_carried_gains_step"] = warps(qw) > warps(qr_arg)
+@printf(
+    "\ncarrying the Val in saves %d registers (%d -> %d); warps/SM %d -> %d%s\n",
+    qr_arg - qw, qr_arg, qw, warps(qr_arg), warps(qw),
+    warps(qw) > warps(qr_arg) ? "  (gains a step)" : "  (no step)",
+)
+
 println("\n=== where the parameters live, through the real quadrature loop ===")
 fe = record!("evaluator_params_as_fields",
              CUDA.@cuda launch = false always_inline = true f_field(out, ST, MP, TPS))
