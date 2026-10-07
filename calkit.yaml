@@ -524,7 +524,11 @@ questions:
         explanation: >-
           The pipeline-level number this kernel work has to show up in
           eventually. Kernel times are not SYPD, and this mechanism measured a
-          SYPD null on its own.
+          SYPD null on its own. Not templated into the answer, and must not be:
+          the working tree's value is whatever the mod arm last carried, which
+          since 2026-10-07 is the fold AND the fused radiation together. The
+          fold measured on its own is commit 4a2424b; check that revision's
+          results/summary.json rather than this one for the fold alone.
   - question: >-
       Does putting the parameters in `Val` make pointwise kernels measurably faster across the board, as CliMA/ClimaCore.jl#2676 asks?
     answer: >-
@@ -537,7 +541,7 @@ questions:
       Both moved the way the step predicts, in opposite directions, by a similar amount, and that agreement is the strongest form this evidence has taken; it is not a controlled comparison, because the same upstream change also altered the kernel bodies.
       Register count does not predict which case a kernel is in: two kernels that both start at the {fold_quad_regs_baseline:.0f}-register cap land on opposite sides of a step, while a {fold_cf_regs_baseline:.0f}-register one crosses.
       The distance to the next step does predict it, and it is computable before any code is written, because ClimaCore sizes the launch block from the register count and warps per SM follow from the pair.
-      Across the whole device this is {fold_total_change:.2f}% of kernel time on a 120-step window, {fold_total_saved:.0f} ms, concentrated almost entirely in the first kernel.
+      Across the four kernels this is {fold_own_change:.2f}% of their time on a 120-step window, {fold_total_saved:.0f} ms, concentrated almost entirely in the first kernel, which is {fold_total_change:.2f}% of the whole device.
       The population bounds how far it can go: of {kernels:.0f} kernels profiled, {addressable:.0f} ({addressable_pct}%) are capped by registers alone AND below full occupancy, while {at_full_occupancy:.0f} are already at full occupancy and can gain nothing however well their parameters fold.
       The mechanism is settled: Val folds an isbits parameter set to literals and lands on the const-global register count exactly, taking an isolated microphysics evaluation body from {val_args:.0f} registers to {val_val:.0f}, {arg_warps:.0f} to {val_warps:.0f} warps per SM.
       The thing that will defeat anyone applying it is the struct boundary: an evaluator holding the parameters as FIELDS boxes the constant and reads it back per point, {eval_field_regs:.0f} registers and {eval_field_spill:.0f} bytes of spill against {eval_type_regs:.0f} and {eval_type_spill:.0f} for the same body with the parameters in the type.
@@ -612,8 +616,9 @@ questions:
           fold_sgs_warps_mod: kernels.sgs_moments.mod.warps_per_sm
           fold_sgs_change: kernels.sgs_moments.mean_change_pct
           fold_sgs_gained_points: vs_prior_stack.switched.sgs_moments.payoff_points
-          fold_total_change: device_total.change_pct
-          fold_total_saved: device_total.ms_saved
+          fold_total_change: fold_attributable.pct_of_device_total
+          fold_total_saved: fold_attributable.ms_saved
+          fold_own_change: fold_attributable.change_pct
         explanation: >-
           The four kernels the pattern was applied to, as the profiled runs
           compiled them: registers per thread, the block size ClimaCore chose
@@ -623,7 +628,10 @@ questions:
           since it had the fold applied the same way and did not cross a step.
           Read from the nsys databases rather than results/top-kernels.csv,
           which averages over a kernel name that here covers two kernels at
-          different register counts.
+          different register counts. The device figure quoted is
+          fold_attributable, the subtotal over these four kernels, not
+          device_total: the mod arm now also carries the fused radiation, so
+          the whole-arm total measures two treatments at once.
       - kind: value
         path: results/cm-registers.toml
         key: layers.LinearizedAverage nsub=2.registers
@@ -633,6 +641,78 @@ questions:
           saving to appear in its register count, where the broadcast the model
           runs is split into several smaller kernels whose limits differ. Any
           register experiment answers for the body it compiles.
+  - question: >-
+      Do the fused radiation solves and the microphysics parameter fold compose, and what does the pair buy together?
+    answer: >-
+      They compose, and the stack is worth {comb_step_pct:.2f}% of the walltime per coupling step, {comb_base_sypd:.5f} -> {comb_mod_sypd:.5f} SYPD.
+      Measured one at a time the fold was {fold_alone_pct:.2f}% per step and the fused radiation {rad_alone_pct:.2f}%, which sum to {sum_singles_pct:.2f}%, so running them together lost nothing: the measured stack is {vs_product_pct:.2f}% faster than the product of the two speedup factors, inside this machine's +-2% SYPD noise floor.
+      I predicted the opposite before measuring -- that the pair would land well below the sum, because radiation is {rad_share_base:.2f}% of baseline kernel time and the microphysics hot kernel {mp_share_base:.2f}%, so each treatment shrinks the other's share.
+      That reasoning is wrong in a way worth recording, because it is the natural mistake: shrinking shares price the SECOND treatment as a fraction of the already-faster run, which is the wrong denominator when both figures are quoted against the same baseline.
+      Two treatments on disjoint kernels save disjoint absolute time, so against a common baseline their percentages add; Amdahl bites when the speedups are compounded, not when the savings are.
+      What makes this a decomposition rather than an inference is that the device time closes: of {dev_saved:.0f} ms saved over the 120-step window, {dev_rad:.0f} ms is radiation and {dev_fold:.0f} ms is the four folded kernels, leaving {dev_unattr:.1f} ms unattributed out of {dev_saved:.0f}.
+      Radiation is {rad_share_saving:.1f}% of the saving and the fold {fold_share_saving:.1f}%, and the per-kernel fold figures are unchanged from the fold-alone run, which is the check that stacking did not perturb them.
+      The whole-device kernel total moved {dev_change_pct:.2f}% against {comb_step_pct:.2f}% of walltime -- the two agree here, which they usually do not, because for once the treatments are large enough that device time dominates what moved.
+      Radiation falls from {rad_share_base:.2f}% of kernel time to {rad_share_mod:.2f}% and the microphysics hot kernel from {mp_share_base:.2f}% to {mp_share_mod:.2f}%, so neither is now the obvious next target: the remaining time is in the long tail the fusion-ceiling question prices.
+      Read the two single-treatment figures as approximate, not as an A/B: each was measured against its own baseline, and the stack moved underneath them between the runs.
+    evidence:
+      - kind: result
+        path: results/combined-stack.json
+        values:
+          comb_base_sypd: combined.baseline_sypd
+          comb_mod_sypd: combined.mod_sypd
+          comb_step_pct: combined.s_per_step_change_pct
+          fold_alone_pct: singles.fold.s_per_step_change_pct
+          rad_alone_pct: singles.radiation.s_per_step_change_pct
+          sum_singles_pct: composition.sum_of_single_per_step_pct
+          vs_product_pct: composition.measured_vs_product_pct
+          dev_saved: device.ms_saved
+          dev_rad: device.radiation_ms_saved
+          dev_fold: device.fold_ms_saved
+          dev_unattr: device.unattributed_ms
+          dev_change_pct: device.change_pct
+          rad_share_saving: device.radiation_share_of_saving_pct
+          fold_share_saving: device.fold_share_of_saving_pct
+          rad_share_base: shares.baseline_radiation_pct
+          rad_share_mod: shares.mod_radiation_pct
+          mp_share_base: shares.baseline_microphysics_hot_pct
+          mp_share_mod: shares.mod_microphysics_hot_pct
+        explanation: >-
+          The stacked measurement, snapshotted because results/summary.json is
+          rewritten by every run and so cannot be cited for any particular one.
+          The two single-treatment figures are read out of Git at the commits
+          that measured them rather than typed, so the composition claim is
+          checkable, and the provenance block records the submodule SHAs of the
+          arms the device decomposition describes. The stage is frozen on main
+          for the reason compile-time-study and launch-cost are: unfrozen it
+          would be rewritten to describe whichever arm pair ran last.
+      - kind: result
+        path: results/param-fold.json
+        values:
+          comb_fold_own_pct: fold_attributable.change_pct
+          comb_fold_device_pct: fold_attributable.pct_of_device_total
+        explanation: >-
+          Where the fold half of the decomposition comes from, per kernel.
+          fold_attributable rather than device_total, because device_total is
+          every kernel in the arm and the arm now carries both treatments.
+          Comparing these rows against the fold-alone run at 4a2424b is what
+          shows the radiation change did not perturb the microphysics kernels.
+      - kind: value
+        path: results/kernel-shares.json
+        key: baseline.radiation_pct
+        name: live_radiation_share_pct
+        explanation: >-
+          Cited for the method rather than for a number: the shares in the
+          answer are templated from the snapshot, not from here, because this
+          file is regenerated by every run. Read it to see what the CURRENT arm
+          pair spends on radiation, which is a different question.
+      - kind: value
+        path: results/summary.json
+        key: speedup_pct
+        name: live_speedup_pct
+        explanation: >-
+          Also the method, not the number. This is the pipeline's live figure
+          for whatever ran last; it happened to be this stack on 2026-10-07,
+          and the snapshot exists so the claim survives the next run.
   - question: >-
       Is the nine-point SGS quadrature in the 1-moment microphysics earning the
       throughput it costs?
@@ -1109,6 +1189,30 @@ pipeline:
         - results/kernel-population.json
       outputs:
         - path: results/kernel-shares.json
+          storage: git
+    export-combined-stack:
+      # FROZEN 2026-10-07, immediately after the run it describes.
+      # Snapshots the stacked-treatment measurement, because
+      # results/summary.json is regenerated by every run and so cannot be cited
+      # for any particular one. The two single-treatment figures it compares
+      # against are read out of Git at the commits that measured them, so the
+      # composition claim is not typed. Frozen after its run for the same
+      # reason the compile-time and launch-cost stages are: on main it would
+      # otherwise be rewritten to describe whichever arm pair ran last, and the
+      # provenance block inside the file records which stack it does describe.
+      kind: python-script
+      frozen: true
+      script_path: scripts/export-combined-stack.py
+      environment: py
+      inputs:
+        - results/summary.json
+        - results/kernel-shares.json
+        - results/param-fold.json
+        - results/treatment.json
+        - .calkit/scheduler/logs/amip-baseline.out
+        - .calkit/scheduler/logs/amip-mod.out
+      outputs:
+        - path: results/combined-stack.json
           storage: git
     export-kernel-resources:
       kind: python-script

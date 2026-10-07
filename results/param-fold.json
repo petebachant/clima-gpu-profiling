@@ -7,10 +7,18 @@
   "device_total": {
     "baseline_launches": 391922,
     "baseline_ms": 29491.0,
-    "change_pct": -6.83,
-    "mod_launches": 391922,
-    "mod_ms": 27476.3,
-    "ms_saved": 2014.8
+    "change_pct": -21.78,
+    "mod_launches": 391886,
+    "mod_ms": 23069.3,
+    "ms_saved": 6421.7
+  },
+  "fold_attributable": {
+    "baseline_ms": 4460.6,
+    "change_pct": -42.79,
+    "kernels": 4,
+    "mod_ms": 2551.8,
+    "ms_saved": 1908.8,
+    "pct_of_device_total": -6.47
   },
   "kernels": {
     "cloud_fraction": {
@@ -29,23 +37,23 @@
         "warps_per_sm": 28
       },
       "crossed_occupancy_step": true,
-      "mean_change_pct": -9.05,
+      "mean_change_pct": -9.18,
       "mod": {
         "block_size": 576,
         "kernel": "set_cloud_fraction__NVTX",
         "launches": 240,
-        "mean_us": 475.6,
+        "mean_us": 474.9,
         "name_covers_variants": 1,
         "occupancy_pct": 56.25,
         "registers": 53,
         "registers_for_next_step": 37,
         "source_line": null,
         "spill_bytes_per_thread": 0,
-        "total_ms": 114.154,
+        "total_ms": 113.969,
         "warps_per_sm": 36
       },
       "registers_saved": 17,
-      "total_ms_saved": 11.336
+      "total_ms_saved": 11.521
     },
     "microphysics_quadrature": {
       "baseline": {
@@ -63,23 +71,23 @@
         "warps_per_sm": 8
       },
       "crossed_occupancy_step": true,
-      "mean_change_pct": -48.35,
+      "mean_change_pct": -48.25,
       "mod": {
         "block_size": 384,
         "kernel": "set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1024",
         "launches": 120,
-        "mean_us": 16141.2,
+        "mean_us": 16172.8,
         "name_covers_variants": 1,
         "occupancy_pct": 18.75,
         "registers": 159,
         "registers_for_next_step": 85,
         "source_line": 1024,
         "spill_bytes_per_thread": 0,
-        "total_ms": 1936.946,
+        "total_ms": 1940.737,
         "warps_per_sm": 12
       },
       "registers_saved": 96,
-      "total_ms_saved": 1813.518
+      "total_ms_saved": 1809.727
     },
     "microphysics_updraft": {
       "baseline": {
@@ -97,23 +105,23 @@
         "warps_per_sm": 8
       },
       "crossed_occupancy_step": false,
-      "mean_change_pct": -14.41,
+      "mean_change_pct": -14.25,
       "mod": {
         "block_size": 256,
         "kernel": "set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L978",
         "launches": 120,
-        "mean_us": 3589.3,
+        "mean_us": 3596.2,
         "name_covers_variants": 1,
         "occupancy_pct": 12.5,
         "registers": 172,
         "registers_for_next_step": 128,
         "source_line": 978,
         "spill_bytes_per_thread": 0,
-        "total_ms": 430.713,
+        "total_ms": 431.541,
         "warps_per_sm": 8
       },
       "registers_saved": 83,
-      "total_ms_saved": 72.543
+      "total_ms_saved": 71.715
     },
     "sgs_moments": {
       "baseline": {
@@ -131,64 +139,64 @@
         "warps_per_sm": 12
       },
       "crossed_occupancy_step": true,
-      "mean_change_pct": -19.79,
+      "mean_change_pct": -19.47,
       "mod": {
         "block_size": 512,
         "kernel": "set_sgs_moments_and_cloud_fraction__NVTX",
         "launches": 120,
-        "mean_us": 544.3,
+        "mean_us": 546.5,
         "name_covers_variants": 2,
         "occupancy_pct": 25.0,
         "registers": 123,
         "registers_for_next_step": 64,
         "source_line": null,
         "spill_bytes_per_thread": 0,
-        "total_ms": 65.314,
+        "total_ms": 65.584,
         "warps_per_sm": 16
       },
       "registers_saved": 8,
-      "total_ms_saved": 16.117
+      "total_ms_saved": 15.847
     }
   },
   "kernels_crossing_a_step": 3,
-  "note": "Registers per thread and block size as the profiled run chose them; ClimaCore sizes the block from the register count, so both move together and occupancy is derived from the pair. A kernel's mean is over its own launches, and `name_covers_variants` > 1 means the reported figures are the heaviest variant of a shared name. `registers_for_next_step` is what the kernel would have to reach for one more block per SM, which is the gap a fold has to close to pay.",
+  "note": "Registers per thread and block size as the profiled run chose them; ClimaCore sizes the block from the register count, so both move together and occupancy is derived from the pair. A kernel's mean is over its own launches, and `name_covers_variants` > 1 means the reported figures are the heaviest variant of a shared name. `registers_for_next_step` is what the kernel would have to reach for one more block per SM, which is the gap a fold has to close to pay. `device_total` is every kernel in the arm and so includes any other treatment the mod arm carries; `fold_attributable` is the subtotal over the kernels listed here, which is the fold's own share.",
   "vs_prior_stack": {
     "kernels": {
       "cloud_fraction": {
-        "now_change_pct": -9.05,
+        "now_change_pct": -9.18,
         "now_crossed_step": true,
         "now_registers_saved": 17,
-        "payoff_delta_points": 1.22,
+        "payoff_delta_points": 1.09,
         "prior_change_pct": -10.27,
         "prior_crossed_step": true,
         "prior_registers_saved": 16,
         "step_changed": false
       },
       "microphysics_quadrature": {
-        "now_change_pct": -48.35,
+        "now_change_pct": -48.25,
         "now_crossed_step": true,
         "now_registers_saved": 96,
-        "payoff_delta_points": -0.42,
+        "payoff_delta_points": -0.32,
         "prior_change_pct": -47.93,
         "prior_crossed_step": true,
         "prior_registers_saved": 93,
         "step_changed": false
       },
       "microphysics_updraft": {
-        "now_change_pct": -14.41,
+        "now_change_pct": -14.25,
         "now_crossed_step": false,
         "now_registers_saved": 83,
-        "payoff_delta_points": 22.23,
+        "payoff_delta_points": 22.39,
         "prior_change_pct": -36.64,
         "prior_crossed_step": true,
         "prior_registers_saved": 105,
         "step_changed": true
       },
       "sgs_moments": {
-        "now_change_pct": -19.79,
+        "now_change_pct": -19.47,
         "now_crossed_step": true,
         "now_registers_saved": 8,
-        "payoff_delta_points": -18.72,
+        "payoff_delta_points": -18.4,
         "prior_change_pct": -1.07,
         "prior_crossed_step": false,
         "prior_registers_saved": 5,
@@ -197,17 +205,17 @@
     },
     "n_switched": 2,
     "note": "Not a controlled A/B on the step alone: the upstream change that moved the step also changed the kernel bodies (an argument was added to the microphysics path). The evidence is that both switchers moved the way the step predicts, in opposite directions, by a similar number of points.",
-    "points_gained_gaining_a_step": 18.7,
-    "points_lost_losing_a_step": 22.2,
+    "points_gained_gaining_a_step": 18.4,
+    "points_lost_losing_a_step": 22.4,
     "prior_commit": "bcd24381abe670ce3c3c8e4b88ca2d0f5b0e7f22",
     "switched": {
       "microphysics_updraft": {
         "direction": "lost",
-        "payoff_points": 22.23
+        "payoff_points": 22.39
       },
       "sgs_moments": {
         "direction": "gained",
-        "payoff_points": 18.72
+        "payoff_points": 18.4
       }
     },
     "without_a_step": [
@@ -216,7 +224,7 @@
         "registers_saved": 5
       },
       {
-        "payoff_pct": 14.41,
+        "payoff_pct": 14.25,
         "registers_saved": 83
       }
     ]

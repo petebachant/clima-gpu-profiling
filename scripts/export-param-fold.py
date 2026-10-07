@@ -236,6 +236,21 @@ def main():
         "change_pct": pct(bt, mt),
         "ms_saved": round((bt - mt) / 1e6, 1),
     }
+    # device_total covers every kernel in the arm, so it also carries any OTHER
+    # treatment the mod arm happens to be running. The fold's own contribution
+    # is the sum over the kernels it was applied to, against the same
+    # whole-device denominator.
+    fb = sum(v["baseline"]["total_ms"] for v in out["kernels"].values())
+    fm = sum(v["mod"]["total_ms"] for v in out["kernels"].values())
+    out["fold_attributable"] = {
+        "kernels": len(out["kernels"]),
+        "baseline_ms": round(fb, 1),
+        "mod_ms": round(fm, 1),
+        "ms_saved": round(fb - fm, 1),
+        "change_pct": pct(fb, fm),
+        "pct_of_device_total": pct(bt / 1e6, bt / 1e6 - (fb - fm)),
+    }
+
     crossed = [k for k, v in out["kernels"].items() if v["crossed_occupancy_step"]]
     out["kernels_crossing_a_step"] = len(crossed)
     out["crossed"] = sorted(crossed)
@@ -246,7 +261,10 @@ def main():
         "over its own launches, and `name_covers_variants` > 1 means the "
         "reported figures are the heaviest variant of a shared name. "
         "`registers_for_next_step` is what the kernel would have to reach for "
-        "one more block per SM, which is the gap a fold has to close to pay."
+        "one more block per SM, which is the gap a fold has to close to pay. "
+        "`device_total` is every kernel in the arm and so includes any other "
+        "treatment the mod arm carries; `fold_attributable` is the subtotal "
+        "over the kernels listed here, which is the fold's own share."
     )
     OUT.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
 
@@ -257,8 +275,12 @@ def main():
               f"{v['baseline']['mean_us']:9.1f} -> {v['mod']['mean_us']:9.1f} us  "
               f"{v['mean_change_pct']:+6.2f}%  ({v['total_ms_saved']:+.1f} ms)  "
               f"{step}  next at {v['mod']['registers_for_next_step']} regs")
+    f = out["fold_attributable"]
+    print(f"these {f['kernels']} kernels: {f['baseline_ms']} -> {f['mod_ms']} ms "
+          f"({f['change_pct']:+.2f}%), {f['pct_of_device_total']:+.2f}% of the device")
     d = out["device_total"]
-    print(f"all kernels: {d['baseline_ms']} -> {d['mod_ms']} ms ({d['change_pct']:+.2f}%)")
+    print(f"whole arm:   {d['baseline_ms']} -> {d['mod_ms']} ms "
+          f"({d['change_pct']:+.2f}%)  [all treatments]")
     v = out.get("vs_prior_stack")
     for key, sw in (v or {}).get("switched", {}).items():
         e = v["kernels"][key]

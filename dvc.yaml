@@ -334,6 +334,24 @@ stages:
           persist: false
     desc: Automatically generated from the 'kernel-shares' stage in calkit.yaml.
       Changes made here will be overwritten.
+  export-combined-stack:
+    cmd: calkit xenv -n py --no-check -- python scripts/export-combined-stack.py
+    deps:
+      - scripts/export-combined-stack.py
+      - results/summary.json
+      - results/kernel-shares.json
+      - results/param-fold.json
+      - results/treatment.json
+      - .calkit/scheduler/logs/amip-baseline.out
+      - .calkit/scheduler/logs/amip-mod.out
+      - .calkit/env-locks/py
+    outs:
+      - results/combined-stack.json:
+          cache: false
+          persist: false
+    frozen: true
+    desc: Automatically generated from the 'export-combined-stack' stage in
+      calkit.yaml. Changes made here will be overwritten.
   export-kernel-resources:
     cmd: calkit xenv -n py --no-check -- python
       scripts/export-kernel-resources.py
