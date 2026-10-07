@@ -1,4 +1,4 @@
-gpu-guard: running on GPU(s) [0] -- OK (avoiding [])
+gpu-guard: running on GPU(s) [7] -- OK (avoiding [])
 Loading climacommon/2025_05_15
   Loading requirement: climaauth/2025_05_15 openmpi/4.1.5-mpitrampoline
     julia/1.11.5 cuda/julia-pref
@@ -29,104 +29,60 @@ Loading climacommon/2025_05_15
 │ 
 │ In any other case, please file an issue.
 └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-Precompiling ClimaAtmos...
-   2285.2 ms  ✓ RRTMGP → RRTMGPNCDatasetsExt
-  93376.2 ms  ✓ ClimaCore
-   7795.5 ms  ✓ ClimaCore → KrylovExt
-   7835.2 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreExt
-   9703.6 ms  ✓ ClimaTimeSteppers → ClimaTimeSteppersClimaCoreExt
-   7951.0 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreInterpolationsExt
-   7801.3 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreNCDatasetsExt
-   9351.9 ms  ✓ ClimaDiagnostics
-  25968.8 ms  ✓ ClimaAtmos
-  9 dependencies successfully precompiled in 141 seconds. 280 already precompiled.
-Precompiling ClimaCoreCUDAExt...
-Info Given ClimaCoreCUDAExt was explicitly requested, output will be shown live [0K
-[0K┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
-[0K│ This may cause errors.
-[0K│ 
-[0K│ If you're running under a profiler, this situation is expected. Otherwise,
-[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
-[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
-[0K│ 
-[0K│ In any other case, please file an issue.
-[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-[0K┌ Warning: CUDA runtime library `libnvJitLink.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libnvJitLink.so.13`.
-[0K│ This may cause errors.
-[0K│ 
-[0K│ If you're running under a profiler, this situation is expected. Otherwise,
-[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
-[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
-[0K│ 
-[0K│ In any other case, please file an issue.
-[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-[0K┌ Warning: CUDA runtime library `libcusparse.so.12` was loaded from a system path, `/usr/local/cuda/lib64/libcusparse.so.12`.
-[0K│ This may cause errors.
-[0K│ 
-[0K│ If you're running under a profiler, this situation is expected. Otherwise,
-[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
-[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
-[0K│ 
-[0K│ In any other case, please file an issue.
-[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-   8703.6 ms  ✓ ClimaCore → ClimaCoreCUDAExt
-  1 dependency successfully precompiled in 10 seconds. 172 already precompiled.
-  1 dependency had output during precompilation:
-┌ ClimaCore → ClimaCoreCUDAExt
-│  [Output was shown above]
-└  
-Precompiling RRTMGPCUDAExt...
-Info Given RRTMGPCUDAExt was explicitly requested, output will be shown live [0K
-[0K┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
-[0K│ This may cause errors.
-[0K│ 
-[0K│ If you're running under a profiler, this situation is expected. Otherwise,
-[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
-[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
-[0K│ 
-[0K│ In any other case, please file an issue.
-[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-[0K┌ Warning: CUDA runtime library `libnvJitLink.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libnvJitLink.so.13`.
-[0K│ This may cause errors.
-[0K│ 
-[0K│ If you're running under a profiler, this situation is expected. Otherwise,
-[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
-[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
-[0K│ 
-[0K│ In any other case, please file an issue.
-[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-[0K┌ Warning: CUDA runtime library `libcusparse.so.12` was loaded from a system path, `/usr/local/cuda/lib64/libcusparse.so.12`.
-[0K│ This may cause errors.
-[0K│ 
-[0K│ If you're running under a profiler, this situation is expected. Otherwise,
-[0K│ ensure that your library path environment variable (e.g., `PATH` on Windows
-[0K│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
-[0K│ 
-[0K│ In any other case, please file an issue.
-[0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-   4608.7 ms  ✓ RRTMGP → RRTMGPCUDAExt
-  1 dependency successfully precompiled in 5 seconds. 94 already precompiled.
-  1 dependency had output during precompilation:
-┌ RRTMGP → RRTMGPCUDAExt
-│  [Output was shown above]
-└  
-[ Info: ClimaCore lacks the launch-bounds record; skipping the broadcast layers
+ERROR: LoadError: InvalidIRError: compiling MethodInstance for (::var"#f#9"{var"#1#2"})(::CUDA.CuDeviceVector{Float32, 1}, ::@NamedTuple{ρ::Float32, T::Float32, q_tot::Float32, q_lcl::Float32, q_icl::Float32, q_rai::Float32, q_sno::Float32}, ::CloudMicrophysics.Parameters.Microphysics1MParams{CloudMicrophysics.Parameters.Microphysics1MOptions{CloudMicrophysics.Parameters.CloudLiquidFormation, CloudMicrophysics.Parameters.ConstantTimescale, CloudMicrophysics.Parameters.CloudIceMelt, CloudMicrophysics.Parameters.HomogeneousAndHeterogeneous, CloudMicrophysics.Parameters.Kessler1M, CloudMicrophysics.Parameters.NoSupersaturation, CloudMicrophysics.Parameters.RainEvaporation, CloudMicrophysics.Parameters.DepositionAndSublimation, CloudMicrophysics.Parameters.SnowMelt, CloudMicrophysics.Parameters.CloudLiquidRainAccretion, CloudMicrophysics.Parameters.CloudLiquidSnowAccretion, CloudMicrophysics.Parameters.CloudIceRainAccretion, CloudMicrophysics.Parameters.CloudIceSnowAccretion, CloudMicrophysics.Parameters.RainSnowAccretion}, @NamedTuple{cloud_liquid_formation::@NamedTuple{T_hom::Float32, τ_relax::Float32}, cloud_ice_formation::@NamedTuple{τ_relax::Float32}, cloud_ice_melt::Nothing, cloud_liquid_freezing::@NamedTuple{τ_hom::Float32, T_hom::Float32, A::Float32, B::Float32}, rain_autoconversion::CloudMicrophysics.Parameters.KesslerAcnv{Float32}, snow_autoconversion::CloudMicrophysics.Parameters.Acnv1M{Float32}, rain_condensation_evaporation::Nothing, snow_deposition_sublimation::Nothing, snow_melt::Nothing, cloud_liquid_rain_accretion::@NamedTuple{e::Float32}, cloud_liquid_snow_accretion::@NamedTuple{e::Float32}, cloud_ice_rain_accretion::@NamedTuple{e::Float32}, cloud_ice_snow_accretion::@NamedTuple{e::Float32}, rain_snow_accretion::@NamedTuple{e::Float32, coeff_disp::Float32}}, CloudMicrophysics.Parameters.CloudPhaseParams1M{CloudMicrophysics.Parameters.CloudLiquid{Float32}, CloudMicrophysics.Parameters.CloudIce{Float32, CloudMicrophysics.Parameters.ParticlePDFIceRain{Float32}, CloudMicrophysics.Parameters.ParticleMass{Float32}}}, CloudMicrophysics.Parameters.PrecipPhaseParams1M{CloudMicrophysics.Parameters.Rain{CloudMicrophysics.Parameters.ParticlePDFIceRain{Float32}, CloudMicrophysics.Parameters.ParticleMass{Float32}, CloudMicrophysics.Parameters.ParticleArea{Float32}, CloudMicrophysics.Parameters.Ventilation{Float32}}, CloudMicrophysics.Parameters.Snow{Float32, CloudMicrophysics.Parameters.ParticlePDFSnow{Float32}, CloudMicrophysics.Parameters.ParticleMass{Float32}, CloudMicrophysics.Parameters.ParticleArea{Float32}, CloudMicrophysics.Parameters.Ventilation{Float32}, CloudMicrophysics.Parameters.SnowAspectRatio{Float32}}}, CloudMicrophysics.Parameters.AirProperties{Float32}, CloudMicrophysics.Parameters.Blk1MVelType{CloudMicrophysics.Parameters.Blk1MVelTypeRain{Float32}, CloudMicrophysics.Parameters.Blk1MVelTypeSnow{Float32}}}, ::Thermodynamics.Parameters.ThermodynamicsParameters{Float32}) resulted in invalid LLVM IR
+Reason: unsupported call to an unknown function (call to gpu_gc_pool_alloc)
+Stacktrace:
+ [1] #1
+   @ ~/calkit/clima-gpu-profiling/scripts/measure-cm-registers.jl:36
+ [2] f
+   @ ~/calkit/clima-gpu-profiling/scripts/measure-cm-registers.jl:61
+Reason: unsupported dynamic function invocation (call to _microphysics_source_terms)
+Stacktrace:
+ [1] #1
+   @ ~/calkit/clima-gpu-profiling/scripts/measure-cm-registers.jl:36
+ [2] f
+   @ ~/calkit/clima-gpu-profiling/scripts/measure-cm-registers.jl:61
+Hint: catch this exception as `err` and call `code_typed(err; interactive = true)` to introspect the erroneous code with Cthulhu.jl
+Stacktrace:
+  [1] check_ir(job::GPUCompiler.CompilerJob{GPUCompiler.PTXCompilerTarget, CUDA.CUDACompilerParams}, args::LLVM.Module)
+    @ GPUCompiler ~/.julia/packages/GPUCompiler/Avrep/src/validation.jl:167
+  [2] macro expansion
+    @ ~/.julia/packages/GPUCompiler/Avrep/src/driver.jl:455 [inlined]
+  [3] emit_llvm(job::GPUCompiler.CompilerJob; kwargs::@Kwargs{})
+    @ GPUCompiler ~/.julia/packages/GPUCompiler/Avrep/src/utils.jl:212
+  [4] emit_llvm
+    @ ~/.julia/packages/GPUCompiler/Avrep/src/utils.jl:210 [inlined]
+  [5] compile_unhooked(output::Symbol, job::GPUCompiler.CompilerJob; kwargs::@Kwargs{})
+    @ GPUCompiler ~/.julia/packages/GPUCompiler/Avrep/src/driver.jl:95
+  [6] compile_unhooked
+    @ ~/.julia/packages/GPUCompiler/Avrep/src/driver.jl:80 [inlined]
+  [7] #compile#190
+    @ ~/.julia/packages/GPUCompiler/Avrep/src/driver.jl:67 [inlined]
+  [8] compile
+    @ ~/.julia/packages/GPUCompiler/Avrep/src/driver.jl:55 [inlined]
+  [9] #1228
+    @ ~/.julia/packages/CUDA/FQwqy/src/compiler/compilation.jl:247 [inlined]
+ [10] JuliaContext(f::CUDA.var"#1228#1231"{GPUCompiler.CompilerJob{GPUCompiler.PTXCompilerTarget, CUDA.CUDACompilerParams}}; kwargs::@Kwargs{})
+    @ GPUCompiler ~/.julia/packages/GPUCompiler/Avrep/src/driver.jl:34
+ [11] JuliaContext(f::Function)
+    @ GPUCompiler ~/.julia/packages/GPUCompiler/Avrep/src/driver.jl:25
+ [12] compile(job::GPUCompiler.CompilerJob)
+    @ CUDA ~/.julia/packages/CUDA/FQwqy/src/compiler/compilation.jl:246
+ [13] actual_compilation(cache::Dict{Any, CUDA.CuFunction}, src::Core.MethodInstance, world::UInt64, cfg::GPUCompiler.CompilerConfig{GPUCompiler.PTXCompilerTarget, CUDA.CUDACompilerParams}, compiler::typeof(CUDA.compile), linker::typeof(CUDA.link))
+    @ GPUCompiler ~/.julia/packages/GPUCompiler/Avrep/src/execution.jl:245
+ [14] cached_compilation(cache::Dict{Any, CUDA.CuFunction}, src::Core.MethodInstance, cfg::GPUCompiler.CompilerConfig{GPUCompiler.PTXCompilerTarget, CUDA.CUDACompilerParams}, compiler::Function, linker::Function)
+    @ GPUCompiler ~/.julia/packages/GPUCompiler/Avrep/src/execution.jl:159
+ [15] macro expansion
+    @ ~/.julia/packages/CUDA/FQwqy/src/compiler/execution.jl:373 [inlined]
+ [16] macro expansion
+    @ ./lock.jl:273 [inlined]
+ [17] cufunction(f::var"#f#9"{var"#1#2"}, tt::Type{Tuple{CUDA.CuDeviceVector{Float32, 1}, @NamedTuple{ρ::Float32, T::Float32, q_tot::Float32, q_lcl::Float32, q_icl::Float32, q_rai::Float32, q_sno::Float32}, CloudMicrophysics.Parameters.Microphysics1MParams{CloudMicrophysics.Parameters.Microphysics1MOptions{CloudMicrophysics.Parameters.CloudLiquidFormation, CloudMicrophysics.Parameters.ConstantTimescale, CloudMicrophysics.Parameters.CloudIceMelt, CloudMicrophysics.Parameters.HomogeneousAndHeterogeneous, CloudMicrophysics.Parameters.Kessler1M, CloudMicrophysics.Parameters.NoSupersaturation, CloudMicrophysics.Parameters.RainEvaporation, CloudMicrophysics.Parameters.DepositionAndSublimation, CloudMicrophysics.Parameters.SnowMelt, CloudMicrophysics.Parameters.CloudLiquidRainAccretion, CloudMicrophysics.Parameters.CloudLiquidSnowAccretion, CloudMicrophysics.Parameters.CloudIceRainAccretion, CloudMicrophysics.Parameters.CloudIceSnowAccretion, CloudMicrophysics.Parameters.RainSnowAccretion}, @NamedTuple{cloud_liquid_formation::@NamedTuple{T_hom::Float32, τ_relax::Float32}, cloud_ice_formation::@NamedTuple{τ_relax::Float32}, cloud_ice_melt::Nothing, cloud_liquid_freezing::@NamedTuple{τ_hom::Float32, T_hom::Float32, A::Float32, B::Float32}, rain_autoconversion::CloudMicrophysics.Parameters.KesslerAcnv{Float32}, snow_autoconversion::CloudMicrophysics.Parameters.Acnv1M{Float32}, rain_condensation_evaporation::Nothing, snow_deposition_sublimation::Nothing, snow_melt::Nothing, cloud_liquid_rain_accretion::@NamedTuple{e::Float32}, cloud_liquid_snow_accretion::@NamedTuple{e::Float32}, cloud_ice_rain_accretion::@NamedTuple{e::Float32}, cloud_ice_snow_accretion::@NamedTuple{e::Float32}, rain_snow_accretion::@NamedTuple{e::Float32, coeff_disp::Float32}}, CloudMicrophysics.Parameters.CloudPhaseParams1M{CloudMicrophysics.Parameters.CloudLiquid{Float32}, CloudMicrophysics.Parameters.CloudIce{Float32, CloudMicrophysics.Parameters.ParticlePDFIceRain{Float32}, CloudMicrophysics.Parameters.ParticleMass{Float32}}}, CloudMicrophysics.Parameters.PrecipPhaseParams1M{CloudMicrophysics.Parameters.Rain{CloudMicrophysics.Parameters.ParticlePDFIceRain{Float32}, CloudMicrophysics.Parameters.ParticleMass{Float32}, CloudMicrophysics.Parameters.ParticleArea{Float32}, CloudMicrophysics.Parameters.Ventilation{Float32}}, CloudMicrophysics.Parameters.Snow{Float32, CloudMicrophysics.Parameters.ParticlePDFSnow{Float32}, CloudMicrophysics.Parameters.ParticleMass{Float32}, CloudMicrophysics.Parameters.ParticleArea{Float32}, CloudMicrophysics.Parameters.Ventilation{Float32}, CloudMicrophysics.Parameters.SnowAspectRatio{Float32}}}, CloudMicrophysics.Parameters.AirProperties{Float32}, CloudMicrophysics.Parameters.Blk1MVelType{CloudMicrophysics.Parameters.Blk1MVelTypeRain{Float32}, CloudMicrophysics.Parameters.Blk1MVelTypeSnow{Float32}}}, Thermodynamics.Parameters.ThermodynamicsParameters{Float32}}}; kwargs::@Kwargs{always_inline::Bool})
+    @ CUDA ~/.julia/packages/CUDA/FQwqy/src/compiler/execution.jl:368
+ [18] macro expansion
+    @ ~/.julia/packages/CUDA/FQwqy/src/compiler/execution.jl:112 [inlined]
+ [19] top-level scope
+    @ ~/calkit/clima-gpu-profiling/scripts/measure-cm-registers.jl:62
+in expression starting at /home/pbachant/calkit/clima-gpu-profiling/scripts/measure-cm-registers.jl:60
 
 === registers, params passed as RUNTIME kernel arguments ===
 layer                           regs   local B  warps/SM
-source terms only               52     32       16
-+ aggregate (Instantaneous)     62     32       16
-one linearized implicit step    76     32       16
-LinearizedAverage nsub=1        207    32       8
-LinearizedAverage nsub=2        207    32       8
-LinearizedAverage nsub=3        207    32       8
-
-=== can ptxas hit 12 warps/SM without spilling? ===
-compilation                       regs   local B  warps/SM
-unbounded                         255    760      8
-unbounded, always_inline=false    255    856      8
-__launch_bounds__ 12 warps/SM     168    1120     12
-
-spill growth asking for 12 warps/SM: 360 bytes  (OVER the 256 B budget -- ptxas is buying occupancy with spill)
-
-BISECT DONE
