@@ -2332,6 +2332,50 @@ unfused kernel was already over budget.
 So the occupancy lever is closed from both ends, and the ledger's closing
 sentence holds for a third mechanism.
 
+### 4ad. The fold pays an occupancy step or it pays nothing
+
+`results/param-fold.json`, from the two nsys databases rather than
+`results/top-kernels.csv` --- that table averages over a kernel name, and
+`set_sgs_moments_and_cloud_fraction` covers two kernels at different register
+counts.
+
+The pattern of 4ac applied to four kernels in two ClimaAtmos files, measured in
+the model:
+
+| kernel | registers | warps/SM | mean time |
+|---|---|---|---|
+| SGS quadrature | 255 -> 162 | 8 -> 12 | **-47.9%** |
+| updraft | 255 -> 150 | 8 -> 12 | **-36.6%** |
+| cloud fraction | 84 -> 68 | 20 -> 28 | **-10.3%** |
+| SGS moments | 214 -> 209 | 8 -> 8 | -1.1% |
+
+Three crossed an occupancy step and paid. The fourth had the same change made
+the same way in the same file and gained nothing, and it is the control the
+other three need: without it the result would read as "folding parameters makes
+kernels faster" rather than "folding parameters is worth an occupancy step when
+it reaches one."
+
+The quantity that decides it is warps per SM, not registers, and the two are
+not interchangeable because **ClimaCore sizes the block from the register
+count**. Blocks went 256 -> 384 for the microphysics kernels and 640 -> 896 for
+cloud fraction. At a fixed 256-thread block, 255 -> 162 registers would have
+changed nothing at all: both fit exactly one block per SM. The launch
+configurator is what converts the saving into residency, so the question to ask
+of a candidate kernel is how far it is from the next step, which is computable
+from registers and block size before any code is written. The SGS-moments
+kernel needed 128 registers to reach its next step and the fold found 5.
+
+Spill is not the mechanism here, which is worth separating from the
+CloudMicrophysics #750 precedent in 4r where it was: `localMemoryPerThread` is
+0 in both arms for all four kernels. The isolated probe body spills because it
+is compiled without the launch configuration the model gives it; the kernels
+the model runs do not.
+
+For CliMA/ClimaCore.jl#2676 the answer this produces is narrower and more
+useful than "yes": the precondition is a kernel whose parameter payload is a
+large enough share of its live state to cross a step, and 4ab bounds how many
+kernels could even be in that position.
+
 ### 4ac. The evaluator struct erases the fold, and that is the whole story
 
 `results/val-params-registers.toml`. All of these run the REAL

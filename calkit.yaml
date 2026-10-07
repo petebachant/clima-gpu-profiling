@@ -403,10 +403,11 @@ questions:
       What actually limits the hot SGS-quadrature microphysics kernel, and which
       of the available levers can move it?
     answer: >-
-      Register pressure, and the demand is well above the cap rather than merely at it.
-      The kernel the model runs compiles to {quad_args:.0f} registers -- the hardware maximum per thread -- while still spilling {quad_spill:.0f} bytes to local memory, so what limits it is the nine-point quadrature's live state rather than anything that can be trimmed from what it carries.
-      The payload lever is measured shut: folding the parameters into the type buys nothing here, because the freed registers are immediately taken by the loop (see the question on Val and CliMA/ClimaCore.jl#2676).
-      What has worked here is occupancy targeting through launch bounds and slimming the evaluator struct; what remains is reducing the live state itself -- fewer quadrature points, which was priced and withdrawn, or fewer live values per point.
+      Register pressure, and it is addressable by payload after all -- which is the opposite of what this answer said for three weeks.
+      The kernel the model runs compiled to {fold_quad_regs_baseline:.0f} registers, the hardware maximum per thread, which bought it {fold_quad_warps_baseline:.0f} warps per SM out of 64; the isolated quadrature body also wants more than the cap and spills {quad_spill:.0f} bytes, so the live state is genuinely large.
+      The payload lever is open after all, and reading it as shut cost three null measurements: the parameters were reaching the kernel inside an evaluator struct, which boxes a compile-time constant into a field and reads it back per quadrature point, so the fold was being erased at the struct boundary rather than refused by the loop.
+      Putting them in the struct's TYPE instead takes the kernel from {fold_quad_regs_baseline:.0f} registers to {fold_quad_regs_mod:.0f} and {fold_quad_warps_baseline:.0f} warps per SM to {fold_quad_warps_mod:.0f}, worth {fold_quad_change:.1f}% on the kernel (see the question on Val and CliMA/ClimaCore.jl#2676).
+      What remains is reducing the live state itself -- fewer quadrature points, which was priced and withdrawn, or fewer live values per point -- and that is now the lever for the NEXT occupancy step, which this kernel reaches at {fold_quad_next_step:.0f} registers.
     notes: >-
       Answered for the stack before the 2026-09-21 update in docs/learnings.md 2c
       and 4a: register pressure at the 255-register cap, with a guarded
@@ -425,13 +426,18 @@ questions:
       evaluation body from {val_args:.0f} registers to {val_val:.0f} and
       clearing two occupancy steps.
 
-      On the path the model runs it buys nothing: the quadrature body sits at
-      {quad_args:.0f} registers with or without the fold, spilling
-      {quad_spill:.0f} bytes, because the nine-point loop's live state already
-      exceeds the 255-register cap and freed parameter registers are
-      immediately consumed. That settles what docs/learnings.md left open about
-      whether the 255 is a demand or the cap: it is the cap, and the demand is
-      well above it. The limit is the quadrature's live state, not its payload.
+      On the path the model runs, a plain Val bought nothing: the quadrature
+      body sits at {quad_args:.0f} registers with or without it, spilling
+      {quad_spill:.0f} bytes. That was read as the loop's live state consuming
+      every freed register, and it was wrong -- the Val was being passed to a
+      function that stored it in an evaluator FIELD, which boxes the constant
+      and reads it back per quadrature point. The same body with the parameters
+      in the struct's type compiles to {eval_type_regs:.0f} registers and
+      {eval_type_spill:.0f} bytes against {eval_field_regs:.0f} and
+      {eval_field_spill:.0f}, and the change applied to the model is worth
+      {fold_quad_change:.1f}% on this kernel. What docs/learnings.md left open
+      -- whether the 255 is a demand or the cap -- is answered the other way:
+      enough of it was payload to clear an occupancy step.
     evidence:
       - kind: result
         path: results/val-params-registers.toml
@@ -440,6 +446,10 @@ questions:
           val_val: val_type_parameters.registers
           quad_args: quad_runtime_arguments.registers
           quad_spill: quad_runtime_arguments.local_bytes
+          eval_field_regs: evaluator_params_as_fields.registers
+          eval_field_spill: evaluator_params_as_fields.local_bytes
+          eval_type_regs: evaluator_params_in_type.registers
+          eval_type_spill: evaluator_params_in_type.local_bytes
         explanation: >-
           One microphysics body compiled three ways -- parameters as runtime
           arguments, as const globals, and folded through Val -- for an isolated
@@ -449,6 +459,22 @@ questions:
           figure in both, which is the mechanism working, and in the quadrature
           case that figure is the 255-register cap. Compile-only, so nothing
           runs, and standalone, so it needs no coupled simulation.
+      - kind: result
+        path: results/param-fold.json
+        values:
+          fold_quad_regs_baseline: kernels.microphysics_quadrature.baseline.registers
+          fold_quad_regs_mod: kernels.microphysics_quadrature.mod.registers
+          fold_quad_warps_baseline: kernels.microphysics_quadrature.baseline.warps_per_sm
+          fold_quad_warps_mod: kernels.microphysics_quadrature.mod.warps_per_sm
+          fold_quad_change: kernels.microphysics_quadrature.mean_change_pct
+          fold_quad_next_step: kernels.microphysics_quadrature.mod.registers_for_next_step
+        explanation: >-
+          The kernel as the profiled run compiled it, in both arms: registers
+          per thread, the block size ClimaCore chose from them, and the warps
+          per SM the pair allows. Read from the nsys databases rather than
+          results/top-kernels.csv because that table averages over a kernel
+          name, and one name this treatment touches covers two kernels at
+          different register counts.
       - kind: value
         path: results/cm-registers.toml
         key: layers.LinearizedAverage nsub=2.registers
@@ -502,12 +528,17 @@ questions:
   - question: >-
       Does putting the parameters in `Val` make pointwise kernels measurably faster across the board, as CliMA/ClimaCore.jl#2676 asks?
     answer: >-
-      Partly, and the limit is not the one this question first reported: registers are what caps occupancy for most of the population, so the precondition the idea needs is common rather than rare.
-      Of {kernels:.0f} kernels profiled, {addressable:.0f} ({addressable_pct}%) are capped by registers alone AND below full occupancy, which is where a register saving could become speed; {at_full_occupancy:.0f} are already at full occupancy and can gain nothing however well their parameters fold.
-      The mechanism itself is settled: Val folds an isbits parameter set to literals and lands on the const-global register count exactly, taking an isolated microphysics evaluation body from {val_args:.0f} registers to {val_val:.0f}, {arg_warps:.0f} to {val_warps:.0f} warps per SM.
-      What is NOT settled is whether folding reduces the registers of a kernel that matters, and the one case measured end to end says no: the SGS quadrature compiles to {quad_args:.0f} registers with or without the fold, spilling {quad_spill:.0f} bytes against {quad_val_spill:.0f}, because a kernel over the cap spends any freed register on its live state.
-      That failure mode is concentrated where the prize is: {addressable_at_cap:.0f} of the addressable kernels sit at the 255-register cap at 12.5% occupancy, among them two microphysics cache kernels and both fused radiation kernels, and for radiation the registers are already known to be live arithmetic rather than payload.
-      So the honest read is that payload folding is worth testing on the addressable kernels BELOW the cap, while the ones at it need their live state reduced instead -- which is what splitting a kernel does, and what this file already does twice by hoisting invariants out of the quadrature.
+      Yes, where the parameters are a real share of the kernel's live state, and the payoff is all-or-nothing in a way that is predictable in advance: it arrives when the freed registers let one more block fit on an SM, and it is absent when they do not.
+      Four kernels in ClimaAtmos now have it, measured in the model rather than in isolation.
+      Three crossed an occupancy step and paid: the SGS quadrature {fold_quad_regs_baseline:.0f} -> {fold_quad_regs_mod:.0f} registers, {fold_quad_warps_baseline:.0f} -> {fold_quad_warps_mod:.0f} warps per SM, {fold_quad_change:.1f}% on the kernel; the updraft path {fold_upd_regs_baseline:.0f} -> {fold_upd_regs_mod:.0f} registers for {fold_upd_change:.1f}%; the cloud-fraction kernel {fold_cf_regs_baseline:.0f} -> {fold_cf_regs_mod:.0f} registers, {fold_cf_warps_baseline:.0f} -> {fold_cf_warps_mod:.0f} warps per SM, {fold_cf_change:.1f}%.
+      One did not and gained nothing: the SGS-moments kernel went {fold_sgs_regs_baseline:.0f} -> {fold_sgs_regs_mod:.0f} registers, which leaves it on the same step, and its time moved {fold_sgs_change:.1f}% -- inside its own spread.
+      Register count does not predict which case a kernel is in, and that is the practical finding: the kernel with the SECOND-most registers of the four gained the least, while an {fold_cf_regs_baseline:.0f}-register one took {fold_cf_change:.1f}%, because what matters is the distance to the next step rather than the height of the current count.
+      The step is computable before writing any code -- ClimaCore sizes the block from the register count, so warps per SM follow from the pair -- and the SGS-moments kernel would have needed {fold_sgs_next_step:.0f} registers to reach it against the {fold_sgs_regs_saved:.0f} the fold actually saved.
+      Across the whole device this is {fold_total_change:.2f}% of kernel time on a 120-step window, {fold_total_saved:.0f} ms, concentrated almost entirely in the first kernel.
+      The population bounds how far it can go: of {kernels:.0f} kernels profiled, {addressable:.0f} ({addressable_pct}%) are capped by registers alone AND below full occupancy, while {at_full_occupancy:.0f} are already at full occupancy and can gain nothing however well their parameters fold.
+      The mechanism is settled: Val folds an isbits parameter set to literals and lands on the const-global register count exactly, taking an isolated microphysics evaluation body from {val_args:.0f} registers to {val_val:.0f}, {arg_warps:.0f} to {val_warps:.0f} warps per SM.
+      The thing that will defeat anyone applying it is the struct boundary: an evaluator holding the parameters as FIELDS boxes the constant and reads it back per point, {eval_field_regs:.0f} registers and {eval_field_spill:.0f} bytes of spill against {eval_type_regs:.0f} and {eval_type_spill:.0f} for the same body with the parameters in the type.
+      Three earlier measurements here reported Val as worthless for exactly that reason, including on the kernel it later improved by half.
     evidence:
       - kind: result
         path: results/val-params-registers.toml
@@ -520,6 +551,10 @@ questions:
           quad_val: quad_val_type_parameters.registers
           quad_spill: quad_runtime_arguments.local_bytes
           quad_val_spill: quad_val_type_parameters.local_bytes
+          eval_field_regs: evaluator_params_as_fields.registers
+          eval_field_spill: evaluator_params_as_fields.local_bytes
+          eval_type_regs: evaluator_params_in_type.registers
+          eval_type_spill: evaluator_params_in_type.local_bytes
           mp_bytes: mp_sizeof_bytes
           tps_bytes: tps_sizeof_bytes
         explanation: >-
@@ -548,6 +583,39 @@ questions:
           instead of the ninety minutes per six kernels that the frozen --set
           full stages cost. results/pointwise-registers.csv has the per-kernel
           rows behind it, including which kernels sit at the cap.
+      - kind: result
+        path: results/param-fold.json
+        values:
+          fold_quad_regs_baseline: kernels.microphysics_quadrature.baseline.registers
+          fold_quad_regs_mod: kernels.microphysics_quadrature.mod.registers
+          fold_quad_warps_baseline: kernels.microphysics_quadrature.baseline.warps_per_sm
+          fold_quad_warps_mod: kernels.microphysics_quadrature.mod.warps_per_sm
+          fold_quad_change: kernels.microphysics_quadrature.mean_change_pct
+          fold_upd_regs_baseline: kernels.microphysics_updraft.baseline.registers
+          fold_upd_regs_mod: kernels.microphysics_updraft.mod.registers
+          fold_upd_change: kernels.microphysics_updraft.mean_change_pct
+          fold_cf_regs_baseline: kernels.cloud_fraction.baseline.registers
+          fold_cf_regs_mod: kernels.cloud_fraction.mod.registers
+          fold_cf_warps_baseline: kernels.cloud_fraction.baseline.warps_per_sm
+          fold_cf_warps_mod: kernels.cloud_fraction.mod.warps_per_sm
+          fold_cf_change: kernels.cloud_fraction.mean_change_pct
+          fold_sgs_regs_baseline: kernels.sgs_moments.baseline.registers
+          fold_sgs_regs_mod: kernels.sgs_moments.mod.registers
+          fold_sgs_change: kernels.sgs_moments.mean_change_pct
+          fold_sgs_next_step: kernels.sgs_moments.mod.registers_for_next_step
+          fold_sgs_regs_saved: kernels.sgs_moments.registers_saved
+          fold_total_change: device_total.change_pct
+          fold_total_saved: device_total.ms_saved
+        explanation: >-
+          The four kernels the pattern was applied to, as the profiled runs
+          compiled them: registers per thread, the block size ClimaCore chose
+          from them, the warps per SM the pair allows, and the time. This is
+          what makes the answer an in-model result rather than a compile-only
+          one -- and the SGS-moments row is the control the other three need,
+          since it had the fold applied the same way and did not cross a step.
+          Read from the nsys databases rather than results/top-kernels.csv,
+          which averages over a kernel name that here covers two kernels at
+          different register counts.
       - kind: value
         path: results/cm-registers.toml
         key: layers.LinearizedAverage nsub=2.registers
@@ -1762,6 +1830,22 @@ pipeline:
         - path: results/pointwise-registers.csv
           storage: git
         - path: results/pointwise-registers.json
+          storage: git
+
+    export-param-fold:
+      kind: python-script
+      environment: py
+      script_path: scripts/export-param-fold.py
+      # Reads the two profiles the pipeline already produced, so no GPU. It
+      # exists because top-kernels.csv averages over a kernel name, and one of
+      # the names this treatment touches covers two kernels at different
+      # register counts.
+      inputs:
+        - scripts/export-param-fold.py
+        - from_stage_outputs: baseline-nsys
+        - from_stage_outputs: mod-nsys
+      outputs:
+        - path: results/param-fold.json
           storage: git
 
     val-params-registers:

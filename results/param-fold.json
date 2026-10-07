@@ -1,0 +1,139 @@
+{
+  "crossed": [
+    "cloud_fraction",
+    "microphysics_quadrature",
+    "microphysics_updraft"
+  ],
+  "device_total": {
+    "baseline_launches": 396122,
+    "baseline_ms": 29611.2,
+    "change_pct": -6.79,
+    "mod_launches": 396122,
+    "mod_ms": 27599.2,
+    "ms_saved": 2012.0
+  },
+  "kernels": {
+    "cloud_fraction": {
+      "baseline": {
+        "block_size": 640,
+        "launches": 240,
+        "mean_us": 845.9,
+        "name_covers_variants": 1,
+        "occupancy_pct": 31.25,
+        "registers": 84,
+        "registers_for_next_step": 51,
+        "spill_bytes_per_thread": 0,
+        "total_ms": 203.008,
+        "warps_per_sm": 20
+      },
+      "crossed_occupancy_step": true,
+      "mean_change_pct": -10.27,
+      "mod": {
+        "block_size": 896,
+        "launches": 240,
+        "mean_us": 759.0,
+        "name_covers_variants": 1,
+        "occupancy_pct": 43.75,
+        "registers": 68,
+        "registers_for_next_step": 36,
+        "spill_bytes_per_thread": 0,
+        "total_ms": 182.159,
+        "warps_per_sm": 28
+      },
+      "registers_saved": 16,
+      "total_ms_saved": 20.849
+    },
+    "microphysics_quadrature": {
+      "baseline": {
+        "block_size": 256,
+        "launches": 120,
+        "mean_us": 29909.5,
+        "name_covers_variants": 1,
+        "occupancy_pct": 12.5,
+        "registers": 255,
+        "registers_for_next_step": 128,
+        "spill_bytes_per_thread": 0,
+        "total_ms": 3589.143,
+        "warps_per_sm": 8
+      },
+      "crossed_occupancy_step": true,
+      "mean_change_pct": -47.93,
+      "mod": {
+        "block_size": 384,
+        "launches": 120,
+        "mean_us": 15573.5,
+        "name_covers_variants": 1,
+        "occupancy_pct": 18.75,
+        "registers": 162,
+        "registers_for_next_step": 85,
+        "spill_bytes_per_thread": 0,
+        "total_ms": 1868.824,
+        "warps_per_sm": 12
+      },
+      "registers_saved": 93,
+      "total_ms_saved": 1720.319
+    },
+    "microphysics_updraft": {
+      "baseline": {
+        "block_size": 256,
+        "launches": 120,
+        "mean_us": 4408.7,
+        "name_covers_variants": 1,
+        "occupancy_pct": 12.5,
+        "registers": 255,
+        "registers_for_next_step": 128,
+        "spill_bytes_per_thread": 0,
+        "total_ms": 529.045,
+        "warps_per_sm": 8
+      },
+      "crossed_occupancy_step": true,
+      "mean_change_pct": -36.64,
+      "mod": {
+        "block_size": 384,
+        "launches": 120,
+        "mean_us": 2793.3,
+        "name_covers_variants": 1,
+        "occupancy_pct": 18.75,
+        "registers": 150,
+        "registers_for_next_step": 85,
+        "spill_bytes_per_thread": 0,
+        "total_ms": 335.194,
+        "warps_per_sm": 12
+      },
+      "registers_saved": 105,
+      "total_ms_saved": 193.851
+    },
+    "sgs_moments": {
+      "baseline": {
+        "block_size": 256,
+        "launches": 120,
+        "mean_us": 942.8,
+        "name_covers_variants": 2,
+        "occupancy_pct": 12.5,
+        "registers": 214,
+        "registers_for_next_step": 128,
+        "spill_bytes_per_thread": 0,
+        "total_ms": 113.132,
+        "warps_per_sm": 8
+      },
+      "crossed_occupancy_step": false,
+      "mean_change_pct": -1.07,
+      "mod": {
+        "block_size": 256,
+        "launches": 120,
+        "mean_us": 932.7,
+        "name_covers_variants": 2,
+        "occupancy_pct": 12.5,
+        "registers": 209,
+        "registers_for_next_step": 128,
+        "spill_bytes_per_thread": 0,
+        "total_ms": 111.92,
+        "warps_per_sm": 8
+      },
+      "registers_saved": 5,
+      "total_ms_saved": 1.212
+    }
+  },
+  "kernels_crossing_a_step": 3,
+  "note": "Registers per thread and block size as the profiled run chose them; ClimaCore sizes the block from the register count, so both move together and occupancy is derived from the pair. A kernel's mean is over its own launches, and `name_covers_variants` > 1 means the reported figures are the heaviest variant of a shared name. `registers_for_next_step` is what the kernel would have to reach for one more block per SM, which is the gap a fold has to close to pay."
+}

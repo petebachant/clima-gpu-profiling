@@ -938,6 +938,23 @@ stages:
           persist: false
     desc: Automatically generated from the 'export-pointwise-registers' stage in
       calkit.yaml. Changes made here will be overwritten.
+  export-param-fold:
+    cmd: calkit xenv -n py --no-check -- python scripts/export-param-fold.py
+    deps:
+      - scripts/export-param-fold.py
+      - .calkit/env-locks/py
+      - results/nsys/baseline.nsys-rep
+      - results/nsys/baseline.sqlite
+      - .calkit/scheduler/logs/baseline-nsys.out
+      - results/nsys/mod.nsys-rep
+      - results/nsys/mod.sqlite
+      - .calkit/scheduler/logs/mod-nsys.out
+    outs:
+      - results/param-fold.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'export-param-fold' stage in
+      calkit.yaml. Changes made here will be overwritten.
   val-params-registers:
     cmd: calkit scheduler batch --name val-params-registers --environment clima
       --dep scripts/measure-val-params-registers.jl --dep
