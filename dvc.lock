@@ -800,16 +800,16 @@ stages:
       size: 45110
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: 3127171aec9c2fa0cc94fab1849c9924
-      size: 45122
+      md5: 1fddc897b8c4be3cf93ac6bf2061407a
+      size: 45026
     - path: results/nsys/baseline.sqlite
       hash: md5
       md5: 8a96b3637f27801a16befbc5423e53dc
       size: 680923136
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 79952056b9a13a68ff2747d6d7f2b34e
-      size: 680583168
+      md5: cf53075e0594ab4bd5af2c1adfd370ba
+      size: 684748800
     - path: scripts/summarize.py
       hash: md5
       md5: f8dda50a87d3635eaaa42feae31ed48f
@@ -817,8 +817,8 @@ stages:
     outs:
     - path: results/summary.json
       hash: md5
-      md5: 94e373148a32ed1c5871771ffd68a1ac
-      size: 547
+      md5: 5dd66612d4dc6fe9cde3a587a2266b09
+      size: 550
   mod-ncu:
     cmd: calkit scheduler batch --name mod-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -1043,8 +1043,8 @@ stages:
       nfiles: 101
     - path: ClimaAtmos.jl-mod/src
       hash: md5
-      md5: e92678ed7037e5f9468b9532ffd3e78d.dir
-      size: 2161365
+      md5: 2af8f8466dc8997046ef0c1292a9a37a.dir
+      size: 2161445
       nfiles: 159
     - path: ClimaAtmos.jl-mod/toml
       hash: md5
@@ -1114,8 +1114,8 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: 3127171aec9c2fa0cc94fab1849c9924
-      size: 45122
+      md5: 1fddc897b8c4be3cf93ac6bf2061407a
+      size: 45026
   make-diffs:
     cmd: bash --noprofile --norc scripts/make-diffs.sh
     deps:
@@ -1126,8 +1126,8 @@ stages:
       nfiles: 606
     - path: ClimaAtmos.jl-mod
       hash: md5
-      md5: d6fc8c9dda0373f07d6f9d11c1b21ae1.dir
-      size: 6637127
+      md5: 9f2a5dbc3e18c564613798f1a07e8617.dir
+      size: 6637982
       nfiles: 606
     - path: ClimaCore.jl
       hash: md5
@@ -1161,9 +1161,9 @@ stages:
       nfiles: 204
     - path: RRTMGP.jl-mod
       hash: md5
-      md5: 8ebc98dd7c1821cb0fac24eaf02c4342.dir
-      size: 1309671
-      nfiles: 206
+      md5: 17ec4ee7c935a1fda94fad1734c461ed.dir
+      size: 1272820
+      nfiles: 205
     - path: scripts/make-diffs.sh
       hash: md5
       md5: 02ddf1a1af902b94f6a7495766afe3ad
@@ -1172,8 +1172,8 @@ stages:
     outs:
     - path: diffs
       hash: md5
-      md5: a8670e7e1973c20eb65533a63b10776f.dir
-      size: 75107
+      md5: 8f4a322fb19769bd5caef8ce5e0ff0cf.dir
+      size: 10969
       nfiles: 6
   compare-kernels:
     cmd: calkit nb execute --environment py --no-check --to html 
@@ -1244,21 +1244,21 @@ stages:
       size: 45110
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: 53782823722e8bb9343858efcb3d37ce
-      size: 45115
+      md5: 1fddc897b8c4be3cf93ac6bf2061407a
+      size: 45026
     outs:
     - path: .calkit/notebooks/executed/notebooks/analyze-logs.ipynb
       hash: md5
-      md5: c8a113b9232269635b1a7467c256da97
-      size: 40791
+      md5: f3cf63d85e33fff54a646acf7ab13e34
+      size: 50655
     - path: .calkit/notebooks/html/notebooks/analyze-logs.html
       hash: md5
-      md5: e66238fb1f7fad3aeea3f87d6c634996
-      size: 322147
+      md5: 212e8d87b334b7cfab4ece40efd87617
+      size: 332011
     - path: figures/sypd-time-series.png
       hash: md5
-      md5: fe26e45e8e0aa149cd6728b9b3df922d
-      size: 27665
+      md5: e47daada02d00c76b310f417d2d47fda
+      size: 35312
   compile-time-study:
     cmd: calkit scheduler batch --name compile-time-study --environment clima 
       --dep scripts/measure-compile-time.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -1391,12 +1391,12 @@ stages:
       nfiles: 2
     - path: calkit.yaml
       hash: md5
-      md5: 1c01bc0e8f4c9421aeba0f1204763b73
-      size: 97537
+      md5: 3125abc08825097a87df84b047b545be
+      size: 109148
     - path: diffs
       hash: md5
-      md5: a8670e7e1973c20eb65533a63b10776f.dir
-      size: 75107
+      md5: 8f4a322fb19769bd5caef8ce5e0ff0cf.dir
+      size: 10969
       nfiles: 6
     - path: scripts/record-treatment.py
       hash: md5
@@ -1405,8 +1405,8 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: c67156d0540f1ca597e63bb0ef9095ba
-      size: 31283
+      md5: 04d58590222b4185369c0dcd2b48f97f
+      size: 31158
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
       scripts/build-experiment-index.py
@@ -1418,8 +1418,8 @@ stages:
       nfiles: 2
     - path: results/summary.json
       hash: md5
-      md5: ee823f0341b4990790ff1d72675eb775
-      size: 546
+      md5: 5dd66612d4dc6fe9cde3a587a2266b09
+      size: 550
     - path: scripts/build-experiment-index.py
       hash: md5
       md5: 6ecee83a0c8f1cc405ebcd60efab8df0
@@ -1533,8 +1533,8 @@ stages:
       size: 680923136
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 11df37786247ad77bac684a334e1d105
-      size: 680235008
+      md5: cf53075e0594ab4bd5af2c1adfd370ba
+      size: 684748800
     - path: scripts/analyze-kernel-population.py
       hash: md5
       md5: f651f645e5c3ed9086b96ffe87b04463
@@ -1542,8 +1542,8 @@ stages:
     outs:
     - path: results/kernel-population.json
       hash: md5
-      md5: 433aa86eab0f85046b8e6fcab7a1512c
-      size: 9516
+      md5: 228ae9aeada10d2e2756f82166a8a2d8
+      size: 9510
   cm-registers:
     cmd: calkit scheduler batch --name cm-registers --environment clima --dep 
       scripts/measure-cm-registers.jl --dep 
@@ -2177,11 +2177,11 @@ stages:
       nfiles: 2
     - path: results/kernel-population.json
       hash: md5
-      md5: 433aa86eab0f85046b8e6fcab7a1512c
-      size: 9516
+      md5: 228ae9aeada10d2e2756f82166a8a2d8
+      size: 9510
     - path: results/top-kernels.csv
       hash: md5
-      md5: cad4a9140d985786774842be64851f2d
+      md5: e2ab29fed5c446cfac48cdf5fc7c2699
       size: 2936
     - path: scripts/kernel-shares.py
       hash: md5
@@ -2190,8 +2190,8 @@ stages:
     outs:
     - path: results/kernel-shares.json
       hash: md5
-      md5: 0d30ab7d5592ba9f2a16c52da55d6c5d
-      size: 648
+      md5: 72260f6ed5acf68b2c5a6800787f9a31
+      size: 645
   quadrature-order-error:
     cmd: calkit scheduler batch --name quadrature-order-error --environment 
       clima --dep scripts/measure-quadrature-order-error.jl --dep 
