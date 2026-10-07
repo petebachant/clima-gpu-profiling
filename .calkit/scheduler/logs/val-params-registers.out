@@ -52,3 +52,9 @@ quad_noinline_arguments    regs=255  local=  824 B  warps/SM= 8
 quad_noinline_val          regs=255  local=  824 B  warps/SM= 8
 
 forced inlining costs 0 registers (255 -> 255); warps/SM 8 -> 8, and 8 folded
+
+=== where the parameters live, through the real quadrature loop ===
+evaluator_params_as_fields regs=255  local=  856 B  warps/SM= 8
+evaluator_params_in_type   regs= 93  local=   32 B  warps/SM=16
+
+moving the parameters out of the evaluator's fields saves 162 registers (255 -> 93); warps/SM 8 -> 16  (gains a step)

@@ -3144,8 +3144,8 @@ stages:
       size: 122720
     - path: scripts/measure-val-params-registers.jl
       hash: md5
-      md5: 970f2c08ae8d65e215c304409a6e89fd
-      size: 7917
+      md5: dfa59d86f839b0525762e05765c211f8
+      size: 10767
     - path: scripts/run-val-params-registers.sh
       hash: md5
       md5: 40e53e525e277169357a85bee4a44558
@@ -3154,12 +3154,12 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/val-params-registers.out
       hash: md5
-      md5: d957eb9e7c0081acfbe55378ef9999e1
-      size: 2774
+      md5: 374720278b52ef9912b1a5909b740e12
+      size: 3090
     - path: results/val-params-registers.toml
       hash: md5
-      md5: 5ab4490a9bc7c98cf70ad50a007ec921
-      size: 1234
+      md5: 63b6523039295b6e50dda9c6fa1b139e
+      size: 1454
   pointwise-registers:
     cmd: calkit scheduler batch --name pointwise-registers --environment clima 
       --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
@@ -3229,3 +3229,48 @@ stages:
       hash: md5
       md5: b15399174a4200f933a7e24532e0b3a1
       size: 1059
+  microphysics-bound:
+    cmd: calkit scheduler batch --name microphysics-bound --environment clima 
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out 
+      results/ncu/microphysics-bound.ncu-rep --out 
+      results/ncu/microphysics-bound-details.csv --option --gpus=1 --option 
+      --time=240 -- scripts/run-ncu-bound.sh results/ncu/microphysics-bound 
+      --kernel-name 
+      regex:set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1013
+      --project ClimaCoupler.jl-mod/experiments/AMIP --config 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --launch-count 4
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: ffdef5e566ef1c6aeb21cdf51f26ac52.dir
+      size: 2160590
+      nfiles: 159
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: a5599225e1f5fbb6d64f0c8aeb5e4acf
+      size: 122720
+    - path: scripts/run-ncu-bound.sh
+      hash: md5
+      md5: 1cb17da7778202a27f825d867c4afc78
+      size: 4281
+      isexec: true
+    outs:
+    - path: .calkit/scheduler/logs/microphysics-bound.out
+      hash: md5
+      md5: 10ffca8a926206ec25454c19a94226c1
+      size: 47026
+    - path: results/ncu/microphysics-bound-details.csv
+      hash: md5
+      md5: 5b684fcdcf4f11accab7b976321b69b0
+      size: 10947
+    - path: results/ncu/microphysics-bound.ncu-rep
+      hash: md5
+      md5: 07ad23c694cc401ce033449bac3ab239
+      size: 498726

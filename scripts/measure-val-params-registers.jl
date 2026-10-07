@@ -184,6 +184,84 @@ results["quad_noinline_val_gains_step"] = warps(qn_val) > warps(qr_arg)
     qr_arg - qn_arg, qr_arg, qn_arg, warps(qr_arg), warps(qn_arg), warps(qn_val),
 )
 
+# --- what actually defeats the fold ---------------------------------------
+# sum_over_quadrature_points already loops dynamically rather than unrolling,
+# and says so: each iteration releases the previous one's registers. So the 255
+# is one evaluation plus accumulators, not nine evaluations.
+#
+# Which leaves a candidate the earlier variants could not separate.
+# microphysics_tendencies_1m folds its parameters into a Microphysics1MEvaluator
+# as FIELDS, so a constant handed to it is stored in a struct and read back at
+# run time -- the fold is erased at the boundary, whatever the caller knew.
+#
+# A and B differ only in where the parameters live. Both run the real
+# integrate_over_sgs over the real quadrature.
+struct FieldEval{P, T, FT}
+    mp::P
+    tps::T
+    ρ::FT
+    q_lcl::FT
+    q_icl::FT
+    q_rai::FT
+    q_sno::FT
+    dt::FT
+    nsub::Int
+end
+@inline (e::FieldEval)(T_hat, q_hat) = BMT.bulk_microphysics_tendencies(
+    BMT.LinearizedAverage(), BMT.Microphysics1Moment(), e.mp, e.tps,
+    e.ρ, T_hat, q_hat, e.q_lcl, e.q_icl, e.q_rai, e.q_sno, e.dt, e.nsub,
+)
+
+struct TypeEval{M, TP, FT}
+    ρ::FT
+    q_lcl::FT
+    q_icl::FT
+    q_rai::FT
+    q_sno::FT
+    dt::FT
+    nsub::Int
+end
+@inline (e::TypeEval{M, TP})(T_hat, q_hat) where {M, TP} =
+    BMT.bulk_microphysics_tendencies(
+        BMT.LinearizedAverage(), BMT.Microphysics1Moment(), M, TP,
+        e.ρ, T_hat, q_hat, e.q_lcl, e.q_icl, e.q_rai, e.q_sno, e.dt, e.nsub,
+    )
+
+const EV_ARGS = (ST.ρ, ST.q_lcl, ST.q_icl, ST.q_rai, ST.q_sno, DT, 3)
+# mp and tps arrive as KERNEL ARGUMENTS here. Reading them from the const
+# globals instead would let the compiler fold them in this variant too, which
+# is how the first version of this comparison came out 93 against 93 and
+# measured nothing.
+f_field(o, s, mp, tps) = begin
+    r = ClimaAtmos.integrate_over_sgs(
+        FieldEval(mp, tps, EV_ARGS...), QUAD,
+        s.q_tot, s.T, AUX.q2, AUX.T2, AUX.corr,
+    )
+    o[1] = r.dq_lcl_dt
+    nothing
+end
+f_type(o, s) = begin
+    r = ClimaAtmos.integrate_over_sgs(
+        TypeEval{MP, TPS, FT}(EV_ARGS...), QUAD,
+        s.q_tot, s.T, AUX.q2, AUX.T2, AUX.corr,
+    )
+    o[1] = r.dq_lcl_dt
+    nothing
+end
+
+println("\n=== where the parameters live, through the real quadrature loop ===")
+fe = record!("evaluator_params_as_fields",
+             CUDA.@cuda launch = false always_inline = true f_field(out, ST, MP, TPS))
+te = record!("evaluator_params_in_type",
+             CUDA.@cuda launch = false always_inline = true f_type(out, ST))
+results["evaluator_fold_saving"] = fe - te
+results["evaluator_fold_gains_step"] = warps(te) > warps(fe)
+@printf(
+    "\nmoving the parameters out of the evaluator's fields saves %d registers (%d -> %d); warps/SM %d -> %d%s\n",
+    fe - te, fe, te, warps(fe), warps(te),
+    warps(te) > warps(fe) ? "  (gains a step)" : "  (no step)",
+)
+
 open(out_path, "w") do io
     TOML.print(io, results; sorted = true)
 end

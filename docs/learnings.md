@@ -2332,6 +2332,53 @@ unfused kernel was already over budget.
 So the occupancy lever is closed from both ends, and the ledger's closing
 sentence holds for a third mechanism.
 
+### 4ac. The evaluator struct erases the fold, and that is the whole story
+
+`results/val-params-registers.toml`. All of these run the REAL
+`integrate_over_sgs` over the real quadrature; they differ only in where the
+parameters live.
+
+| parameters | registers | spill | warps/SM |
+|---|---|---|---|
+| in the evaluator's FIELDS, from kernel arguments | 255 | 856 B | 8 |
+| in the evaluator's TYPE | **93** | **32 B** | **16** |
+
+162 registers, 27x less spilling, and occupancy doubles. The field variant
+reproduces the production kernel, which ncu measures at 255 registers and
+12.5% occupancy, so this is the real situation and not a probe artifact.
+
+It explains the null results above. `microphysics_tendencies_1m` builds a
+`Microphysics1MEvaluator(scheme, cmp, thp, ...)` holding the parameters as
+FIELDS. A caller handing it a compile-time constant -- a const global, a Val,
+anything -- has that constant stored into a struct and read back at run time.
+The fold is erased at the struct boundary, which is why 4aa measured Val at
+exactly zero through this path while measuring 206 -> 91 on a body that calls
+the physics directly.
+
+Two earlier conclusions were wrong for this reason and are withdrawn:
+
+  * "Payload folding is dead for microphysics" (4aa). It is not; it was being
+    tested through a boundary that discards it.
+  * "The 255 is intrinsic to the computation." It is not. One evaluation with
+    folded parameters, inside the same nine-point loop, is 93 registers.
+
+The loop was never the problem, and neither was inlining.
+`sum_over_quadrature_points` already loops dynamically rather than unrolling
+and says so in a comment, and compiling with `always_inline` off changes
+nothing (255, and more spill).
+
+So the change worth making is in ClimaAtmos, which owns the evaluator: carry
+`cmp` and `thp` as type parameters rather than fields. The kernel is
+latency-bound -- ncu gives 0.38 eligible warps per cycle, 31.8% compute
+throughput, 4.78% DRAM -- so doubling occupancy has room to convert, and the
+cost is a specialization per parameter set rather than per parameter value.
+
+Generalizes to CliMA/ClimaCore.jl#2676 in a way worth stating: putting
+parameters in `Val` works only if nothing boxes them back into a struct field
+on the way to the arithmetic. The functor-and-evaluator pattern this codebase
+uses to avoid closures does exactly that, so the issue's idea needs the
+boundary fixed before the wrapping is worth anything.
+
 ### 4ab. Registers cap occupancy for most kernels, but only a third usefully
 
 `results/pointwise-registers.json`, from a wide ncu run with static launch
