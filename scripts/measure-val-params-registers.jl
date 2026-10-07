@@ -30,7 +30,7 @@ const TD = ClimaAtmos.TD
 const FT = Float32
 const MP = CMP.Microphysics1MParams(FT)
 const TPS = TD.Parameters.ThermodynamicsParameters(FT)
-const ST = (ρ = FT(0.9), T = FT(275.0), q_tot = FT(8.0e-3),
+const ST = (ρ = FT(0.9), T = FT(275.0), w = FT(1.0), q_tot = FT(8.0e-3),
             q_lcl = FT(1.0e-4), q_icl = FT(1.0e-5),
             q_rai = FT(1.0e-5), q_sno = FT(1.0e-6))
 const DT = FT(30)
@@ -74,7 +74,7 @@ out = CUDA.zeros(FT, 1)
 @inline function body(o, s, mp, tps, nsub)
     r = BMT.bulk_microphysics_tendencies(
         BMT.LinearizedAverage(), BMT.Microphysics1Moment(), mp, tps,
-        s.ρ, s.T, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno, DT, nsub,
+        s.ρ, s.T, s.w, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno, DT, nsub,
     )
     o[1] = r.dq_lcl_dt
     return nothing
@@ -128,13 +128,15 @@ results["val_gains_occupancy_step"] = warps(r_val) > warps(r_arg)
 # it is ClimaAtmos code, so a change here needs no CloudMicrophysics release.
 const QUAD = ClimaAtmos.SGSQuadrature(FT; quadrature_order = 3)
 const AUX = (T2 = FT(0.5), q2 = FT(1.0e-8), corr = FT(0.3),
-             lam = FT(0.5), alpha = FT(1.0), nsubs = 3)
+             lam = FT(0.5), alpha = FT(1.0), nsubs = 3,
+             xi_liq = FT(0.0), xi_ice = FT(1.0))
 
 @inline function quad_body(o, s, mp, tps)
     r = ClimaAtmos.microphysics_tendencies_1m(
         BMT.Microphysics1Moment(), QUAD, mp, tps,
-        s.ρ, s.T, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno,
-        AUX.T2, AUX.q2, AUX.corr, AUX.lam, AUX.alpha, DT, AUX.nsubs,
+        s.ρ, s.T, s.w, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno,
+        AUX.T2, AUX.q2, AUX.corr, AUX.lam, AUX.alpha,
+        AUX.xi_liq, AUX.xi_ice, DT, AUX.nsubs,
     )
     o[1] = r.dq_lcl_dt
     return nothing
@@ -200,6 +202,7 @@ struct FieldEval{P, T, FT}
     mp::P
     tps::T
     ρ::FT
+    w::FT
     q_lcl::FT
     q_icl::FT
     q_rai::FT
@@ -209,11 +212,12 @@ struct FieldEval{P, T, FT}
 end
 @inline (e::FieldEval)(T_hat, q_hat) = BMT.bulk_microphysics_tendencies(
     BMT.LinearizedAverage(), BMT.Microphysics1Moment(), e.mp, e.tps,
-    e.ρ, T_hat, q_hat, e.q_lcl, e.q_icl, e.q_rai, e.q_sno, e.dt, e.nsub,
+    e.ρ, T_hat, e.w, q_hat, e.q_lcl, e.q_icl, e.q_rai, e.q_sno, e.dt, e.nsub,
 )
 
 struct TypeEval{M, TP, FT}
     ρ::FT
+    w::FT
     q_lcl::FT
     q_icl::FT
     q_rai::FT
@@ -224,10 +228,10 @@ end
 @inline (e::TypeEval{M, TP})(T_hat, q_hat) where {M, TP} =
     BMT.bulk_microphysics_tendencies(
         BMT.LinearizedAverage(), BMT.Microphysics1Moment(), M, TP,
-        e.ρ, T_hat, q_hat, e.q_lcl, e.q_icl, e.q_rai, e.q_sno, e.dt, e.nsub,
+        e.ρ, T_hat, e.w, q_hat, e.q_lcl, e.q_icl, e.q_rai, e.q_sno, e.dt, e.nsub,
     )
 
-const EV_ARGS = (ST.ρ, ST.q_lcl, ST.q_icl, ST.q_rai, ST.q_sno, DT, 3)
+const EV_ARGS = (ST.ρ, ST.w, ST.q_lcl, ST.q_icl, ST.q_rai, ST.q_sno, DT, 3)
 # mp and tps arrive as KERNEL ARGUMENTS here. Reading them from the const
 # globals instead would let the compiler fold them in this variant too, which
 # is how the first version of this comparison came out 93 against 93 and

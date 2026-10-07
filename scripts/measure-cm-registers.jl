@@ -24,7 +24,9 @@ const MP = CMP.Microphysics1MParams(FT)
 const TPS = TD.Parameters.ThermodynamicsParameters(FT)
 
 # Representative cloudy state.
-const ST = (ρ = FT(0.9), T = FT(275.0), q_tot = FT(8.0e-3),
+# CloudMicrophysics 0.43 takes air vertical velocity between T and the
+# humidities; 1 m/s is a weak updraft.
+const ST = (ρ = FT(0.9), T = FT(275.0), w = FT(1.0), q_tot = FT(8.0e-3),
             q_lcl = FT(3.0e-4), q_icl = FT(5.0e-5),
             q_rai = FT(2.0e-4), q_sno = FT(3.0e-5))
 const DT = FT(30)
@@ -34,20 +36,20 @@ layers = Any[]
 # NOTE: params now arrive as kernel arguments (mp, tps), not const globals.
 push!(layers, ("source terms only", (out, s, mp, tps) -> begin
     r = BMT._microphysics_source_terms(BMT.Microphysics1Moment(), mp, tps,
-        s.ρ, s.T, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno)
+        s.ρ, s.T, s.w, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno)
     out[1] = r.S_acnv_lcl_rai; nothing end))
 push!(layers, ("+ aggregate (Instantaneous)", (out, s, mp, tps) -> begin
     r = BMT.bulk_microphysics_tendencies(BMT.Instantaneous(), BMT.Microphysics1Moment(),
-        mp, tps, s.ρ, s.T, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno)
+        mp, tps, s.ρ, s.T, s.w, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno)
     out[1] = r.dq_lcl_dt; nothing end))
 push!(layers, ("one linearized implicit step", (out, s, mp, tps) -> begin
     r = BMT._linearized_implicit_step(BMT.Microphysics1Moment(), mp, tps,
-        s.ρ, s.T, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno, DT)
+        s.ρ, s.T, s.w, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno, DT)
     out[1] = first(r); nothing end))
 for nsub in (1, 2, 3)
     push!(layers, ("LinearizedAverage nsub=$nsub", (out, s, mp, tps) -> begin
         r = BMT.bulk_microphysics_tendencies(BMT.LinearizedAverage(), BMT.Microphysics1Moment(),
-            mp, tps, s.ρ, s.T, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno, DT, nsub)
+            mp, tps, s.ρ, s.T, s.w, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno, DT, nsub)
         out[1] = r.dq_lcl_dt; nothing end))
 end
 
@@ -88,12 +90,15 @@ const QUAD2 = ClimaAtmos.SGSQuadrature(FT; quadrature_order = 2)
 # ClimaAtmosParameters (the docstring puts T-q correlation around 0.6).
 const CORR = FT(0.6)
 const ALPHA = FT(1)
+# ξ_liq / ξ_ice, from toml/amip_progedmf_1m.toml.
+const XI_LIQ = FT(0.0)
+const XI_ICE = FT(1.0)
 
 quad_body(out, s, mp, tps, quad) = begin
     r = ClimaAtmos.microphysics_tendencies_1m(
         BMT.Microphysics1Moment(), quad, mp, tps,
-        s.ρ, s.T, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno,
-        FT(1.0e-2), FT(1.0e-12), CORR, FT(1.0e-5), ALPHA, DT, 2,
+        s.ρ, s.T, s.w, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno,
+        FT(1.0e-2), FT(1.0e-12), CORR, FT(1.0e-5), ALPHA, XI_LIQ, XI_ICE, DT, 2,
     )
     out[1] = r.dq_lcl_dt
     nothing
@@ -162,8 +167,9 @@ else
     Nv, Nij, Nh = 63, 4, 1536
     sc() = VIJFH{FT, Nv, Nij, Nij, nothing}(AT, Nh)
     NTT = @NamedTuple{dq_lcl_dt::FT, dq_icl_dt::FT, dq_rai_dt::FT, dq_sno_dt::FT}
-    ρf, qt, ql, qi, qr, qs, Tf = ntuple(_ -> sc(), 7)
+    ρf, qt, ql, qi, qr, qs, Tf, wf = ntuple(_ -> sc(), 8)
     parent(ρf) .= FT(0.9); parent(Tf) .= FT(275); parent(qt) .= FT(8e-3)
+    parent(wf) .= FT(1)
     parent(ql) .= FT(3e-4); parent(qi) .= FT(5e-5)
     parent(qr) .= FT(2e-4); parent(qs) .= FT(3e-5)
     outs = sc()
@@ -180,7 +186,7 @@ else
          () -> @. outnt = mknt4(ρf + qt, ql + qi, qr + qs, Tf)),
         ("D microphysics_tendencies_1m",
          () -> @. outnt = ClimaAtmos.microphysics_tendencies_1m(
-             ρf, qt, ql, qi, qr, qs, Tf, MP, TPS, DT, 2)),
+             ρf, qt, ql, qi, qr, qs, Tf, wf, MP, TPS, DT, 2)),
         # E is the kernel that actually matters: the nine-point SGS-quadrature
         # form, broadcast over the same layout. D (the single-call form) matches
         # the real L970 exactly at 153 registers, so if E lands near D the
@@ -190,8 +196,8 @@ else
         # register pressure would then be.
         ("E microphysics_tendencies_1m (9-pt quadrature)",
          () -> @. outnt = ClimaAtmos.microphysics_tendencies_1m(
-             BMT.Microphysics1Moment(), QUAD, MP, TPS, ρf, Tf, qt, ql, qi, qr, qs,
-             TTf, qqf, CORR, lamf, ALPHA, DT, 2)),
+             BMT.Microphysics1Moment(), QUAD, MP, TPS, ρf, Tf, wf, qt, ql, qi, qr, qs,
+             TTf, qqf, CORR, lamf, ALPHA, XI_LIQ, XI_ICE, DT, 2)),
         # F/G/E scale the quadrature order at fixed everything else. `N` is a
         # TYPE parameter of SGSQuadrature, so the 3x3 loops in
         # sum_over_quadrature_points have compile-time trip counts and LLVM is
@@ -205,12 +211,12 @@ else
         # releases registers from the previous one" -- registers are flat in N.
         ("F same, N=1 (1 point)",
          () -> @. outnt = ClimaAtmos.microphysics_tendencies_1m(
-             BMT.Microphysics1Moment(), QUAD1, MP, TPS, ρf, Tf, qt, ql, qi, qr, qs,
-             TTf, qqf, CORR, lamf, ALPHA, DT, 2)),
+             BMT.Microphysics1Moment(), QUAD1, MP, TPS, ρf, Tf, wf, qt, ql, qi, qr, qs,
+             TTf, qqf, CORR, lamf, ALPHA, XI_LIQ, XI_ICE, DT, 2)),
         ("G same, N=2 (4 points)",
          () -> @. outnt = ClimaAtmos.microphysics_tendencies_1m(
-             BMT.Microphysics1Moment(), QUAD2, MP, TPS, ρf, Tf, qt, ql, qi, qr, qs,
-             TTf, qqf, CORR, lamf, ALPHA, DT, 2)),
+             BMT.Microphysics1Moment(), QUAD2, MP, TPS, ρf, Tf, wf, qt, ql, qi, qr, qs,
+             TTf, qqf, CORR, lamf, ALPHA, XI_LIQ, XI_ICE, DT, 2)),
     ]
     # Report the WHOLE decision, not just the unbounded count. `unbounded_regs`
     # alone cannot distinguish a genuine demand from the 255 hardware cap, and
