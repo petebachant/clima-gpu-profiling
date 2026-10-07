@@ -528,12 +528,15 @@ questions:
   - question: >-
       Does putting the parameters in `Val` make pointwise kernels measurably faster across the board, as CliMA/ClimaCore.jl#2676 asks?
     answer: >-
-      Yes, where the parameters are a real share of the kernel's live state, and the payoff is all-or-nothing in a way that is predictable in advance: it arrives when the freed registers let one more block fit on an SM, and it is absent when they do not.
-      Four kernels in ClimaAtmos now have it, measured in the model rather than in isolation.
-      Three crossed an occupancy step and paid: the SGS quadrature {fold_quad_regs_baseline:.0f} -> {fold_quad_regs_mod:.0f} registers, {fold_quad_warps_baseline:.0f} -> {fold_quad_warps_mod:.0f} warps per SM, {fold_quad_change:.1f}% on the kernel; the updraft path {fold_upd_regs_baseline:.0f} -> {fold_upd_regs_mod:.0f} registers for {fold_upd_change:.1f}%; the cloud-fraction kernel {fold_cf_regs_baseline:.0f} -> {fold_cf_regs_mod:.0f} registers, {fold_cf_warps_baseline:.0f} -> {fold_cf_warps_mod:.0f} warps per SM, {fold_cf_change:.1f}%.
-      One did not and gained nothing: the SGS-moments kernel went {fold_sgs_regs_baseline:.0f} -> {fold_sgs_regs_mod:.0f} registers, which leaves it on the same step, and its time moved {fold_sgs_change:.1f}% -- inside its own spread.
-      Register count does not predict which case a kernel is in, and that is the practical finding: the kernel with the SECOND-most registers of the four gained the least, while an {fold_cf_regs_baseline:.0f}-register one took {fold_cf_change:.1f}%, because what matters is the distance to the next step rather than the height of the current count.
-      The step is computable before writing any code -- ClimaCore sizes the block from the register count, so warps per SM follow from the pair -- and the SGS-moments kernel would have needed {fold_sgs_next_step:.0f} registers to reach it against the {fold_sgs_regs_saved:.0f} the fold actually saved.
+      Yes, where the parameters are a real share of the kernel's live state, and the SIZE of the payoff is set by whether the freed registers let one more block fit on an SM.
+      Four kernels in ClimaAtmos now have it, measured in the model rather than in isolation, and now measured twice: an upstream change to these kernels moved two of the four across that line in opposite directions, which prices the step itself.
+      Three cross one on the current stack: the SGS quadrature {fold_quad_regs_baseline:.0f} -> {fold_quad_regs_mod:.0f} registers, {fold_quad_warps_baseline:.0f} -> {fold_quad_warps_mod:.0f} warps per SM, {fold_quad_change:.1f}% on the kernel; the SGS-moments kernel {fold_sgs_regs_baseline:.0f} -> {fold_sgs_regs_mod:.0f} registers, {fold_sgs_warps_baseline:.0f} -> {fold_sgs_warps_mod:.0f} warps, {fold_sgs_change:.1f}%; the cloud-fraction kernel {fold_cf_regs_baseline:.0f} -> {fold_cf_regs_mod:.0f} registers, {fold_cf_warps_baseline:.0f} -> {fold_cf_warps_mod:.0f} warps, {fold_cf_change:.1f}%.
+      The fourth does not: the updraft path sheds {fold_upd_regs_saved:.0f} registers, {fold_upd_regs_baseline:.0f} -> {fold_upd_regs_mod:.0f}, and still sits at {fold_upd_warps_mod:.0f} warps per SM, one block short of the next step, which it would reach at {fold_upd_next_step:.0f} registers.
+      It took {fold_upd_change:.1f}% anyway, so a fold that misses a step is not a fold that does nothing -- an earlier answer here said the payoff was all-or-nothing, and this measurement withdraws that.
+      What the step is worth can be read off the two kernels that switched sides between the stacks: the updraft path crossed a step before and lost it to an added argument, giving back {fold_upd_lost_points:.1f} points of payoff, while the SGS-moments kernel gained a step and picked up {fold_sgs_gained_points:.1f}.
+      Both moved the way the step predicts, in opposite directions, by a similar amount, and that agreement is the strongest form this evidence has taken; it is not a controlled comparison, because the same upstream change also altered the kernel bodies.
+      Register count does not predict which case a kernel is in: two kernels that both start at the {fold_quad_regs_baseline:.0f}-register cap land on opposite sides of a step, while a {fold_cf_regs_baseline:.0f}-register one crosses.
+      The distance to the next step does predict it, and it is computable before any code is written, because ClimaCore sizes the launch block from the register count and warps per SM follow from the pair.
       Across the whole device this is {fold_total_change:.2f}% of kernel time on a 120-step window, {fold_total_saved:.0f} ms, concentrated almost entirely in the first kernel.
       The population bounds how far it can go: of {kernels:.0f} kernels profiled, {addressable:.0f} ({addressable_pct}%) are capped by registers alone AND below full occupancy, while {at_full_occupancy:.0f} are already at full occupancy and can gain nothing however well their parameters fold.
       The mechanism is settled: Val folds an isbits parameter set to literals and lands on the const-global register count exactly, taking an isolated microphysics evaluation body from {val_args:.0f} registers to {val_val:.0f}, {arg_warps:.0f} to {val_warps:.0f} warps per SM.
@@ -593,7 +596,11 @@ questions:
           fold_quad_change: kernels.microphysics_quadrature.mean_change_pct
           fold_upd_regs_baseline: kernels.microphysics_updraft.baseline.registers
           fold_upd_regs_mod: kernels.microphysics_updraft.mod.registers
+          fold_upd_regs_saved: kernels.microphysics_updraft.registers_saved
+          fold_upd_warps_mod: kernels.microphysics_updraft.mod.warps_per_sm
+          fold_upd_next_step: kernels.microphysics_updraft.mod.registers_for_next_step
           fold_upd_change: kernels.microphysics_updraft.mean_change_pct
+          fold_upd_lost_points: vs_prior_stack.switched.microphysics_updraft.payoff_points
           fold_cf_regs_baseline: kernels.cloud_fraction.baseline.registers
           fold_cf_regs_mod: kernels.cloud_fraction.mod.registers
           fold_cf_warps_baseline: kernels.cloud_fraction.baseline.warps_per_sm
@@ -601,9 +608,10 @@ questions:
           fold_cf_change: kernels.cloud_fraction.mean_change_pct
           fold_sgs_regs_baseline: kernels.sgs_moments.baseline.registers
           fold_sgs_regs_mod: kernels.sgs_moments.mod.registers
+          fold_sgs_warps_baseline: kernels.sgs_moments.baseline.warps_per_sm
+          fold_sgs_warps_mod: kernels.sgs_moments.mod.warps_per_sm
           fold_sgs_change: kernels.sgs_moments.mean_change_pct
-          fold_sgs_next_step: kernels.sgs_moments.mod.registers_for_next_step
-          fold_sgs_regs_saved: kernels.sgs_moments.registers_saved
+          fold_sgs_gained_points: vs_prior_stack.switched.sgs_moments.payoff_points
           fold_total_change: device_total.change_pct
           fold_total_saved: device_total.ms_saved
         explanation: >-
@@ -1842,6 +1850,7 @@ pipeline:
       # register counts.
       inputs:
         - scripts/export-param-fold.py
+        - results/param-fold-prior.json
         - from_stage_outputs: baseline-nsys
         - from_stage_outputs: mod-nsys
       outputs:

@@ -12,6 +12,7 @@ JSON.
 """
 
 import json
+import re
 import sqlite3
 import sys
 from pathlib import Path
@@ -19,25 +20,36 @@ from pathlib import Path
 BASELINE = Path("results/nsys/baseline.sqlite")
 MOD = Path("results/nsys/mod.sqlite")
 OUT = Path("results/param-fold.json")
+# The same treatment measured against an earlier upstream stack, kept as a
+# committed snapshot because an upstream edit moved two of these kernels
+# across an occupancy step in opposite directions. See its `provenance`.
+PRIOR = Path("results/param-fold-prior.json")
 
-# The kernel names carry their source path and line, so the two arms spell the
-# same kernel differently and the line numbers moved with the edit.
+# A kernel name carries its source path and line, so the two arms spell the
+# same kernel differently and any upstream edit above it renumbers it. Select
+# by name pattern and time rank instead: `rank` is the position among the
+# matching kernel names ordered by total device time, descending.
 TARGETS = {
-    "microphysics_quadrature": (
-        "%microphysics_cache_jl_L1013", "%microphysics_cache_jl_L1016"),
-    "microphysics_updraft": (
-        "%microphysics_cache_jl_L970", "%microphysics_cache_jl_L973"),
-    "cloud_fraction": ("set_cloud_fraction__NVTX", "set_cloud_fraction__NVTX"),
-    "sgs_moments": (
-        "set_sgs_moments_and_cloud_fraction__NVTX",
-        "set_sgs_moments_and_cloud_fraction__NVTX"),
+    "microphysics_quadrature": ("set_microphysics_tendency_cache%", 0),
+    "microphysics_updraft": ("set_microphysics_tendency_cache%", 1),
+    "cloud_fraction": ("set_cloud_fraction__NVTX", 0),
+    "sgs_moments": ("set_sgs_moments_and_cloud_fraction__NVTX", 0),
 }
 
+# Ranking is only safe while the ranks a pattern claims stand well clear of
+# the first one it does not; below this ratio the script refuses rather than
+# mislabel. The claimed ranks may sit arbitrarily close to each other --- the
+# two microphysics kernels differ by about 4x --- so the check applies at the
+# boundary, not between neighbors.
+MIN_RANK_SEPARATION = 5.0
+DEEPEST_RANK = {p: max(r for q, r in TARGETS.values() if q == p)
+                for p, _ in TARGETS.values()}
+
 Q = """
-SELECT k.registersPerThread, k.blockX * k.blockY * k.blockZ,
+SELECT s.value, k.registersPerThread, k.blockX * k.blockY * k.blockZ,
        k.localMemoryPerThread, COUNT(*), SUM(k.end - k.start)
 FROM CUPTI_ACTIVITY_KIND_KERNEL k JOIN StringIds s ON s.id = k.shortName
-WHERE s.value LIKE ? GROUP BY k.registersPerThread, k.blockX
+WHERE s.value LIKE ? GROUP BY s.value, k.registersPerThread, k.blockX
 """
 Q_TOTAL = "SELECT SUM(end - start), COUNT(*) FROM CUPTI_ACTIVITY_KIND_KERNEL"
 
@@ -63,14 +75,40 @@ def next_step_registers(registers, block_size):
     return target if target >= 1 else None
 
 
-def heaviest(db, pattern):
-    """The variant that dominates, when one name covers several kernels."""
-    rows = db.execute(Q, (pattern,)).fetchall()
-    if not rows:
+def by_total_time(db, pattern):
+    """The matching kernel names, heaviest first, with their launch variants."""
+    names = {}
+    for name, regs, block, spill, launches, total_ns in db.execute(Q, (pattern,)):
+        names.setdefault(name, []).append((regs, block, spill, launches, total_ns))
+    ranked = sorted(names.items(), key=lambda kv: -sum(r[4] for r in kv[1]))
+    return [(name, sum(r[4] for r in rows), rows) for name, rows in ranked]
+
+
+def select(db, pattern, rank):
+    """The rank-th heaviest matching name, reduced to its dominant variant.
+
+    Within one name the heaviest variant is taken, not the mean: a name can
+    cover several distinct kernels at different register counts, and averaging
+    them hides the one a treatment touched.
+    """
+    ranked = by_total_time(db, pattern)
+    if len(ranked) <= rank:
         return None
+    last = DEEPEST_RANK[pattern]
+    if rank == last and len(ranked) > last + 1:
+        margin = ranked[last][1] / max(ranked[last + 1][1], 1)
+        if margin < MIN_RANK_SEPARATION:
+            sys.exit(
+                f"{pattern!r} rank {last} ({ranked[last][0]}) is only "
+                f"{margin:.1f}x the first unclaimed name down; "
+                "ranking is not safe"
+            )
+    name, _, rows = ranked[rank]
     regs, block, spill, launches, total_ns = max(rows, key=lambda r: r[4])
     warps, pct_occ = occupancy(regs, block)
     return {
+        "kernel": name,
+        "source_line": source_line(name),
         "registers": regs,
         "block_size": block,
         "spill_bytes_per_thread": spill,
@@ -84,8 +122,73 @@ def heaviest(db, pattern):
     }
 
 
+def source_line(name):
+    """The source line a ClimaCore-generated kernel name ends with, if any."""
+    m = re.search(r"_L(\d+)$", name)
+    return int(m.group(1)) if m else None
+
+
 def pct(old, new):
     return round(100 * (new - old) / old, 2)
+
+
+def compare_to_prior(kernels):
+    """How each kernel's payoff moved when the upstream stack moved under it.
+
+    The occupancy step is the claim being tested, so the kernels that changed
+    step status between the two stacks are the ones that carry evidence: a
+    kernel that lost its step should give most of its payoff back, and one that
+    gained a step should pick one up.
+    """
+    prior = json.loads(PRIOR.read_text())
+    out = {"prior_commit": prior["provenance"]["source_commit"],
+           "kernels": {}, "switched": {}}
+    for key, now in kernels.items():
+        was = prior["kernels"].get(key)
+        if was is None:
+            continue
+        entry = {
+            "prior_change_pct": was["mean_change_pct"],
+            "now_change_pct": now["mean_change_pct"],
+            "prior_crossed_step": was["crossed_occupancy_step"],
+            "now_crossed_step": now["crossed_occupancy_step"],
+            "prior_registers_saved": was["registers_saved"],
+            "now_registers_saved": now["registers_saved"],
+        }
+        entry["step_changed"] = (
+            was["crossed_occupancy_step"] != now["crossed_occupancy_step"])
+        # Payoff is negative, so a payoff that shrank is a positive delta.
+        entry["payoff_delta_points"] = round(
+            now["mean_change_pct"] - was["mean_change_pct"], 2)
+        out["kernels"][key] = entry
+        if entry["step_changed"]:
+            out["switched"][key] = {
+                "direction": "lost" if was["crossed_occupancy_step"] else "gained",
+                "payoff_points": abs(entry["payoff_delta_points"]),
+            }
+    out["n_switched"] = len(out["switched"])
+    lost = [v["payoff_points"] for v in out["switched"].values()
+            if v["direction"] == "lost"]
+    gained = [v["payoff_points"] for v in out["switched"].values()
+              if v["direction"] == "gained"]
+    out["points_lost_losing_a_step"] = round(sum(lost) / len(lost), 1) if lost else None
+    out["points_gained_gaining_a_step"] = (
+        round(sum(gained) / len(gained), 1) if gained else None)
+    # With no step, what is left tracks how many registers came off.
+    nostep = [(v["now_registers_saved"], abs(v["now_change_pct"]))
+              for v in out["kernels"].values() if not v["now_crossed_step"]]
+    nostep += [(v["prior_registers_saved"], abs(v["prior_change_pct"]))
+               for v in out["kernels"].values() if not v["prior_crossed_step"]]
+    out["without_a_step"] = [
+        {"registers_saved": r, "payoff_pct": c} for r, c in sorted(nostep)]
+    out["note"] = (
+        "Not a controlled A/B on the step alone: the upstream change that "
+        "moved the step also changed the kernel bodies (an argument was added "
+        "to the microphysics path). The evidence is that both switchers moved "
+        "the way the step predicts, in opposite directions, by a similar "
+        "number of points."
+    )
+    return out
 
 
 def main():
@@ -95,10 +198,10 @@ def main():
     bdb, mdb = sqlite3.connect(BASELINE), sqlite3.connect(MOD)
 
     out = {"kernels": {}}
-    for key, (bpat, mpat) in TARGETS.items():
-        b, m = heaviest(bdb, bpat), heaviest(mdb, mpat)
+    for key, (pattern, rank) in TARGETS.items():
+        b, m = select(bdb, pattern, rank), select(mdb, pattern, rank)
         if b is None or m is None:
-            sys.exit(f"{key}: no launches matched ({bpat!r}, {mpat!r})")
+            sys.exit(f"{key}: nothing at rank {rank} of {pattern!r}")
         out["kernels"][key] = {
             "baseline": b,
             "mod": m,
@@ -107,6 +210,21 @@ def main():
             "registers_saved": b["registers"] - m["registers"],
             "crossed_occupancy_step": m["warps_per_sm"] > b["warps_per_sm"],
         }
+
+    # The two microphysics kernels are told apart by time rank, so check the
+    # ranking against the source order, which is the thing it stands in for:
+    # the quadrature closure is below the updraft one in both arms.
+    for arm in ("baseline", "mod"):
+        quad = out["kernels"]["microphysics_quadrature"][arm]["source_line"]
+        upd = out["kernels"]["microphysics_updraft"][arm]["source_line"]
+        if quad is None or upd is None or quad <= upd:
+            sys.exit(
+                f"{arm}: microphysics ranking disagrees with source order "
+                f"(quadrature L{quad}, updraft L{upd})"
+            )
+
+    if PRIOR.exists():
+        out["vs_prior_stack"] = compare_to_prior(out["kernels"])
 
     bt, bn = bdb.execute(Q_TOTAL).fetchone()
     mt, mn = mdb.execute(Q_TOTAL).fetchone()
@@ -133,13 +251,20 @@ def main():
     OUT.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
 
     for key, v in out["kernels"].items():
+        step = "step" if v["crossed_occupancy_step"] else "    "
         print(f"{key:24s} {v['baseline']['registers']:3d} -> {v['mod']['registers']:3d} regs  "
               f"{v['baseline']['warps_per_sm']:2d} -> {v['mod']['warps_per_sm']:2d} warps/SM  "
               f"{v['baseline']['mean_us']:9.1f} -> {v['mod']['mean_us']:9.1f} us  "
               f"{v['mean_change_pct']:+6.2f}%  ({v['total_ms_saved']:+.1f} ms)  "
-              f"next step at {v['mod']['registers_for_next_step']} regs")
+              f"{step}  next at {v['mod']['registers_for_next_step']} regs")
     d = out["device_total"]
     print(f"all kernels: {d['baseline_ms']} -> {d['mod_ms']} ms ({d['change_pct']:+.2f}%)")
+    v = out.get("vs_prior_stack")
+    for key, sw in (v or {}).get("switched", {}).items():
+        e = v["kernels"][key]
+        print(f"{key:24s} {sw['direction']} its step since "
+              f"{v['prior_commit'][:7]}: {e['prior_change_pct']:+.2f}% -> "
+              f"{e['now_change_pct']:+.2f}% ({sw['payoff_points']:.1f} points)")
     print(f"wrote {OUT}")
 
 

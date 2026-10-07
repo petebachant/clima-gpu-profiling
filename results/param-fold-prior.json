@@ -1,0 +1,113 @@
+{
+  "device_total": {
+    "change_pct": -6.79,
+    "ms_saved": 2012.0
+  },
+  "kernels": {
+    "cloud_fraction": {
+      "baseline": {
+        "block_size": 640,
+        "registers": 84,
+        "warps_per_sm": 20
+      },
+      "crossed_occupancy_step": true,
+      "mean_change_pct": -10.27,
+      "mod": {
+        "block_size": 896,
+        "registers": 68,
+        "warps_per_sm": 28
+      },
+      "registers_saved": 16
+    },
+    "microphysics_quadrature": {
+      "baseline": {
+        "block_size": 256,
+        "registers": 255,
+        "warps_per_sm": 8
+      },
+      "crossed_occupancy_step": true,
+      "mean_change_pct": -47.93,
+      "mod": {
+        "block_size": 384,
+        "registers": 162,
+        "warps_per_sm": 12
+      },
+      "registers_saved": 93
+    },
+    "microphysics_updraft": {
+      "baseline": {
+        "block_size": 256,
+        "registers": 255,
+        "warps_per_sm": 8
+      },
+      "crossed_occupancy_step": true,
+      "mean_change_pct": -36.64,
+      "mod": {
+        "block_size": 384,
+        "registers": 150,
+        "warps_per_sm": 12
+      },
+      "registers_saved": 105
+    },
+    "sgs_moments": {
+      "baseline": {
+        "block_size": 256,
+        "registers": 214,
+        "warps_per_sm": 8
+      },
+      "crossed_occupancy_step": false,
+      "mean_change_pct": -1.07,
+      "mod": {
+        "block_size": 256,
+        "registers": 209,
+        "warps_per_sm": 8
+      },
+      "registers_saved": 5
+    }
+  },
+  "provenance": {
+    "measured": "the same ClimaAtmos parameter fold, on the upstream stack as it stood before the 2026-10-07 re-baseline",
+    "source_commit": "bcd24381abe670ce3c3c8e4b88ca2d0f5b0e7f22",
+    "source_path": "results/param-fold.json",
+    "speedup_pct": 4.794764264088302,
+    "submodules": {
+      "ClimaAtmos.jl": {
+        "ref": "main",
+        "sha": "edf143f51cf31d3f9de3e6cc8a6f4b5b93326476"
+      },
+      "ClimaAtmos.jl-mod": {
+        "ref": "pb/fold-microphysics-params",
+        "sha": "93d311012512c61cb287a8621958ae2558e9c602"
+      },
+      "ClimaCore.jl": {
+        "ref": "main",
+        "sha": "7efd7f05f596b4def639dca1e87e66f7dfc205e3"
+      },
+      "ClimaCore.jl-mod": {
+        "ref": "main",
+        "sha": "7efd7f05f596b4def639dca1e87e66f7dfc205e3"
+      },
+      "ClimaCoupler.jl": {
+        "ref": "pb/prof-base",
+        "sha": "15f705b0b903fea0917a3a29881c47f229380b77"
+      },
+      "ClimaCoupler.jl-mod": {
+        "ref": "pb/prof-mod",
+        "sha": "f8e536f6288ec3ddbf3e532ab69ecff08d1fdc85"
+      },
+      "CloudMicrophysics.jl-mod": {
+        "ref": "main",
+        "sha": "42590631e524371ef50dba4f5ee3347f4ea8c6bc"
+      },
+      "RRTMGP.jl": {
+        "ref": "main",
+        "sha": "eed2d3c6ae0b610a59fcb011e3176802d22a60c1"
+      },
+      "RRTMGP.jl-mod": {
+        "ref": "v1.0.1",
+        "sha": "eed2d3c6ae0b610a59fcb011e3176802d22a60c1"
+      }
+    },
+    "why_kept": "The fold's payoff per kernel depends on whether the freed registers cross an occupancy step, and an upstream change to the kernels moved two of the four across that line in opposite directions. Holding both measurements lets the step's own contribution be read off rather than argued."
+  }
+}

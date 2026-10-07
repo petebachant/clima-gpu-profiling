@@ -2332,49 +2332,70 @@ unfused kernel was already over budget.
 So the occupancy lever is closed from both ends, and the ledger's closing
 sentence holds for a third mechanism.
 
-### 4ad. The fold pays an occupancy step or it pays nothing
+### 4ad. The occupancy step sets the SIZE of the fold's payoff, not whether there is one
 
-`results/param-fold.json`, from the two nsys databases rather than
-`results/top-kernels.csv` --- that table averages over a kernel name, and
-`set_sgs_moments_and_cloud_fraction` covers two kernels at different register
-counts.
+`results/param-fold.json` for the current stack and
+`results/param-fold-prior.json` for the stack before the 2026-10-07
+re-baseline; the figures are in the `calkit.yaml` answer on
+CliMA/ClimaCore.jl#2676, injected from both. Read from the nsys databases
+rather than `results/top-kernels.csv` --- that table averages over a kernel
+name, and `set_sgs_moments_and_cloud_fraction` covers two kernels at different
+register counts.
 
-The pattern of 4ac applied to four kernels in two ClimaAtmos files, measured in
-the model:
+**An earlier version of this section claimed the payoff was all-or-nothing: a
+fold either reaches the next occupancy step or buys nothing.** Three kernels
+had crossed a step and paid, and a fourth had not and gained nothing, which
+read as a clean control. It was wrong, and the way it was wrong is instructive:
+that fourth kernel saved five registers. Nothing distinguished "missed the
+step" from "barely changed the kernel," and the conclusion helped itself to the
+stronger reading.
 
-| kernel | registers | warps/SM | mean time |
-|---|---|---|---|
-| SGS quadrature | 255 -> 162 | 8 -> 12 | **-47.9%** |
-| updraft | 255 -> 150 | 8 -> 12 | **-36.6%** |
-| cloud fraction | 84 -> 68 | 20 -> 28 | **-10.3%** |
-| SGS moments | 214 -> 209 | 8 -> 8 | -1.1% |
+The re-baseline separated them. Upstream threaded a vertical-velocity argument
+through the microphysics path, which pushed the updraft kernel's register count
+up far enough that ClimaCore chose a smaller launch block for it, and it lost
+the step it had crossed before. The same fold, on the same kernel, now saves a
+large number of registers and crosses nothing --- and still pays, modestly.
+A fold that misses a step is not a fold that does nothing.
 
-Three crossed an occupancy step and paid. The fourth had the same change made
-the same way in the same file and gained nothing, and it is the control the
-other three need: without it the result would read as "folding parameters makes
-kernels faster" rather than "folding parameters is worth an occupancy step when
-it reaches one."
+What the step itself is worth is now measurable, because two kernels switched
+sides between the stacks and in opposite directions. The updraft kernel lost
+its step and gave back most of its payoff; the SGS-moments kernel, whose
+baseline register count fell under the same upstream change, gained a step and
+picked up a comparable amount. Both moved the way the step predicts. This is
+not a controlled A/B --- the change that moved the step also changed the kernel
+bodies --- but two kernels agreeing in opposite directions is hard to arrange
+by accident, and it is a much better-founded claim than the one it replaces.
 
-The quantity that decides it is warps per SM, not registers, and the two are
-not interchangeable because **ClimaCore sizes the block from the register
-count**. Blocks went 256 -> 384 for the microphysics kernels and 640 -> 896 for
-cloud fraction. At a fixed 256-thread block, 255 -> 162 registers would have
-changed nothing at all: both fit exactly one block per SM. The launch
-configurator is what converts the saving into residency, so the question to ask
-of a candidate kernel is how far it is from the next step, which is computable
-from registers and block size before any code is written. The SGS-moments
-kernel needed 128 registers to reach its next step and the fold found 5.
+The quantity that decides the large payoff is warps per SM, not registers, and
+the two are not interchangeable because **ClimaCore sizes the launch block from
+the register count**. At a fixed block size the biggest register saving in this
+set would have changed nothing: both arms fit exactly one block per SM. The
+launch configurator is what converts a saving into residency. So the question
+to ask of a candidate kernel is its distance to the next step, computable from
+registers and block size before any code is written --- and the corollary, which
+this re-baseline demonstrated, is that the distance is not stable under
+upstream change. A fold that pays today can stop paying because someone added
+an argument.
 
 Spill is not the mechanism here, which is worth separating from the
 CloudMicrophysics #750 precedent in 4r where it was: `localMemoryPerThread` is
-0 in both arms for all four kernels. The isolated probe body spills because it
-is compiled without the launch configuration the model gives it; the kernels
-the model runs do not.
+0 in both arms for every kernel in this set. The isolated probe body spills
+because it is compiled without the launch configuration the model gives it; the
+kernels the model runs do not.
 
-For CliMA/ClimaCore.jl#2676 the answer this produces is narrower and more
-useful than "yes": the precondition is a kernel whose parameter payload is a
-large enough share of its live state to cross a step, and 4ab bounds how many
-kernels could even be in that position.
+A practical note on the export, since it failed on the rebase: ClimaCore builds
+a kernel's name from its source file and line, so every one of these names
+moved when upstream inserted code above them, and
+`scripts/export-param-fold.py` matched on the old lines and found nothing. It
+now selects by total device time rank within a name pattern, refuses when the
+claimed ranks are not well clear of the first unclaimed one, and cross-checks
+the ranking against source order so a swap fails loudly instead of silently
+relabeling two kernels.
+
+For CliMA/ClimaCore.jl#2676 the answer is narrower and more useful than "yes":
+the fold pays roughly in proportion to the registers it frees, and pays a step
+change on top when the freed registers let another block onto the SM. 4ab
+bounds how many kernels could be in that second position.
 
 ### 4ac. The evaluator struct erases the fold, and that is the whole story
 
