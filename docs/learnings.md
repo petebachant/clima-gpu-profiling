@@ -1636,6 +1636,26 @@ cost of one extra run. Note the failure mode is symmetric and the benign
 direction is the dangerous one: a control that happens to be large at the step
 you look at will clear a change that is actually broken.
 
+**Savings add; speedups compound. Pick the denominator before predicting.**
+Stacking the fused radiation solves on the microphysics parameter fold was
+expected to land well below the sum of the two, on the argument that radiation
+is a large share of baseline kernel time and the fold a smaller one, so each
+treatment shrinks the share the other has left to work on. It landed at the
+sum. The argument prices the second treatment as a fraction of the
+already-faster run, and that is the wrong denominator when both figures are
+quoted against the same baseline: two treatments on disjoint kernels save
+disjoint absolute time, so their percentages of a common baseline add. Amdahl
+bites when speedups are compounded --- the second treatment's own percentage
+being of a smaller total --- not when the savings are. The way to tell the two
+apart before measuring is to work in milliseconds saved rather than percent,
+and the way to tell afterwards is whether the device saving decomposes into
+the per-treatment kernel savings; here it closed to a fraction of a percent.
+The `calkit.yaml` question on whether the two compose has the figures and
+`results/combined-stack.json` the snapshot, which carries the two
+single-treatment measurements read out of Git at the commits that made them.
+This is not a controlled A/B: each single was measured against its own
+baseline and the stack moved between the runs.
+
 ## 6. Where the remaining headroom is
 
 The binding constraint is the number of CloudMicrophysics evaluations:
@@ -2391,6 +2411,15 @@ now selects by total device time rank within a name pattern, refuses when the
 claimed ranks are not well clear of the first unclaimed one, and cross-checks
 the ranking against source order so a swap fails loudly instead of silently
 relabeling two kernels.
+
+A second export fix, from stacking another treatment on this one: the device
+total over every kernel in the arm stops measuring the fold the moment the mod
+arm carries anything else, and the #2676 answer was templating exactly that
+number as the fold's device-wide effect. The export now also reports a subtotal
+over the kernels the fold was applied to, which is what the answer cites. The
+general form is worth keeping: a whole-arm aggregate is only a treatment's
+effect while the arm has one treatment in it, and nothing in the file says
+which case it is unless the file is made to say so.
 
 For CliMA/ClimaCore.jl#2676 the answer is narrower and more useful than "yes":
 the fold pays roughly in proportion to the registers it frees, and pays a step
