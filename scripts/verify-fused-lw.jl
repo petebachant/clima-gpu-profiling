@@ -34,13 +34,27 @@ let i = findfirst(==("--out"), ARGS)
     end
 end
 
-# Before the 24 minutes of setup, not after: this script failed once on a
-# renamed entry point with the whole simulation already built.
-all(n -> isdefined(RTE, n), (:solve_lw_both!, :solve_sw_both!)) || error(
-    "RRTMGP.RTESolver has no solve_lw_both!; the dev'd RRTMGP is $(pkgdir(RRTMGP)). " *
-    "The fused solve is on pb/optics-split-rebased as solve_lw_both! and was " *
-    "named solve_lw_both_skies! on pb/fused-clear-sky.",
-)
+# The fused solve is named solve_*_both_skies! on pb/fused-clear-sky (#631) and
+# solve_*_both! on pb/optics-split-rebased, with identical argument lists. Pick
+# whichever the dev'd RRTMGP has, and do it BEFORE the 24 minutes of setup: this
+# script failed once on a renamed entry point with the simulation already built.
+function pick(names, what, has)
+    i = findfirst(has, names)
+    isnothing(i) && error(
+        "none of $(join(names, ", ")) found for the $what. The dev'd RRTMGP is " *
+        "$(pkgdir(RRTMGP)); pb/fused-clear-sky and pb/optics-split-rebased name " *
+        "these differently, so a third naming needs adding here.",
+    )
+    return names[i]
+end
+
+lw_both_name = pick((:solve_lw_both_skies!, :solve_lw_both!),
+                    "fused longwave solve", n -> isdefined(RTE, n))
+sw_both_name = pick((:solve_sw_both_skies!, :solve_sw_both!),
+                    "fused shortwave solve", n -> isdefined(RTE, n))
+solve_lw_both! = getproperty(RTE, lw_both_name)
+solve_sw_both! = getproperty(RTE, sw_both_name)
+@info "fused entry points" lw = lw_both_name sw = sw_both_name
 
 config_file = Input.parse_commandline(Input.argparse_settings())["config_file"]
 cs = CoupledSimulation(config_file)
@@ -58,6 +72,13 @@ s = cs.model_sims.atmos_sim.integrator.p.radiation.rrtmgp_solver
 lk, as, lws = s.lookups, s.as, s.lws
 # What update_lw_fluxes!/update_sw_fluxes! pass as metric_scaling.
 ms = s.deep_atmosphere_inverse_scaling
+# Renamed alongside the entry points.
+clear_lw_name = pick((:clear_flux_acc_lw, :clear_acc_lw),
+                     "clear-sky longwave accumulator", n -> hasproperty(s, n))
+clear_sw_name = pick((:clear_flux_acc_sw, :clear_acc_sw),
+                     "clear-sky shortwave accumulator", n -> hasproperty(s, n))
+clear_lw_acc = getproperty(s, clear_lw_name)
+clear_sw_acc = getproperty(s, clear_sw_name)
 
 snap(f) = (up = Array(f.flux_up), dn = Array(f.flux_dn), net = Array(f.flux_net))
 
@@ -73,12 +94,12 @@ RTE.solve_lw!(lws, as, lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, ms)
 ref_allsky_again = snap(lws.flux)
 
 # The fused solve, filling both skies in one pass
-RTE.solve_lw_both!(
-    lws, s.clear_acc_lw, as,
+solve_lw_both!(
+    lws, clear_lw_acc, as,
     lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, ms,
 )
 got_allsky = snap(lws.flux)
-got_clear = snap(s.clear_acc_lw)
+got_clear = snap(clear_lw_acc)
 
 # Relative to the field's own scale: fluxes span orders of magnitude, so an
 # absolute difference says nothing
@@ -112,6 +133,9 @@ results = Dict{String, Any}(
               "not against equality; the clear sky has no sampling and must " *
               "match exactly",
     "warmup_steps" => WARMUP,
+    "lw_entry_point" => String(lw_both_name),
+    "sw_entry_point" => String(sw_both_name),
+    "rrtmgp_dir" => string(pkgdir(RRTMGP)),
     "reference_sky_contrast" => Float64(sky_contrast),
     "allsky" => compare(ref_allsky, got_allsky),
     "allsky_control" => compare(ref_allsky, ref_allsky_again),
@@ -160,12 +184,12 @@ RTE.solve_sw!(sws, as, lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, ms)
 sw_ref_allsky = snap(sws.flux)
 RTE.solve_sw!(sws, as, lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, ms)
 sw_ref_allsky_again = snap(sws.flux)
-RTE.solve_sw_both!(
-    sws, s.clear_acc_sw, as,
+solve_sw_both!(
+    sws, clear_sw_acc, as,
     lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, ms,
 )
 sw_got_allsky = snap(sws.flux)
-sw_got_clear = snap(s.clear_acc_sw)
+sw_got_clear = snap(clear_sw_acc)
 
 results["sw_allsky"] = compare(sw_ref_allsky, sw_got_allsky)
 results["sw_allsky_control"] = compare(sw_ref_allsky, sw_ref_allsky_again)
