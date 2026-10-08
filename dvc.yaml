@@ -914,19 +914,19 @@ stages:
   microphysics-bound:
     cmd: calkit scheduler batch --name microphysics-bound --environment clima
       --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
-      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
-      results/ncu/microphysics-bound.ncu-rep --out
+      ClimaAtmos.jl-mod/src --dep results/param-fold.json --dep
+      .calkit/env-locks/clima --out results/ncu/microphysics-bound.ncu-rep --out
       results/ncu/microphysics-bound-details.csv --option --gpus=1 --option
       --time=240 -- scripts/run-ncu-bound.sh results/ncu/microphysics-bound
-      --kernel-name
-      regex:set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1013
-      --project ClimaCoupler.jl-mod/experiments/AMIP --config
+      --kernel-name auto:microphysics_quadrature,microphysics_updraft --project
+      ClimaCoupler.jl-mod/experiments/AMIP --config
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --launch-count 4
     deps:
       - scripts/run-ncu-bound.sh
       - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
       - ClimaAtmos.jl-mod/src
+      - results/param-fold.json
       - .calkit/env-locks/clima
     outs:
       - results/ncu/microphysics-bound.ncu-rep:

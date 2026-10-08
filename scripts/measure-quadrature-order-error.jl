@@ -81,11 +81,18 @@ ref = deepcopy(p.precomputed.ᶜmp_tendency⁰)
 ᶜT′T′    = p.precomputed.ᶜT′T′
 ᶜq′q′    = p.precomputed.ᶜq′q′
 λ_lag    = p.precomputed.ᶜsgs_moments.λ_lagrange
+# Air vertical velocity, derived as set_microphysics_tendency_cache! derives it.
+# Into its own field rather than a scratch slot: slots 1-7 are the inputs this
+# script is holding byte-identical, so clobbering one would defeat the point.
+ᶜw⁰_air  = similar(ᶜT⁰)
+@. ᶜw⁰_air = CA.w_component(CA.WVec(p.precomputed.ᶜu⁰))
 
 thp   = CAP.thermodynamics_params(p.params)
 cmp   = CAP.microphysics_1m_params(p.params)
 corr  = CA.correlation_Tq(p.params)
 α     = CA.sgs_variance_fidelity(CAP.cloud_fraction_steepness_scale(p.params))
+ξ_liq = CAP.sgs_liquid_uniform_fraction(p.params)
+ξ_ice = CAP.sgs_ice_uniform_fraction(p.params)
 dt    = p.dt
 nsubs = p.atmos.water.microphysics_model.n_substeps_quad
 out   = similar(ref)
@@ -95,9 +102,9 @@ shipped_order = length(p.atmos.sgs_quadrature.a)
 
 function evaluate_with(quad)
     @. out = CA.microphysics_tendencies_1m(
-        BMT.Microphysics1Moment(), quad, cmp, thp, ᶜρ⁰, ᶜT⁰, ᶜqt⁰,
+        BMT.Microphysics1Moment(), quad, cmp, thp, ᶜρ⁰, ᶜT⁰, ᶜw⁰_air, ᶜqt⁰,
         ᶜq_lcl⁰, ᶜq_icl⁰, ᶜq_rai⁰, ᶜq_sno⁰, ᶜT′T′, ᶜq′q′, corr,
-        λ_lag, α, dt, nsubs, ᶜλ⁰, ᶜmu_S⁰,
+        λ_lag, α, ξ_liq, ξ_ice, dt, nsubs, ᶜλ⁰, ᶜmu_S⁰,
     )
     return deepcopy(out)
 end

@@ -74,11 +74,16 @@ qt⁰    = flat(p.precomputed.ᶜq_tot_nonneg⁰)
 T′T′   = flat(p.precomputed.ᶜT′T′)
 q′q′   = flat(p.precomputed.ᶜq′q′)
 λ_lag  = flat(p.precomputed.ᶜsgs_moments.λ_lagrange)
+# CloudMicrophysics 0.43 takes air vertical velocity; the cache derives it from
+# the environment velocity, so derive it the same way rather than assuming one.
+w⁰     = flat(@. CA.w_component(CA.WVec(p.precomputed.ᶜu⁰)))
 
 thp   = CAP.thermodynamics_params(p.params)
 cmp   = CAP.microphysics_1m_params(p.params)
 corr  = CA.correlation_Tq(p.params)
 α     = CA.sgs_variance_fidelity(CAP.cloud_fraction_steepness_scale(p.params))
+ξ_liq = CAP.sgs_liquid_uniform_fraction(p.params)
+ξ_ice = CAP.sgs_ice_uniform_fraction(p.params)
 dt    = p.dt
 nsubs = p.atmos.water.microphysics_model.n_substeps_quad
 quad  = p.atmos.sgs_quadrature
@@ -88,8 +93,9 @@ ncells = length(ρ⁰)
 # Wrapped in a function, not run at top level: `npts += 1` inside a top-level
 # `for` creates a new local and the loop dies on the first iteration.
 function tally(
-    ncells, ρ⁰, T⁰, qt⁰, q_rai⁰, q_sno⁰, λ⁰, mu_S⁰, λ_lag, T′T′, q′q′,
-    quad, thp, cmp, corr, α, dt, nsubs, ::Type{FT},
+    ncells, ρ⁰, T⁰, qt⁰, q_lcl⁰, q_icl⁰, q_rai⁰, q_sno⁰, w⁰, λ⁰, mu_S⁰,
+    λ_lag, T′T′, q′q′, quad, thp, cmp, corr, α, ξ_liq, ξ_ice, dt, nsubs,
+    ::Type{FT},
 ) where {FT}
     npts = 0
     guard_fires = 0          # all five conditions: what the early-out skips
@@ -103,6 +109,7 @@ function tally(
     for c in 1:ncells
         ρ, T, qt = ρ⁰[c], T⁰[c], qt⁰[c]
         q_rai, q_sno = q_rai⁰[c], q_sno⁰[c]
+        q_lcl, q_icl, w = q_lcl⁰[c], q_icl⁰[c], w⁰[c]
         λ, mu_S, λl = λ⁰[c], mu_S⁰[c], λ_lag[c]
         transform =
             CA.build_physical_transform(quad, qt, T, q′q′[c], T′T′[c], corr)
@@ -115,8 +122,9 @@ function tally(
             q_sat_hat = TD.q_vap_saturation(thp, T_hat, ρ)
             S′_hat = q_tot_hat - q_sat_hat - mu_S
             shifted = max(FT(0), λl + α * S′_hat)
-            q_lcl_hat = λ * shifted
-            q_icl_hat = (FT(1) - λ) * shifted
+            q_lcl_hat, q_icl_hat = CA.sgs_local_condensate(
+                λ, shifted, ξ_liq, ξ_ice, q_lcl, q_icl,
+            )
 
             noprecip = iszero(q_rai) && iszero(q_sno)
             subsat = q_tot_hat <= q_sat_hat
@@ -135,7 +143,7 @@ function tally(
             end
             t = BMT.bulk_microphysics_tendencies(
                 BMT.LinearizedAverage(), BMT.Microphysics1Moment(), cmp, thp,
-                ρ, T_hat, q_tot_hat, q_lcl_hat, q_icl_hat,
+                ρ, T_hat, w, q_tot_hat, q_lcl_hat, q_icl_hat,
                 q_rai, q_sno, dt, nsubs,
             )
             if all(iszero, (t.dq_lcl_dt, t.dq_icl_dt, t.dq_rai_dt, t.dq_sno_dt))
@@ -148,8 +156,8 @@ function tally(
 end
 
 r = tally(
-    ncells, ρ⁰, T⁰, qt⁰, q_rai⁰, q_sno⁰, λ⁰, mu_S⁰, λ_lag, T′T′, q′q′,
-    quad, thp, cmp, corr, α, dt, nsubs, FT,
+    ncells, ρ⁰, T⁰, qt⁰, q_lcl⁰, q_icl⁰, q_rai⁰, q_sno⁰, w⁰, λ⁰, mu_S⁰,
+    λ_lag, T′T′, q′q′, quad, thp, cmp, corr, α, ξ_liq, ξ_ice, dt, nsubs, FT,
 )
 (; npts, guard_fires, subsat_noprecip, exact_zero, tiny_nonzero,
    larger, zero_tendency, max_tiny) = r
