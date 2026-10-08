@@ -57,7 +57,7 @@ questions:
       Under the per-launch sampling this replaced, the same comparison gave 3.34e-3 and 51 W/m2 -- a different cloud field, indistinguishable from reseeding the reference, and unvalidatable by any cell-wise test.
       The clear sky, which involves no sampling, matches exactly in both regimes.
       Carried into the coupled state over {divergence_steps:.0f} coupler steps it still holds, though at the top of the envelope rather than in the middle of it: the fused run ends {final_fusion_diff:.2e} from the baseline against a median {control_median_diff:.2e} for three reseeded draws of the fused code, whose own spread is {control_spread:.1f}x, so the worst per-step ratio is {divergence_ratio:.2f}.
-      Both bands fused are worth **+10.94% SYPD** (0.22759 -> 0.25554, tag exp/2026-09-24-fused-radiation): GPU kernel time falls 15.2%, radiation from 36.4% to 25.0% of it, and four radiation kernels become two.
+      Both bands fused are worth **10.94% of the walltime**, which is **+12.28% SYPD** (0.22759 -> 0.25554, tag exp/2026-09-24-fused-radiation): GPU kernel time falls 15.2%, radiation from 36.4% to 25.0% of it, and four radiation kernels become two.
       That is 87% of what deleting the clear-sky diagnostics buys (+12.6%), with the diagnostics kept -- so the question the bound posed to the science owners largely goes away.
     evidence:
       - kind: result
@@ -476,10 +476,12 @@ questions:
       The whole-device kernel total moved {dev_change_pct:.2f}% against {comb_step_pct:.2f}% of walltime -- the two agree here, which they usually do not, because for once the treatments are large enough that device time dominates what moved.
       Radiation falls from {rad_share_base:.2f}% of kernel time to {rad_share_mod:.2f}% and the microphysics hot kernel from {mp_share_base:.2f}% to {mp_share_mod:.2f}%, so neither is now the obvious next target: the remaining time is in the long tail the fusion-ceiling question prices.
       Read the two single-treatment figures as approximate, not as an A/B: each was measured against its own baseline, and the stack moved underneath them between the runs.
+      The radiation single at {rad_alone_pct:.2f}% carries a further caveat, because it was measured on `pb/optics-split-rebased` rather than on the RRTMGP.jl#631 head this stack now carries -- an earlier implementation of the same idea, with different entry-point names and no keyed McICA sampling.
+      It transfers only insofar as the two are equivalent, and the re-measurement is the evidence that they are: the same arm pair on #631 gives {comb_mod_sypd:.5f} SYPD against {prior_mod_sypd:.5f} on the older branch, a difference of {prior_delta_pct:.2f}% -- an order below the noise floor, and the reason this was not re-measured single-handed at a cost of three more GPU-hours.
     evidence:
       - kind: result
         path: results/combined-stack.json
-        git_ref: d306648
+        git_ref: 8266ea1
         values:
           comb_base_sypd: combined.baseline_sypd
           comb_mod_sypd: combined.mod_sypd
@@ -499,6 +501,8 @@ questions:
           rad_share_mod: shares.mod_radiation_pct
           mp_share_base: shares.baseline_microphysics_hot_pct
           mp_share_mod: shares.mod_microphysics_hot_pct
+          prior_mod_sypd: prior.mod_sypd
+          prior_delta_pct: prior.mod_sypd_change_pct
         explanation: >-
           The stacked measurement, snapshotted because results/summary.json is
           rewritten by every run and so cannot be cited for any particular one.
@@ -939,6 +943,7 @@ pipeline:
       # describe whichever arm pair ran last, and the provenance block inside
       # the file records which stack it does describe.
       kind: python-script
+      frozen: true
       script_path: scripts/export-combined-stack.py
       environment: py
       inputs:

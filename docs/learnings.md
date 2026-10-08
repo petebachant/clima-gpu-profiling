@@ -2687,3 +2687,52 @@ repaired hours earlier the same day, and one ncu kernel filter had just been
 made to resolve its target dynamically instead of hardcoding a source line.
 Fixing a measurement is not evidence that the measurement is wanted; ask what
 reads the output before repairing the thing that writes it.
+
+## 8b. A measurement is of a branch, not of an idea (2026-10-08)
+
+The fused clear-sky work exists as two implementations of the same idea on two
+RRTMGP branches. The stacked +28% was measured on `pb/optics-split-rebased`,
+while the open PR, CliMA/RRTMGP.jl#631, is `pb/fused-clear-sky`: the same
+restructuring with different entry-point names, different accumulator fields,
+and keyed McICA sampling that the other does not carry. The pipeline recorded
+the submodule SHA faithfully the whole time. Nothing recorded that the SHA was
+not the thing being proposed, because no stage was asking.
+
+Re-measuring the arm against the PR heads is what settled it, and the headline
+reproduced to 0.07% --- so the two implementations are performance-equivalent and
+the single-treatment figure measured on the older branch transfers. Worth
+knowing that this was not predictable: the renames were cosmetic, but keyed
+sampling is a real behavior change, and "the diff looks equivalent" is not a
+measurement.
+
+Two mechanisms came out of it, both cheap and both general:
+
+  * **A verification script should resolve the API, not spell it.** The
+    fused-radiation check broke twice on renames, 24 minutes into a GPU job each
+    time. It now looks up each entry point and accumulator from a list of known
+    names, fails with a message naming the branches if none matches, and records
+    which it found in its own output. The evidence then states which
+    implementation it measured instead of leaving that to be inferred from a
+    submodule pointer.
+  * **A frozen snapshot should carry the snapshot it supersedes.** Re-measuring
+    the same treatment on a different implementation leaves the old frozen file
+    describing a stack that no longer exists. `export-combined-stack` now reads
+    its own previous version out of Git at that file's last commit and records
+    the delta, so the re-measurement is injected rather than asserted, and the
+    reason a pinned single-treatment figure still transfers is in the file
+    beside the figure.
+
+The sharper lesson is about criteria. The check's tolerance had been written for
+keyed sampling, where the reference is bit-reproducible and the fused solve must
+agree to Float32 roundoff. Run against the unkeyed branch it failed on numbers
+that were fine, because the reference no longer agreed with itself. The fix was
+not to loosen the threshold but to let the measurement choose the test: compare
+the reference against itself first, and demand roundoff equality only if that
+control is zero. Changing a criterion after a failure needs saying out loud, so
+it was verified arithmetically against the already-measured file before any GPU
+was spent, and the branch that was taken is now written into the output.
+
+That self-selection then paid for itself without an edit. On #631 the control
+came back exactly zero, the strict branch engaged on its own, and the same stage
+that had been passing a resampling-band test became an equality test --- the
+stronger claim, arrived at by measuring rather than by assuming.
