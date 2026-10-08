@@ -1,142 +1,145 @@
 clearsky_exact = true
-reference_sky_contrast = 0.6096139772237202
+reference_sky_contrast = 0.6314350366892517
 sw_clearsky_exact = true
-sw_sampling_deterministic = false
-sw_fused_mean_rel_diff = 0.007292832086987199
-sw_control_mean_rel_diff = 0.007345185885996
+sw_sampling_deterministic = true
+sw_fused_mean_rel_diff = 9.511707413409295e-9
+sw_control_mean_rel_diff = 0.0
 sw_allsky_consistent = true
-sampling_deterministic = false
+lw_entry_point = "solve_lw_both_skies!"
 worst_rel_diff = 0.0
-note = "the cloud mask is McICA-sampled per launch, so all-sky fluxes are compared against the reference resampled against itself, not against equality; the clear sky has no sampling and must match exactly"
+sampling_deterministic = true
+note = "the reference solve is bit-reproducible on this branch, so the all-sky comparison is roundoff equality against a threshold of 7.6293945e-6; the clear sky carries no sampling and must match exactly"
 passes = true
-control_mean_rel_diff = 0.01193015444566386
-fused_mean_rel_diff = 0.011833761221101254
+control_mean_rel_diff = 0.0
+sw_entry_point = "solve_sw_both_skies!"
+rrtmgp_dir = "/home/pbachant/calkit/clima-gpu-profiling/RRTMGP.jl-mod"
+fused_mean_rel_diff = 4.5176884382990135e-9
 cloud_effect_present = true
 allsky_consistent = true
 warmup_steps = 60
 
 [allsky_control.net]
-mean_rel_diff = 0.01193015444566386
-mean_abs_diff = 3.750023126602173
-max_abs_diff = 70.47002410888672
-max_rel_diff = 0.22419015644056406
-field_max_abs = 314.33148193359375
+mean_rel_diff = 0.0
+mean_abs_diff = 0.0
+max_abs_diff = 0.0
+max_rel_diff = 0.0
+field_max_abs = 314.3274841308594
 
 [allsky_control.dn]
-mean_rel_diff = 0.0048320332358040025
-mean_abs_diff = 2.124476671218872
-max_abs_diff = 46.23023223876953
-max_rel_diff = 0.10514872754451533
-field_max_abs = 439.6651611328125
+mean_rel_diff = 0.0
+mean_abs_diff = 0.0
+max_abs_diff = 0.0
+max_rel_diff = 0.0
+field_max_abs = 445.128173828125
 
 [allsky_control.up]
-mean_rel_diff = 0.003577766256045558
-mean_abs_diff = 1.820729374885559
-max_abs_diff = 41.52020263671875
-max_rel_diff = 0.08158795150276693
-field_max_abs = 508.9011535644531
+mean_rel_diff = 0.0
+mean_abs_diff = 0.0
+max_abs_diff = 0.0
+max_rel_diff = 0.0
+field_max_abs = 510.158203125
 
 [clearsky.net]
 mean_rel_diff = 0.0
 mean_abs_diff = 0.0
 max_abs_diff = 0.0
 max_rel_diff = 0.0
-field_max_abs = 314.33148193359375
+field_max_abs = 314.33123779296875
 
 [clearsky.dn]
 mean_rel_diff = 0.0
 mean_abs_diff = 0.0
 max_abs_diff = 0.0
 max_rel_diff = 0.0
-field_max_abs = 432.51068115234375
+field_max_abs = 432.50958251953125
 
 [clearsky.up]
 mean_rel_diff = 0.0
 mean_abs_diff = 0.0
 max_abs_diff = 0.0
 max_rel_diff = 0.0
-field_max_abs = 508.9011535644531
+field_max_abs = 510.158203125
 
 [sw_clearsky.net]
 mean_rel_diff = 0.0
 mean_abs_diff = 0.0
 max_abs_diff = 0.0
 max_rel_diff = 0.0
-field_max_abs = 1305.889404296875
+field_max_abs = 1305.887451171875
 
 [sw_clearsky.dn]
 mean_rel_diff = 0.0
 mean_abs_diff = 0.0
 max_abs_diff = 0.0
 max_rel_diff = 0.0
-field_max_abs = 1385.2720947265625
+field_max_abs = 1385.273681640625
 
 [sw_clearsky.up]
 mean_rel_diff = 0.0
 mean_abs_diff = 0.0
 max_abs_diff = 0.0
 max_rel_diff = 0.0
-field_max_abs = 563.9508056640625
+field_max_abs = 563.9514770507812
 
 [sw_allsky.net]
-mean_rel_diff = 0.007202855515259801
-mean_abs_diff = 9.406132698059082
-max_abs_diff = 310.2214050292969
-max_rel_diff = 0.23755564905308976
-field_max_abs = 1305.889404296875
+mean_rel_diff = 8.448067474947896e-9
+mean_abs_diff = 1.1032225302187726e-5
+max_abs_diff = 0.00067138671875
+max_rel_diff = 5.141229576465508e-7
+field_max_abs = 1305.887451171875
 
 [sw_allsky.dn]
-mean_rel_diff = 0.0033758806968862153
-mean_abs_diff = 4.676514148712158
-max_abs_diff = 378.73150634765625
-max_rel_diff = 0.27339859154147667
-field_max_abs = 1385.2723388671875
+mean_rel_diff = 4.818603307817578e-9
+mean_abs_diff = 6.675084932794562e-6
+max_abs_diff = 0.00238037109375
+max_rel_diff = 1.7183397876819358e-6
+field_max_abs = 1385.2738037109375
 
 [sw_allsky.up]
-mean_rel_diff = 0.007292832086987199
-mean_abs_diff = 6.405828475952148
-max_abs_diff = 313.9732666015625
-max_rel_diff = 0.3574485832275921
-field_max_abs = 878.3732299804688
+mean_rel_diff = 9.511707413409295e-9
+mean_abs_diff = 8.283984243462328e-6
+max_abs_diff = 0.00244140625
+max_rel_diff = 2.803233473747298e-6
+field_max_abs = 870.925048828125
 
 [allsky.net]
-mean_rel_diff = 0.011833761221101254
-mean_abs_diff = 3.719723701477051
-max_abs_diff = 58.245094299316406
-max_rel_diff = 0.18529831609937616
-field_max_abs = 314.33148193359375
+mean_rel_diff = 4.5176884382990135e-9
+mean_abs_diff = 1.4200336408976e-6
+max_abs_diff = 9.1552734375e-5
+max_rel_diff = 2.912654444715537e-7
+field_max_abs = 314.3274841308594
 
 [allsky.dn]
-mean_rel_diff = 0.004804163111090566
-mean_abs_diff = 2.1122231483459473
-max_abs_diff = 43.54039001464844
-max_rel_diff = 0.09903079403076905
-field_max_abs = 439.6651611328125
+mean_rel_diff = 9.304582287861626e-10
+mean_abs_diff = 4.1417317220293626e-7
+max_abs_diff = 9.1552734375e-5
+max_rel_diff = 2.0567724030506047e-7
+field_max_abs = 445.128173828125
 
 [allsky.up]
-mean_rel_diff = 0.003546199407888965
-mean_abs_diff = 1.804664969444275
-max_abs_diff = 41.92375183105469
-max_rel_diff = 0.0823809329914301
-field_max_abs = 508.9011535644531
+mean_rel_diff = 2.011800595047022e-9
+mean_abs_diff = 1.0263365766149946e-6
+max_abs_diff = 6.103515625e-5
+max_rel_diff = 1.1963966447295377e-7
+field_max_abs = 510.158203125
 
 [sw_allsky_control.net]
-mean_rel_diff = 0.007238058279442423
-mean_abs_diff = 9.452103614807129
-max_abs_diff = 316.83544921875
-max_rel_diff = 0.2426204303184024
-field_max_abs = 1305.889404296875
+mean_rel_diff = 0.0
+mean_abs_diff = 0.0
+max_abs_diff = 0.0
+max_rel_diff = 0.0
+field_max_abs = 1305.887451171875
 
 [sw_allsky_control.dn]
-mean_rel_diff = 0.00339114784536265
-mean_abs_diff = 4.697663307189941
-max_abs_diff = 345.1385803222656
-max_rel_diff = 0.24914853970483827
-field_max_abs = 1385.2723388671875
+mean_rel_diff = 0.0
+mean_abs_diff = 0.0
+max_abs_diff = 0.0
+max_rel_diff = 0.0
+field_max_abs = 1385.2738037109375
 
 [sw_allsky_control.up]
-mean_rel_diff = 0.007345185885996
-mean_abs_diff = 6.451814651489258
-max_abs_diff = 333.19476318359375
-max_rel_diff = 0.3793316460600724
-field_max_abs = 878.3732299804688
+mean_rel_diff = 0.0
+mean_abs_diff = 0.0
+max_abs_diff = 0.0
+max_rel_diff = 0.0
+field_max_abs = 870.925048828125
