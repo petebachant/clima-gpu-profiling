@@ -92,16 +92,23 @@ questions:
         values:
           fused_mean_diff: fused_mean_rel_diff
           lw_max_abs: allsky.net.max_abs_diff
+          lw_control_diff: control_mean_rel_diff
+          sky_contrast: reference_sky_contrast
         explanation: >-
           Per-call agreement between the fused solve and the two it replaces, on
-          a real AMIP state after 60 steps. Keyed sampling makes both draw the
-          same cloud mask, so this is a cell-wise comparison and what remains is
-          the arithmetic order of applying the cloud increment. The same file
-          records the clear sky as exactly equal in both bands, and a clear/
-          all-sky contrast of 0.61 -- which is what shows the cloud increment
-          did something, rather than the check passing on a clear sky. Unpinned
-          because the stage is live: a pinned templated value renders this run's
-          number while citing an older one.
+          a real AMIP state after 60 steps. The branch the mod arm devs,
+          pb/optics-split-rebased, does not carry the keyed MCICA sampling that
+          pb/fused-clear-sky did, so the two reference solves draw different
+          cloud masks and cell-wise equality is unreachable by construction:
+          the reference is compared against ITSELF at
+          {lw_control_diff:.3e}, and the fused solve has to sit inside that
+          spread, which at {fused_mean_diff:.3e} it does. The sharp test is
+          beside it in the same file --- the clear sky carries no sampling and
+          is recorded as exactly equal in both bands --- together with a clear/
+          all-sky contrast of {sky_contrast:.2f}, which is what shows the cloud
+          increment did something rather than the check passing on a clear sky.
+          Unpinned because the stage is live: a pinned templated value renders
+          this run's number while citing an older one.
       - kind: result
         path: results/state-divergence.json
         git_ref: meas/2026-09-25-fused-state-divergence

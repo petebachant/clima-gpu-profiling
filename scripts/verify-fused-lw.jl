@@ -123,8 +123,20 @@ control_mean = maximum(results["allsky_control"][k]["mean_rel_diff"] for k in ("
 clear_worst = maximum(results["clearsky"][k]["max_rel_diff"] for k in ("up", "dn", "net"))
 worst = clear_worst
 results["worst_rel_diff"] = worst
-# Float32 roundoff over a 256-g-point accumulation; anything much larger is a
-# bug, not summation order
+# Which test applies is decided by the measurement, not by assumption. Keyed
+# MCICA (pb/fused-clear-sky) makes the reference bit-reproducible, and then the
+# fused solve must agree to Float32 roundoff over a 256-g-point accumulation.
+# pb/optics-split-rebased has no keyed sampling, the two reference solves draw
+# different cloud masks, and roundoff equality is unreachable by construction;
+# the test is then the one this script's header describes -- the fused draw must
+# sit in the reference's own resampling spread.
+#
+# The factor of 2 bounds gross error only. A wrong increment or wrong shared
+# optics is orders of magnitude out AND breaks the clear-sky equality below,
+# which is the sharp test: the clear sky has no sampling, so it must be exact.
+const ROUNDOFF = 64 * eps(Float32)
+consistent(fused, control) =
+    control <= ROUNDOFF ? fused <= ROUNDOFF : fused <= 2 * control
 # Both conditions: the fused result matches, AND the comparison was capable of
 # detecting a mismatch in the first place
 results["cloud_effect_present"] = sky_contrast > 1e-3
@@ -138,7 +150,8 @@ results["clearsky_exact"] = clear_worst < 1e-6
 # bit-equality. The fused path applies the cloud increment to optics it has
 # already swept, so it agrees to roundoff, not exactly. 64 ulp of Float32 is
 # still four orders below what a different cloud draw produced (0.33%).
-results["allsky_within_roundoff"] = fused_mean <= 64 * eps(Float32)
+results["sampling_deterministic"] = control_mean <= ROUNDOFF
+results["allsky_consistent"] = consistent(fused_mean, control_mean)
 # --- shortwave -------------------------------------------------------------
 sws = s.sws
 RTE.solve_sw!(sws, as, lk.lookup_sw, nothing, lk.lookup_sw_aero, ms)
@@ -163,17 +176,18 @@ sw_clear_worst = maximum(results["sw_clearsky"][k]["max_rel_diff"] for k in ("up
 results["sw_fused_mean_rel_diff"] = sw_fused_mean
 results["sw_control_mean_rel_diff"] = sw_control_mean
 results["sw_clearsky_exact"] = sw_clear_worst < 1e-6
-results["sw_allsky_within_roundoff"] = sw_fused_mean <= 64 * eps(Float32)
+results["sw_sampling_deterministic"] = sw_control_mean <= ROUNDOFF
+results["sw_allsky_consistent"] = consistent(sw_fused_mean, sw_control_mean)
 
 @printf("SW: fused mean rel diff %.3e vs resampling control %.3e\n",
         sw_fused_mean, sw_control_mean)
 @printf("SW: clear sky max rel diff %.3e (must be exact)\n", sw_clear_worst)
 
 results["passes"] = results["clearsky_exact"] &&
-                    results["allsky_within_roundoff"] &&
+                    results["allsky_consistent"] &&
                     results["cloud_effect_present"] &&
                     results["sw_clearsky_exact"] &&
-                    results["sw_allsky_within_roundoff"]
+                    results["sw_allsky_consistent"]
 
 for sky in ("allsky", "allsky_control", "clearsky"), k in ("up", "dn", "net")
     @printf("%-9s %-4s max rel diff %.3e (field max %.1f)\n", sky, k,
@@ -188,3 +202,7 @@ end
 open(out_path, "w") do io
     TOML.print(io, results)
 end
+
+# The verdict has to reach the pipeline. Writing passes = false and exiting 0
+# let `calkit status` report green over a failing check.
+results["passes"] || exit(1)
