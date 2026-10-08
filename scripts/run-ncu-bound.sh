@@ -133,6 +133,38 @@ launch__occupancy_limit_registers,\
 sm__maximum_warps_per_active_cycle_pct,\
 l1tex__throughput.avg.pct_of_peak_sustained_elapsed
 
+# ClimaCore builds a kernel's name from its source file and line, so any
+# upstream insertion above renumbers it and a hardcoded name silently stops
+# matching -- which is how this stage failed on 2026-10-07, still asking for
+# L1013 after the fold moved the kernel to L1024. `auto:<target>[,<target>]`
+# resolves the names from results/param-fold.json, which records the line each
+# target actually compiled to, so the filter follows upstream instead of
+# rotting. The JSON is small, committed and derived, which is what a stage may
+# depend on; the nsys database it came from is transient and may not be.
+if [[ "$KERNEL_NAME" == auto:* ]]; then
+  PARAM_FOLD="${SLURM_SUBMIT_DIR:-$PWD}/results/param-fold.json"
+  if [ ! -f "$PARAM_FOLD" ]; then
+    echo "ERROR: --kernel-name auto: needs $PARAM_FOLD; run export-param-fold first" >&2
+    exit 1
+  fi
+  KERNEL_NAME=$(python3 - "$PARAM_FOLD" "${KERNEL_NAME#auto:}" <<'PYEOF'
+import json, sys
+path, targets = sys.argv[1], sys.argv[2].split(",")
+kernels = json.load(open(path))["kernels"]
+names = []
+for t in targets:
+    if t not in kernels:
+        sys.exit(f"ERROR: no target {t!r} in {path}; have {sorted(kernels)}")
+    n = kernels[t]["mod"]["kernel"]
+    if not n:
+        sys.exit(f"ERROR: target {t!r} has no kernel name in {path}")
+    names.append(n)
+print("regex:^(" + "|".join(names) + ")$")
+PYEOF
+  ) || exit 1
+  echo "resolved --kernel-name to: $KERNEL_NAME"
+fi
+
 NCU_ARGS=()
 if [ -n "$KERNEL_NAME" ]; then
   NCU_ARGS+=(--kernel-name "$KERNEL_NAME")

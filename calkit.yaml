@@ -1913,7 +1913,7 @@ pipeline:
       args:
         - results/ncu/microphysics-bound
         - --kernel-name
-        - regex:set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1013
+        - auto:microphysics_quadrature,microphysics_updraft
         - --project
         - ClimaCoupler.jl-mod/experiments/AMIP
         - --config
@@ -1924,6 +1924,10 @@ pipeline:
         - scripts/run-ncu-bound.sh
         - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
         - ClimaAtmos.jl-mod/src
+        # Supplies the kernel names for `auto:`. Small, committed and derived,
+        # which is what a stage may depend on -- unlike the nsys database it
+        # was computed from.
+        - results/param-fold.json
       outputs:
         - path: results/ncu/microphysics-bound.ncu-rep
           storage: dvc
