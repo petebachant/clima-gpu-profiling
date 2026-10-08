@@ -8,9 +8,9 @@
 # Needs no coupled simulation -- CMP.Microphysics1MParams(FT) constructs
 # standalone -- so this runs in minutes rather than the ~45 an AMIP stage costs.
 #
-# Params are passed as kernel ARGUMENTS, not const globals. That matters: as
-# const globals the compiler folds their fields and reports 101 registers for
-# the full LinearizedAverage instead of 163, understating pressure by 62.
+# Params are passed as kernel ARGUMENTS, not const globals. As const globals the
+# compiler folds their fields and understates pressure; measure-val-params-registers.jl
+# reports both columns for one body.
 # CloudMicrophysics and Thermodynamics are transitive deps of the AMIP project,
 # not direct ones, so reach them through ClimaAtmos, which imports both.
 import CUDA
@@ -317,7 +317,9 @@ import TOML
 open(joinpath(@__DIR__, "..", "results", "cm-registers.toml"), "w") do io
     TOML.print(io, Dict("note" => "params passed as runtime kernel arguments; " *
                                   "as const globals the compiler folds their fields " *
-                                  "and reports 101 instead of 163 for LinearizedAverage",
+                                  "and understates pressure. See " *
+                                  "results/val-params-registers.toml for both " *
+                                  "columns measured on one body.",
                         "layers" => results); sorted = true)
 end
 println("\nBISECT DONE")
