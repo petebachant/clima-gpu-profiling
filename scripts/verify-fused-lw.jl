@@ -1,6 +1,6 @@
 # Does the fused longwave solve agree with the two solves it replaces?
 #
-# solve_lw_both_skies! computes the gas and aerosol optics once and sweeps twice.
+# solve_lw_both! computes the gas and aerosol optics once and sweeps twice.
 #
 # It cannot be compared to two solve_lw! calls cell by cell. The cloud mask is
 # McICA-sampled with Random.rand(), keyed per kernel launch, so the fused solve
@@ -34,6 +34,14 @@ let i = findfirst(==("--out"), ARGS)
     end
 end
 
+# Before the 24 minutes of setup, not after: this script failed once on a
+# renamed entry point with the whole simulation already built.
+all(n -> isdefined(RTE, n), (:solve_lw_both!, :solve_sw_both!)) || error(
+    "RRTMGP.RTESolver has no solve_lw_both!; the dev'd RRTMGP is $(pkgdir(RRTMGP)). " *
+    "The fused solve is on pb/optics-split-rebased as solve_lw_both! and was " *
+    "named solve_lw_both_skies! on pb/fused-clear-sky.",
+)
+
 config_file = Input.parse_commandline(Input.argparse_settings())["config_file"]
 cs = CoupledSimulation(config_file)
 # Long enough for condensate to form. At three steps -- 90 simulated seconds --
@@ -48,27 +56,29 @@ end
 
 s = cs.model_sims.atmos_sim.integrator.p.radiation.rrtmgp_solver
 lk, as, lws = s.lookups, s.as, s.lws
+# What update_lw_fluxes!/update_sw_fluxes! pass as metric_scaling.
+ms = s.deep_atmosphere_inverse_scaling
 
 snap(f) = (up = Array(f.flux_up), dn = Array(f.flux_dn), net = Array(f.flux_net))
 
 # --- longwave --------------------------------------------------------------
 # Reference: the two solves the fused version replaces
-RTE.solve_lw!(lws, as, lk.lookup_lw, nothing, lk.lookup_lw_aero, nothing)
+RTE.solve_lw!(lws, as, lk.lookup_lw, nothing, lk.lookup_lw_aero, ms)
 ref_clear = snap(lws.flux)
-RTE.solve_lw!(lws, as, lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, nothing)
+RTE.solve_lw!(lws, as, lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, ms)
 ref_allsky = snap(lws.flux)
 # The control: the same solve again. Whatever it differs from itself by is what
 # McICA resampling costs, and is the yardstick for the fused solve.
-RTE.solve_lw!(lws, as, lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, nothing)
+RTE.solve_lw!(lws, as, lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, ms)
 ref_allsky_again = snap(lws.flux)
 
 # The fused solve, filling both skies in one pass
-RTE.solve_lw_both_skies!(
-    lws, s.clear_flux_acc_lw, as,
-    lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, nothing,
+RTE.solve_lw_both!(
+    lws, s.clear_acc_lw, as,
+    lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero, ms,
 )
 got_allsky = snap(lws.flux)
-got_clear = snap(s.clear_flux_acc_lw)
+got_clear = snap(s.clear_acc_lw)
 
 # Relative to the field's own scale: fluxes span orders of magnitude, so an
 # absolute difference says nothing
@@ -131,18 +141,18 @@ results["clearsky_exact"] = clear_worst < 1e-6
 results["allsky_within_roundoff"] = fused_mean <= 64 * eps(Float32)
 # --- shortwave -------------------------------------------------------------
 sws = s.sws
-RTE.solve_sw!(sws, as, lk.lookup_sw, nothing, lk.lookup_sw_aero, nothing)
+RTE.solve_sw!(sws, as, lk.lookup_sw, nothing, lk.lookup_sw_aero, ms)
 sw_ref_clear = snap(sws.flux)
-RTE.solve_sw!(sws, as, lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, nothing)
+RTE.solve_sw!(sws, as, lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, ms)
 sw_ref_allsky = snap(sws.flux)
-RTE.solve_sw!(sws, as, lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, nothing)
+RTE.solve_sw!(sws, as, lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, ms)
 sw_ref_allsky_again = snap(sws.flux)
-RTE.solve_sw_both_skies!(
-    sws, s.clear_flux_acc_sw, as,
-    lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, nothing,
+RTE.solve_sw_both!(
+    sws, s.clear_acc_sw, as,
+    lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero, ms,
 )
 sw_got_allsky = snap(sws.flux)
-sw_got_clear = snap(s.clear_flux_acc_sw)
+sw_got_clear = snap(s.clear_acc_sw)
 
 results["sw_allsky"] = compare(sw_ref_allsky, sw_got_allsky)
 results["sw_allsky_control"] = compare(sw_ref_allsky, sw_ref_allsky_again)
