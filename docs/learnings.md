@@ -2617,3 +2617,73 @@ Two things survive independently of the profiler argument:
 
 A newer CUDA.jl is blocked regardless: v6 removes `CUDA.shfl_recurse`, which
 ClimaCore's CUDA extension extends.
+
+## 8. Closed lines of work, and where their evidence lives
+
+On 2026-10-08 the pipeline was cut back to what bears on SYPD for AMIP. Five
+questions were retired from `calkit.yaml` along with the eight stages that
+existed only to answer them. Nothing is lost: each question's evidence was
+pinned to a tag with `git_ref`, and at that tag the stages are not frozen and
+their inputs exist, so `git checkout <tag> && calkit run <stage>` reproduces the
+figures. They are deliberately absent here --- this file carries reasoning, and
+the numbers belong to the tag that measured them.
+
+The test for retiring a question is not "is the answer still true" but "would a
+different answer change what we do next". All five were already settled.
+
+  * **The ceiling on kernel fusion**, at `meas/2026-09-19-launch-cost` with
+    `docs/experiments/launch-cost.md`. Answered: the ceiling is small and no one
+    package can deliver it, which closed the line of work rather than directing
+    it. Section 6 records why most of the launch-overhead case was unsupported;
+    the write-up and its stage stay on main as the worked example AGENTS.md
+    points at for the Markdown-stage mechanism.
+  * **Whether the SGS microphysics cache kernel can be sped up from inside one
+    package**, at `exp/2026-09-15-microphysics-cache-atmos`. Answered yes, by a
+    clear-air early-out plus a slimmer evaluator payload --- and then overtaken.
+    Section 4ac found the evaluator struct was erasing the parameter fold at the
+    struct boundary, so the lever is register payload, not the guard. Keeping
+    both answers side by side invited reading the superseded one first.
+  * **Whether the radiation kernels can be made faster without changing
+    results**, at `exp/2026-09-12-rrtmgp-optics`,
+    `meas/2026-09-12-rrtmgp-bit-identical` and
+    `meas/2026-09-13-binary-search-alone`. Answered: a binary search replacing a
+    linear scan in RRTMGP's aerosol-optics interpolation. It merged upstream as
+    CliMA/RRTMGP.jl#628 and is now baseline in **both** arms, so the question no
+    longer describes a difference this project can measure.
+  * **Whether the nine-point SGS quadrature earns its throughput**, at
+    `b668913`, with `docs/sgs-quadrature.md` at that rev. Answered yes: reducing
+    the rule changes real cells, because the ice formation and liquid freezing
+    upstream re-enabled on 2026-09-21 are nonlinear in temperature away from
+    saturation, and the quadrature integrates over temperature too. Section 6a
+    keeps the full reasoning. A "yes" here is a direction closed, and it was
+    costing two GPU stages and a document stage per pass to re-confirm.
+  * **How much of a profiling job is compilation, and whether caching recovers
+    it**, at `0551f45` and `compile-time-warmup-ab`, with `docs/compile-time.md`.
+    A negative result, and negative results do not need re-measuring: the
+    GPUCompiler on-disk cache writes nothing, and the PrecompileTools warmup
+    package made the job slower rather than faster.
+
+### 8a. Three GPU stages were running for nobody
+
+The audit that prompted the cut found `radiation-ncu`, `microphysics-bound` and
+`keyed-mcica` producing outputs that no question cited and no downstream stage
+consumed --- about three GPU-hours per green pass, spent on files nothing opened.
+`radiation-ncu` was the single most expensive stale stage in the pipeline.
+
+They were not mistakes at the time; each answered a live question once, and
+stayed behind when the question moved on or was rewritten to cite something
+else. Nothing in the pipeline notices this, because DVC tracks whether an output
+is up to date and never asks whether anyone wants it.
+
+So the check is worth running deliberately, and it is mechanical: for every
+stage output, does a question cite it, or does another stage declare it as an
+input? Follow `from_stage_outputs` when doing this --- four stages in this
+pipeline are reached only that way, and a check that misses the indirection
+reports live stages as orphans.
+
+The same audit found `scripts/measure-fusion-mismatch.jl` had been dead for
+weeks, referenced by nothing. Two of the scripts deleted in this cut had been
+repaired hours earlier the same day, and one ncu kernel filter had just been
+made to resolve its target dynamically instead of hardcoding a source line.
+Fixing a measurement is not evidence that the measurement is wanted; ask what
+reads the output before repairing the thing that writes it.

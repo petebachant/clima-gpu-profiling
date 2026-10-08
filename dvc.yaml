@@ -370,79 +370,6 @@ stages:
           persist: false
     desc: Automatically generated from the 'export-kernel-resources' stage in
       calkit.yaml. Changes made here will be overwritten.
-  earlyout-hits:
-    cmd: calkit scheduler batch --name earlyout-hits --environment clima --dep
-      scripts/measure-earlyout-hits.jl --dep ClimaCoupler.jl/src --dep
-      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep ClimaCoupler.jl/config/atmos_configs/climaatmos_progedmf_1m.yml
-      --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
-      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep ClimaCore.jl/ext
-      --dep ClimaCore.jl/src --dep ClimaAtmos.jl/src --dep
-      .calkit/env-locks/clima --out results/earlyout-hits.toml --option --gpus=1
-      --option --time=60 -- scripts/run-julia-script.sh
-      --project=ClimaCoupler.jl/experiments/AMIP
-      scripts/measure-earlyout-hits.jl --config_file
-      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --out results/earlyout-hits.toml
-    deps:
-      - scripts/run-julia-script.sh
-      - scripts/measure-earlyout-hits.jl
-      - ClimaCoupler.jl/src
-      - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      - ClimaCoupler.jl/config/atmos_configs/climaatmos_progedmf_1m.yml
-      - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
-      - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
-      - ClimaCore.jl/ext
-      - ClimaCore.jl/src
-      - ClimaAtmos.jl/src
-      - .calkit/env-locks/clima
-    outs:
-      - results/earlyout-hits.toml:
-          cache: false
-          persist: true
-      - .calkit/scheduler/logs/earlyout-hits.out:
-          cache: false
-          persist: true
-    desc: Automatically generated from the 'earlyout-hits' stage in calkit.yaml.
-      Changes made here will be overwritten.
-  quadrature-order-error:
-    cmd: calkit scheduler batch --name quadrature-order-error --environment
-      clima --dep scripts/measure-quadrature-order-error.jl --dep
-      ClimaCoupler.jl-mod/src --dep
-      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
-      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
-      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
-      ClimaAtmos.jl-mod/src --dep CloudMicrophysics.jl-mod/src --dep
-      .calkit/env-locks/clima --out results/quadrature-order-error.toml --option
-      --gpus=1 --option --time=120 -- scripts/run-julia-script.sh
-      --project=ClimaCoupler.jl-mod/experiments/AMIP
-      scripts/measure-quadrature-order-error.jl --config_file
-      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --out results/quadrature-order-error.toml
-    deps:
-      - scripts/run-julia-script.sh
-      - scripts/measure-quadrature-order-error.jl
-      - ClimaCoupler.jl-mod/src
-      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
-      - ClimaCore.jl-mod/ext
-      - ClimaCore.jl-mod/src
-      - ClimaAtmos.jl-mod/src
-      - CloudMicrophysics.jl-mod/src
-      - .calkit/env-locks/clima
-    outs:
-      - results/quadrature-order-error.toml:
-          cache: false
-          persist: true
-      - .calkit/scheduler/logs/quadrature-order-error.out:
-          cache: false
-          persist: true
-    desc: Automatically generated from the 'quadrature-order-error' stage in
-      calkit.yaml. Changes made here will be overwritten.
   state-divergence:
     cmd: calkit xenv -n py --no-check -- python
       scripts/compare-state-divergence.py
@@ -655,82 +582,6 @@ stages:
           persist: true
     desc: Automatically generated from the 'fused-lw-check' stage in
       calkit.yaml. Changes made here will be overwritten.
-  radiation-registers:
-    cmd: calkit scheduler batch --name radiation-registers --environment clima
-      --dep scripts/measure-radiation-registers.jl --dep RRTMGP.jl-mod/src --dep
-      RRTMGP.jl-mod/ext --dep ClimaCoupler.jl-mod/src --dep
-      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
-      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
-      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
-      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
-      results/radiation-registers.toml --option --gpus=1 --option --time=90 --
-      scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
-      scripts/measure-radiation-registers.jl --config_file
-      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --out results/radiation-registers.toml
-    deps:
-      - scripts/run-julia-script.sh
-      - scripts/measure-radiation-registers.jl
-      - RRTMGP.jl-mod/src
-      - RRTMGP.jl-mod/ext
-      - ClimaCoupler.jl-mod/src
-      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
-      - ClimaCore.jl-mod/ext
-      - ClimaCore.jl-mod/src
-      - ClimaAtmos.jl-mod/src
-      - .calkit/env-locks/clima
-    outs:
-      - results/radiation-registers.toml:
-          cache: false
-          persist: true
-      - .calkit/scheduler/logs/radiation-registers.out:
-          cache: false
-          persist: true
-    desc: Automatically generated from the 'radiation-registers' stage in
-      calkit.yaml. Changes made here will be overwritten.
-  keyed-mcica:
-    cmd: calkit scheduler batch --name keyed-mcica --environment clima --dep
-      scripts/verify-keyed-mcica.jl --dep RRTMGP.jl-mod/src --dep
-      RRTMGP.jl-mod/ext --dep ClimaCoupler.jl-mod/src --dep
-      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
-      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
-      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
-      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
-      results/keyed-mcica.toml --option --gpus=1 --option --time=120 --
-      scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
-      scripts/verify-keyed-mcica.jl --config_file
-      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --out results/keyed-mcica.toml
-    deps:
-      - scripts/run-julia-script.sh
-      - scripts/verify-keyed-mcica.jl
-      - RRTMGP.jl-mod/src
-      - RRTMGP.jl-mod/ext
-      - ClimaCoupler.jl-mod/src
-      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
-      - ClimaCore.jl-mod/ext
-      - ClimaCore.jl-mod/src
-      - ClimaAtmos.jl-mod/src
-      - .calkit/env-locks/clima
-    outs:
-      - results/keyed-mcica.toml:
-          cache: false
-          persist: true
-      - .calkit/scheduler/logs/keyed-mcica.out:
-          cache: false
-          persist: true
-    desc: Automatically generated from the 'keyed-mcica' stage in calkit.yaml.
-      Changes made here will be overwritten.
   radiation-split:
     cmd: calkit scheduler batch --name radiation-split --environment clima --dep
       scripts/measure-radiation-split.jl --dep RRTMGP.jl-mod/src --dep
@@ -770,83 +621,6 @@ stages:
     frozen: true
     desc: Automatically generated from the 'radiation-split' stage in
       calkit.yaml. Changes made here will be overwritten.
-  sgs-degeneracy:
-    cmd: calkit scheduler batch --name sgs-degeneracy --environment clima --dep
-      scripts/measure-sgs-degeneracy.jl --dep ClimaCoupler.jl-mod/src --dep
-      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
-      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
-      ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
-      ClimaAtmos.jl-mod/src --dep CloudMicrophysics.jl-mod/src --dep
-      .calkit/env-locks/clima --out results/sgs-degeneracy.toml --option
-      --gpus=1 --option --time=120 -- scripts/run-julia-script.sh
-      --project=ClimaCoupler.jl-mod/experiments/AMIP
-      scripts/measure-sgs-degeneracy.jl --config_file
-      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --out results/sgs-degeneracy.toml
-    deps:
-      - scripts/run-julia-script.sh
-      - scripts/measure-sgs-degeneracy.jl
-      - ClimaCoupler.jl-mod/src
-      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
-      - ClimaCore.jl-mod/ext
-      - ClimaCore.jl-mod/src
-      - ClimaAtmos.jl-mod/src
-      - CloudMicrophysics.jl-mod/src
-      - .calkit/env-locks/clima
-    outs:
-      - results/sgs-degeneracy.toml:
-          cache: false
-          persist: true
-      - .calkit/scheduler/logs/sgs-degeneracy.out:
-          cache: false
-          persist: true
-    desc: Automatically generated from the 'sgs-degeneracy' stage in
-      calkit.yaml. Changes made here will be overwritten.
-  radiation-ncu:
-    cmd: calkit scheduler batch --name radiation-ncu --environment clima --dep
-      scripts/run.jl --dep ClimaCoupler.jl/src --dep
-      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --dep ClimaCoupler.jl/config/atmos_configs/climaatmos_progedmf_1m.yml
-      --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
-      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep ClimaCore.jl/ext
-      --dep ClimaCore.jl/src --dep ClimaAtmos.jl/src --dep RRTMGP.jl/src --dep
-      RRTMGP.jl/ext --dep .calkit/env-locks/clima --out
-      results/ncu/radiation.ncu-rep --out results/ncu/radiation-details.csv
-      --option --gpus=1 --option --time=180 -- scripts/run-ncu.sh
-      results/ncu/radiation --kernel-name regex:rte_.w_2stream_solve_CUDA
-      --project ClimaCoupler.jl/experiments/AMIP --config
-      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --launch-skip 2 --launch-count 2
-    deps:
-      - scripts/run-ncu.sh
-      - scripts/run.jl
-      - ClimaCoupler.jl/src
-      - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      - ClimaCoupler.jl/config/atmos_configs/climaatmos_progedmf_1m.yml
-      - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
-      - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
-      - ClimaCore.jl/ext
-      - ClimaCore.jl/src
-      - ClimaAtmos.jl/src
-      - RRTMGP.jl/src
-      - RRTMGP.jl/ext
-      - .calkit/env-locks/clima
-    outs:
-      - results/ncu/radiation.ncu-rep:
-          persist: true
-      - results/ncu/radiation-details.csv:
-          cache: false
-          persist: true
-      - .calkit/scheduler/logs/radiation-ncu.out:
-          cache: false
-          persist: true
-    desc: Automatically generated from the 'radiation-ncu' stage in calkit.yaml.
-      Changes made here will be overwritten.
   step-breakdown:
     cmd: calkit scheduler batch --name step-breakdown --environment clima --dep
       scripts/measure-step-breakdown.jl --dep ClimaCoupler.jl-mod/src --dep
@@ -910,35 +684,6 @@ stages:
           cache: false
           persist: true
     desc: Automatically generated from the 'pointwise-registers' stage in
-      calkit.yaml. Changes made here will be overwritten.
-  microphysics-bound:
-    cmd: calkit scheduler batch --name microphysics-bound --environment clima
-      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
-      ClimaAtmos.jl-mod/src --dep results/param-fold.json --dep
-      .calkit/env-locks/clima --out results/ncu/microphysics-bound.ncu-rep --out
-      results/ncu/microphysics-bound-details.csv --option --gpus=1 --option
-      --time=240 -- scripts/run-ncu-bound.sh results/ncu/microphysics-bound
-      --kernel-name auto:microphysics_quadrature,microphysics_updraft --project
-      ClimaCoupler.jl-mod/experiments/AMIP --config
-      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-      --launch-count 4
-    deps:
-      - scripts/run-ncu-bound.sh
-      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-      - ClimaAtmos.jl-mod/src
-      - results/param-fold.json
-      - .calkit/env-locks/clima
-    outs:
-      - results/ncu/microphysics-bound.ncu-rep:
-          cache: true
-          persist: true
-      - results/ncu/microphysics-bound-details.csv:
-          cache: true
-          persist: true
-      - .calkit/scheduler/logs/microphysics-bound.out:
-          cache: false
-          persist: true
-    desc: Automatically generated from the 'microphysics-bound' stage in
       calkit.yaml. Changes made here will be overwritten.
   export-pointwise-registers:
     cmd: calkit xenv -n py --no-check -- python
@@ -1144,22 +889,6 @@ stages:
           cache: false
     desc: Automatically generated from the 'analyze-logs' stage in calkit.yaml.
       Changes made here will be overwritten.
-  sgs-quadrature-doc/values:
-    cmd: calkit xenv -n py --no-check -- python
-      .calkit/markdown/docs/sgs-quadrature.md/values.py
-    deps:
-      - .calkit/markdown/docs/sgs-quadrature.md/values.py
-      - results/quadrature-order-error.toml
-      - results/sgs-degeneracy.toml
-      - results/kernel-shares.json
-      - .calkit/env-locks/py
-    outs:
-      - results/sgs-quadrature-values.json:
-          cache: false
-          persist: false
-    always_changed: true
-    desc: Automatically generated from the 'sgs-quadrature-doc/values' stage in
-      calkit.yaml. Changes made here will be overwritten.
   compile-time-doc/values:
     cmd: calkit xenv -n py --no-check -- python
       .calkit/markdown/docs/compile-time.md/values.py
