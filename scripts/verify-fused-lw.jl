@@ -128,10 +128,6 @@ sky_contrast = maximum(abs, ref_allsky.net .- ref_clear.net) /
                max(maximum(abs, ref_allsky.net), eps())
 
 results = Dict{String, Any}(
-    "note" => "the cloud mask is McICA-sampled per launch, so all-sky fluxes " *
-              "are compared against the reference resampled against itself, " *
-              "not against equality; the clear sky has no sampling and must " *
-              "match exactly",
     "warmup_steps" => WARMUP,
     "lw_entry_point" => String(lw_both_name),
     "sw_entry_point" => String(sw_both_name),
@@ -202,6 +198,17 @@ results["sw_control_mean_rel_diff"] = sw_control_mean
 results["sw_clearsky_exact"] = sw_clear_worst < 1e-6
 results["sw_sampling_deterministic"] = sw_control_mean <= ROUNDOFF
 results["sw_allsky_consistent"] = consistent(sw_fused_mean, sw_control_mean)
+
+# Which of the two tests applied depends on whether the branch under test keys
+# its MCICA draw, so the file says which one it was rather than asserting one.
+results["note"] =
+    results["sampling_deterministic"] && results["sw_sampling_deterministic"] ?
+    "the reference solve is bit-reproducible on this branch, so the all-sky " *
+    "comparison is roundoff equality against a threshold of $(ROUNDOFF); the " *
+    "clear sky carries no sampling and must match exactly" :
+    "the cloud mask is McICA-sampled per launch, so all-sky fluxes are " *
+    "compared against the reference resampled against itself, not against " *
+    "equality; the clear sky has no sampling and must match exactly"
 
 @printf("SW: fused mean rel diff %.3e vs resampling control %.3e\n",
         sw_fused_mean, sw_control_mean)
