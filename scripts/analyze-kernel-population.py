@@ -26,9 +26,14 @@ N_STEPS = 10
 # the first two is cheaper to run than to launch.
 BUCKETS = [(0, 2), (2, 5), (5, 10), (10, 25), (25, 100), (100, 1000), (1000, None)]
 SUBSYSTEMS = {
+    # First, so it claims the rte_* kernels before any other pattern can.
+    "radiation": r"^rte_",
     "spectral_element": r"spectral|divergence|gradient|curl|hyperdiffusion|tracer_advection|Interpolate|Restrict",
     "dss": r"dss",
-    "matrix_field_solve": r"field_matrix_solver|single_field_solve|multiple_field_solve",
+    # MatrixFields covers field_name_dict, which is the implicit solve's
+    # largest kernel and was landing in `other`.
+    "matrix_field_solve": r"field_matrix_solver|single_field_solve|multiple_field_solve|MatrixFields",
+    "edmf": r"edmf",
     "microphysics_cache": r"microphysics_cache",
     "generic_broadcast": r"gpu_broadcast_kernel|copyto_foreach|copyto__",
 }
@@ -108,6 +113,36 @@ def analyze(db_path):
         "pct_of_kernel_time": 100 * sum(time[k] for k in rest) / total_ns,
     }
 
+    # `other` is a residual, so a large one hides the answer to "what is the
+    # bottleneck" rather than reporting it. Name its biggest members.
+    other_top = [
+        {
+            "kernel": k,
+            "launches": count[k],
+            "total_ms": round(time[k] / 1e6, 1),
+            "mean_us": round(time[k] / count[k] / 1e3, 1),
+            "pct_of_kernel_time": round(100 * time[k] / total_ns, 2),
+        }
+        for k in sorted(rest, key=lambda k: -time[k])[:15]
+    ]
+
+    # How few kernels carry the device: a single bottleneck and a broad
+    # population give very different numbers here.
+    def concentration():
+        ranked = sorted(time.values(), reverse=True)
+        out, run = {}, 0
+        for i, ns in enumerate(ranked, 1):
+            run += ns
+            for frac in (50, 80, 90):
+                key = f"kernels_for_{frac}pct"
+                if key not in out and 100 * run / total_ns >= frac:
+                    out[key] = i
+        out["distinct_kernels"] = len(ranked)
+        out["top1_pct"] = round(100 * ranked[0] / total_ns, 2)
+        out["top2_pct"] = round(100 * sum(ranked[:2]) / total_ns, 2)
+        out["top10_pct"] = round(100 * sum(ranked[:10]) / total_ns, 2)
+        return out
+
     def radiation_split(ns_total):
         groups = {"clear_sky": [], "all_sky": []}
         for name, n, ns in rad_rows:
@@ -140,6 +175,8 @@ def analyze(db_path):
         "kernel_time_ms": total_ns / 1e6,
         "duration_histogram": hist,
         "subsystems": subsystems,
+        "other_top": other_top,
+        "concentration": concentration(),
         "radiation": radiation_split(total_ns),
         "top_by_launch_count": [
             {"kernel": k, "launches": c, "total_ms": time[k] / 1e6,

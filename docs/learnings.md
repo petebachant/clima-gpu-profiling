@@ -2716,11 +2716,12 @@ Two mechanisms came out of it, both cheap and both general:
     submodule pointer.
   * **A frozen snapshot should carry the snapshot it supersedes.** Re-measuring
     the same treatment on a different implementation leaves the old frozen file
-    describing a stack that no longer exists. `export-combined-stack` now reads
-    its own previous version out of Git at that file's last commit and records
-    the delta, so the re-measurement is injected rather than asserted, and the
-    reason a pinned single-treatment figure still transfers is in the file
-    beside the figure.
+    describing a stack that no longer exists. `export-combined-stack` read
+    its own previous version out of Git at that file's last commit and recorded
+    the delta, so the re-measurement was injected rather than asserted, and the
+    reason a pinned single-treatment figure still transferred was in the file
+    beside the figure. The stage was retired with its question on 2026-10-09
+    (8d); `pass-through` carries the same read-out-of-Git mechanism.
 
 The sharper lesson is about criteria. The check's tolerance had been written for
 keyed sampling, where the reference is bit-reproducible and the fused solve must
@@ -2776,4 +2777,44 @@ Two things to carry forward:
     two rewrites back, and the comparison it supports has gone one-sided because
     the kernel that supplied the gaining side no longer crosses a step. A
     held-still prior ages; the comparison should read the preceding measurement
-    out of Git the way `export-combined-stack` does.
+    out of Git the way `pass-through` does.
+
+## 8d. The radiation questions close (2026-10-09)
+
+CliMA/RRTMGP.jl#631 merged and released as RRTMGP 1.1.0, so both arms now dev
+RRTMGP at main and the fused all-sky/clear-sky solves are in the baseline. Three
+questions went with it, along with the eight stages that existed only to answer
+them. The same test as section 8 applies --- not "is the answer still true" but
+"would a different answer change what we do next" --- and a treatment that is
+upstream in both arms cannot answer either way, because the project can no
+longer measure a difference it does not have.
+
+  * **Whether the clear-sky diagnostics could be had for less than a second
+    radiation solve**, at `exp/2026-09-23-fused-lw-optics`,
+    `exp/2026-09-24-fused-radiation` and `meas/2026-09-26-fused-remeasured`,
+    with the per-call agreement check at `meas/2026-09-25-fused-state-divergence`.
+    Answered yes, and merged. Its stages were `radiation-split`,
+    `fused-lw-check`, and the five-stage `state-*` divergence cluster.
+  * **How much of the radiation cost was clear-sky diagnostics**, at
+    `exp/2026-09-22-clearsky-bound` with `meas/2026-09-11-radiation-occupancy`.
+    Answered: about half, and the bound it priced was the question put to the
+    science owners. Fusing the two passes delivered most of it with the
+    diagnostics kept, which is what made the bound moot.
+  * **Whether the fused radiation and the parameter fold composed**, with
+    `export-combined-stack`. Answered yes, and the reasoning worth keeping is
+    in section 7: two treatments on disjoint kernels save disjoint absolute
+    time, so against a common baseline their percentages add. Amdahl bites when
+    speedups are compounded, not when savings are. With radiation upstream
+    there is only one treatment left to compose.
+
+The three `exp/*` tags are rows in `experiments.csv`, which is generated from
+those tags, so they are indexed whether or not a question cites them. The three
+`meas/*` tags are not indexed --- the generator reads `exp/*` only --- and the
+retired questions were the only thing pinning two of them, which is why they are
+named here. A tag nothing points at is reachable but not findable.
+
+Deleted with the stages: `compare-state-divergence.py`,
+`export-combined-stack.py`, `measure-radiation-split.jl`,
+`measure-state-divergence.jl` and `verify-fused-lw.jl`, by 8a's rule that a
+script no stage runs is dead weight. `run-julia-script.sh` stays --- three live
+stages use it, and AGENTS.md warns against touching its GPU-guard block.

@@ -1,5 +1,14 @@
 {
   "baseline": {
+    "concentration": {
+      "distinct_kernels": 412,
+      "kernels_for_50pct": 4,
+      "kernels_for_80pct": 38,
+      "kernels_for_90pct": 78,
+      "top10_pct": 64.41,
+      "top1_pct": 19.39,
+      "top2_pct": 36.5
+    },
     "distinct_kernels": 412,
     "duration_histogram": [
       {
@@ -57,6 +66,113 @@
     "kernel_time_ms": 29394.719699,
     "launches": 394202,
     "launches_per_step": 39420.2,
+    "other_top": [
+      {
+        "kernel": "viscous_sponge_tendency__NVTX",
+        "launches": 7200,
+        "mean_us": 62.7,
+        "pct_of_kernel_time": 1.54,
+        "total_ms": 451.7
+      },
+      {
+        "kernel": "horizontal_dynamics_tendency__NVTX",
+        "launches": 1440,
+        "mean_us": 148.0,
+        "pct_of_kernel_time": 0.73,
+        "total_ms": 213.1
+      },
+      {
+        "kernel": "_FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1398",
+        "launches": 960,
+        "mean_us": 206.6,
+        "pct_of_kernel_time": 0.67,
+        "total_ms": 198.3
+      },
+      {
+        "kernel": "set_implicit_precomputed_quantities__NVTX",
+        "launches": 5760,
+        "mean_us": 34.4,
+        "pct_of_kernel_time": 0.67,
+        "total_ms": 198.0
+      },
+      {
+        "kernel": "explicit_vertical_advection_tendency__NVTX",
+        "launches": 3120,
+        "mean_us": 61.0,
+        "pct_of_kernel_time": 0.65,
+        "total_ms": 190.2
+      },
+      {
+        "kernel": "_FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1549",
+        "launches": 1440,
+        "mean_us": 128.1,
+        "pct_of_kernel_time": 0.63,
+        "total_ms": 184.5
+      },
+      {
+        "kernel": "set_covariance_cache_and_cloud_fraction__FILE_ClimaAtmos_jl_src_parameterized_tendencies_microphysics_cloud_fraction_jl_L94",
+        "launches": 17031,
+        "mean_us": 10.3,
+        "pct_of_kernel_time": 0.6,
+        "total_ms": 175.3
+      },
+      {
+        "kernel": "set_velocity_quantities__FILE_ClimaAtmos_jl_src_cache_precomputed_quantities_jl_L585",
+        "launches": 2160,
+        "mean_us": 69.6,
+        "pct_of_kernel_time": 0.51,
+        "total_ms": 150.4
+      },
+      {
+        "kernel": "updraft_sedimentation__FILE_ClimaAtmos_jl_src_prognostic_equations_advection_jl_L546",
+        "launches": 960,
+        "mean_us": 152.4,
+        "pct_of_kernel_time": 0.5,
+        "total_ms": 146.3
+      },
+      {
+        "kernel": "_FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L955",
+        "launches": 960,
+        "mean_us": 126.9,
+        "pct_of_kernel_time": 0.41,
+        "total_ms": 121.8
+      },
+      {
+        "kernel": "_FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L933",
+        "launches": 1920,
+        "mean_us": 61.7,
+        "pct_of_kernel_time": 0.4,
+        "total_ms": 118.5
+      },
+      {
+        "kernel": "hgrad_invariant__FILE_ClimaAtmos_jl_src_parameterized_tendencies_microphysics_cloud_fraction_jl_L239",
+        "launches": 720,
+        "mean_us": 147.7,
+        "pct_of_kernel_time": 0.36,
+        "total_ms": 106.4
+      },
+      {
+        "kernel": "implicit_vertical_advection_tendency__FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_implicit_tendency_jl_L214",
+        "launches": 1920,
+        "mean_us": 55.3,
+        "pct_of_kernel_time": 0.36,
+        "total_ms": 106.1
+      },
+      {
+        "kernel": "set_cloud_fraction__NVTX",
+        "launches": 1440,
+        "mean_us": 72.7,
+        "pct_of_kernel_time": 0.36,
+        "total_ms": 104.6
+      },
+      {
+        "kernel": "_FILE_ClimaAtmos_jl_src_prognostic_equations_water_advection_jl_L159",
+        "launches": 960,
+        "mean_us": 106.7,
+        "pct_of_kernel_time": 0.35,
+        "total_ms": 102.4
+      }
+    ],
     "radiation": {
       "all_sky": {
         "kernels": 2,
@@ -79,15 +195,20 @@
         "pct_of_kernel_time": 1.8549577494986271,
         "total_ms": 545.259631
       },
+      "edmf": {
+        "launches": 24960,
+        "pct_of_kernel_time": 4.587362671962725,
+        "total_ms": 1348.442399
+      },
       "generic_broadcast": {
         "launches": 27188,
         "pct_of_kernel_time": 2.2966849043400366,
         "total_ms": 675.10409
       },
       "matrix_field_solve": {
-        "launches": 20880,
-        "pct_of_kernel_time": 3.08877645474159,
-        "total_ms": 907.937181
+        "launches": 47280,
+        "pct_of_kernel_time": 6.593550558898289,
+        "total_ms": 1938.155705
       },
       "microphysics_cache": {
         "launches": 48268,
@@ -95,9 +216,14 @@
         "total_ms": 5477.734385
       },
       "other": {
-        "launches": 269112,
-        "pct_of_kernel_time": 67.90960820653478,
-        "total_ms": 19961.838981
+        "launches": 217728,
+        "pct_of_kernel_time": 23.321347293654288,
+        "total_ms": 6855.244667
+      },
+      "radiation": {
+        "launches": 24,
+        "pct_of_kernel_time": 36.49612413676107,
+        "total_ms": 10727.933391
       },
       "spectral_element": {
         "launches": 14354,
@@ -169,6 +295,15 @@
     ]
   },
   "mod": {
+    "concentration": {
+      "distinct_kernels": 412,
+      "kernels_for_50pct": 8,
+      "kernels_for_80pct": 52,
+      "kernels_for_90pct": 91,
+      "top10_pct": 54.59,
+      "top1_pct": 13.99,
+      "top2_pct": 27.13
+    },
     "distinct_kernels": 412,
     "duration_histogram": [
       {
@@ -226,6 +361,113 @@
     "kernel_time_ms": 23037.08104,
     "launches": 394166,
     "launches_per_step": 39416.6,
+    "other_top": [
+      {
+        "kernel": "viscous_sponge_tendency__NVTX",
+        "launches": 7200,
+        "mean_us": 62.6,
+        "pct_of_kernel_time": 1.96,
+        "total_ms": 451.1
+      },
+      {
+        "kernel": "horizontal_dynamics_tendency__NVTX",
+        "launches": 1440,
+        "mean_us": 148.0,
+        "pct_of_kernel_time": 0.93,
+        "total_ms": 213.1
+      },
+      {
+        "kernel": "_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1398",
+        "launches": 960,
+        "mean_us": 206.6,
+        "pct_of_kernel_time": 0.86,
+        "total_ms": 198.3
+      },
+      {
+        "kernel": "set_implicit_precomputed_quantities__NVTX",
+        "launches": 5760,
+        "mean_us": 34.4,
+        "pct_of_kernel_time": 0.86,
+        "total_ms": 198.0
+      },
+      {
+        "kernel": "explicit_vertical_advection_tendency__NVTX",
+        "launches": 3120,
+        "mean_us": 60.6,
+        "pct_of_kernel_time": 0.82,
+        "total_ms": 189.2
+      },
+      {
+        "kernel": "_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1549",
+        "launches": 1440,
+        "mean_us": 128.6,
+        "pct_of_kernel_time": 0.8,
+        "total_ms": 185.1
+      },
+      {
+        "kernel": "set_covariance_cache_and_cloud_fraction__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_cloud_fraction_jl_L94",
+        "launches": 17031,
+        "mean_us": 10.3,
+        "pct_of_kernel_time": 0.76,
+        "total_ms": 175.5
+      },
+      {
+        "kernel": "set_velocity_quantities__FILE_ClimaAtmos_jl_mod_src_cache_precomputed_quantities_jl_L585",
+        "launches": 2160,
+        "mean_us": 70.6,
+        "pct_of_kernel_time": 0.66,
+        "total_ms": 152.4
+      },
+      {
+        "kernel": "updraft_sedimentation__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L546",
+        "launches": 960,
+        "mean_us": 152.6,
+        "pct_of_kernel_time": 0.64,
+        "total_ms": 146.5
+      },
+      {
+        "kernel": "_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L955",
+        "launches": 960,
+        "mean_us": 126.2,
+        "pct_of_kernel_time": 0.53,
+        "total_ms": 121.2
+      },
+      {
+        "kernel": "_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L933",
+        "launches": 1920,
+        "mean_us": 61.9,
+        "pct_of_kernel_time": 0.52,
+        "total_ms": 118.9
+      },
+      {
+        "kernel": "implicit_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_implicit_tendency_jl_L214",
+        "launches": 1920,
+        "mean_us": 55.3,
+        "pct_of_kernel_time": 0.46,
+        "total_ms": 106.3
+      },
+      {
+        "kernel": "hgrad_invariant__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_cloud_fraction_jl_L239",
+        "launches": 720,
+        "mean_us": 147.4,
+        "pct_of_kernel_time": 0.46,
+        "total_ms": 106.1
+      },
+      {
+        "kernel": "_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_water_advection_jl_L159",
+        "launches": 960,
+        "mean_us": 106.9,
+        "pct_of_kernel_time": 0.45,
+        "total_ms": 102.7
+      },
+      {
+        "kernel": "set_cloud_fraction__NVTX",
+        "launches": 1440,
+        "mean_us": 71.0,
+        "pct_of_kernel_time": 0.44,
+        "total_ms": 102.2
+      }
+    ],
     "radiation": {
       "all_sky": {
         "kernels": 2,
@@ -248,15 +490,20 @@
         "pct_of_kernel_time": 2.3674756669606265,
         "total_ms": 545.397288
       },
+      "edmf": {
+        "launches": 24960,
+        "pct_of_kernel_time": 5.859392492721812,
+        "total_ms": 1349.832997
+      },
       "generic_broadcast": {
         "launches": 27188,
         "pct_of_kernel_time": 2.9212229311148876,
         "total_ms": 672.964494
       },
       "matrix_field_solve": {
-        "launches": 20880,
-        "pct_of_kernel_time": 3.945486854093213,
-        "total_ms": 908.925004
+        "launches": 47280,
+        "pct_of_kernel_time": 8.409414906498936,
+        "total_ms": 1937.283727
       },
       "microphysics_cache": {
         "launches": 48268,
@@ -264,9 +511,14 @@
         "total_ms": 3604.625036
       },
       "other": {
-        "launches": 269076,
-        "pct_of_kernel_time": 67.20331168310202,
-        "total_ms": 15481.681374
+        "launches": 217704,
+        "pct_of_kernel_time": 29.74694424220335,
+        "total_ms": 6852.827652
+      },
+      "radiation": {
+        "launches": 12,
+        "pct_of_kernel_time": 27.13304689577113,
+        "total_ms": 6250.662002
       },
       "spectral_element": {
         "launches": 14354,

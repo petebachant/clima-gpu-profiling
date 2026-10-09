@@ -13,6 +13,83 @@ questions:
   # results/summary.json must therefore NOT be templated: it would render
   # whichever run wrote that file last. Those figures stay typed and pinned.
   - question: >-
+      What is the current bottleneck in the AMIP simulation?
+    answer: >-
+      Kernel time, and no longer any single kernel: with host time outside the GPU timeline at {gap_frac_of_wall:.3%} of wall the run is densely GPU-bound, so there is no launch-latency or idle win to be had and the device total is the whole budget.
+      Inside it the cost is concentrated at the top and then spreads fast: {kernels_for_50pct:.0f} of {distinct_kernels:.0f} distinct kernels carry half the device time, but it takes {kernels_for_80pct:.0f} to reach 80% and {kernels_for_90pct:.0f} to reach 90%.
+      Radiation is still the largest named block at {radiation_pct:.1f}% even with the fused all-sky/clear-sky solves now in both arms, followed by the microphysics cache at {microphysics_pct:.1f}%, the implicit solver's MatrixFields kernels at {matrix_pct:.1f}%, spectral-element operators at {spectral_pct:.1f}% and EDMF at {edmf_pct:.1f}%, with {other_pct:.1f}% spread across everything else.
+      So the honest answer is that attacking the next 10% now means a population rather than a kernel, and the small-launch band is not where it lives: the {small_launches:,.0f} launches under {small_threshold:.0f}us are {small_pct_of_launches:.0f}% of all launches and only {small_pct_of_time:.1f}% of the time.
+      What bounds the population approach is occupancy: of {reg_kernels:.0f} pointwise kernels measured under Nsight Compute, {reg_addressable:.0f} ({reg_addressable_pct:.1f}%) are capped by registers ALONE and below full occupancy, so a register saving could buy them something, while {reg_at_full:.0f} are already at full occupancy and can gain nothing however well their parameters fold.
+      The `other` share is a residual and is reported as one; `other_top` in the same file names its largest members, which is how the implicit solver's biggest kernel was found to be misattributed to it.
+    evidence:
+      - kind: value
+        path: results/step-breakdown.toml
+        key: gap_frac_of_wall
+        name: gap_frac_of_wall
+        explanation: >-
+          Measured WITHOUT a profiler, using CUDA events. nsys cannot answer
+          this: its own instrumentation dominates the idle measurement, and it
+          reports MORE idle for the faster arm (docs/learnings.md 2b-i, 4f).
+          This is the number that makes the rest of the answer about kernel
+          time rather than about scheduling.
+      - kind: result
+        path: results/kernel-population.json
+        values:
+          kernels_for_50pct: baseline.concentration.kernels_for_50pct
+          kernels_for_80pct: baseline.concentration.kernels_for_80pct
+          kernels_for_90pct: baseline.concentration.kernels_for_90pct
+          distinct_kernels: baseline.concentration.distinct_kernels
+          radiation_pct: baseline.subsystems.radiation.pct_of_kernel_time
+          microphysics_pct: baseline.subsystems.microphysics_cache.pct_of_kernel_time
+          matrix_pct: baseline.subsystems.matrix_field_solve.pct_of_kernel_time
+          spectral_pct: baseline.subsystems.spectral_element.pct_of_kernel_time
+          edmf_pct: baseline.subsystems.edmf.pct_of_kernel_time
+          other_pct: baseline.subsystems.other.pct_of_kernel_time
+        explanation: >-
+          The baseline arm's full device decomposition, which sums to 100% by
+          construction, plus how many kernels it takes to cover half, 80% and
+          90% of kernel time. The concentration figures are what distinguish a
+          single bottleneck from a population and are the reason this answer
+          does not name one. Radiation is attributed by the `rte_` prefix and
+          claimed before any other pattern; note that the all-sky and clear-sky
+          solves share a kernel shortName and are told apart only by the
+          demangled signature, which is what the `radiation` sub-table does.
+      - kind: result
+        path: results/kernel-shares.json
+        values:
+          small_launches: baseline.small_kernels.launches
+          small_threshold: baseline.small_kernels.threshold_us
+          small_pct_of_launches: baseline.small_kernels.pct_of_launches
+          small_pct_of_time: baseline.small_kernels.pct_of_kernel_time
+        explanation: >-
+          The short-launch band, as device time rather than host overhead. It
+          is the standing temptation on this project -- most launches are tiny,
+          so fusing them looks like the obvious win -- and it is quantified
+          here precisely so that it can be ruled out: a majority of launches
+          carrying a few percent of the time cannot pay for the work.
+      - kind: result
+        path: results/pointwise-registers.json
+        values:
+          reg_kernels: kernels
+          reg_addressable: addressable
+          reg_addressable_pct: addressable_pct
+          reg_at_full: at_full_occupancy
+        explanation: >-
+          From Nsight Compute, so it carries occupancy limiters that nsys does
+          not collect. `addressable` is the count capped by registers ALONE and
+          below full occupancy, which is the only group a parameter fold can
+          help; `at_full_occupancy` is the group that bounds the approach from
+          the other side. A kernel already over the 255-register cap spends any
+          freed register on its live state rather than on occupancy.
+      - kind: table
+        path: results/top-kernels.csv
+        explanation: >-
+          The per-kernel breakdown on the 120-step phase-independent window,
+          which is LCM(20, 60, 120) of the periodic processes and so fires every
+          scheme at its exact long-run share. The earlier 40-step window was
+          shorter than the gravity-wave period and made microphysics look
+          dominant.
+  - question: >-
       How much of a GPU kernel-time saving actually reaches SYPD?
     answer: >-
       It depends on where the saving is, and the difference is large enough to change what is worth doing: radiation work converts at {radiation_mean:.0f}% ({radiation_min:.0f}-{radiation_max:.0f}% over {radiation_n} experiments), microphysics work at {microphysics_mean:.0f}% ({microphysics_min:.0f}-{microphysics_max:.0f}% over {microphysics_n}).
@@ -44,183 +121,6 @@ questions:
           The experiments themselves, each reproducible from its tag. The
           pass-through stage reads both halves of every ratio out of those
           tags with git show rather than from the working tree.
-  - question: >-
-      Can the clear-sky diagnostics be had for less than a second radiation
-      solve?
-    answer: >-
-      Yes, and for most of the cost: the two passes differ only by the cloud increment, while the gas and aerosol optics they both recompute are {lw_optics_frac:.0%} of a longwave solve and {sw_optics_frac:.0%} of a shortwave one.
-      Computing those once and sweeping twice -- gas and aerosol optics, sweep, accumulate the clear sky, then add the cloud increment to the same optics, sweep again, accumulate the all-sky -- removes {lw_fused_saving:.0%} of the longwave pair.
-      Implemented for both bands on RRTMGP.jl branch `pb/fused-clear-sky`, proposed as CliMA/RRTMGP.jl#631, as solve_lw_both_skies! and solve_sw_both_skies! called from update_lw_fluxes! and update_sw_fluxes!, so nothing above RRTMGP changes: longwave 5702.5 -> 3216.7 ms (-43.6%) and shortwave 5051.0 -> 3038.2 ms (-39.8%), four radiation kernels becoming two.
-      The longwave half was measured on its own first, at -8.5% of GPU kernel time with shortwave unchanged at -0.5% as the control that the change did what it claimed and nothing else.
-      It is now correct in the strong sense, which it could not be before: the same PR keys McICA sampling on (key, column, g-point, layer), so the fused pass and two separate solves draw the SAME cloud mask and can be compared cell by cell.
-      They agree to {fused_mean_diff:.2e} in the mean and {lw_max_abs:.1e} W/m2 in the worst longwave cell, which is the arithmetic order of applying the cloud increment to already-swept optics, not a different draw.
-      Under the per-launch sampling this replaced, the same comparison gave 3.34e-3 and 51 W/m2 -- a different cloud field, indistinguishable from reseeding the reference, and unvalidatable by any cell-wise test.
-      The clear sky, which involves no sampling, matches exactly in both regimes.
-      Carried into the coupled state over {divergence_steps:.0f} coupler steps it still holds, though at the top of the envelope rather than in the middle of it: the fused run ends {final_fusion_diff:.2e} from the baseline against a median {control_median_diff:.2e} for three reseeded draws of the fused code, whose own spread is {control_spread:.1f}x, so the worst per-step ratio is {divergence_ratio:.2f}.
-      Both bands fused are worth **10.94% of the walltime**, which is **+12.28% SYPD** (0.22759 -> 0.25554, tag exp/2026-09-24-fused-radiation): GPU kernel time falls 15.2%, radiation from 36.4% to 25.0% of it, and four radiation kernels become two.
-      That is 87% of what deleting the clear-sky diagnostics buys (+12.6%), with the diagnostics kept -- so the question the bound posed to the science owners largely goes away.
-    evidence:
-      - kind: result
-        path: results/radiation-split.toml
-        git_ref: meas/2026-09-26-fused-remeasured
-        values:
-          lw_optics_frac: lw.optics_frac_of_allsky
-          sw_optics_frac: sw.optics_frac_of_allsky
-          lw_fused_saving: lw.fused_saving_frac_of_pair
-        explanation: >-
-          What each band's two passes duplicate, from timing the real solve
-          against the same kernel with the two-stream sweep and flux
-          accumulation removed. Both bands are fused, and each came within a
-          couple of points of its own ceiling: half the optics share bounds
-          what fusing a pair can save, so at most 44.3% for longwave against
-          43.6% measured, and 41.5% for shortwave against 39.8%. Unpinned
-          because this stage is live, and a pinned templated value renders the
-          working tree's number while citing the tag's.
-      - kind: value
-        path: results/summary.json
-        key: speedup_pct
-        name: fused_speedup_pct
-        git_ref: exp/2026-09-24-fused-radiation
-        explanation: >-
-          Both bands fused, end to end, from the unprofiled AMIP stages with
-          both arms measured in one session. The longwave half alone was
-          +5.26% at exp/2026-09-23-fused-lw-optics. NOT templated: rendering
-          reads the working tree, where results/summary.json holds whichever
-          run wrote it last.
-      - kind: result
-        path: results/fused-lw-check.toml
-        values:
-          fused_mean_diff: fused_mean_rel_diff
-          sw_fused_diff: sw_fused_mean_rel_diff
-          lw_max_abs: allsky.net.max_abs_diff
-          lw_control_diff: control_mean_rel_diff
-          clear_worst: worst_rel_diff
-          sky_contrast: reference_sky_contrast
-        explanation: >-
-          Per-call agreement between the fused solve and the two it replaces, on
-          a real AMIP state after 60 steps, measured on #631's head. Keying the
-          MCICA draw makes the reference bit-reproducible --- solved twice it
-          differs by {lw_control_diff:.1e} --- so the comparison is equality
-          rather than a resampling band, and the fused solve has to meet Float32
-          roundoff over a 256-g-point accumulation. It does, at
-          {fused_mean_diff:.2e} longwave and {sw_fused_diff:.2e} shortwave
-          against the 64-ulp threshold the file records in its note, three
-          orders of margin. Which of the two tests applied is decided by the
-          measured control rather than assumed, in the script and in that note,
-          because the earlier pb/optics-split-rebased implementation did not key
-          its sampling and only the weaker band test was available there. The
-          clear sky carries no sampling and is exactly equal in both bands at
-          {clear_worst:.1e}; a clear/all-sky contrast of {sky_contrast:.2f} is
-          what shows the cloud increment did something rather than the check
-          passing on a clear sky. Unpinned because the stage is live: a pinned
-          templated value renders this run's number while citing an older one.
-      - kind: result
-        path: results/state-divergence.json
-        git_ref: meas/2026-09-25-fused-state-divergence
-        values:
-          final_fusion_diff: final_fusion_rel_diff
-          control_median_diff: final_control_median
-          divergence_ratio: max_ratio_to_control_median
-          control_spread: control_spread_ratio
-          divergence_steps: steps
-        explanation: >-
-          The trajectory-level check, over 120 coupler steps. final_fusion_diff
-          cannot be zero and says nothing on its own: it is read against
-          control_median_diff, the same fused code at three radiation seeds, so
-          the only difference between those runs is the cloud draw. The median
-          rather than the maximum, because with three arms one bad arm sits in
-          two pairs and moves the maximum as readily; control_spread is the
-          guard that the three agree at all, and a spread failing it fails the
-          comparison. An earlier version used a single control draw and
-          reported 3.5 at step 80, which was two chaotic trajectories crossing
-          rather than a defect.
-      - kind: table
-        path: results/top-kernels.csv
-        explanation: >-
-          Six radiation rows that read as the fusion directly: four baseline
-          kernels, two longwave and two shortwave, against two fused mod kernels,
-          10753.6 ms becoming 6248.0 ms. Each arm's rows have a blank column on
-          the other side because the fused solves are new symbols, so the join
-          cannot pair them -- they are separate kernels, not a kernel that
-          changed. Unpinned deliberately: at exp/2026-09-24-fused-radiation this
-          table ranked by baseline cost and kept the top twenty, so the fused
-          kernels could not appear at all and the mod side was simply empty. It
-          now ranks by whichever arm is larger.
-  - question: >-
-      How much of the radiation cost is clear-sky diagnostics rather than the
-      fluxes the model runs on?
-    answer: >-
-      Half of it: {clear_sky_pct}% of GPU kernel time against {all_sky_pct}% for the fluxes that drive the model, out of {radiation_pct}% for radiation as a whole.
-      The benchmark runs `rad: allskywithclear`, under which ClimaAtmos calls the RRTMGP solver twice per radiation step -- once with the cloud lookup passed as `nothing` -- so the profile carries two longwave and two shortwave kernels, told apart by whether their signature takes a LookUpCld argument rather than by cost.
-      That second pass buys the clear-sky fluxes that cloud radiative effect diagnostics are computed from, so whether it is worth it is a question for whoever uses those diagnostics rather than a performance bug.
-      Priced by a config-only bounding run, it is worth **+12.6% SYPD** (0.22759 -> 0.26040, tag exp/2026-09-22-clearsky-bound): GPU kernel time falls 17.9% and the two cloud-free kernels disappear while the all-sky kernels move under 0.5%, so the run removes that work and nothing else.
-      Two caveats on reading that: it changes results, so it is a bound and not a proposal, and the benchmark fires radiation every 20 steps against the nightly's 30, so radiation is over-weighted here relative to production.
-      The conversion is the part worth carrying forward: 17.9% of kernel time bought 12.6% of SYPD, about 70%, where this project's earlier work converted at about a third -- removing a large dense block pays far better than rescheduling one.
-    evidence:
-      - kind: result
-        path: results/kernel-population.json
-        values:
-          clear_sky_pct: baseline.radiation.clear_sky.pct_of_kernel_time
-          all_sky_pct: baseline.radiation.all_sky.pct_of_kernel_time
-          radiation_pct: baseline.radiation.pct_of_kernel_time
-        explanation: >-
-          Radiation split by whether the solve takes a LookUpCld argument,
-          which makes this an attribution from the kernel signature rather than
-          an inference from which kernel happens to be cheaper, with radiation
-          as a whole for scale.
-      - kind: value
-        path: results/summary.json
-        key: speedup_pct
-        name: clearsky_bound_speedup_pct
-        git_ref: exp/2026-09-22-clearsky-bound
-        explanation: >-
-          What dropping the second solve is worth end to end, from the
-          unprofiled AMIP stages with both arms measured in one session. NOT
-          templated: rendering reads the working tree, where
-          results/summary.json holds whichever run wrote it last.
-      - kind: table
-        path: results/top-kernels.csv
-        git_ref: exp/2026-09-22-clearsky-bound
-        explanation: >-
-          Per-kernel confirmation: the two solves with no cloud lookup vanish
-          and the all-sky pair is unchanged, which is what makes the SYPD
-          delta attributable to the clear-sky work alone.
-  - question: >-
-      Where does the AMIP simulation's GPU time actually go, and is the
-      microphysics kernel the right thing to optimize?
-    answer: >-
-      No -- radiation is the largest block at {radiation_pct:.1f}% of GPU kernel
-      time against {microphysics_hot_kernel_pct:.1f}% for the microphysics kernel
-      this project targeted, and with host time outside the GPU timeline at
-      {gap_frac_of_wall:.3%} of wall the run is densely GPU-bound, so kernel time
-      is what there is to attack. See docs/learnings.md 4k.
-    evidence:
-      - kind: result
-        path: results/kernel-shares.json
-        values:
-          radiation_pct: baseline.radiation_pct
-          microphysics_hot_kernel_pct: baseline.microphysics_hot_kernel_pct
-        explanation: >-
-          Baseline-arm shares of GPU kernel time: the four RRTMGP rte_*_2stream
-          kernels together, and the largest set_microphysics_tendency_cache
-          specialization. The binary search that merged upstream took radiation
-          from 43.9% to where it is now.
-      - kind: value
-        path: results/step-breakdown.toml
-        key: gap_frac_of_wall
-        name: gap_frac_of_wall
-        explanation: >-
-          Measured WITHOUT a profiler, using CUDA events. nsys cannot answer
-          this: its own instrumentation dominates the idle measurement, and it
-          reports MORE idle for the faster arm (docs/learnings.md 2b-i, 4f).
-      - kind: table
-        path: results/top-kernels.csv
-        explanation: >-
-          The per-kernel breakdown on the 120-step phase-independent window,
-          which is LCM(20, 60, 120) of the periodic processes and so fires every
-          scheme at its exact long-run share. The earlier 40-step window was
-          shorter than the gravity-wave period and made microphysics look
-          dominant.
   - question: >-
       What actually limits the hot SGS-quadrature microphysics kernel, and which
       of the available levers can move it?
@@ -468,94 +368,6 @@ questions:
           saving to appear in its register count, where the broadcast the model
           runs is split into several smaller kernels whose limits differ. Any
           register experiment answers for the body it compiles.
-  - question: >-
-      Do the fused radiation solves and the microphysics parameter fold compose, and what does the pair buy together?
-    answer: >-
-      They compose, and the stack is worth {comb_step_pct:.2f}% of the walltime per coupling step, {comb_base_sypd:.5f} -> {comb_mod_sypd:.5f} SYPD.
-      Measured one at a time the fold was {fold_alone_pct:.2f}% per step and the fused radiation {rad_alone_pct:.2f}%, which sum to {sum_singles_pct:.2f}%, so running them together lost nothing: the measured stack is {vs_product_pct:.2f}% faster than the product of the two speedup factors, inside this machine's +-2% SYPD noise floor.
-      I predicted the opposite before measuring -- that the pair would land well below the sum, because radiation is {rad_share_base:.2f}% of baseline kernel time and the microphysics hot kernel {mp_share_base:.2f}%, so each treatment shrinks the other's share.
-      That reasoning is wrong in a way worth recording, because it is the natural mistake: shrinking shares price the SECOND treatment as a fraction of the already-faster run, which is the wrong denominator when both figures are quoted against the same baseline.
-      Two treatments on disjoint kernels save disjoint absolute time, so against a common baseline their percentages add; Amdahl bites when the speedups are compounded, not when the savings are.
-      What makes this a decomposition rather than an inference is that the device time closes: of {dev_saved:.0f} ms saved over the 120-step window, {dev_rad:.0f} ms is radiation and {dev_fold:.0f} ms is the four folded kernels, leaving {dev_unattr:.1f} ms unattributed out of {dev_saved:.0f}.
-      Radiation is {rad_share_saving:.1f}% of the saving and the fold {fold_share_saving:.1f}%, and the per-kernel fold figures are unchanged from the fold-alone run, which is the check that stacking did not perturb them.
-      The whole-device kernel total moved {dev_change_pct:.2f}% against {comb_step_pct:.2f}% of walltime -- the two agree here, which they usually do not, because for once the treatments are large enough that device time dominates what moved.
-      Radiation falls from {rad_share_base:.2f}% of kernel time to {rad_share_mod:.2f}% and the microphysics hot kernel from {mp_share_base:.2f}% to {mp_share_mod:.2f}%, so neither is now the obvious next target: the remaining time is in the long tail the fusion-ceiling question prices.
-      Read the two single-treatment figures as approximate, not as an A/B: each was measured against its own baseline, and the stack moved underneath them between the runs.
-      The radiation single at {rad_alone_pct:.2f}% carries a further caveat, because it was measured on `pb/optics-split-rebased` rather than on the RRTMGP.jl#631 head this stack now carries -- an earlier implementation of the same idea, with different entry-point names and no keyed McICA sampling.
-      It transfers only insofar as the two are equivalent, and the re-measurement is the evidence that they are: the same arm pair on #631 gives {comb_mod_sypd:.5f} SYPD against {prior_mod_sypd:.5f} on the older branch, a difference of {prior_delta_pct:.2f}% -- an order below the noise floor, and the reason this was not re-measured single-handed at a cost of three more GPU-hours.
-      Upstream has since moved under all of it: ClimaAtmos #4874 and #4875 rewrote the folded microphysics kernels, and both arms were re-measured on that main.
-      The live pair stands at {live_base_sypd:.5f} -> {live_mod_sypd:.5f} SYPD, saving {live_speedup_pct:.2f}% of the per-step walltime, where the pinned stack above saved {comb_step_pct:.2f}% -- the same quantity, carrying the sign of a change rather than of a saving.
-      The stack did not get slower, the baseline got faster, and two of the four folded kernels gave payoff back with it, which is the occupancy step the pointwise-fold question prices.
-      So the figures above stay pinned at tag meas/2026-10-08-two-prs-combined, where they are the measurement of the two PRs composing, and they are no longer the current state: both singles were measured on the stack as it stood before those two commits, so re-pinning the composition claim means re-measuring both of them.
-    evidence:
-      - kind: result
-        path: results/combined-stack.json
-        git_ref: 8266ea1
-        values:
-          comb_base_sypd: combined.baseline_sypd
-          comb_mod_sypd: combined.mod_sypd
-          comb_step_pct: combined.s_per_step_change_pct
-          fold_alone_pct: singles.fold.s_per_step_change_pct
-          rad_alone_pct: singles.radiation.s_per_step_change_pct
-          sum_singles_pct: composition.sum_of_single_per_step_pct
-          vs_product_pct: composition.measured_vs_product_pct
-          dev_saved: device.ms_saved
-          dev_rad: device.radiation_ms_saved
-          dev_fold: device.fold_ms_saved
-          dev_unattr: device.unattributed_ms
-          dev_change_pct: device.change_pct
-          rad_share_saving: device.radiation_share_of_saving_pct
-          fold_share_saving: device.fold_share_of_saving_pct
-          rad_share_base: shares.baseline_radiation_pct
-          rad_share_mod: shares.mod_radiation_pct
-          mp_share_base: shares.baseline_microphysics_hot_pct
-          mp_share_mod: shares.mod_microphysics_hot_pct
-          prior_mod_sypd: prior.mod_sypd
-          prior_delta_pct: prior.mod_sypd_change_pct
-        explanation: >-
-          The stacked measurement, snapshotted because results/summary.json is
-          rewritten by every run and so cannot be cited for any particular one.
-          The two single-treatment figures are read out of Git at the commits
-          that measured them rather than typed, so the composition claim is
-          checkable, and the provenance block records the submodule SHAs of the
-          arms the device decomposition describes. The stage is frozen on main
-          for the reason compile-time-study and launch-cost are: unfrozen it
-          would be rewritten to describe whichever arm pair ran last.
-      - kind: result
-        path: results/param-fold.json
-        values:
-          comb_fold_own_pct: fold_attributable.change_pct
-          comb_fold_device_pct: fold_attributable.pct_of_device_total
-        explanation: >-
-          Where the fold half of the decomposition comes from, per kernel.
-          fold_attributable rather than device_total, because device_total is
-          every kernel in the arm and the arm now carries both treatments.
-          Comparing these rows against the fold-alone run at 4a2424b is what
-          shows the radiation change did not perturb the microphysics kernels.
-      - kind: value
-        path: results/kernel-shares.json
-        key: baseline.radiation_pct
-        name: live_radiation_share_pct
-        explanation: >-
-          Cited for the method rather than for a number: the shares in the
-          answer are templated from the snapshot, not from here, because this
-          file is regenerated by every run. Read it to see what the CURRENT arm
-          pair spends on radiation, which is a different question.
-      - kind: result
-        path: results/summary.json
-        values:
-          live_base_sypd: baseline.sypd
-          live_mod_sypd: mod.sypd
-          live_speedup_pct: speedup_pct
-        explanation: >-
-          The live pair, for whatever ran last -- currently the two PRs on the
-          2026-10-08 ClimaAtmos main, with the fold extended to the two
-          saturation calls the fusion left taking their parameters bare.
-          Templated values render from the working tree, so these three move
-          with every run by design: they are what says whether the pinned
-          snapshot still describes the stack. speedup_pct is the fraction of
-          per-step walltime saved, not a SYPD gain, and the snapshot's
-          s_per_step_change_pct is the same quantity with the other sign.
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod
@@ -946,32 +758,6 @@ pipeline:
       outputs:
         - path: results/kernel-shares.json
           storage: git
-    export-combined-stack:
-      # FROZEN immediately after the run it describes; re-run and re-frozen
-      # 2026-10-08 for the two PRs as proposed. Snapshots the stacked-treatment
-      # measurement, because results/summary.json is regenerated by every run
-      # and so cannot be cited for any particular one. The two single-treatment
-      # figures it compares against are read out of Git at the commits that
-      # measured them, and the snapshot it supersedes out of Git at its own last
-      # commit, so neither the composition claim nor the re-measurement is
-      # typed. Frozen after its run for the same reason the compile-time and
-      # launch-cost stages are: on main it would otherwise be rewritten to
-      # describe whichever arm pair ran last, and the provenance block inside
-      # the file records which stack it does describe.
-      kind: python-script
-      frozen: true
-      script_path: scripts/export-combined-stack.py
-      environment: py
-      inputs:
-        - results/summary.json
-        - results/kernel-shares.json
-        - results/param-fold.json
-        - results/treatment.json
-        - .calkit/scheduler/logs/amip-baseline.out
-        - .calkit/scheduler/logs/amip-mod.out
-      outputs:
-        - path: results/combined-stack.json
-          storage: git
     export-kernel-resources:
       kind: python-script
       environment: py
@@ -1007,302 +793,6 @@ pipeline:
       # the tag. Re-measure by tagging a new experiment, not by re-running
       # this one.
       frozen: true
-    state-divergence:
-      # Frozen on main, live at meas/2026-09-25-fused-state-divergence.
-      # These runs need CLIMA_RAD_SEED_OFFSET, which exists only on
-      # ClimaAtmos.jl-mod pb/rad-seed-offset. That knob is a no-op when
-      # unset, but it changes ClimaAtmos.jl-mod/src by content hash and so
-      # invalidates radiation-split, sgs-degeneracy, step-breakdown and
-      # cm-registers -- four GPU stages, hours of cluster time, for a change
-      # that cannot affect their behavior. So main carries upstream content
-      # and the experiment lives at its tag:
-      #   git checkout meas/2026-09-25-fused-state-divergence && git submodule update --init --recursive
-      #   calkit run state-divergence
-      frozen: true
-      kind: python-script
-      script_path: scripts/compare-state-divergence.py
-      environment: py
-      inputs:
-        - results/state-unfused.toml
-        - results/state-fused.toml
-        - results/state-fused-reseeded.toml
-        - results/state-fused-reseeded2.toml
-      outputs:
-        - path: results/state-divergence.json
-          storage: git
-
-    state-unfused:
-      # Frozen on main, live at meas/2026-09-25-fused-state-divergence.
-      # These runs need CLIMA_RAD_SEED_OFFSET, which exists only on
-      # ClimaAtmos.jl-mod pb/rad-seed-offset. That knob is a no-op when
-      # unset, but it changes ClimaAtmos.jl-mod/src by content hash and so
-      # invalidates radiation-split, sgs-degeneracy, step-breakdown and
-      # cm-registers -- four GPU stages, hours of cluster time, for a change
-      # that cannot affect their behavior. So main carries upstream content
-      # and the experiment lives at its tag:
-      #   git checkout meas/2026-09-25-fused-state-divergence && git submodule update --init --recursive
-      #   calkit run state-divergence
-      frozen: true
-      kind: shell-script
-      environment: clima
-      script_path: scripts/run-julia-script.sh
-      # Reference: the baseline arm, which solves radiation twice.
-      scheduler:
-        options:
-          - --gpus=1
-          - --time=120
-      args:
-        - --project=ClimaCoupler.jl/experiments/AMIP
-        - scripts/measure-state-divergence.jl
-        - --config_file
-        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - --out
-        - results/state-unfused.toml
-        - --steps
-        - "120"
-      inputs:
-        - scripts/measure-state-divergence.jl
-        - RRTMGP.jl/src
-        - RRTMGP.jl/ext
-        - ClimaCoupler.jl/src
-        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - ClimaCoupler.jl/config/atmos_configs/climaatmos_progedmf_1m.yml
-        - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
-        - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
-        - ClimaCore.jl/ext
-        - ClimaCore.jl/src
-        - ClimaAtmos.jl/src
-      outputs:
-        - path: results/state-unfused.toml
-          storage: git
-
-    state-fused:
-      # Frozen on main, live at meas/2026-09-25-fused-state-divergence.
-      # These runs need CLIMA_RAD_SEED_OFFSET, which exists only on
-      # ClimaAtmos.jl-mod pb/rad-seed-offset. That knob is a no-op when
-      # unset, but it changes ClimaAtmos.jl-mod/src by content hash and so
-      # invalidates radiation-split, sgs-degeneracy, step-breakdown and
-      # cm-registers -- four GPU stages, hours of cluster time, for a change
-      # that cannot affect their behavior. So main carries upstream content
-      # and the experiment lives at its tag:
-      #   git checkout meas/2026-09-25-fused-state-divergence && git submodule update --init --recursive
-      #   calkit run state-divergence
-      frozen: true
-      kind: shell-script
-      environment: clima
-      script_path: scripts/run-julia-script.sh
-      # The fused arm, same seed.
-      scheduler:
-        options:
-          - --gpus=1
-          - --time=120
-      args:
-        - --project=ClimaCoupler.jl-mod/experiments/AMIP
-        - scripts/measure-state-divergence.jl
-        - --config_file
-        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - --out
-        - results/state-fused.toml
-        - --steps
-        - "120"
-      inputs:
-        - scripts/measure-state-divergence.jl
-        - RRTMGP.jl-mod/src
-        - RRTMGP.jl-mod/ext
-        - ClimaCoupler.jl-mod/src
-        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
-        - ClimaCore.jl-mod/ext
-        - ClimaCore.jl-mod/src
-        - ClimaAtmos.jl-mod/src
-      outputs:
-        - path: results/state-fused.toml
-          storage: git
-
-    state-fused-reseeded:
-      # Frozen on main, live at meas/2026-09-25-fused-state-divergence.
-      # These runs need CLIMA_RAD_SEED_OFFSET, which exists only on
-      # ClimaAtmos.jl-mod pb/rad-seed-offset. That knob is a no-op when
-      # unset, but it changes ClimaAtmos.jl-mod/src by content hash and so
-      # invalidates radiation-split, sgs-degeneracy, step-breakdown and
-      # cm-registers -- four GPU stages, hours of cluster time, for a change
-      # that cannot affect their behavior. So main carries upstream content
-      # and the experiment lives at its tag:
-      #   git checkout meas/2026-09-25-fused-state-divergence && git submodule update --init --recursive
-      #   calkit run state-divergence
-      frozen: true
-      kind: shell-script
-      environment: clima
-      script_path: scripts/run-julia-script.sh
-      # The control. Fusing changes how McICA randomness is consumed, so the
-      # fused state diverges from the baseline like a different cloud draw
-      # would. This run is the fused code with the seed shifted: same physics,
-      # different draw. Whatever it diverges by is the yardstick.
-      scheduler:
-        options:
-          - --gpus=1
-          - --time=120
-      args:
-        - --project=ClimaCoupler.jl-mod/experiments/AMIP
-        - scripts/measure-state-divergence.jl
-        - --config_file
-        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - --out
-        - results/state-fused-reseeded.toml
-        - --steps
-        - "120"
-        - --seed-offset
-        - "1"
-      inputs:
-        - scripts/measure-state-divergence.jl
-        - RRTMGP.jl-mod/src
-        - RRTMGP.jl-mod/ext
-        - ClimaCoupler.jl-mod/src
-        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
-        - ClimaCore.jl-mod/ext
-        - ClimaCore.jl-mod/src
-        - ClimaAtmos.jl-mod/src
-      outputs:
-        - path: results/state-fused-reseeded.toml
-          storage: git
-
-    state-fused-reseeded2:
-      # Frozen on main, live at meas/2026-09-25-fused-state-divergence.
-      # These runs need CLIMA_RAD_SEED_OFFSET, which exists only on
-      # ClimaAtmos.jl-mod pb/rad-seed-offset. That knob is a no-op when
-      # unset, but it changes ClimaAtmos.jl-mod/src by content hash and so
-      # invalidates radiation-split, sgs-degeneracy, step-breakdown and
-      # cm-registers -- four GPU stages, hours of cluster time, for a change
-      # that cannot affect their behavior. So main carries upstream content
-      # and the experiment lives at its tag:
-      #   git checkout meas/2026-09-25-fused-state-divergence && git submodule update --init --recursive
-      #   calkit run state-divergence
-      frozen: true
-      kind: shell-script
-      environment: clima
-      script_path: scripts/run-julia-script.sh
-      # A second control draw. One reseed gives one sample, and two chaotic
-      # trajectories cross: at any single step the control divergence can dip
-      # near zero and make the fusion/control ratio arbitrarily large for no
-      # physical reason. Offsets {0,1,2} give three control pairs, so the
-      # comparison is against a spread rather than a point.
-      scheduler:
-        options:
-          - --gpus=1
-          - --time=120
-      args:
-        - --project=ClimaCoupler.jl-mod/experiments/AMIP
-        - scripts/measure-state-divergence.jl
-        - --config_file
-        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - --out
-        - results/state-fused-reseeded2.toml
-        - --steps
-        - "120"
-        - --seed-offset
-        - "2"
-      inputs:
-        - scripts/measure-state-divergence.jl
-        - RRTMGP.jl-mod/src
-        - RRTMGP.jl-mod/ext
-        - ClimaCoupler.jl-mod/src
-        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
-        - ClimaCore.jl-mod/ext
-        - ClimaCore.jl-mod/src
-        - ClimaAtmos.jl-mod/src
-      outputs:
-        - path: results/state-fused-reseeded2.toml
-          storage: git
-
-    fused-lw-check:
-      kind: shell-script
-      environment: clima
-      script_path: scripts/run-julia-script.sh
-      # Correctness for the fused longwave solve. The clear-sky fluxes feed the
-      # cloud radiative effect diagnostics and nothing else, so an error there
-      # never reaches the prognostic state: a state comparison would not catch
-      # it, and a run would look healthy while the diagnostics were wrong.
-      scheduler:
-        options:
-          - --gpus=1
-          - --time=120
-      args:
-        - --project=ClimaCoupler.jl-mod/experiments/AMIP
-        - scripts/verify-fused-lw.jl
-        - --config_file
-        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - --out
-        - results/fused-lw-check.toml
-      inputs:
-        - scripts/verify-fused-lw.jl
-        - RRTMGP.jl-mod/src
-        - RRTMGP.jl-mod/ext
-        - ClimaCoupler.jl-mod/src
-        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
-        - ClimaCore.jl-mod/ext
-        - ClimaCore.jl-mod/src
-        - ClimaAtmos.jl-mod/src
-      outputs:
-        - path: results/fused-lw-check.toml
-          storage: git
-
-    radiation-split:
-      kind: shell-script
-      environment: clima
-      script_path: scripts/run-julia-script.sh
-      # Frozen: needs solve_lw_optics_only! / solve_sw_optics_only!, which exist
-      # only on RRTMGP.jl-mod branch pb/optics-split. They are measurement
-      # scaffolding and were deliberately left off pb/fused-clear-sky, the branch
-      # proposed as CliMA/RRTMGP.jl#631, so the submodule now points somewhere
-      # this stage cannot run. Its recorded optics fractions still hold -- the
-      # keying does not change what the two passes duplicate.
-      #
-      # To re-measure: check out a rev whose RRTMGP.jl-mod pointer is on
-      # pb/optics-split, e.g. meas/2026-09-26-fused-remeasured, and run it there.
-      frozen: true
-      # Sizes the fused-optics idea before anyone writes it: with
-      # rad: allskywithclear the solver runs twice and both passes recompute
-      # the gas and aerosol optics, so fusing them would save exactly one copy
-      # of the optics and nothing else. Times the real solve against the same
-      # kernel with the two-stream sweep removed.
-      scheduler:
-        options:
-          - --gpus=1
-          - --time=120
-      args:
-        - --project=ClimaCoupler.jl-mod/experiments/AMIP
-        - scripts/measure-radiation-split.jl
-        - --config_file
-        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - --out
-        - results/radiation-split.toml
-      inputs:
-        - scripts/measure-radiation-split.jl
-        - RRTMGP.jl-mod/src
-        - RRTMGP.jl-mod/ext
-        - ClimaCoupler.jl-mod/src
-        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
-        - ClimaCore.jl-mod/ext
-        - ClimaCore.jl-mod/src
-        - ClimaAtmos.jl-mod/src
-      outputs:
-        - path: results/radiation-split.toml
-          storage: git
-
     step-breakdown:
       kind: shell-script
       environment: clima
