@@ -2736,3 +2736,44 @@ That self-selection then paid for itself without an edit. On #631 the control
 came back exactly zero, the strict branch engaged on its own, and the same stage
 that had been passing a resampling-band test became an equality test --- the
 stronger claim, arrived at by measuring rather than by assuming.
+
+## 8c. An upstream rewrite can take an occupancy step away (2026-10-09)
+
+ClimaAtmos #4874 and #4875 fused the sigma_S quadrature pass and the
+cloud-fraction evaluation into one `DataLayouts.foreach_point` kernel. Both arms
+were re-measured on that main. The baseline got faster and the mod arm did not
+move at all, so the stack's advantage fell by almost exactly what the baseline
+gained.
+
+I predicted the wrong cause and should not have. Two `TD.q_vap_saturation` calls
+in the newly fused kernel still took the thermodynamics parameters bare, which
+they could when that code was a separate broadcast, so the closure captured the
+struct in the very kernel the `Val` was there to keep it out of. That reads like
+a complete explanation: a broadcast captures each argument independently, so one
+bare term puts the parameters back in the argument buffer whatever the other
+terms do. It was true and it was irrelevant.
+
+Closing it and re-measuring moved the AMIP pair by less than the noise floor,
+and the device decomposition said why. `set_sgs_moments_and_cloud_fraction` is
+under a third of a percent of the arm's device time; a perfect fold there cannot
+pay, because there is nothing to win. Meanwhile the real loss was elsewhere
+entirely: the updraft kernel and the cloud-fraction kernel **lost occupancy
+steps** when the rewrite changed their register counts, and gave back payoff
+accordingly. Different cause, different lever --- launch bounds, not more
+folding.
+
+Two things to carry forward:
+
+  * **Price the kernel before explaining it.** A mechanism that is obviously
+    real is not thereby worth measuring. The first number to reach for is the
+    kernel's share of device time, which caps the whole argument, and it was
+    already in `results/param-fold.json` before I wrote the hypothesis.
+  * **A fold's payoff is not a property of the fold.** It is a property of where
+    the freed registers land relative to an A100 occupancy step, and an upstream
+    change that touches the kernel body can move a kernel across that line in
+    either direction without anyone intending it. `results/param-fold-prior.json`
+    exists to price the step from such a move; that snapshot now holds a stack
+    two rewrites back, and the comparison it supports has gone one-sided because
+    the kernel that supplied the gaining side no longer crosses a step. A
+    held-still prior ages; the comparison should read the preceding measurement
+    out of Git the way `export-combined-stack` does.

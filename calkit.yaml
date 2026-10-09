@@ -354,13 +354,15 @@ questions:
   - question: >-
       Does putting the parameters in `Val` make pointwise kernels measurably faster across the board, as CliMA/ClimaCore.jl#2676 asks?
     answer: >-
-      Yes, where the parameters are a real share of the kernel's live state, and the SIZE of the payoff is set by whether the freed registers let one more block fit on an SM.
-      Four kernels in ClimaAtmos now have it, measured in the model rather than in isolation, and now measured twice: an upstream change to these kernels moved two of the four across that line in opposite directions, which prices the step itself.
-      Three cross one on the current stack: the SGS quadrature {fold_quad_regs_baseline:.0f} -> {fold_quad_regs_mod:.0f} registers, {fold_quad_warps_baseline:.0f} -> {fold_quad_warps_mod:.0f} warps per SM, {fold_quad_change:.1f}% on the kernel; the SGS-moments kernel {fold_sgs_regs_baseline:.0f} -> {fold_sgs_regs_mod:.0f} registers, {fold_sgs_warps_baseline:.0f} -> {fold_sgs_warps_mod:.0f} warps, {fold_sgs_change:.1f}%; the cloud-fraction kernel {fold_cf_regs_baseline:.0f} -> {fold_cf_regs_mod:.0f} registers, {fold_cf_warps_baseline:.0f} -> {fold_cf_warps_mod:.0f} warps, {fold_cf_change:.1f}%.
-      The fourth does not: the updraft path sheds {fold_upd_regs_saved:.0f} registers, {fold_upd_regs_baseline:.0f} -> {fold_upd_regs_mod:.0f}, and still sits at {fold_upd_warps_mod:.0f} warps per SM, one block short of the next step, which it would reach at {fold_upd_next_step:.0f} registers.
-      It took {fold_upd_change:.1f}% anyway, so a fold that misses a step is not a fold that does nothing -- an earlier answer here said the payoff was all-or-nothing, and this measurement withdraws that.
-      What the step is worth can be read off the two kernels that switched sides between the stacks: the updraft path crossed a step before and lost it to an added argument, giving back {fold_upd_lost_points:.1f} points of payoff, while the SGS-moments kernel gained a step and picked up {fold_sgs_gained_points:.1f}.
-      Both moved the way the step predicts, in opposite directions, by a similar amount, and that agreement is the strongest form this evidence has taken; it is not a controlled comparison, because the same upstream change also altered the kernel bodies.
+      Yes, where the parameters are a real share of the kernel's live state AND the kernel is a real share of the device, and the SIZE of the payoff is set by whether the freed registers let one more block fit on an SM.
+      Four kernels in ClimaAtmos now have it, measured in the model rather than in isolation, and measured across two successive upstream rewrites of those kernels, which is what prices the step itself.
+      Two cross one on the current stack: the SGS quadrature {fold_quad_regs_baseline:.0f} -> {fold_quad_regs_mod:.0f} registers, {fold_quad_warps_baseline:.0f} -> {fold_quad_warps_mod:.0f} warps per SM, {fold_quad_change:.1f}% on the kernel; and the cloud-fraction kernel {fold_cf_regs_baseline:.0f} -> {fold_cf_regs_mod:.0f} registers, {fold_cf_warps_baseline:.0f} -> {fold_cf_warps_mod:.0f} warps, {fold_cf_change:.1f}%.
+      The other two do not: the updraft path sheds {fold_upd_regs_saved:.0f} registers, {fold_upd_regs_baseline:.0f} -> {fold_upd_regs_mod:.0f}, and still sits at {fold_upd_warps_mod:.0f} warps per SM, one block short of the next step, which it would reach at {fold_upd_next_step:.0f}; the SGS-moments kernel sheds {fold_sgs_regs_saved:.0f}, {fold_sgs_regs_baseline:.0f} -> {fold_sgs_regs_mod:.0f}, and stays at {fold_sgs_warps_mod:.0f} warps, needing {fold_sgs_next_step:.0f}.
+      They took {fold_upd_change:.1f}% and {fold_sgs_change:.1f}% anyway, so a fold that misses a step is not a fold that does nothing -- an earlier answer here said the payoff was all-or-nothing, and this measurement withdraws that.
+      What the step is worth can be read off a kernel that switched sides: the updraft path crossed one before and lost it to an added argument, giving back {fold_upd_lost_points:.1f} points of payoff.
+      The SGS-moments kernel supplied the other half of that comparison last time, having gained a step and picked up a comparable amount in the opposite direction; the rewrite that fused it into the cloud-fraction pass has since taken that step away again, so the two-sided form of this evidence is withdrawn and only the losing side is live.
+      Neither direction is a controlled comparison, because each of those rewrites also altered the kernel bodies.
+      Share of the device bounds the whole question, and the SGS-moments kernel is the case: at {fold_sgs_ms:.1f} ms of a {fold_dev_ms:.0f} ms baseline device total, a perfect fold there is worth less than a run can resolve, and closing the last two bare-parameter terms in it -- so the fold applies to all of the kernel rather than most of it -- moved the AMIP pair by less than the noise floor.
       Register count does not predict which case a kernel is in: two kernels that both start at the {fold_quad_regs_baseline:.0f}-register cap land on opposite sides of a step, while a {fold_cf_regs_baseline:.0f}-register one crosses.
       The distance to the next step does predict it, and it is computable before any code is written, because ClimaCore sizes the launch block from the register count and warps per SM follow from the pair.
       Across the four kernels this is {fold_own_change:.2f}% of their time on a 120-step window, {fold_total_saved:.0f} ms, concentrated almost entirely in the first kernel, which is {fold_total_change:.2f}% of the whole device.
@@ -437,7 +439,10 @@ questions:
           fold_sgs_warps_baseline: kernels.sgs_moments.baseline.warps_per_sm
           fold_sgs_warps_mod: kernels.sgs_moments.mod.warps_per_sm
           fold_sgs_change: kernels.sgs_moments.mean_change_pct
-          fold_sgs_gained_points: vs_prior_stack.switched.sgs_moments.payoff_points
+          fold_sgs_regs_saved: kernels.sgs_moments.registers_saved
+          fold_sgs_next_step: kernels.sgs_moments.mod.registers_for_next_step
+          fold_sgs_ms: kernels.sgs_moments.baseline.total_ms
+          fold_dev_ms: device_total.baseline_ms
           fold_total_change: fold_attributable.pct_of_device_total
           fold_total_saved: fold_attributable.ms_saved
           fold_own_change: fold_attributable.change_pct
@@ -478,6 +483,10 @@ questions:
       Read the two single-treatment figures as approximate, not as an A/B: each was measured against its own baseline, and the stack moved underneath them between the runs.
       The radiation single at {rad_alone_pct:.2f}% carries a further caveat, because it was measured on `pb/optics-split-rebased` rather than on the RRTMGP.jl#631 head this stack now carries -- an earlier implementation of the same idea, with different entry-point names and no keyed McICA sampling.
       It transfers only insofar as the two are equivalent, and the re-measurement is the evidence that they are: the same arm pair on #631 gives {comb_mod_sypd:.5f} SYPD against {prior_mod_sypd:.5f} on the older branch, a difference of {prior_delta_pct:.2f}% -- an order below the noise floor, and the reason this was not re-measured single-handed at a cost of three more GPU-hours.
+      Upstream has since moved under all of it: ClimaAtmos #4874 and #4875 rewrote the folded microphysics kernels, and both arms were re-measured on that main.
+      The live pair stands at {live_base_sypd:.5f} -> {live_mod_sypd:.5f} SYPD, saving {live_speedup_pct:.2f}% of the per-step walltime, where the pinned stack above saved {comb_step_pct:.2f}% -- the same quantity, carrying the sign of a change rather than of a saving.
+      The stack did not get slower, the baseline got faster, and two of the four folded kernels gave payoff back with it, which is the occupancy step the pointwise-fold question prices.
+      So the figures above stay pinned at tag meas/2026-10-08-two-prs-combined, where they are the measurement of the two PRs composing, and they are no longer the current state: both singles were measured on the stack as it stood before those two commits, so re-pinning the composition claim means re-measuring both of them.
     evidence:
       - kind: result
         path: results/combined-stack.json
@@ -532,14 +541,21 @@ questions:
           answer are templated from the snapshot, not from here, because this
           file is regenerated by every run. Read it to see what the CURRENT arm
           pair spends on radiation, which is a different question.
-      - kind: value
+      - kind: result
         path: results/summary.json
-        key: speedup_pct
-        name: live_speedup_pct
+        values:
+          live_base_sypd: baseline.sypd
+          live_mod_sypd: mod.sypd
+          live_speedup_pct: speedup_pct
         explanation: >-
-          Also the method, not the number. This is the pipeline's live figure
-          for whatever ran last; it happened to be this stack on 2026-10-07,
-          and the snapshot exists so the claim survives the next run.
+          The live pair, for whatever ran last -- currently the two PRs on the
+          2026-10-08 ClimaAtmos main, with the fold extended to the two
+          saturation calls the fusion left taking their parameters bare.
+          Templated values render from the working tree, so these three move
+          with every run by design: they are what says whether the pinned
+          snapshot still describes the stack. speedup_pct is the fraction of
+          per-step walltime saved, not a SYPD gain, and the snapshot's
+          s_per_step_change_pct is the same quantity with the other sign.
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod
