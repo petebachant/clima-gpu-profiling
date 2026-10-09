@@ -1,18 +1,19 @@
 diff --git a/ClimaAtmos.jl/src/cache/microphysics_cache.jl b/ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl
-index b7ab800..f103f02 100644
+index b7ab800..560bd5f 100644
 --- a/ClimaAtmos.jl/src/cache/microphysics_cache.jl
 +++ b/ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl
-@@ -961,6 +961,9 @@ function set_microphysics_tendency_cache!(
+@@ -961,6 +961,10 @@ function set_microphysics_tendency_cache!(
  
      thp = CAP.thermodynamics_params(p.params)
      cmp = CAP.microphysics_1m_params(p.params)
 +    # Carried into the two heavy kernels in the type, so the parameters fold to
 +    # literals there instead of being read from a struct per quadrature point.
-+    vcmp, vthp = Val(cmp), Val(thp)
++    dev = ClimaComms.device(Y.c)
++    vcmp, vthp = _fold(dev, cmp), _fold(dev, thp)
  
      n = n_mass_flux_subdomains(tm)
      nsubs = mp1m.n_substeps
-@@ -973,7 +976,7 @@ function set_microphysics_tendency_cache!(
+@@ -973,7 +977,7 @@ function set_microphysics_tendency_cache!(
              ᶜρʲs.:($$j), ᶜq_tot_nonnegʲs.:($$j),
              Y.c.sgsʲs.:($$j).q_lcl, Y.c.sgsʲs.:($$j).q_icl,
              Y.c.sgsʲs.:($$j).q_rai, Y.c.sgsʲs.:($$j).q_sno,
@@ -21,7 +22,7 @@ index b7ab800..f103f02 100644
          )
      end
  
-@@ -999,7 +1002,7 @@ function set_microphysics_tendency_cache!(
+@@ -999,7 +1003,7 @@ function set_microphysics_tendency_cache!(
      if not_quadrature(sgs_quad)
          @. ᶜmp_tendency⁰ = microphysics_tendencies_1m(
              ᶜρ⁰, ᶜq_tot_nonneg⁰, ᶜq_lcl⁰, ᶜq_icl⁰, ᶜq_rai⁰, ᶜq_sno⁰,
@@ -30,7 +31,7 @@ index b7ab800..f103f02 100644
          )
      else
          (; ᶜT′T′, ᶜq′q′, ᶜcorr_Tq, ᶜsgs_moments) = p.precomputed
-@@ -1015,7 +1018,7 @@ function set_microphysics_tendency_cache!(
+@@ -1015,7 +1019,7 @@ function set_microphysics_tendency_cache!(
          @. ᶜλ⁰ = TD.liquid_fraction(thp, ᶜT⁰, max(0, ᶜq_lcl⁰), max(0, ᶜq_icl⁰))
          @. ᶜmu_S⁰ = ᶜq_tot_nonneg⁰ - TD.q_vap_saturation(thp, ᶜT⁰, ᶜρ⁰)
          @. ᶜmp_tendency⁰ = microphysics_tendencies_1m(
@@ -40,7 +41,7 @@ index b7ab800..f103f02 100644
              ᶜT′T′, ᶜq′q′, ᶜcorr_Tq, ᶜsgs_moments.λ_lagrange, α, ξ_liq, ξ_ice,
              dt, nsubs_quad, ᶜλ⁰, ᶜmu_S⁰,
 diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/cloud_fraction.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/cloud_fraction.jl
-index 58e2c2f..e12ed4c 100644
+index 58e2c2f..9ea0dc0 100644
 --- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/cloud_fraction.jl
 +++ b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/cloud_fraction.jl
 @@ -541,7 +541,7 @@ struct SGSVarianceEvaluator{TPS, FT}
@@ -94,7 +95,7 @@ index 58e2c2f..e12ed4c 100644
  
      α_ft = FT(α)
 +    # Carried in by type, so the parameters fold to literals in the kernel.
-+    vthermo = Val(thermo_params)
++    vthermo = _fold(ClimaComms.device(Y.c), thermo_params)
  
      DataLayouts.foreach_point(
          ᶜsgs_moments, ᶜcloud_fraction, ᶜρ_env, ᶜT_mean, ᶜq_mean,
@@ -107,23 +108,11 @@ index 58e2c2f..e12ed4c 100644
              $(sgs_quad), ᶜT′T′, ᶜq′q′, ᶜcorr_Tq, α_ft,
          )
          # Recompute CF from the grid-mean q_c and σ_S using the augmented-σ
-@@ -1084,9 +1087,9 @@ NVTX.@annotate function set_sgs_moments_and_cloud_fraction!(Y, p)
-             ᶜq_lcl_cf + ᶜq_icl_cf,
-             # μ_S recomputed analytically, matching `_sgs_saturation_moments`
-             # (condensate-free q_sat, consistent with the linear excess S).
--            ᶜq_mean - TD.q_vap_saturation(thermo_params, ᶜT_mean, ᶜρ_env),
-+            ᶜq_mean - _q_vap_saturation($(vthermo), ᶜT_mean, ᶜρ_env),
-             ᶜsgs_moments.sigma_S,
--            TD.q_vap_saturation(thermo_params, ᶜT_mean, ᶜρ_env, ᶜq_lcl_cf, ᶜq_icl_cf),
-+            _q_vap_saturation($(vthermo), ᶜT_mean, ᶜρ_env, ᶜq_lcl_cf, ᶜq_icl_cf),
-             α_ft,
-             $(floor),
-         )
 @@ -1196,6 +1199,7 @@ NVTX.@annotate function set_cloud_fraction!(
  
      ᶜcloud_fraction = p.precomputed.ᶜcloud_fraction
      α_ft = FT(α)
-+    vthermo = Val(thermo_params)
++    vthermo = _fold(ClimaComms.device(Y.c), thermo_params)
  
      DataLayouts.foreach_point(
          ᶜcloud_fraction,
@@ -137,10 +126,15 @@ index 58e2c2f..e12ed4c 100644
              ᶜρ_env,
              ᶜq_mean,
 diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
-index b8ad66c..38458d4 100644
+index b8ad66c..132bf9b 100644
 --- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
 +++ b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
-@@ -241,6 +241,19 @@ quadrature points.
+@@ -1,3 +1,4 @@
++import ClimaComms
+ import Thermodynamics as TD
+ import CloudMicrophysics.Parameters as CMP
+ import CloudMicrophysics.BulkMicrophysicsTendencies as BMT
+@@ -241,6 +242,20 @@ quadrature points.
    - `nsubs`: Number of substeps in the tendency averaging.
    - `args`: Extra trailing arguments forwarded to the CloudMicrophysics call.
  """
@@ -152,15 +146,16 @@ index b8ad66c..38458d4 100644
 +@inline _unwrapped(p) = p
 +@inline _unwrapped(::Val{P}) where {P} = P
 +
-+# A bare `tps` at a call site inside a folded kernel puts the struct back in the
-+# argument buffer. Unwrap at the use site instead.
-+@inline _q_vap_saturation(vtps, args...) =
-+    TD.q_vap_saturation(_unwrapped(vtps), args...)
++# Only on the device. A struct type parameter is boxed, so on the host each use
++# copies it back out and allocates per point; the device compiler has no heap
++# and folds it to a literal instead.
++@inline _fold(::ClimaComms.AbstractCPUDevice, p) = p
++@inline _fold(::ClimaComms.AbstractDevice, p) = Val(p)
 +
  struct Microphysics1MEvaluator{S, MP, TPS, FT, Args <: Tuple}
      scheme::S
      mp::MP
-@@ -345,7 +358,7 @@ with `dq_lcl_dt`, `dq_icl_dt`, `dq_rai_dt`, `dq_sno_dt` [kg/kg/s].
+@@ -345,7 +360,7 @@ with `dq_lcl_dt`, `dq_icl_dt`, `dq_rai_dt`, `dq_sno_dt` [kg/kg/s].
      # to cloud-only q_c), and CloudMicrophysics subtracts q_rai/q_sno from
      # q_tot_hat when it diagnoses the local vapor. Subtracting them from the
      # cloud condensate as well would double-count them and break ⟨q_c^local⟩ = q_c.
@@ -169,7 +164,7 @@ index b8ad66c..38458d4 100644
      S′_hat = q_tot_hat - q_sat_hat - eval.mu_S
      shifted_excess = max(FT(0), eval.λ_lagrange + eval.α * S′_hat)
      q_lcl_hat, q_icl_hat = sgs_local_condensate(
-@@ -354,7 +367,8 @@ with `dq_lcl_dt`, `dq_icl_dt`, `dq_rai_dt`, `dq_sno_dt` [kg/kg/s].
+@@ -354,7 +369,8 @@ with `dq_lcl_dt`, `dq_icl_dt`, `dq_rai_dt`, `dq_sno_dt` [kg/kg/s].
  
      return BMT.bulk_microphysics_tendencies(
          BMT.LinearizedAverage(),
@@ -179,7 +174,7 @@ index b8ad66c..38458d4 100644
          q_tot_hat, q_lcl_hat, q_icl_hat, eval.q_rai, eval.q_sno,
          eval.dt, eval.nsubs, eval.args...,
      )
-@@ -423,7 +437,7 @@ positive when a source of the corresponding tracer.
+@@ -423,7 +439,7 @@ positive when a source of the corresponding tracer.
  )
      local_tendency = BMT.bulk_microphysics_tendencies(
          BMT.LinearizedAverage(),
@@ -188,7 +183,7 @@ index b8ad66c..38458d4 100644
          q_tot_nonneg, q_lcl, q_icl, q_rai, q_sno, dt, nsubs,
      )
      return local_tendency
-@@ -436,8 +450,10 @@ end
+@@ -436,8 +452,10 @@ end
      # invariant across the quadrature. They default to being computed here from the
      # mean state; a caller evaluating this broadcast over many quadrature points can
      # precompute them once and pass them in to avoid recomputing them per point.

@@ -1,30 +1,30 @@
-gpu-guard: running on GPU(s) [0] -- OK (avoiding [])
+gpu-guard: running on GPU(s) [1] -- OK (avoiding [])
 Loading climacommon/2025_05_15
   Loading requirement: climaauth/2025_05_15 openmpi/4.1.5-mpitrampoline
     julia/1.11.5 cuda/julia-pref
 Precompiling project...
-   8910.4 ms  ✓ RRTMGP → RRTMGPCUDAExt
-   7709.6 ms  ✓ RRTMGP → RRTMGPNCDatasetsExt
-  98002.2 ms  ✓ ClimaCore
-  16670.1 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreExt
-  17270.7 ms  ✓ ClimaCore → KrylovExt
-  17493.9 ms  ✓ ClimaCore → ClimaCoreRecipesBaseExt
-  17713.6 ms  ✓ ClimaTimeSteppers → ClimaTimeSteppersClimaCoreExt
-  18944.9 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreInterpolationsExt
-  19678.4 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreNCDatasetsExt
-  36595.5 ms  ✓ ClimaCore → ClimaCoreCUDAExt
-  20642.4 ms  ✓ ClimaDiagnostics
-  47480.5 ms  ✓ ClimaCore → ClimaCoreMakieExt
-  21382.0 ms  ✓ ClimaLand
-  24369.2 ms  ✓ ClimaCoupler
-  21354.2 ms  ✓ ClimaLand → FluxnetSimulationsExt
-  29496.3 ms  ✓ ClimaCoupler → ClimaCouplerClimaLandExt
-  33206.5 ms  ✓ ClimaLand → ConstrainedNeuralModelExt
-  71384.5 ms  ✓ ClimaAtmos
-  53210.5 ms  ✓ ClimaCoupler → ClimaCouplerMakieExt
-  56726.2 ms  ✓ ClimaLand → LandSimulationVisualizationExt
-  14749.8 ms  ✓ ClimaCoupler → ClimaCouplerClimaAtmosExt
-  21 dependencies successfully precompiled in 232 seconds. 610 already precompiled.
+   7483.4 ms  ✓ RRTMGP → RRTMGPNCDatasetsExt
+   8392.9 ms  ✓ RRTMGP → RRTMGPCUDAExt
+  93046.3 ms  ✓ ClimaCore
+  16171.8 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreExt
+  16579.2 ms  ✓ ClimaCore → ClimaCoreRecipesBaseExt
+  16917.5 ms  ✓ ClimaCore → KrylovExt
+  17035.2 ms  ✓ ClimaTimeSteppers → ClimaTimeSteppersClimaCoreExt
+  16212.3 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreInterpolationsExt
+  16917.4 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreNCDatasetsExt
+  34605.3 ms  ✓ ClimaCore → ClimaCoreCUDAExt
+  19338.8 ms  ✓ ClimaDiagnostics
+  47445.9 ms  ✓ ClimaCore → ClimaCoreMakieExt
+  22138.5 ms  ✓ ClimaLand
+  22426.6 ms  ✓ ClimaCoupler
+  22124.2 ms  ✓ ClimaLand → FluxnetSimulationsExt
+  30539.5 ms  ✓ ClimaLand → ConstrainedNeuralModelExt
+  29911.4 ms  ✓ ClimaCoupler → ClimaCouplerClimaLandExt
+  70469.6 ms  ✓ ClimaAtmos
+  54350.7 ms  ✓ ClimaCoupler → ClimaCouplerMakieExt
+  54943.9 ms  ✓ ClimaLand → LandSimulationVisualizationExt
+  14364.3 ms  ✓ ClimaCoupler → ClimaCouplerClimaAtmosExt
+  21 dependencies successfully precompiled in 223 seconds. 610 already precompiled.
   2 dependencies had output during precompilation:
 ┌ RRTMGP → RRTMGPCUDAExt
 │  ┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
@@ -148,7 +148,7 @@ Status `~/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/experiments/AMIP/Projec
 ⌅ [9c32591e] Poppler_jll v24.6.0+0
   [de0858da] Printf v1.11.0
 Info Packages marked with ⌃ and ⌅ have new versions available. Those with ⌃ may be upgradable, but those with ⌅ are restricted by compatibility constraints from upgrading. To see why use `status --outdated`
-==PROF== Connected to process 2183261 (/clima/software/julia/julia-1.11.5/bin/julia)
+==PROF== Connected to process 4105492 (/clima/software/julia/julia-1.11.5/bin/julia)
 ==PROF== Profiling "gpu_getindex_kernel" - 0 (1/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 1 (2/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 2 (3/1500): 0%....50%....100% - 1 pass
@@ -1690,7 +1690,7 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 [ Info: Dict{Any, Any}("sleve_eta" => 0.7, "use_coupler_diagnostics" => true, "era5_diurnal_warming" => nothing, "ocean_progress_interval" => "never", "dt" => "30secs", "prognostic_tke" => true, "use_newton_rtol" => false, "era5_ic_full_pressure" => false, "microphysics_model" => "1M", "output_dir_style" => "ActiveLink", "external_forcing" => nothing, "netcdf_output_at_levels" => true, "device" => "auto", "t_end" => "86400secs", "c_amd" => 0.29, "scm_surface_type" => "ocean", "y_elem" => 6, "z_stretch" => true, "dt_subcol" => "Inf", "extra_atmos_diagnostics" => Dict{Any, Any}[], "edmfx_nh_pressure" => true, "nogw_beres_heating_latent" => false, "era5_initial_condition_dir" => nothing, "cloud_liquid_rain_accretion" => "CloudLiquidRainAccretion", "conservation_softfail" => false, "check_steady_state" => false, "restart_cache" => true, "fixed_terminal_velocity_ice" => true, "update_jacobian_every" => "solve", "test_dycore_consistency" => false, "add_isothermal_boundary_layer" => true, "use_itime" => true, "rad" => "allskywithclear", "binary_area_fraction" => true, "seaice_progress_interval" => "never", "cloud_model" => "quadrature", "initial_condition" => "WeatherModel", "krylov_rtol" => 0.1, "eisenstat_walker_forcing_alpha" => 2.0, "dt_cloud_fraction" => "1hours", "surface_setup" => "PrescribedSurface", "cloud_ice_snow_accretion" => "CloudIceSnowAccretion", "update_constrain_state_every" => "step", "jvp_step_adjustment" => 1.0, "microphysics_n_substeps" => 3, "insolation" => "timevarying", "ocean_diagnostic_mode" => "average", "snow_melt" => "SnowMelt", "log_progress" => true, "site_latitude" => 17.0, "h_elem" => 16, "coupler_toml" => ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/toml/amip_progedmf_1m.toml"], "netcdf_interpolation_num_points" => nothing, "coupler_output_dir" => "output", "z_max" => 60000.0, "diagnostics" => Any[], "edmfx_filter" => true, "debug_jacobian" => false, "job_id" => "amip_progedmf_1m_land_he16", "sst_adjustment" => 0.0, "log_to_file" => false, "orographic_gravity_wave" => "raw_topo_online", "dt_rad" => "600secs", "simple_ocean" => false, "edmfx_upwinding" => "first_order", "tracer_upwinding" => "vanleer_limiter", "nh_poly" => 3, "edmfx_sgs_diffusive_flux" => true, "y_max" => 300000.0, "non_orographic_gravity_wave" => true, "chemistry_model" => nothing, "print_config_dict" => true, "save_cache" => true, "microphysics_n_substeps_quadrature" => 2, "topography_damping_factor" => 5.0, "cloud_ice_rain_accretion" => "CloudIceRainAccretion", "config" => "sphere", "hyperdiffusion_prandtl_number" => 0.2, "reproducibility_test" => false, "component_dt_dict" => Dict("dt_atmos" => 30.0, "dt_land" => 30.0, "dt_seaice" => 30.0, "dt_ocean" => 30.0), "cloud_liquid_snow_accretion" => "CloudLiquidSnowAccretion", "check_conservation" => false, "rmse_check" => false, "land_spun_up_ic" => false, "cosp_n_subcolumns" => 100, "vertical_water_borrowing_species" => nothing, "auto_jacobian_padding_bands" => nothing, "sgs_distribution" => "gaussian", "implicit_diffusion" => true, "walltime_dt" => nothing, "z_elem" => 63, "snow_autoconversion" => "NoSupersaturation", "ocean_model" => "prescribed", "use_auto_jacobian" => false, "cosp_overlap" => "maximum_random", "disable_surface_flux_tendency" => false, "cfsite_number" => "site23", "dt_ogw" => "1800secs", "turbconv" => "prognostic_edmfx", "x_elem" => 6, "idealized_clouds" => false, "edmfx_mse_q_tot_upwinding" => "first_order", "land_progress_interval" => "never", "check_nan_every" => 1024, "ice_model" => "prescribed", "use_dynamic_krylov_rtol" => false, "fixed_terminal_velocity_rain" => false, "lai_source" => "modis_monthly", "reproducible_restart" => false, "strict_config" => false, "toml" => ["toml/prognostic_edmfx_1M.toml"], "mesh_warp_type" => "SLEVE", "edmfx_detr_model" => "Generalized", "cloud_ice_formation" => "TemperatureDependentIceNumber", "external_forcing_file" => nothing, "cloud_nn_architecture" => "arch_2layers_8nodes.jld2", "topo_smoothing" => true, "hyperdiff" => "Hyperdiffusion", "output_dir" => nothing, "use_intersection_grid" => true, "debug_tendency_diagnostics" => false, "rain_condensation_evaporation" => "RainEvaporation", "nogw_beres_detailed_diagnostics" => false, "constant_horizontal_diffusion" => false, "apply_sem_quasimonotone_limiter" => false, "bubble" => false, "cloud_ice_melt" => "CloudIceMelt", "ode_algo" => "ARS222", "max_newton_iters_ode" => 1, "start_date" => "20100101", "time_varying_trace_gases" => ["CO2", "O3"], "ocean_diagnostic_interval" => "1days", "use_dense_jacobian" => false, "snow_deposition_sublimation" => "DepositionAndSublimation", "detect_restart_file" => false, "prognostic_surface" => "PrescribedSST", "edmfx_vertical_diffusion" => true, "restart_file" => nothing, "unique_seed" => false, "rayleigh_sponge" => true, "nogw_beres_source" => false, "divergence_damping_factor" => 5.0, "edmfx_entr_model" => "Generalized", "edmfx_tracer_upwinding" => "first_order", "energy_check" => false, "land_model" => "integrated", "use_land_diagnostics" => true, "idealized_h2o" => false, "perturb_initstate" => true, "rain_autoconversion" => "Kessler1M", "edmfx_scale_blending" => "SmoothMinimum", "seaice_diagnostic_mode" => "average", "t_start" => "0secs", "land_fraction_source" => "etopo", "dz_bottom" => 30.0, "walltime_debug" => false, "dt_save_state_to_disk" => "30days", "fixed_terminal_velocity_snow" => true, "restart_t" => nothing, "advection_test" => false, "tq_correlation_model" => "constant", "dt_cpl" => "30secs", "checkpoint_dt" => "366days", "topography" => "Earth", "aerosol_radiation" => true, "reference_job_id" => nothing, "vorticity_hyperdiffusion_coefficient" => 0.1857, "viscous_sponge" => true, "strict_params" => true, "config_file" => "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml", "cloud_liquid_freezing" => "HomogeneousAndHeterogeneous", "ocean_grid" => "one_deg_tripolar", "bucket_initial_condition" => "", "domain_type" => "global", "approximate_linear_solve_iters" => 2, "land_diagnostics_reduction" => "average", "smagorinsky_lilly" => nothing, "rain_snow_accretion" => "RainSnowAccretion", "enable_diagnostics" => true, "tracer_nonnegativity_method" => nothing, "site_longitude" => -149.0, "evolving_ocean" => true, "cloud_liquid_formation" => "CloudLiquidFormation", "prescribe_clouds_in_radiation" => false, "albedo_model" => "CouplerAlbedo", "edmfx_sgs_horizontal_diffusive_flux" => false, "update_cache_every" => "step", "quadrature_order" => 3, "coupler_diagnostics_period" => nothing, "FLOAT_TYPE" => "Float32", "deep_atmosphere" => true, "updraft_number" => 1, "amd_les" => false, "restart_dir" => nothing, "detect_restart_files" => false, "column_latlon" => [0.0, 0.0], "energy_q_tot_upwinding" => "vanleer_limiter", "prescribed_aerosols" => ["CB1", "CB2", "DST01", "DST02", "DST03", "DST04", "DST05", "OC1", "OC2", "SO4", "SSLT01", "SSLT02", "SSLT03", "SSLT04", "SSLT05"], "dt_nogw" => "1800secs", "output_default_diagnostics" => true, "edmfx_sgs_mass_flux" => true, "x_max" => 300000.0, "radiation_reset_rng_seed" => true, "land_diagnostics_period" => "1months", "newton_rtol" => 1.0e-5, "atmos_config_file" => "config/atmos_configs/climaatmos_progedmf_1m.yml", "edmfx_sgsflux_upwinding" => "none", "mode_name" => "amip", "fixed_terminal_velocity_liquid" => true, "use_sgs_quadrature" => true, "bucket_albedo_type" => "map_static", "atmos_progress_interval" => "never", "vert_diff" => nothing, "use_krylov_method" => false, "sleve_s" => 10.0, "implicit_microphysics" => true, "seaice_diagnostic_interval" => "1days", "prescribed_flow" => nothing, "edmfx_horizontal_diffusion" => false, "coupler_diagnostics_reduction" => "average")
 [ Info: Setting up single-process ClimaCoupler run on device: CUDADevice.
 [ Info: Dict{Any, Any}("sleve_eta" => 0.7, "use_coupler_diagnostics" => true, "era5_diurnal_warming" => nothing, "ocean_progress_interval" => "never", "dt" => "30secs", "prognostic_tke" => true, "use_newton_rtol" => false, "era5_ic_full_pressure" => false, "microphysics_model" => "1M", "output_dir_style" => "ActiveLink", "external_forcing" => nothing, "netcdf_output_at_levels" => true, "device" => "auto", "t_end" => "86400secs", "c_amd" => 0.29, "scm_surface_type" => "ocean", "y_elem" => 6, "z_stretch" => true, "dt_subcol" => "Inf", "extra_atmos_diagnostics" => Dict{Any, Any}[], "edmfx_nh_pressure" => true, "nogw_beres_heating_latent" => false, "era5_initial_condition_dir" => nothing, "cloud_liquid_rain_accretion" => "CloudLiquidRainAccretion", "conservation_softfail" => false, "check_steady_state" => false, "restart_cache" => true, "fixed_terminal_velocity_ice" => true, "update_jacobian_every" => "solve", "test_dycore_consistency" => false, "add_isothermal_boundary_layer" => true, "use_itime" => true, "rad" => "allskywithclear", "binary_area_fraction" => true, "seaice_progress_interval" => "never", "cloud_model" => "quadrature", "initial_condition" => "WeatherModel", "krylov_rtol" => 0.1, "eisenstat_walker_forcing_alpha" => 2.0, "dt_cloud_fraction" => "1hours", "surface_setup" => "PrescribedSurface", "cloud_ice_snow_accretion" => "CloudIceSnowAccretion", "update_constrain_state_every" => "step", "jvp_step_adjustment" => 1.0, "microphysics_n_substeps" => 3, "insolation" => "timevarying", "ocean_diagnostic_mode" => "average", "snow_melt" => "SnowMelt", "log_progress" => true, "site_latitude" => 17.0, "h_elem" => 16, "coupler_toml" => ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/toml/amip_progedmf_1m.toml"], "netcdf_interpolation_num_points" => nothing, "coupler_output_dir" => "output", "z_max" => 60000.0, "diagnostics" => Any[], "edmfx_filter" => true, "debug_jacobian" => false, "job_id" => "amip_progedmf_1m_land_he16", "sst_adjustment" => 0.0, "log_to_file" => false, "orographic_gravity_wave" => "raw_topo_online", "dt_rad" => "600secs", "simple_ocean" => false, "edmfx_upwinding" => "first_order", "tracer_upwinding" => "vanleer_limiter", "nh_poly" => 3, "edmfx_sgs_diffusive_flux" => true, "y_max" => 300000.0, "non_orographic_gravity_wave" => true, "chemistry_model" => nothing, "print_config_dict" => true, "save_cache" => true, "microphysics_n_substeps_quadrature" => 2, "topography_damping_factor" => 5.0, "cloud_ice_rain_accretion" => "CloudIceRainAccretion", "config" => "sphere", "hyperdiffusion_prandtl_number" => 0.2, "reproducibility_test" => false, "component_dt_dict" => Dict("dt_atmos" => 30.0, "dt_land" => 30.0, "dt_seaice" => 30.0, "dt_ocean" => 30.0), "cloud_liquid_snow_accretion" => "CloudLiquidSnowAccretion", "check_conservation" => false, "rmse_check" => false, "land_spun_up_ic" => false, "cosp_n_subcolumns" => 100, "vertical_water_borrowing_species" => nothing, "auto_jacobian_padding_bands" => nothing, "sgs_distribution" => "gaussian", "implicit_diffusion" => true, "walltime_dt" => nothing, "z_elem" => 63, "snow_autoconversion" => "NoSupersaturation", "ocean_model" => "prescribed", "use_auto_jacobian" => false, "cosp_overlap" => "maximum_random", "disable_surface_flux_tendency" => false, "cfsite_number" => "site23", "dt_ogw" => "1800secs", "turbconv" => "prognostic_edmfx", "x_elem" => 6, "idealized_clouds" => false, "edmfx_mse_q_tot_upwinding" => "first_order", "land_progress_interval" => "never", "check_nan_every" => 1024, "ice_model" => "prescribed", "use_dynamic_krylov_rtol" => false, "fixed_terminal_velocity_rain" => false, "lai_source" => "modis_monthly", "reproducible_restart" => false, "strict_config" => false, "toml" => ["toml/prognostic_edmfx_1M.toml"], "mesh_warp_type" => "SLEVE", "edmfx_detr_model" => "Generalized", "cloud_ice_formation" => "TemperatureDependentIceNumber", "external_forcing_file" => nothing, "cloud_nn_architecture" => "arch_2layers_8nodes.jld2", "topo_smoothing" => true, "hyperdiff" => "Hyperdiffusion", "output_dir" => nothing, "use_intersection_grid" => true, "debug_tendency_diagnostics" => false, "rain_condensation_evaporation" => "RainEvaporation", "nogw_beres_detailed_diagnostics" => false, "constant_horizontal_diffusion" => false, "apply_sem_quasimonotone_limiter" => false, "bubble" => false, "cloud_ice_melt" => "CloudIceMelt", "ode_algo" => "ARS222", "max_newton_iters_ode" => 1, "start_date" => "20100101", "time_varying_trace_gases" => ["CO2", "O3"], "ocean_diagnostic_interval" => "1days", "use_dense_jacobian" => false, "snow_deposition_sublimation" => "DepositionAndSublimation", "detect_restart_file" => false, "prognostic_surface" => "PrescribedSST", "edmfx_vertical_diffusion" => true, "restart_file" => nothing, "unique_seed" => false, "rayleigh_sponge" => true, "nogw_beres_source" => false, "divergence_damping_factor" => 5.0, "edmfx_entr_model" => "Generalized", "edmfx_tracer_upwinding" => "first_order", "energy_check" => false, "land_model" => "integrated", "use_land_diagnostics" => true, "idealized_h2o" => false, "perturb_initstate" => true, "rain_autoconversion" => "Kessler1M", "edmfx_scale_blending" => "SmoothMinimum", "seaice_diagnostic_mode" => "average", "t_start" => "0secs", "land_fraction_source" => "etopo", "dz_bottom" => 30.0, "walltime_debug" => false, "dt_save_state_to_disk" => "30days", "fixed_terminal_velocity_snow" => true, "restart_t" => nothing, "advection_test" => false, "tq_correlation_model" => "constant", "dt_cpl" => "30secs", "checkpoint_dt" => "366days", "topography" => "Earth", "aerosol_radiation" => true, "reference_job_id" => nothing, "vorticity_hyperdiffusion_coefficient" => 0.1857, "viscous_sponge" => true, "strict_params" => true, "config_file" => "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml", "cloud_liquid_freezing" => "HomogeneousAndHeterogeneous", "ocean_grid" => "one_deg_tripolar", "bucket_initial_condition" => "", "domain_type" => "global", "approximate_linear_solve_iters" => 2, "land_diagnostics_reduction" => "average", "smagorinsky_lilly" => nothing, "rain_snow_accretion" => "RainSnowAccretion", "enable_diagnostics" => true, "tracer_nonnegativity_method" => nothing, "site_longitude" => -149.0, "evolving_ocean" => true, "cloud_liquid_formation" => "CloudLiquidFormation", "prescribe_clouds_in_radiation" => false, "albedo_model" => "CouplerAlbedo", "edmfx_sgs_horizontal_diffusive_flux" => false, "update_cache_every" => "step", "quadrature_order" => 3, "coupler_diagnostics_period" => nothing, "FLOAT_TYPE" => "Float32", "deep_atmosphere" => true, "updraft_number" => 1, "amd_les" => false, "restart_dir" => nothing, "detect_restart_files" => false, "column_latlon" => [0.0, 0.0], "energy_q_tot_upwinding" => "vanleer_limiter", "prescribed_aerosols" => ["CB1", "CB2", "DST01", "DST02", "DST03", "DST04", "DST05", "OC1", "OC2", "SO4", "SSLT01", "SSLT02", "SSLT03", "SSLT04", "SSLT05"], "dt_nogw" => "1800secs", "output_default_diagnostics" => true, "edmfx_sgs_mass_flux" => true, "x_max" => 300000.0, "radiation_reset_rng_seed" => true, "land_diagnostics_period" => "1months", "newton_rtol" => 1.0e-5, "atmos_config_file" => "config/atmos_configs/climaatmos_progedmf_1m.yml", "edmfx_sgsflux_upwinding" => "none", "mode_name" => "amip", "fixed_terminal_velocity_liquid" => true, "use_sgs_quadrature" => true, "bucket_albedo_type" => "map_static", "atmos_progress_interval" => "never", "vert_diff" => nothing, "use_krylov_method" => false, "sleve_s" => 10.0, "implicit_microphysics" => true, "seaice_diagnostic_interval" => "1days", "prescribed_flow" => nothing, "edmfx_horizontal_diffusion" => false, "coupler_diagnostics_reduction" => "average")
-[ Info: Output directories output/amip_progedmf_1m_land_he16/output_0071
+[ Info: Output directories output/amip_progedmf_1m_land_he16/output_0075
 [ Info: Coupler artifacts directory output/amip_progedmf_1m_land_he16/artifacts
 [ Info: Coupler checkpoint directory output/amip_progedmf_1m_land_he16/checkpoints
 [ Info: Random seed set to 1234
@@ -1743,13 +1743,13 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 └               `rain_snow_accretion`::`RainSnowAccretion`
 [ Info: Single-process ClimaAtmos run on CUDADevice
 [ Info: Using ODE config: `ClimaTimeSteppers.ARS222`
-┌ Warning: Removing output/amip_progedmf_1m_land_he16/output_0071/clima_atmos
+┌ Warning: Removing output/amip_progedmf_1m_land_he16/output_0075/clima_atmos
 └ @ ClimaUtilities.OutputPathGenerator ~/.julia/packages/ClimaUtilities/2GLZR/src/OutputPathGenerator.jl:157
 ┌ Info: Calling weather_model_data_path
 └   (start_date = setup.start_date, era5_dir = era5_dir) = (start_date = Dates.DateTime("2010-01-01T00:00:00"), era5_dir = nothing)
 [ Info: Overwriting initial conditions with data from file /net/sampo/data1/ClimaArtifacts/artifacts/wxquest_initial_conditions/era5_init_processed_internal_20100101_0000.nc
 [ Info: Adjusted surface pressure to account for ERA5/model surface-height differences.
-[ Info: Initialized state (97.549 s, 9.41 GiB)
+[ Info: Initialized state (93.925 s, 9.41 GiB)
 ┌ Info: Computing orographic gravity wave drag input at initialization (raw_topo_online)
 └   α_smoothing = 1.0f0
 ┌ Info: Grid-aware OGWD preprocessing
@@ -1763,789 +1763,789 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 [ Info: chi smoothing: length_scale=192086.0, n_cells=nothing
 [ Info: Computing velocity potential (Haversine arc, tiny=1e-12)...
 [ Info: Computing T tensor...
-[ Info: Built cache (570.098 s, 34.3 GiB)
-[ Info: Assembled callbacks (526.539 ms, 32.12 MiB)
+[ Info: Built cache (557.084 s, 34.33 GiB)
+[ Info: Assembled callbacks (472.461 ms, 32.1 MiB)
 ┌ Info: Jacobian algorithm: ManualSparseJacobian(
 │   approximate_solve_iters = 2,
 └ )
 [ Info: Jacobian derivative flags: topography_flag = UseDerivative, diffusion_flag = UseDerivative
-[ Info: Built tendency function (4.648 s, 217.64 MiB)
-[ Info: Initialized integrator (411.14 s, 18.2 GiB)
+[ Info: Built tendency function (4.934 s, 217.66 MiB)
+[ Info: Initialized integrator (432.794 s, 18.2 GiB)
 [ Info: Added 75 default ClimaAtmos diagnostics
 [ Info: Saving accumulated diagnostics to disk with frequency: 1 hour
-[ Info: Set up diagnostics (54.461 s, 1.73 GiB)
+[ Info: Set up diagnostics (55.124 s, 1.73 GiB)
 [ Info: Initialized 75 total diagnostics
 ┌ Info: Simulation info
 │   job_id = "amip_progedmf_1m_land_he16"
-└   output_dir = "output/amip_progedmf_1m_land_he16/output_0071/clima_atmos"
-[ Info: ClimaAtmos: get_simulation (32 min 55.3 s, 106.765 GiB, compile 24 min 37.1 s)
-[ Info: ClimaAtmos: zeroed fluxes and applied DSS to the state (12.66 s, 517.254 MiB, compile 6.22 s)
-[ Info: Initialized atmosphere simulation (33 min 29.4 s, 108.246 GiB, compile 24 min 58.8 s)
-[ Info: Created boundary space and surface fields (9.68 s, 495.772 MiB, compile 6.33 s)
-[ Info: Computed land fraction (20.9 s, 3.250 GiB, compile 7.32 s)
+└   output_dir = "output/amip_progedmf_1m_land_he16/output_0075/clima_atmos"
+[ Info: ClimaAtmos: get_simulation (32 min 50.7 s, 106.790 GiB, compile 24 min 39.0 s)
+[ Info: ClimaAtmos: zeroed fluxes and applied DSS to the state (12.98 s, 517.260 MiB, compile 6.89 s)
+[ Info: Initialized atmosphere simulation (33 min 23.5 s, 108.271 GiB, compile 24 min 59.7 s)
+[ Info: Created boundary space and surface fields (8.97 s, 495.875 MiB, compile 5.95 s)
+[ Info: Computed land fraction (18.73 s, 3.251 GiB, compile 8.3 s)
 [ Info: ClimaCoupler.Interfacer.AMIPMode
-[ Info: ClimaLand: created domain (20.96 s, 1009.289 MiB, compile 9.24 s)
-[ Info: ClimaLand: read MODIS LAI (1.09 s, 68.017 MiB, compile 1.06 s)
-[ Info: ClimaLand: constructed LandModel (1 min 27.5 s, 4.878 GiB, compile 35.76 s)
-[ Info: ClimaLand: set up diagnostics (3 min 17.5 s, 802.915 MiB, compile 3 min 17.4 s)
-[ Info: ClimaLand: initialized LandSimulation (3 min 8.4 s, 4.612 GiB, compile 2 min 24.8 s)
-[ Info: Initialized land simulation (8 min 30.6 s, 12.225 GiB, compile 6 min 39.1 s)
+[ Info: ClimaLand: created domain (21.44 s, 1009.771 MiB, compile 9.86 s)
+[ Info: ClimaLand: read MODIS LAI (1.08 s, 68.021 MiB, compile 1.06 s)
+[ Info: ClimaLand: constructed LandModel (1 min 23.8 s, 4.882 GiB, compile 37.64 s)
+[ Info: ClimaLand: set up diagnostics (3 min 1.8 s, 798.948 MiB, compile 3 min 1.6 s)
+[ Info: ClimaLand: initialized LandSimulation (3 min 0.2 s, 4.612 GiB, compile 2 min 21.5 s)
+[ Info: Initialized land simulation (8 min 3.3 s, 12.226 GiB, compile 6 min 23.0 s)
 ┌ Info: PrescribedOcean: using SST file
 └   sst_data = "/net/sampo/data1/ClimaArtifacts/artifacts/historical_sst_sic/MODEL.SST.HAD187001-198110.OI198111-202206.nc"
-[ Info: Initialized ocean simulation (11.76 s, 313.619 MiB, compile 5.2 s)
+[ Info: Initialized ocean simulation (8.69 s, 313.680 MiB, compile 5.76 s)
 ┌ Info: PrescribedIce: using SIC file
 └   sic_data = "/net/sampo/data1/ClimaArtifacts/artifacts/historical_sst_sic/MODEL.ICE.HAD187001-198110.OI198111-202206.nc"
 ┌ Info: PrescribedIce: ISTL1 not in file, using constant initialization
 └   file = "/net/sampo/data1/ClimaArtifacts/artifacts/historical_sst_sic/MODEL.ICE.HAD187001-198110.OI198111-202206.nc"
-[ Info: Initialized sea ice simulation (18.34 s, 640.780 MiB, compile 10.19 s)
+[ Info: Initialized sea ice simulation (15.27 s, 640.506 MiB, compile 9.45 s)
 [ Info: Component models initialized: (:atmos_sim, :ice_sim, :land_sim, :ocean_sim)
 [ Info: Component model types: ("ClimaAtmosSimulation", "PrescribedIceSimulation", "ClimaLandSimulation", "PrescribedOceanSimulation")
-[ Info: Initialized coupler fields (76.0 ms, 6.045 MiB, compile 74.5 ms)
+[ Info: Initialized coupler fields (79.2 ms, 6.045 MiB, compile 77.6 ms)
 [ Info: Using default coupler diagnostics
-[ Info: Set up coupler diagnostics (10.69 s, 350.266 MiB, compile 5.13 s)
+[ Info: Set up coupler diagnostics (10.7 s, 350.111 MiB, compile 5.78 s)
 ┌ Warning: `update_field!` is not extended for the `liquid_precipitation` field of PrescribedIceSimulation: skipping update.
 └ @ ClimaCoupler.Interfacer ~/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/src/Interfacer.jl:376
-[ Info: Performed initial exchange and flux computation (7 min 53.3 s, 22.046 GiB, compile 3 min 57.0 s)
-[ Info: Memory in use: 12.492 GiB
-[ Info: Set up CoupledSimulation (51 min 38.3 s, 148.063 GiB, compile 36 min 33.9 s)
+[ Info: Performed initial exchange and flux computation (7 min 57.4 s, 22.045 GiB, compile 4 min 10.8 s)
+[ Info: Memory in use: 12.805 GiB
+[ Info: Set up CoupledSimulation (50 min 57.0 s, 148.088 GiB, compile 36 min 31.4 s)
 ┌ Info: Warmup step 1 / 3
-│   wall_ms = 1.20219333e6
-│   gc_ms = 64565.94
-│   gc_pauses = 68
+│   wall_ms = 1.14487572e6
+│   gc_ms = 63847.54
+│   gc_pauses = 67
 │   full_sweeps = 3
-└   alloc_MB = 59880.9
+└   alloc_MB = 59883.3
 ┌ Info: Warmup step 2 / 3
-│   wall_ms = 3653.88
+│   wall_ms = 3424.37
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 45.7
 ┌ Info: Warmup step 3 / 3
-│   wall_ms = 953.18
+│   wall_ms = 971.67
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 13.6
+└   alloc_MB = 13.7
 [ Info: Using external CUDA profiler
 ┌ Info: Step 1 / 120
-│   wall_ms = 964.35
+│   wall_ms = 989.0
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 15.9
 ┌ Info: Step 2 / 120
-│   wall_ms = 964.04
+│   wall_ms = 930.63
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 3 / 120
-│   wall_ms = 855.34
+│   wall_ms = 958.44
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 4 / 120
-│   wall_ms = 1004.27
+│   wall_ms = 935.11
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 5 / 120
-│   wall_ms = 979.14
+│   wall_ms = 932.97
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 6 / 120
-│   wall_ms = 973.89
+│   wall_ms = 931.1
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 7 / 120
-│   wall_ms = 986.88
+│   wall_ms = 940.15
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 8 / 120
-│   wall_ms = 1015.97
+│   wall_ms = 938.69
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 9 / 120
-│   wall_ms = 942.25
+│   wall_ms = 929.28
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 10 / 120
-│   wall_ms = 993.69
+│   wall_ms = 969.55
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 11 / 120
-│   wall_ms = 875.14
+│   wall_ms = 912.93
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 12 / 120
-│   wall_ms = 833.66
+│   wall_ms = 945.97
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 13 / 120
-│   wall_ms = 950.42
+│   wall_ms = 922.38
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 14 / 120
-│   wall_ms = 975.65
+│   wall_ms = 931.88
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 15 / 120
-│   wall_ms = 967.0
-│   gc_ms = 0.0
-│   gc_pauses = 0
+│   wall_ms = 2004.26
+│   gc_ms = 1055.85
+│   gc_pauses = 1
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 16 / 120
-│   wall_ms = 941.26
+│   wall_ms = 874.03
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 17 / 120
-│   wall_ms = 1994.82
+│   wall_ms = 2019.23
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 16.9
 ┌ Info: Step 18 / 120
-│   wall_ms = 886.79
+│   wall_ms = 947.76
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 19 / 120
-│   wall_ms = 955.97
+│   wall_ms = 924.34
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 20 / 120
-│   wall_ms = 965.15
+│   wall_ms = 957.8
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 21 / 120
-│   wall_ms = 998.58
+│   wall_ms = 941.23
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 22 / 120
-│   wall_ms = 958.31
+│   wall_ms = 918.32
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 23 / 120
-│   wall_ms = 893.36
+│   wall_ms = 948.77
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 24 / 120
-│   wall_ms = 959.38
+│   wall_ms = 941.61
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 25 / 120
-│   wall_ms = 842.58
+│   wall_ms = 959.98
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 26 / 120
-│   wall_ms = 943.8
+│   wall_ms = 995.79
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 27 / 120
-│   wall_ms = 992.99
+│   wall_ms = 899.84
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 28 / 120
-│   wall_ms = 1021.15
+│   wall_ms = 910.54
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 29 / 120
-│   wall_ms = 1092.51
+│   wall_ms = 891.95
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 30 / 120
-│   wall_ms = 2086.32
-│   gc_ms = 991.33
-│   gc_pauses = 1
+│   wall_ms = 975.65
+│   gc_ms = 0.0
+│   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 31 / 120
-│   wall_ms = 923.3
+│   wall_ms = 932.39
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 32 / 120
-│   wall_ms = 956.81
+│   wall_ms = 904.24
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 33 / 120
-│   wall_ms = 954.04
+│   wall_ms = 936.37
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 34 / 120
-│   wall_ms = 941.75
+│   wall_ms = 938.76
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 35 / 120
-│   wall_ms = 906.51
+│   wall_ms = 942.87
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 36 / 120
-│   wall_ms = 925.93
+│   wall_ms = 926.55
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 37 / 120
-│   wall_ms = 2032.6
+│   wall_ms = 2005.32
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.9
 ┌ Info: Step 38 / 120
-│   wall_ms = 962.24
+│   wall_ms = 905.57
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 39 / 120
-│   wall_ms = 940.53
+│   wall_ms = 936.9
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 40 / 120
-│   wall_ms = 944.65
+│   wall_ms = 928.86
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 41 / 120
-│   wall_ms = 914.73
+│   wall_ms = 937.92
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 42 / 120
-│   wall_ms = 1004.79
+│   wall_ms = 914.78
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 43 / 120
-│   wall_ms = 948.43
+│   wall_ms = 955.24
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 44 / 120
-│   wall_ms = 971.37
+│   wall_ms = 953.17
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 45 / 120
-│   wall_ms = 964.71
+│   wall_ms = 930.15
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 46 / 120
-│   wall_ms = 952.65
+│   wall_ms = 1004.42
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 47 / 120
-│   wall_ms = 932.29
+│   wall_ms = 935.37
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 48 / 120
-│   wall_ms = 883.47
+│   wall_ms = 920.73
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 49 / 120
-│   wall_ms = 852.05
+│   wall_ms = 937.27
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 50 / 120
-│   wall_ms = 1022.52
+│   wall_ms = 971.12
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 51 / 120
-│   wall_ms = 1076.1
+│   wall_ms = 973.66
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 52 / 120
-│   wall_ms = 993.91
+│   wall_ms = 932.55
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 53 / 120
-│   wall_ms = 977.84
+│   wall_ms = 931.88
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 54 / 120
-│   wall_ms = 1007.46
+│   wall_ms = 914.09
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 55 / 120
-│   wall_ms = 946.05
+│   wall_ms = 922.26
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 56 / 120
-│   wall_ms = 989.43
+│   wall_ms = 888.65
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 57 / 120
-│   wall_ms = 2097.18
+│   wall_ms = 2077.7
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 14.3
 ┌ Info: Step 58 / 120
-│   wall_ms = 928.64
+│   wall_ms = 947.69
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 59 / 120
-│   wall_ms = 947.85
+│   wall_ms = 983.68
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 60 / 120
-│   wall_ms = 906.18
-│   gc_ms = 0.0
-│   gc_pauses = 0
+│   wall_ms = 1596.7
+│   gc_ms = 554.27
+│   gc_pauses = 1
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 61 / 120
-│   wall_ms = 960.64
+│   wall_ms = 906.79
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 62 / 120
-│   wall_ms = 1035.76
+│   wall_ms = 925.95
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 63 / 120
-│   wall_ms = 974.84
+│   wall_ms = 899.43
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 64 / 120
-│   wall_ms = 943.4
+│   wall_ms = 935.77
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 65 / 120
-│   wall_ms = 963.68
+│   wall_ms = 914.12
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 66 / 120
-│   wall_ms = 924.35
+│   wall_ms = 988.12
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 67 / 120
-│   wall_ms = 912.4
+│   wall_ms = 931.43
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 68 / 120
-│   wall_ms = 917.5
+│   wall_ms = 956.97
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 69 / 120
-│   wall_ms = 928.53
+│   wall_ms = 1007.97
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 70 / 120
-│   wall_ms = 946.1
+│   wall_ms = 938.67
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 71 / 120
-│   wall_ms = 925.17
+│   wall_ms = 923.54
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 72 / 120
-│   wall_ms = 891.53
+│   wall_ms = 963.35
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 73 / 120
-│   wall_ms = 973.87
+│   wall_ms = 940.61
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 74 / 120
-│   wall_ms = 934.73
+│   wall_ms = 928.88
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 75 / 120
-│   wall_ms = 1657.68
-│   gc_ms = 540.86
-│   gc_pauses = 1
+│   wall_ms = 945.06
+│   gc_ms = 0.0
+│   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 76 / 120
-│   wall_ms = 925.81
+│   wall_ms = 947.38
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 77 / 120
-│   wall_ms = 2108.2
+│   wall_ms = 2059.5
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.9
 ┌ Info: Step 78 / 120
-│   wall_ms = 931.27
+│   wall_ms = 939.74
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 79 / 120
-│   wall_ms = 900.8
+│   wall_ms = 955.01
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 80 / 120
-│   wall_ms = 954.46
+│   wall_ms = 975.58
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 81 / 120
-│   wall_ms = 941.34
+│   wall_ms = 952.14
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 82 / 120
-│   wall_ms = 947.85
+│   wall_ms = 947.93
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 83 / 120
-│   wall_ms = 1382.76
+│   wall_ms = 916.41
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 84 / 120
-│   wall_ms = 986.03
+│   wall_ms = 934.85
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 85 / 120
-│   wall_ms = 963.42
+│   wall_ms = 990.84
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 86 / 120
-│   wall_ms = 1007.79
+│   wall_ms = 949.45
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 87 / 120
-│   wall_ms = 1029.74
+│   wall_ms = 970.21
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 88 / 120
-│   wall_ms = 1001.92
+│   wall_ms = 960.69
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 89 / 120
-│   wall_ms = 974.76
+│   wall_ms = 890.35
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 90 / 120
-│   wall_ms = 937.54
+│   wall_ms = 920.04
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 91 / 120
-│   wall_ms = 1075.48
+│   wall_ms = 940.01
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 92 / 120
-│   wall_ms = 956.52
+│   wall_ms = 935.72
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 93 / 120
-│   wall_ms = 882.31
+│   wall_ms = 958.1
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 94 / 120
-│   wall_ms = 940.64
+│   wall_ms = 946.97
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 95 / 120
-│   wall_ms = 981.61
+│   wall_ms = 949.41
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 96 / 120
-│   wall_ms = 1058.03
+│   wall_ms = 925.27
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 97 / 120
-│   wall_ms = 2063.2
+│   wall_ms = 2023.91
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.9
 ┌ Info: Step 98 / 120
-│   wall_ms = 979.65
+│   wall_ms = 936.21
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 99 / 120
-│   wall_ms = 958.22
+│   wall_ms = 938.47
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 100 / 120
-│   wall_ms = 958.53
+│   wall_ms = 950.46
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 101 / 120
-│   wall_ms = 993.9
+│   wall_ms = 979.84
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 102 / 120
-│   wall_ms = 949.77
+│   wall_ms = 982.21
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 103 / 120
-│   wall_ms = 960.11
+│   wall_ms = 905.08
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 104 / 120
-│   wall_ms = 979.34
+│   wall_ms = 870.53
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 105 / 120
-│   wall_ms = 1010.38
+│   wall_ms = 985.53
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 106 / 120
-│   wall_ms = 1020.88
-│   gc_ms = 0.0
-│   gc_pauses = 0
+│   wall_ms = 1695.33
+│   gc_ms = 585.23
+│   gc_pauses = 1
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 107 / 120
-│   wall_ms = 981.41
+│   wall_ms = 886.97
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 108 / 120
-│   wall_ms = 1007.74
+│   wall_ms = 908.42
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 109 / 120
-│   wall_ms = 993.27
+│   wall_ms = 941.3
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 110 / 120
-│   wall_ms = 963.19
+│   wall_ms = 947.81
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 111 / 120
-│   wall_ms = 935.58
+│   wall_ms = 948.37
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 112 / 120
-│   wall_ms = 887.43
+│   wall_ms = 902.89
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 113 / 120
-│   wall_ms = 994.71
+│   wall_ms = 951.51
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 114 / 120
-│   wall_ms = 926.05
+│   wall_ms = 926.01
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 115 / 120
-│   wall_ms = 954.7
+│   wall_ms = 925.86
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 116 / 120
-│   wall_ms = 924.93
+│   wall_ms = 949.3
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 117 / 120
-│   wall_ms = 72642.22
-│   gc_ms = 2272.94
-│   gc_pauses = 6
+│   wall_ms = 69187.55
+│   gc_ms = 1880.28
+│   gc_pauses = 5
 │   full_sweeps = 0
-└   alloc_MB = 3137.9
+└   alloc_MB = 3136.8
 ┌ Info: Step 118 / 120
-│   wall_ms = 952.89
+│   wall_ms = 908.81
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 119 / 120
-│   wall_ms = 939.46
+│   wall_ms = 915.55
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
 ┌ Info: Step 120 / 120
-│   wall_ms = 918.48
+│   wall_ms = 920.12
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 13.6
-==PROF== Disconnected from process 2183261
+==PROF== Disconnected from process 4105492
 ==PROF== Report: /home/pbachant/calkit/clima-gpu-profiling/results/ncu/pointwise.ncu-rep
