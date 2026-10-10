@@ -51,9 +51,13 @@ questions:
           90% of kernel time. The concentration figures are what distinguish a
           single bottleneck from a population and are the reason this answer
           does not name one. Radiation is attributed by the `rte_` prefix and
-          claimed before any other pattern; note that the all-sky and clear-sky
-          solves share a kernel shortName and are told apart only by the
-          demangled signature, which is what the `radiation` sub-table does.
+          claimed before any other pattern. The `radiation` sub-table in the
+          same file split that total by whether the solve took a LookUpCld
+          argument, which is how two solves sharing one kernel shortName were
+          told apart; post-fusion one kernel computes both skies, so it now
+          reports every launch as all-sky and zero clear-sky kernels. That is
+          correct and no longer informative -- the split is kept because it is
+          what shows the fused solve replaced the pair rather than one of them.
       - kind: result
         path: results/kernel-shares.json
         values:
@@ -246,11 +250,14 @@ questions:
         explanation: >-
           The pipeline-level number this kernel work has to show up in
           eventually. Kernel times are not SYPD, and this mechanism measured a
-          SYPD null on its own. Not templated into the answer, and must not be:
-          the working tree's value is whatever the mod arm last carried, which
-          since 2026-10-07 is the fold AND the fused radiation together. The
-          fold measured on its own is commit 4a2424b; check that revision's
-          results/summary.json rather than this one for the fold alone.
+          SYPD null on its own. Since the 2026-10-09 re-baseline this IS the
+          fold alone: RRTMGP #631 is upstream in both arms, so the arms differ
+          only by the fold's three source files and nothing else is folded in.
+          It was not so between 2026-10-07 and the re-baseline, when the mod
+          arm carried the fused radiation too and this figure was the pair.
+          Still not templated into the answer, and must not be: rendering reads
+          the working tree, so a future treatment stacked on the mod arm would
+          silently change what this number means again.
   - question: >-
       Does putting the parameters in `Val` make pointwise kernels measurably faster across the board, as CliMA/ClimaCore.jl#2676 asks?
     answer: >-
@@ -258,7 +265,8 @@ questions:
       Four kernels in ClimaAtmos now have it, measured in the model rather than in isolation, and measured across two successive upstream rewrites of those kernels, which is what prices the step itself.
       Two cross one on the current stack: the SGS quadrature {fold_quad_regs_baseline:.0f} -> {fold_quad_regs_mod:.0f} registers, {fold_quad_warps_baseline:.0f} -> {fold_quad_warps_mod:.0f} warps per SM, {fold_quad_change:.1f}% on the kernel; and the cloud-fraction kernel {fold_cf_regs_baseline:.0f} -> {fold_cf_regs_mod:.0f} registers, {fold_cf_warps_baseline:.0f} -> {fold_cf_warps_mod:.0f} warps, {fold_cf_change:.1f}%.
       The other two do not: the updraft path sheds {fold_upd_regs_saved:.0f} registers, {fold_upd_regs_baseline:.0f} -> {fold_upd_regs_mod:.0f}, and still sits at {fold_upd_warps_mod:.0f} warps per SM, one block short of the next step, which it would reach at {fold_upd_next_step:.0f}; the SGS-moments kernel sheds {fold_sgs_regs_saved:.0f}, {fold_sgs_regs_baseline:.0f} -> {fold_sgs_regs_mod:.0f}, and stays at {fold_sgs_warps_mod:.0f} warps, needing {fold_sgs_next_step:.0f}.
-      They took {fold_upd_change:.1f}% and {fold_sgs_change:.1f}% anyway, so a fold that misses a step is not a fold that does nothing -- an earlier answer here said the payoff was all-or-nothing, and this measurement withdraws that.
+      The updraft path took {fold_upd_change:.1f}% anyway, so a fold that misses a step is not a fold that does nothing -- an earlier answer here said the payoff was all-or-nothing, and this measurement withdraws that.
+      The SGS-moments kernel no longer carries that claim: on the re-baselined stack it sheds {fold_sgs_regs_saved:.0f} registers, so its {fold_sgs_change:.1f}% is noise rather than a payoff, and the upstream rewrite that fused it into the cloud-fraction pass has absorbed the fold there entirely.
       What the step is worth can be read off a kernel that switched sides: the updraft path crossed one before and lost it to an added argument, giving back {fold_upd_lost_points:.1f} points of payoff.
       The SGS-moments kernel supplied the other half of that comparison last time, having gained a step and picked up a comparable amount in the opposite direction; the rewrite that fused it into the cloud-fraction pass has since taken that step away again, so the two-sided form of this evidence is withdrawn and only the losing side is live.
       Neither direction is a controlled comparison, because each of those rewrites also altered the kernel bodies.
