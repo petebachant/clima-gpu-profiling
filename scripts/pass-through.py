@@ -19,6 +19,8 @@ EXPERIMENTS = [
     ("exp/2026-09-22-clearsky-bound", "radiation", "the clear-sky solves removed"),
     ("exp/2026-09-23-fused-lw-optics", "radiation", "the longwave solves fused"),
     ("exp/2026-09-24-fused-radiation", "radiation", "both bands fused"),
+    ("exp/2026-10-10-fold-alone", "microphysics",
+     "microphysics parameters folded into the struct type, fold alone"),
 ]
 
 

@@ -97,9 +97,14 @@ questions:
       How much of a GPU kernel-time saving actually reaches SYPD?
     answer: >-
       It depends on where the saving is, and the difference is large enough to change what is worth doing: radiation work converts at {radiation_mean:.0f}% ({radiation_min:.0f}-{radiation_max:.0f}% over {radiation_n} experiments), microphysics work at {microphysics_mean:.0f}% ({microphysics_min:.0f}-{microphysics_max:.0f}% over {microphysics_n}).
-      So the rule of thumb this project carried for months -- about a third of a kernel-time saving shows up end to end -- was measured entirely on microphysics and understates a radiation change by more than a factor of two.
-      Both halves of each ratio are read out of the tag that recorded them: kernel time from the profiled nsys stages, SYPD from the unprofiled AMIP ones, which is the only number that answers "is the model faster".
-      Why radiation converts better is NOT established. Plausible: radiation runs as a few very long kernels with nothing to overlap them against, while the microphysics kernel is one of thousands per step and its saving may be partly absorbed by whatever else is in flight. Treat the ratios as measured, the explanation as a hypothesis.
+      But subsystem is the wrong label for the split, and the parameter fold is what shows it: it is microphysics work that converted at {microphysics_max:.0f}%, inside the radiation range and nowhere near the {microphysics_min:.0f}% the two fusion experiments gave.
+      It is the third microphysics point, and it widened that band from a cluster to a spread, which is the signal that the band was never measuring a subsystem.
+      What it was measuring is kernel shape. The rule of thumb this project carried for months -- about a third of a kernel-time saving shows up end to end -- came from two experiments whose savings were spread over the hundreds of launches per step that the linearization and microphysics-cache paths each make, where whatever else is in flight can absorb them.
+      The fold's saving is not: it is concentrated in one kernel that runs {fold_quad_launches:.0f} times averaging {fold_quad_mean_ms:.0f} ms, a few long dense launches with nothing to overlap against, which is exactly the shape every radiation treatment had.
+      So the earlier hypothesis here -- that radiation converts better because it is a few long kernels rather than one of thousands -- is no longer just plausible; this is a test of it that did not have to come out this way, on a treatment in the subsystem that was supposed to convert badly.
+      Both halves of every ratio are read out of the tag that recorded them: kernel time from the profiled nsys stages, SYPD from the unprofiled AMIP ones, which is the only number that answers "is the model faster".
+      Two cautions. {microphysics_n} and {radiation_n} experiments are not many, and the ratios are quotients of two measured quantities, so the +-2% SYPD noise floor propagates into them -- read them as roughly a third, roughly two thirds, not to the point.
+      And `pass_through_pct` divides the per-step walltime fraction by the kernel-time change, not the SYPD gain by it; the two differ by about three points at these magnitudes, so a figure computed the other way does not belong beside these.
     evidence:
       - kind: result
         path: results/pass-through.json
@@ -119,6 +124,18 @@ questions:
           halves out of the experiment tags with git show rather than from the
           working tree. The microphysics mean is where the "about a third" rule
           came from; radiation converts at roughly twice that.
+      - kind: result
+        path: results/param-fold.json
+        values:
+          fold_quad_launches: kernels.microphysics_quadrature.baseline.launches
+          fold_quad_mean_ms: kernels.microphysics_quadrature.baseline.mean_ms
+        explanation: >-
+          The shape of the kernel the fold saved its time in, which is what the
+          reframing rests on. A few long dense launches behave like radiation;
+          thousands of small ones per step behave like the two fusion
+          experiments. Cited unpinned because it describes the current stack,
+          and the figures are the baseline arm's, i.e. the kernel as the model
+          runs it without the fold.
       - kind: table
         path: experiments.csv
         explanation: >-

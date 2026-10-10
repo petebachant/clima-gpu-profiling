@@ -432,6 +432,39 @@ Both cases arose in this project and resolved oppositely:
 The rule: check whether any tag's pointer lands inside the range before
 rewriting it. If one does, push the history as-is.
 
+## Never force a stage with `calkit run --force`
+
+`calkit run <stage> --force` does not force that stage. It forces the stage and
+everything upstream of it, so a one-second CPU stage re-runs the whole pipeline
+--- on 2026-10-10 `calkit run build-experiment-index --force` submitted
+`baseline-nsys` twice and cost two GPU reservations on a shared machine for a
+stage that reads git tags and writes a CSV.
+
+Force exactly one stage with DVC's own flag instead:
+
+```sh
+calkit dvc repro --single-item --force <stage>
+```
+
+`--single-item` is the part that matters: it runs the stage without its
+dependencies.
+
+The cleanup is worse than the waste, because the cancelled job takes the
+pipeline with it. A GPU stage declares its scheduler log
+(`.calkit/scheduler/logs/<stage>.out`) as an OUTPUT, and DVC deletes a stage's
+outputs before running it, so cancelling mid-run leaves the log rewritten and
+the real artifacts missing. The stage then reads as stale on its own output and
+drags `summarize` and `compare-kernels` with it. To recover: restore the log
+with `git checkout HEAD -- .calkit/scheduler/logs/<stage>.out`, restore
+`dvc.lock` the same way if the forced run updated it, then `calkit dvc checkout`
+to pull the artifacts back out of the cache --- and check nothing is running
+first, because a second `calkit run` will delete them again.
+
+That recovery only worked because the artifacts were still in the DVC cache.
+`calkit dvc gc --workspace` had been run earlier in the same session, before the
+measurement, which is why it was safe; running it after a force-cancel would
+have destroyed a 6-hour measurement.
+
 ## A stage that reports git state must always run
 
 `record-treatment` records submodule SHAs, refs and whether a tree was dirty.

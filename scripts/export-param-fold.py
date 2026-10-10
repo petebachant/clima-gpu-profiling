@@ -118,6 +118,9 @@ def select(db, pattern, rank):
         "launches": launches,
         "total_ms": round(total_ns / 1e6, 3),
         "mean_us": round(total_ns / launches / 1e3, 1),
+        # Same quantity in ms, so prose about a kernel's shape can cite it
+        # without doing arithmetic in the template.
+        "mean_ms": round(total_ns / launches / 1e6, 2),
         "name_covers_variants": len(rows),
     }
 
