@@ -886,6 +886,60 @@ pipeline:
         - path: results/step-breakdown.toml
           storage: git
 
+    step-breakdown-baseline:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # The same measurement on the baseline arm, which the mod arm alone
+      # cannot substitute for. On 2026-10-12 the mod arm showed 300 of 2880
+      # steps carrying 55.4% of the wall clock, and that skew was read as a
+      # property of the model -- but with only one arm measured there is no way
+      # to tell a distribution the model always had from one the treatment
+      # caused. It is also what the conversion gap needs: a 16.9 ms/step device
+      # saving against a 315 ms mean step predicts ~5.4% and steady state
+      # measures 2.86%, and attributing that needs the baseline's own step
+      # distribution rather than an assumption that it matches.
+      #
+      # Deliberately NOT named step-breakdown-mod with the existing stage
+      # renamed to match. Renaming a DVC stage drops its lock entry and re-runs
+      # it, which on a shared machine costs ~40 minutes of GPU to reproduce
+      # numbers that are already committed. The arm each file describes is in
+      # its name and in its deps in dvc.lock.
+      #
+      # Read the two as a pair: they are only a comparison if both came from the
+      # same revision of the stack, so re-run them together (the hazard
+      # kernel-resources.csv hit on 2026-09-03, recorded above).
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=90
+      args:
+        - --project=ClimaCoupler.jl/experiments/AMIP
+        - scripts/measure-step-breakdown.jl
+        - --config_file
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        # One simulated day, matching the mod arm exactly. See that stage for
+        # why the window is a day rather than the 40-step benchmark window.
+        - --steps
+        - '2880'
+        - --t_end
+        - 90000secs
+        - --out
+        - results/step-breakdown-baseline.toml
+      inputs:
+        - scripts/measure-step-breakdown.jl
+        - ClimaCoupler.jl/src
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl/config/atmos_configs/climaatmos_progedmf_1m.yml
+        - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl/ext
+        - ClimaCore.jl/src
+        - ClimaAtmos.jl/src
+      outputs:
+        - path: results/step-breakdown-baseline.toml
+          storage: git
+
     pointwise-registers:
       kind: shell-script
       environment: clima
