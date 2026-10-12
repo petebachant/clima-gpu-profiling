@@ -15,23 +15,38 @@ questions:
   - question: >-
       What is the current bottleneck in the AMIP simulation?
     answer: >-
-      Kernel time, and no longer any single kernel: with host time outside the GPU timeline at {gap_frac_of_wall:.3%} of wall the run is densely GPU-bound, so there is no launch-latency or idle win to be had and the device total is the whole budget.
-      Inside it the cost is concentrated at the top and then spreads fast: {kernels_for_50pct:.0f} of {distinct_kernels:.0f} distinct kernels carry half the device time, but it takes {kernels_for_80pct:.0f} to reach 80% and {kernels_for_90pct:.0f} to reach 90%.
-      Radiation is still the largest named block at {radiation_pct:.1f}% even with the fused all-sky/clear-sky solves now in both arms, followed by the microphysics cache at {microphysics_pct:.1f}%, the implicit solver's MatrixFields kernels at {matrix_pct:.1f}%, spectral-element operators at {spectral_pct:.1f}% and EDMF at {edmf_pct:.1f}%, with {other_pct:.1f}% spread across everything else.
+      Kernel time for the steps that are kernel time -- but the cost is wildly uneven across steps, and an earlier version of this answer overstated how GPU-bound the run is.
+      {expensive_steps:.0f} of {step_count:,.0f} steps exceed 1.25x the median and carry {expensive_wall_frac:.1%} of the wall clock: the median step is {wall_ms_median:.0f} ms against a {wall_ms_mean:.0f} ms mean, with radiation every 20 steps and the hourly diagnostics write accounting for most of the tail. So a saving on a kernel that runs on every step converts to less wall clock than its share of device time suggests.
+      Host time outside the GPU timeline measures {gap_frac_of_wall:.3%} of wall, and that number will not carry the claim it used to: it is a median over steps, and `gpu_span` runs first-to-last GPU activity, so host time sandwiched between two GPU operations falls inside the span rather than into the gap. The heaviest steps here are dominated by first-call compilation and the diagnostics write and still report a gap of zero. The gap is a lower bound on host time that is ~0 by construction, so "densely GPU-bound" is withdrawn rather than restated.
+      Inside the device total the cost is concentrated at the top and then spreads fast: {kernels_for_50pct:.0f} of {distinct_kernels:.0f} distinct kernels carry half the device time, but it takes {kernels_for_80pct:.0f} to reach 80% and {kernels_for_90pct:.0f} to reach 90%.
+      Radiation and the microphysics cache are the same size to within a rounding error, {radiation_pct:.1f}% and {microphysics_pct:.1f}%, even with the fused all-sky/clear-sky solves now in both arms -- there is no single largest named block to attack. Then the implicit solver's MatrixFields kernels at {matrix_pct:.1f}%, spectral-element operators at {spectral_pct:.1f}% and EDMF at {edmf_pct:.1f}%, with {other_pct:.1f}% spread across everything else.
       So the honest answer is that attacking the next 10% now means a population rather than a kernel, and the small-launch band is not where it lives: the {small_launches:,.0f} launches under {small_threshold:.0f}us are {small_pct_of_launches:.0f}% of all launches and only {small_pct_of_time:.1f}% of the time.
       What bounds the population approach is occupancy: of {reg_kernels:.0f} pointwise kernels measured under Nsight Compute, {reg_addressable:.0f} ({reg_addressable_pct:.1f}%) are capped by registers ALONE and below full occupancy, so a register saving could buy them something, while {reg_at_full:.0f} are already at full occupancy and can gain nothing however well their parameters fold.
       The `other` share is a residual and is reported as one; `other_top` in the same file names its largest members, which is how the implicit solver's biggest kernel was found to be misattributed to it.
     evidence:
-      - kind: value
+      - kind: result
         path: results/step-breakdown.toml
-        key: gap_frac_of_wall
-        name: gap_frac_of_wall
+        values:
+          gap_frac_of_wall: gap_frac_of_wall
+          step_count: steps
+          expensive_steps: expensive_steps
+          expensive_wall_frac: expensive_wall_frac
+          wall_ms_median: wall_ms_median
+          wall_ms_mean: wall_ms_mean
         explanation: >-
           Measured WITHOUT a profiler, using CUDA events. nsys cannot answer
           this: its own instrumentation dominates the idle measurement, and it
           reports MORE idle for the faster arm (docs/learnings.md 2b-i, 4f).
-          This is the number that makes the rest of the answer about kernel
-          time rather than about scheduling.
+          Read the step distribution, not the gap. `gap_ms` is wall minus
+          gpu_span, and gpu_span is first-to-last GPU activity, so it is only a
+          LOWER bound on host time -- anything between two GPU operations is
+          inside the span. It is ~0 even on the steps that are almost entirely
+          first-call compilation, so it cannot show the run is GPU-bound.
+          Until 2026-10-12 this stage also silently measured 12 steps rather
+          than the 2880 its args ask for (`--steps` was parsed inside a
+          top-level `let`, so it assigned a local), and 12 consecutive steps
+          never fire radiation, the cloud-fraction update or the diagnostics
+          write -- the cheapest steps in the cycle.
       - kind: result
         path: results/kernel-population.json
         values:
