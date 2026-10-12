@@ -41,13 +41,13 @@ n_steps = 12
 # anything it does not know, and a late deletion is too late.
 let i = findfirst(==("--out"), ARGS)
     if !isnothing(i)
-        out_path = ARGS[i + 1]
+        global out_path = ARGS[i + 1]
         deleteat!(ARGS, i:(i + 1))
     end
 end
 let i = findfirst(==("--steps"), ARGS)
     if !isnothing(i)
-        n_steps = parse(Int, ARGS[i + 1])
+        global n_steps = parse(Int, ARGS[i + 1])
         deleteat!(ARGS, i:(i + 1))
     end
 end

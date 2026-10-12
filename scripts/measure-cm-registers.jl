@@ -31,13 +31,18 @@ const ST = (ρ = FT(0.9), T = FT(275.0), w = FT(1.0), q_tot = FT(8.0e-3),
             q_rai = FT(2.0e-4), q_sno = FT(3.0e-5))
 const DT = FT(30)
 
+# CloudMicrophysics 0.44 wraps each source term in a `Transfer` that carries the
+# donor and receiver species in its type; 0.43 returned the bare rate.
+@inline _rate(x::Real) = x
+@inline _rate(x) = x.S
+
 # One kernel per layer. `always_inline=true` matches how ClimaCore compiles.
 layers = Any[]
 # NOTE: params now arrive as kernel arguments (mp, tps), not const globals.
 push!(layers, ("source terms only", (out, s, mp, tps) -> begin
     r = BMT._microphysics_source_terms(BMT.Microphysics1Moment(), mp, tps,
         s.ρ, s.T, s.w, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno)
-    out[1] = r.S_acnv_lcl_rai; nothing end))
+    out[1] = _rate(r.S_acnv_lcl_rai); nothing end))
 push!(layers, ("+ aggregate (Instantaneous)", (out, s, mp, tps) -> begin
     r = BMT.bulk_microphysics_tendencies(BMT.Instantaneous(), BMT.Microphysics1Moment(),
         mp, tps, s.ρ, s.T, s.w, s.q_tot, s.q_lcl, s.q_icl, s.q_rai, s.q_sno)
