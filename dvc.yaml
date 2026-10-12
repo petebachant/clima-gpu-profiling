@@ -425,6 +425,21 @@ stages:
           persist: true
     desc: Automatically generated from the 'step-breakdown-baseline' stage in
       calkit.yaml. Changes made here will be overwritten.
+  compare-step-breakdowns:
+    cmd: calkit xenv -n py --no-check -- python
+      scripts/compare-step-breakdowns.py
+    deps:
+      - scripts/compare-step-breakdowns.py
+      - results/step-breakdown.toml
+      - results/step-breakdown-baseline.toml
+      - results/param-fold.json
+      - .calkit/env-locks/py
+    outs:
+      - results/step-comparison.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'compare-step-breakdowns' stage in
+      calkit.yaml. Changes made here will be overwritten.
   pointwise-registers:
     cmd: calkit scheduler batch --name pointwise-registers --environment clima
       --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep

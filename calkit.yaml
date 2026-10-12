@@ -16,7 +16,8 @@ questions:
       What is the current bottleneck in the AMIP simulation?
     answer: >-
       Kernel time for the steps that are kernel time -- but the cost is wildly uneven across steps, and an earlier version of this answer overstated how GPU-bound the run is.
-      {expensive_steps:.0f} of {step_count:,.0f} steps exceed 1.25x the median and carry {expensive_wall_frac:.1%} of the wall clock: the median step is {wall_ms_median:.0f} ms against a {wall_ms_mean:.0f} ms mean, with radiation every 20 steps and the hourly diagnostics write accounting for most of the tail. So a saving on a kernel that runs on every step converts to less wall clock than its share of device time suggests.
+      The {diag_steps:.0f} hourly diagnostics writes carry {diag_wall:.1f}% of the wall clock on their own, at {diag_mult:.0f}x an ordinary step each, and the {rad_steps:.0f} radiation steps another {rad_wall:.1f}%, leaving {plain_wall:.1f}% in the {plain_steps:,.0f} ordinary steps -- a {base_median_ms:.0f} ms median step against a {base_mean_ms:.0f} ms mean. So a saving on a kernel that runs on every step acts on about half the wall-clock budget, and the diagnostics write is now the largest single line item in that budget, larger than any named block of device time.
+      Both arms are measured; an earlier version of this answer read the mod arm's own `expensive_wall_frac` as a property of the model, and that field is thresholded against each arm's median, so it moves when the treatment moves the median.
       Host time outside the GPU timeline measures {gap_frac_of_wall:.3%} of wall, and that number will not carry the claim it used to: it is a median over steps, and `gpu_span` runs first-to-last GPU activity, so host time sandwiched between two GPU operations falls inside the span rather than into the gap. The heaviest steps here are dominated by first-call compilation and the diagnostics write and still report a gap of zero. The gap is a lower bound on host time that is ~0 by construction, so "densely GPU-bound" is withdrawn rather than restated.
       Inside the device total the cost is concentrated at the top and then spreads fast: {kernels_for_50pct:.0f} of {distinct_kernels:.0f} distinct kernels carry half the device time, but it takes {kernels_for_80pct:.0f} to reach 80% and {kernels_for_90pct:.0f} to reach 90%.
       Radiation and the microphysics cache are the same size to within a rounding error, {radiation_pct:.1f}% and {microphysics_pct:.1f}%, even with the fused all-sky/clear-sky solves now in both arms -- there is no single largest named block to attack. Then the implicit solver's MatrixFields kernels at {matrix_pct:.1f}%, spectral-element operators at {spectral_pct:.1f}% and EDMF at {edmf_pct:.1f}%, with {other_pct:.1f}% spread across everything else.
@@ -28,11 +29,6 @@ questions:
         path: results/step-breakdown.toml
         values:
           gap_frac_of_wall: gap_frac_of_wall
-          step_count: steps
-          expensive_steps: expensive_steps
-          expensive_wall_frac: expensive_wall_frac
-          wall_ms_median: wall_ms_median
-          wall_ms_mean: wall_ms_mean
         explanation: >-
           Measured WITHOUT a profiler, using CUDA events. nsys cannot answer
           this: its own instrumentation dominates the idle measurement, and it
@@ -47,6 +43,25 @@ questions:
           top-level `let`, so it assigned a local), and 12 consecutive steps
           never fire radiation, the cloud-fraction update or the diagnostics
           write -- the cheapest steps in the cycle.
+      - kind: result
+        path: results/step-comparison.json
+        values:
+          diag_steps: classes.diagnostics.steps
+          diag_wall: classes.diagnostics.pct_of_baseline_wall
+          diag_mult: classes.diagnostics.multiple_of_plain_step
+          rad_steps: classes.radiation.steps
+          rad_wall: classes.radiation.pct_of_baseline_wall
+          plain_steps: classes.plain.steps
+          plain_wall: classes.plain.pct_of_baseline_wall
+          base_median_ms: own_threshold.baseline_median_ms
+          base_mean_ms: baseline_mean_ms
+        explanation: >-
+          The BASELINE arm's step distribution, which is what a bottleneck
+          question needs; the stage above measures the mod arm. Steps are
+          classified by the periodic schedule -- one diagnostics write every
+          120 steps, radiation every 20 -- rather than by a threshold on the
+          median, because a threshold moves with the arm and cannot be read
+          across the two.
       - kind: result
         path: results/kernel-population.json
         values:
@@ -408,6 +423,57 @@ questions:
           saving to appear in its register count, where the broadcast the model
           runs is split into several smaller kernels whose limits differ. Any
           register experiment answers for the body it compiles.
+
+  - question: >-
+      A kernel optimization saves N ms of device time on every step. How much wall clock does it return?
+    answer: >-
+      All of it on an ordinary step, and then two separate effects take most of it back before it reaches the run total -- so the device figure is honest and the reported speedup is still less than half of it.
+      The typical step converts the device saving completely: {typ_saved:.2f} ms measured against the {typ_device:.2f} ms the profiled device time predicts, {conversion:.0f}%, across {plain_steps:,.0f} ordinary steps. Nothing is lost between the kernel and the clock, so "the device saving does not reach wall clock" is the wrong diagnosis.
+      The run reports {saved_pct:.2f}% against the {cf_pct:.2f}% that per-step rate would give over the whole window, and the {shortfall:.2f}-point difference splits cleanly in two.
+      Periodic work is the first half and belongs to the model: ordinary steps are only {plain_wall:.1f}% of the wall clock, so an every-step saving can act on about half the budget however good it is. The {diag_steps:.0f} hourly diagnostics writes take {diag_wall:.1f}% at {diag_mult:.0f}x an ordinary step each, and they absorb almost none of the saving, {diag_saving_pct:.1f}% of it.
+      Compilation is the second half and belongs to this treatment: {pen_steps:.0f} ordinary steps, {pen_pct:.1f}% of them, are SLOWER in the specialized arm, {pen_s:.1f} s in total or {pen_per_step:.2f} ms averaged over every ordinary step. The worst single step costs {pen_worst_ms:,.0f} ms and the last one above 200 ms is step {pen_last:,.0f}, so this is first-call compilation of the specialized methods as code paths are reached, not noise, which would be symmetric and uniform. It is a fixed cost that dilutes a one-day benchmark and amortizes away on a production run.
+      The practical consequence is that a kernel-level result should be converted through the step distribution before it is promised as a speedup, and that more specialization makes the second effect worse while doing nothing about the first.
+      Measure both arms. The one-arm version of this stage reported {mod_frac:.1f}% of wall in the mod arm's expensive steps against {base_frac:.1f}% in the baseline's, which reads as a treatment effect and is not one: the threshold is 1.25x each arm's OWN median, and the fold moved the median from {base_med:.1f} to {mod_med:.1f} ms, so an unchanged distribution crosses a lower bar. Those fields cannot be read across arms; a fixed periodic classification can.
+    evidence:
+      - kind: result
+        path: results/step-comparison.json
+        values:
+          typ_saved: typical_step.saved_median_ms
+          typ_device: typical_step.device_predicted_ms
+          conversion: typical_step.conversion_pct
+          plain_steps: classes.plain.steps
+          plain_wall: classes.plain.pct_of_baseline_wall
+          diag_steps: classes.diagnostics.steps
+          diag_wall: classes.diagnostics.pct_of_baseline_wall
+          diag_mult: classes.diagnostics.multiple_of_plain_step
+          diag_saving_pct: classes.diagnostics.pct_of_saving
+          saved_pct: saved_pct
+          cf_pct: counterfactual.saved_pct
+          shortfall: counterfactual.shortfall_points
+          pen_steps: compile_penalty.steps
+          pen_pct: compile_penalty.pct_of_plain_steps
+          pen_s: compile_penalty.total_s
+          pen_per_step: compile_penalty.ms_per_plain_step
+          pen_worst_ms: compile_penalty.worst_step_ms
+          pen_last: compile_penalty.last_step_over_200ms
+          mod_frac: own_threshold.mod_expensive_wall_frac
+          base_frac: own_threshold.baseline_expensive_wall_frac
+          base_med: own_threshold.baseline_median_ms
+          mod_med: own_threshold.mod_median_ms
+        explanation: >-
+          Paired per-step wall clock from the two unprofiled arms on the same
+          config, so step index i is the same work in both and the difference is
+          a paired one rather than a comparison of aggregates. The typical-step
+          figure is the MEDIAN paired difference, not the mean: the mean is
+          lower by exactly the compilation penalty this answer decomposes, so
+          quoting the mean would hide the effect inside the headline. The device
+          prediction comes from results/param-fold.json, the subtotal over the
+          four folded kernels divided by the profiled window, so the comparison
+          is device saving against wall-clock saving for one treatment.
+          The counterfactual holds every ordinary step at the median rate and
+          takes the periodic steps as measured; it is what this treatment would
+          return without its own compilation, not a claim about any other
+          change.
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod
@@ -938,6 +1004,23 @@ pipeline:
         - ClimaAtmos.jl/src
       outputs:
         - path: results/step-breakdown-baseline.toml
+          storage: git
+
+    compare-step-breakdowns:
+      kind: python-script
+      environment: py
+      script_path: scripts/compare-step-breakdowns.py
+      # Pairs the two arms by step index rather than comparing aggregates. The
+      # `expensive_*` fields the source TOMLs carry are thresholded against each
+      # arm's own median, so they cannot be read across arms; this stage
+      # classifies steps by the periodic schedule instead, which is fixed.
+      inputs:
+        - scripts/compare-step-breakdowns.py
+        - results/step-breakdown.toml
+        - results/step-breakdown-baseline.toml
+        - results/param-fold.json
+      outputs:
+        - path: results/step-comparison.json
           storage: git
 
     pointwise-registers:
