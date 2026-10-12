@@ -30,36 +30,36 @@ Loading climacommon/2025_05_15
 │ In any other case, please file an issue.
 └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
 [ Info: wrote results/val-params-registers.toml
-MP isbits=true (360 B)   TPS isbits=true (104 B)
+MP isbits=true (364 B)   TPS isbits=true (104 B)
 
 === how the parameters arrive ===
-runtime_arguments          regs=219  local=   32 B  warps/SM= 8
+runtime_arguments          regs=211  local=   32 B  warps/SM= 8
 const_globals              regs= 97  local=   32 B  warps/SM=16
 val_type_parameters        regs= 97  local=   32 B  warps/SM=16
 
-Val saves 122 registers against runtime arguments (const globals save 122).
+Val saves 114 registers against runtime arguments (const globals save 114).
 warps/SM: arguments 8 -> Val 16  (gains an occupancy step)
 
 === the quadrature path (9 points), as the model calls it ===
-quad_runtime_arguments     regs=255  local=  856 B  warps/SM= 8
-quad_const_globals         regs=255  local=  840 B  warps/SM= 8
-quad_val_type_parameters   regs=255  local=  840 B  warps/SM= 8
+quad_runtime_arguments     regs=255  local=  824 B  warps/SM= 8
+quad_const_globals         regs=255  local=  800 B  warps/SM= 8
+quad_val_type_parameters   regs=255  local=  800 B  warps/SM= 8
 
 quadrature: Val saves 0 registers (const globals 0); warps/SM 8 -> 8  (no step)
 
 === the same quadrature body, without forced inlining ===
-quad_noinline_arguments    regs=255  local=  928 B  warps/SM= 8
-quad_noinline_val          regs=255  local=  928 B  warps/SM= 8
+quad_noinline_arguments    regs=255  local= 1040 B  warps/SM= 8
+quad_noinline_val          regs=255  local= 1040 B  warps/SM= 8
 
 forced inlining costs 0 registers (255 -> 255); warps/SM 8 -> 8, and 8 folded
 
 === the quadrature path with Val carried INTO the wrapper ===
-quad_val_carried_in        regs=132  local=  160 B  warps/SM=12
+quad_val_carried_in        regs=128  local=  160 B  warps/SM=16
 
-carrying the Val in saves 123 registers (255 -> 132); warps/SM 8 -> 12  (gains a step)
+carrying the Val in saves 127 registers (255 -> 128); warps/SM 8 -> 16  (gains a step)
 
 === where the parameters live, through the real quadrature loop ===
-evaluator_params_as_fields regs=255  local=  936 B  warps/SM= 8
-evaluator_params_in_type   regs= 95  local=   32 B  warps/SM=16
+evaluator_params_as_fields regs=255  local=  896 B  warps/SM= 8
+evaluator_params_in_type   regs=144  local=   80 B  warps/SM=12
 
-moving the parameters out of the evaluator's fields saves 160 registers (255 -> 95); warps/SM 8 -> 16  (gains a step)
+moving the parameters out of the evaluator's fields saves 111 registers (255 -> 144); warps/SM 8 -> 12  (gains a step)

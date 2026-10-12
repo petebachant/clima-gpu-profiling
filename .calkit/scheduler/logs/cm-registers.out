@@ -33,19 +33,19 @@ Loading climacommon/2025_05_15
 
 === registers, params passed as RUNTIME kernel arguments ===
 layer                           regs   local B  warps/SM
-source terms only               56     32       16
+source terms only               54     32       16
 + aggregate (Instantaneous)     64     32       16
-one linearized implicit step    80     32       16
-LinearizedAverage nsub=1        221    32       8
-LinearizedAverage nsub=2        221    32       8
-LinearizedAverage nsub=3        221    32       8
+one linearized implicit step    100    32       16
+LinearizedAverage nsub=1        214    32       8
+LinearizedAverage nsub=2        214    32       8
+LinearizedAverage nsub=3        214    32       8
 
 === can ptxas hit 12 warps/SM without spilling? ===
 compilation                       regs   local B  warps/SM
-unbounded                         255    856      8
-unbounded, always_inline=false    255    960      8
-__launch_bounds__ 12 warps/SM     168    1216     12
+unbounded                         255    824      8
+unbounded, always_inline=false    255    1072     8
+__launch_bounds__ 12 warps/SM     168    1176     12
 
-spill growth asking for 12 warps/SM: 360 bytes  (OVER the 256 B budget -- ptxas is buying occupancy with spill)
+spill growth asking for 12 warps/SM: 352 bytes  (OVER the 256 B budget -- ptxas is buying occupancy with spill)
 
 BISECT DONE
