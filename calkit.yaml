@@ -18,6 +18,8 @@ questions:
       Kernel time for the steps that are kernel time -- but the cost is wildly uneven across steps, and an earlier version of this answer overstated how GPU-bound the run is.
       The {diag_steps:.0f} hourly diagnostics writes carry {diag_wall:.1f}% of the wall clock on their own, at {diag_mult:.0f}x an ordinary step each, and the {rad_steps:.0f} radiation steps another {rad_wall:.1f}%, leaving {plain_wall:.1f}% in the {plain_steps:,.0f} ordinary steps -- a {base_median_ms:.0f} ms median step against a {base_mean_ms:.0f} ms mean. So a saving on a kernel that runs on every step acts on about half the wall-clock budget, and the diagnostics write is now the largest single line item in that budget, larger than any named block of device time.
       Both arms are measured; an earlier version of this answer read the mod arm's own `expensive_wall_frac` as a property of the model, and that field is thresholded against each arm's median, so it moves when the treatment moves the median.
+      That {diag_wall:.1f}% is mostly an accident of the benchmark window rather than a cost the model has to pay. ClimaAtmos picks the default diagnostics cadence from `sim_duration = t_end - dt` and buckets it at `duration >= 86400` for daily averages, so a `t_end` of exactly one day with a 30-second coupled timestep hands it 86370 and falls through to hourly -- 24 write events per simulated day instead of one, each a single `orchestrate_diagnostics` call carrying all 74 variables. A window 30 seconds longer would cross the threshold. So the benchmark understates every optimization measured on it, this one included, and the first thing to fix in the wall-clock budget is a threshold, not a kernel.
+      Diagnostics apart, the periodic structure is the model's and does not go away.
       Host time outside the GPU timeline measures {gap_frac_of_wall:.3%} of wall, and that number will not carry the claim it used to: it is a median over steps, and `gpu_span` runs first-to-last GPU activity, so host time sandwiched between two GPU operations falls inside the span rather than into the gap. The heaviest steps here are dominated by first-call compilation and the diagnostics write and still report a gap of zero. The gap is a lower bound on host time that is ~0 by construction, so "densely GPU-bound" is withdrawn rather than restated.
       Inside the device total the cost is concentrated at the top and then spreads fast: {kernels_for_50pct:.0f} of {distinct_kernels:.0f} distinct kernels carry half the device time, but it takes {kernels_for_80pct:.0f} to reach 80% and {kernels_for_90pct:.0f} to reach 90%.
       Radiation and the microphysics cache are the same size to within a rounding error, {radiation_pct:.1f}% and {microphysics_pct:.1f}%, even with the fused all-sky/clear-sky solves now in both arms -- there is no single largest named block to attack. Then the implicit solver's MatrixFields kernels at {matrix_pct:.1f}%, spectral-element operators at {spectral_pct:.1f}% and EDMF at {edmf_pct:.1f}%, with {other_pct:.1f}% spread across everything else.
@@ -432,6 +434,8 @@ questions:
       The run reports {saved_pct:.2f}% against the {cf_pct:.2f}% that per-step rate would give over the whole window, and the {shortfall:.2f}-point difference splits cleanly in two.
       Periodic work is the first half and belongs to the model: ordinary steps are only {plain_wall:.1f}% of the wall clock, so an every-step saving can act on about half the budget however good it is. The {diag_steps:.0f} hourly diagnostics writes take {diag_wall:.1f}% at {diag_mult:.0f}x an ordinary step each, and they absorb almost none of the saving, {diag_saving_pct:.1f}% of it.
       Compilation is the second half and belongs to this treatment: {pen_steps:.0f} ordinary steps, {pen_pct:.1f}% of them, are SLOWER in the specialized arm, {pen_s:.1f} s in total or {pen_per_step:.2f} ms averaged over every ordinary step. The worst single step costs {pen_worst_ms:,.0f} ms and the last one above 200 ms is step {pen_last:,.0f}, so this is first-call compilation of the specialized methods as code paths are reached, not noise, which would be symmetric and uniform. It is a fixed cost that dilutes a one-day benchmark and amortizes away on a production run.
+      Both effects can be measured away without a longer run, because the compilation stops: the last penalty above 200 ms is step {pen_last:,.0f}, so the final {ss_hours:.0f} simulated hours are already steady state. Over them the fold is worth {ss_pct:.2f}%, and {ss_exdiag_pct:.2f}% with the diagnostics steps excluded, against the {saved_pct:.2f}% the whole window reports. The figure plateaus well before that cutoff -- {sens720:.2f}% from step 720, {sens1440:.2f}% from step 1440, {sens2400:.2f}% from step 2400 -- so it is not an artifact of where the window starts.
+      So the one-day number is the floor, not the estimate. {saved_pct:.2f}% is what a benchmark pays for amortizing a fixed compile cost over a short run and for writing diagnostics 24 times a day; {ss_pct:.2f}% is what the change is worth to a run long enough that neither applies.
       The practical consequence is that a kernel-level result should be converted through the step distribution before it is promised as a speedup, and that more specialization makes the second effect worse while doing nothing about the first.
       Measure both arms. The one-arm version of this stage reported {mod_frac:.1f}% of wall in the mod arm's expensive steps against {base_frac:.1f}% in the baseline's, which reads as a treatment effect and is not one: the threshold is 1.25x each arm's OWN median, and the fold moved the median from {base_med:.1f} to {mod_med:.1f} ms, so an unchanged distribution crosses a lower bar. Those fields cannot be read across arms; a fixed periodic classification can.
     evidence:
@@ -460,6 +464,12 @@ questions:
           base_frac: own_threshold.baseline_expensive_wall_frac
           base_med: own_threshold.baseline_median_ms
           mod_med: own_threshold.mod_median_ms
+          ss_pct: steady_state.saved_pct
+          ss_exdiag_pct: steady_state.saved_pct_ex_diagnostics
+          ss_hours: steady_state.hours
+          sens720: steady_state.sensitivity.from_step_720
+          sens1440: steady_state.sensitivity.from_step_1440
+          sens2400: steady_state.sensitivity.from_step_2400
         explanation: >-
           Paired per-step wall clock from the two unprofiled arms on the same
           config, so step index i is the same work in both and the difference is
@@ -474,6 +484,13 @@ questions:
           takes the periodic steps as measured; it is what this treatment would
           return without its own compilation, not a claim about any other
           change.
+          The steady-state window starts at the first hour boundary at or after
+          the last compilation spike, which is derived from the penalty rather
+          than chosen; `sensitivity` records the saving from five other start
+          points so the choice can be audited. It is a reanalysis of the same
+          one-day pair, not a longer run: it shows the fixed costs amortizing
+          within the window measured, and does not measure a regime where the
+          diagnostics cadence itself changes.
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod

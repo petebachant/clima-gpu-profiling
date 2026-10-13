@@ -64,6 +64,36 @@ def main():
     pen = [(i, mw[i] - bw[i]) for i in plain if mw[i] > bw[i]]
     pen_total = sum(v for _, v in pen)
 
+    # Steady state: the window after the last compilation spike, started on an
+    # hour boundary so it holds whole periodic cycles. The cutoff is derived
+    # from the penalty itself rather than chosen, and `sensitivity` below lets
+    # the choice be audited -- the figure plateaus well before it.
+    last_spike = max((i for i, v in pen if v > 200), default=0)
+    lo = -(-(last_spike + 1) // DIAG_PERIOD) * DIAG_PERIOD
+
+    def saving(idx):
+        sb, sm = sum(bw[i] for i in idx), sum(mw[i] for i in idx)
+        return 100 * (sb - sm) / sb
+
+    ss = range(lo, n)
+    ss_plain = [i for i in ss if i % RAD_PERIOD != RAD_PHASE]
+    steady = {
+        "first_step": lo,
+        "hours": (n - lo) // DIAG_PERIOD,
+        "criterion": (
+            f"first hour boundary at or after the last step whose penalty "
+            f"exceeded 200 ms (step {last_spike})"
+        ),
+        "saved_pct": saving(ss),
+        "saved_pct_ex_diagnostics": saving([i for i in ss if i % DIAG_PERIOD != DIAG_PHASE]),
+        "saved_median_plain_ms": st.median([bw[i] - mw[i] for i in ss_plain]),
+        "residual_penalty_s": sum(mw[i] - bw[i] for i in ss_plain if mw[i] > bw[i]) / 1000,
+        "sensitivity": {
+            f"from_step_{k}": saving(range(k, n))
+            for k in (0, 720, 1440, 1800, 2160, 2400)
+        },
+    }
+
     fold = json.load(open(FOLD))
     # One launch per step in the profiled window, so its launch count is the
     # window length and the device saving converts to a per-step figure.
@@ -100,6 +130,7 @@ def main():
             "worst_step_ms": max(v for _, v in pen),
             "last_step_over_200ms": max((i for i, v in pen if v > 200), default=None),
         },
+        "steady_state": steady,
         "classes": {"diagnostics": cls(diag), "radiation": cls(rad), "plain": cls(plain)},
         # Kept so the answer can show why the source TOMLs' own summary fields
         # must not be read across arms: the threshold moves with the median.
@@ -128,6 +159,10 @@ def main():
     print(f"{n} steps: baseline {tb/1000:.1f}s, mod {tm/1000:.1f}s, saved {saved/1000:.2f}s = {100*saved/tb:.2f}%")
     print(f"typical plain step saves {med_diff:.2f} ms vs {device_per_step:.2f} ms predicted from device time")
     print(f"compile penalty {pen_total/1000:.1f}s on {len(pen)} steps; counterfactual saving {100*cf/tb:.2f}%")
+    print(
+        f"steady state from step {lo} ({steady['hours']} whole hours): "
+        f"{steady['saved_pct']:.2f}%, {steady['saved_pct_ex_diagnostics']:.2f}% excluding diagnostics steps"
+    )
     for k, v in out["classes"].items():
         print(f"  {k:12s} n={v['steps']:5d} {v['pct_of_baseline_wall']:5.1f}% of wall, {v['pct_of_saving']:5.1f}% of saving")
 
