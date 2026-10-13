@@ -950,6 +950,12 @@ pipeline:
         # reach. At ~150 ms/step this is ~7 minutes of stepping.
         - --steps
         - '2880'
+        # `--t_end` is INERT: measure-step-breakdown.jl takes only `config_file`
+        # out of the parsed args and then builds CoupledSimulation(config_file),
+        # so every other coupler override is discarded. The run uses the config's
+        # own t_end of 86400secs, which is what makes this comparable to the AMIP
+        # stages. Left in place deliberately -- removing it changes the stage
+        # command and re-runs ~40 min of GPU to reproduce committed numbers.
         - --t_end
         - 90000secs
         - --out
@@ -1005,6 +1011,12 @@ pipeline:
         # why the window is a day rather than the 40-step benchmark window.
         - --steps
         - '2880'
+        # `--t_end` is INERT: measure-step-breakdown.jl takes only `config_file`
+        # out of the parsed args and then builds CoupledSimulation(config_file),
+        # so every other coupler override is discarded. The run uses the config's
+        # own t_end of 86400secs, which is what makes this comparable to the AMIP
+        # stages. Left in place deliberately -- removing it changes the stage
+        # command and re-runs ~40 min of GPU to reproduce committed numbers.
         - --t_end
         - 90000secs
         - --out
