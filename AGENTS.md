@@ -391,7 +391,10 @@ fatal: Fetched in submodule path 'ClimaCoupler.jl-mod', but it did not contain
        5ed945da... Direct fetching of that commit failed.
 ```
 
-That happened on 2026-09-09 to `ClimaCoupler.jl-mod`. The cause is worth knowing
+That happened on 2026-09-09 to `ClimaCoupler.jl-mod`. The check below
+used to test the exit status, which is always 0, so on 2026-10-14 it passed on an
+unpushed `ClimaAtmos.jl-mod` pointer; count the output lines instead. Non-`-mod`
+arms carry pointers too, so check them all. The cause is worth knowing
 because it is not carelessness about the important repo — it is the opposite. The
 three submodules with *code* changes were pushed; the one with only a *config*
 change was forgotten, and its commits were the ones three experiment tags
@@ -400,9 +403,14 @@ depended on most directly, because the config value **was** the treatment.
 Check before pushing:
 
 ```sh
-for d in *-mod; do
+for d in *-mod *.jl; do
+  [ -d "$d" ] || continue
   ptr=$(git ls-tree HEAD "$d" | awk '{print $3}')
-  git -C "$d" branch -r --contains "$ptr" >/dev/null 2>&1 || echo "$d NOT PUSHED"
+  [ -n "$ptr" ] || continue
+  # Test the OUTPUT, not the exit status: `branch -r --contains` exits 0 and
+  # prints nothing when no remote branch holds the commit.
+  n=$(git -C "$d" branch -r --contains "$ptr" 2>/dev/null | wc -l)
+  [ "$n" -gt 0 ] || echo "$d NOT PUSHED ($ptr)"
 done
 ```
 
