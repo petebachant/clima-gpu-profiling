@@ -942,22 +942,9 @@ pipeline:
         - scripts/measure-step-breakdown.jl
         - --config_file
         - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        # 2880 steps = one simulated day. The 40-step benchmark window fires
-        # radiation (20 steps) but NEVER fires either gravity-wave scheme (60),
-        # the cloud-fraction update (120), or the hourly diagnostics write (120).
-        # One day covers all of those many times over, and the daily ocean and
-        # sea-ice diagnostics once. Only the monthly and 30-day work stays out of
-        # reach. At ~150 ms/step this is ~7 minutes of stepping.
+        # The benchmark's whole run: 2880 steps = 4 simulated days at dt = 120 s.
         - --steps
         - '2880'
-        # `--t_end` is INERT: measure-step-breakdown.jl takes only `config_file`
-        # out of the parsed args and then builds CoupledSimulation(config_file),
-        # so every other coupler override is discarded. The run uses the config's
-        # own t_end of 86400secs, which is what makes this comparable to the AMIP
-        # stages. Left in place deliberately -- removing it changes the stage
-        # command and re-runs ~40 min of GPU to reproduce committed numbers.
-        - --t_end
-        - 90000secs
         - --out
         - results/step-breakdown.toml
       inputs:
@@ -1007,18 +994,9 @@ pipeline:
         - scripts/measure-step-breakdown.jl
         - --config_file
         - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
-        # One simulated day, matching the mod arm exactly. See that stage for
-        # why the window is a day rather than the 40-step benchmark window.
+        # Matches the mod arm exactly.
         - --steps
         - '2880'
-        # `--t_end` is INERT: measure-step-breakdown.jl takes only `config_file`
-        # out of the parsed args and then builds CoupledSimulation(config_file),
-        # so every other coupler override is discarded. The run uses the config's
-        # own t_end of 86400secs, which is what makes this comparable to the AMIP
-        # stages. Left in place deliberately -- removing it changes the stage
-        # command and re-runs ~40 min of GPU to reproduce committed numbers.
-        - --t_end
-        - 90000secs
         - --out
         - results/step-breakdown-baseline.toml
       inputs:
