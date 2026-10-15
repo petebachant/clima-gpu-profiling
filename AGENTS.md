@@ -298,18 +298,39 @@ been used throughout, and five artifacts were sitting only in the local cache.
 
 ## The benchmark window, and why `--config_file` overrides are forbidden
 
-`t_end` is **86400secs** (one simulated day, 2880 coupler steps at dt = 30 s) and
-`scripts/run.jl` profiles **120 steps**. Both numbers are deliberate:
+`t_end` is **345600secs** (four simulated days, 2880 coupler steps at
+dt = 120 s) and `scripts/run.jl` profiles **120 steps**. Both numbers are
+deliberate:
 
-  * 120 steps = one simulated hour = LCM(20 radiation, 60 gravity wave, 120
-    cloud fraction, 120 diagnostics). A window of exactly the LCM is
-    **phase-independent**: every periodic process fires its exact long-run share
-    wherever the window starts, so profiles need no offsetting and no
-    reweighting.
-  * The previous 1200secs / 40-step window was shorter than the 60-step
+  * The window mirrors `config/nightly_configs/amip_coarse_progedmf_1m_land.yml`,
+    which is the configuration whose speed anyone cares about. It did not always:
+    one simulated day at dt = 30 s put `sim_duration` one timestep below
+    ClimaAtmos's `duration >= 86400` bucket, so the default diagnostics came out
+    hourly instead of daily -- 24 write events a day rather than one, taking
+    32.1% of the wall clock and leaving ordinary steps 51.9%. An every-step
+    saving measured there reports a fraction of itself, silently. Fixed in
+    CliMA/ClimaAtmos.jl#4900; the window no longer depends on the threshold
+    either way.
+  * 120 profiled steps = four simulated hours, a whole number of radiation
+    (30-step), cloud-fraction (30-step) and gravity-wave (15-step) cycles, so
+    each fires its exact long-run share wherever the window starts and the
+    profile needs no offsetting or reweighting.
+  * It is **not** a whole number of diagnostics cycles: the daily write is 720
+    steps and the extra monthly-average block samples every 180. So the nsys
+    profile contains no write event and reports the sampling as ordinary
+    every-step work. Diagnostics cost is measured by differencing a
+    diagnostics-off run instead -- the `amip-nodiag` and `diagnostics-cost`
+    stages, which is also why the latter cannot derive the two halves of the
+    cost from one measurement.
+  * The 1200secs / 40-step window that preceded both was shorter than the
     gravity-wave period, so neither scheme ever fired. It was also about half
     first-call compilation: 0.2767 s per coupling step reported against 0.146 s
     measured in steady state with CUDA events.
+
+The stale periods above outlived the config change by weeks, in this file, in
+`scripts/run.jl` and in two `calkit.yaml` explanations. `run.jl` is an input to
+both nsys stages, so correcting its comment costs ~2 GPU-hours of re-profiling
+and is worth bundling with a pass that re-runs them for a real reason.
 
 Both arms' benchmark configs are edited **in the submodules** and must stay
 byte-identical to each other. That is a deliberate deviation from "identical to

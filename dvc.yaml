@@ -149,7 +149,6 @@ stages:
       - .calkit/scheduler/logs/baseline-ncu.out:
           cache: false
           persist: true
-    frozen: true
     desc: Automatically generated from the 'baseline-ncu' stage in calkit.yaml.
       Changes made here will be overwritten.
   mod-ncu:
@@ -191,7 +190,6 @@ stages:
       - .calkit/scheduler/logs/mod-ncu.out:
           cache: false
           persist: true
-    frozen: true
     desc: Automatically generated from the 'mod-ncu' stage in calkit.yaml.
       Changes made here will be overwritten.
   amip-baseline:
@@ -272,6 +270,54 @@ stages:
           persist: true
     desc: Automatically generated from the 'amip-mod' stage in calkit.yaml.
       Changes made here will be overwritten.
+  amip-nodiag:
+    cmd: calkit scheduler batch --name amip-nodiag --environment clima --dep
+      RRTMGP.jl/src --dep RRTMGP.jl/ext --dep
+      ClimaCoupler.jl/experiments/AMIP/run_simulation.jl --dep
+      ClimaCoupler.jl/src --dep
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl/config/atmos_configs/climaatmos_progedmf_1m.yml
+      --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl/experiments/AMIP/code_loading.jl --dep ClimaCore.jl/ext
+      --dep ClimaCore.jl/src --dep ClimaCore.jl/lib --dep ClimaAtmos.jl/src
+      --dep ClimaAtmos.jl/toml --dep .calkit/env-locks/clima --
+      scripts/run-amip-nodiag.sh
+    deps:
+      - scripts/run-amip-nodiag.sh
+      - RRTMGP.jl/src
+      - RRTMGP.jl/ext
+      - ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
+      - ClimaCoupler.jl/src
+      - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl/config/atmos_configs/climaatmos_progedmf_1m.yml
+      - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
+      - ClimaCore.jl/ext
+      - ClimaCore.jl/src
+      - ClimaCore.jl/lib
+      - ClimaAtmos.jl/src
+      - ClimaAtmos.jl/toml
+      - .calkit/env-locks/clima
+    outs:
+      - .calkit/scheduler/logs/amip-nodiag.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'amip-nodiag' stage in calkit.yaml.
+      Changes made here will be overwritten.
+  diagnostics-cost:
+    cmd: calkit xenv -n py --no-check -- python scripts/diagnostics-cost.py
+    deps:
+      - scripts/diagnostics-cost.py
+      - results/step-comparison.json
+      - .calkit/env-locks/py
+      - .calkit/scheduler/logs/amip-baseline.out
+      - .calkit/scheduler/logs/amip-nodiag.out
+    outs:
+      - results/diagnostics-cost.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'diagnostics-cost' stage in
+      calkit.yaml. Changes made here will be overwritten.
   summarize:
     cmd: calkit xenv -n py --no-check -- python scripts/summarize.py
     deps:

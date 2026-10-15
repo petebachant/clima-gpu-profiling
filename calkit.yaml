@@ -63,9 +63,12 @@ questions:
           The BASELINE arm's step distribution, which is what a bottleneck
           question needs; the stage above measures the mod arm. Steps are
           classified by the periodic schedule -- one diagnostics write every
-          120 steps, radiation every 20 -- rather than by a threshold on the
-          median, because a threshold moves with the arm and cannot be read
-          across the two.
+          720 steps, radiation every 30 at this configuration's dt of 120secs --
+          rather than by a threshold on the median, because a threshold moves
+          with the arm and cannot be read across the two. The script asserts
+          that the steps it classified as writes really are the most expensive
+          ones, so a config change that moves a period fails the stage rather
+          than quietly mislabeling it.
       - kind: result
         path: results/kernel-population.json
         values:
@@ -122,11 +125,16 @@ questions:
       - kind: table
         path: results/top-kernels.csv
         explanation: >-
-          The per-kernel breakdown on the 120-step phase-independent window,
-          which is LCM(20, 60, 120) of the periodic processes and so fires every
-          scheme at its exact long-run share. The earlier 40-step window was
-          shorter than the gravity-wave period and made microphysics look
-          dominant.
+          The per-kernel breakdown on the 120-step window, which at this
+          configuration's dt of 120secs is four simulated hours and a whole
+          number of radiation (30-step), cloud-fraction (30-step) and
+          gravity-wave (15-step) cycles, so each of those fires its exact
+          long-run share and the profile needs no reweighting. The earlier
+          40-step window was shorter than the gravity-wave period and made
+          microphysics look dominant. It is NOT a whole number of diagnostics
+          cycles -- the daily write is 720 steps and the extra monthly-average
+          block samples every 180 -- so diagnostics cost cannot be read off this
+          table; results/diagnostics-cost.json measures it instead.
   - question: >-
       How much of a GPU kernel-time saving actually reaches SYPD?
     answer: >-
@@ -493,6 +501,47 @@ questions:
           one-day pair, not a longer run: it shows the fixed costs amortizing
           within the window measured, and does not measure a regime where the
           diagnostics cadence itself changes.
+  - question: >-
+      How much of the wall clock do diagnostics cost, and is it worth optimizing them?
+    answer: >-
+      Diagnostics cost {total_pct:.1f}% of the wall clock on the benchmark window, so the whole of them is worth {sypd_headroom:.1f}% in SYPD -- that is the ceiling on any work to speed them up, and it is the number to compare an optimization's cost against before starting.
+      The split matters more than the total, because the two halves need different work. The {diag_steps:.0f} daily write events carry {write_pct:.1f}% of wall on their own, at {diag_mult:.0f}x an ordinary step each, which is I/O and reduction flushing concentrated in a handful of steps. The remaining ~{sampling_pct:.1f}% is the sampling that feeds them, spread thinly across every ordinary step, where it is invisible in the median and cannot be found by looking for expensive steps.
+      Nothing else in this pipeline can answer the question, which is why the measurement is a whole extra run. The 120-step nsys window is shorter than the 720-step daily write period, so it contains no write at all and its kernel table reports the sampling as ordinary every-step work. The step breakdown finds the writes precisely, because they are the most expensive steps in the window, and by construction cannot find the sampling for the same reason.
+      Read the total as an upper bound. It differences two whole runs, {wall_on:.0f} s against {wall_off:.0f} s over {n_steps:,.0f} steps, so it also contains the compilation the diagnostics-off run does not pay. The direction of that bias is known and its size is not, which is the honest limit of a difference-of-runs design and the reason the write-step share is cited from a separate measurement rather than derived from this one.
+    evidence:
+      - kind: result
+        path: results/diagnostics-cost.json
+        values:
+          total_pct: total_pct_of_wall
+          sypd_headroom: sypd_headroom_pct
+          write_pct: write_steps_pct_of_wall
+          sampling_pct: sampling_pct_of_wall
+          wall_on: with_diagnostics.wall_time_total_s
+          wall_off: without_diagnostics.wall_time_total_s
+          n_steps: n_steps_timed
+        explanation: >-
+          The baseline arm run twice on the same config, differing only in
+          whether diagnostics are enabled, so the wall-clock difference is what
+          they cost in total -- computation and writing together. The stage
+          asserts that both runs stepped the same window, because a config that
+          failed to apply would otherwise show up as a diagnostics saving. The
+          generated diagnostics-off config is deleted when the job exits rather
+          than committed, so the submodule stays clean and `record-treatment`
+          does not report a dirty tree. Cited unpinned because it describes the
+          current benchmark; both halves are regenerated together by the same
+          pass, so the ratio cannot mix two configurations.
+      - kind: result
+        path: results/step-comparison.json
+        values:
+          diag_steps: classes.diagnostics.steps
+          diag_mult: classes.diagnostics.multiple_of_plain_step
+        explanation: >-
+          How many write events the window holds and how expensive each is
+          relative to an ordinary step, measured independently of the run above
+          by classifying steps on the periodic schedule. This is the half of the
+          cost that a step breakdown CAN see; it is cited here to make clear that
+          the other half is not a residual anyone forgot to measure but one this
+          method cannot reach.
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod
@@ -664,7 +713,7 @@ pipeline:
       # clear-air early-out), so results/kernel-resources.csv presented two
       # unrelated runs as one comparison. See "Freeze and unfreeze the two ncu
       # stages together" in AGENTS.md.
-      frozen: true    # refreshed 2026-09-05 against the 128-register kernel; both re-frozen together
+      frozen: false   # unfrozen 2026-10-15 to re-measure the fold post-merge; re-freeze BOTH after
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
@@ -726,7 +775,7 @@ pipeline:
       # clear-air early-out), so results/kernel-resources.csv presented two
       # unrelated runs as one comparison. See "Freeze and unfreeze the two ncu
       # stages together" in AGENTS.md.
-      frozen: true    # refreshed 2026-09-05 against the 128-register kernel; both re-frozen together
+      frozen: false   # unfrozen 2026-10-15 to re-measure the fold post-merge; re-freeze BOTH after
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
@@ -838,6 +887,38 @@ pipeline:
         - CloudMicrophysics.jl-mod/src
         - ClimaAtmos.jl-mod/toml
         - ClimaAtmos.jl-mod/config
+    amip-nodiag:
+      # The baseline arm with diagnostics disabled, for differencing against
+      # amip-baseline. The config is generated by the script and deleted on exit
+      # rather than committed, so the submodule never goes dirty mid-pipeline.
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-amip-nodiag.sh
+      inputs:
+        - RRTMGP.jl/src
+        - RRTMGP.jl/ext
+        - ClimaCoupler.jl/experiments/AMIP/run_simulation.jl
+        - ClimaCoupler.jl/src
+        - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl/config/atmos_configs/climaatmos_progedmf_1m.yml
+        - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl/experiments/AMIP/code_loading.jl
+        - ClimaCore.jl/ext
+        - ClimaCore.jl/src
+        - ClimaCore.jl/lib
+        - ClimaAtmos.jl/src
+        - ClimaAtmos.jl/toml
+    diagnostics-cost:
+      kind: python-script
+      environment: py
+      script_path: scripts/diagnostics-cost.py
+      inputs:
+        - results/step-comparison.json
+        - from_stage_outputs: amip-baseline
+        - from_stage_outputs: amip-nodiag
+      outputs:
+        - path: results/diagnostics-cost.json
+          storage: git
     summarize:
       kind: python-script
       environment: py
