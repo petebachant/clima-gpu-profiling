@@ -14,10 +14,10 @@ MOD = "results/step-breakdown.toml"
 FOLD = "results/param-fold.json"
 OUT = "results/step-comparison.json"
 
-# Periodic work, by step index. Radiation is dt_rad=600secs at dt=30secs, and
-# the diagnostics write lands on one step in every 120.
-RAD_PERIOD, RAD_PHASE = 20, 16
-DIAG_PERIOD, DIAG_PHASE = 120, 116
+# Periodic work, by step index: dt_rad=1hours and the daily diagnostics write, at
+# dt=120secs.
+RAD_PERIOD, RAD_PHASE = 30, 26
+DIAG_PERIOD, DIAG_PHASE = 720, 716
 
 
 def load(path):
@@ -35,6 +35,15 @@ def main():
     diag = [i for i in range(n) if i % DIAG_PERIOD == DIAG_PHASE]
     rad = [i for i in range(n) if i % RAD_PERIOD == RAD_PHASE and i not in set(diag)]
     plain = [i for i in range(n) if i % RAD_PERIOD != RAD_PHASE]
+
+    # A config change moves these periods, and misclassifying is silent, so check
+    # the writes really are the most expensive steps we think they are.
+    biggest = set(sorted(range(n), key=lambda i: -bw[i])[: len(diag)])
+    if biggest != set(diag):
+        sys.exit(
+            f"schedule mismatch: classified diagnostics steps {sorted(diag)} but the "
+            f"{len(diag)} most expensive baseline steps are {sorted(biggest)}"
+        )
 
     tb, tm = sum(bw), sum(mw)
     saved = tb - tm
@@ -64,8 +73,8 @@ def main():
     pen = [(i, mw[i] - bw[i]) for i in plain if mw[i] > bw[i]]
     pen_total = sum(v for _, v in pen)
 
-    # Steady state: the window after the last compilation spike, started on an
-    # hour boundary so it holds whole periodic cycles. The cutoff is derived
+    # Steady state: the window after the last compilation spike, started on a
+    # diagnostics-cycle boundary so it holds whole periodic cycles. The cutoff is derived
     # from the penalty itself rather than chosen, and `sensitivity` below lets
     # the choice be audited -- the figure plateaus well before it.
     last_spike = max((i for i, v in pen if v > 200), default=0)
@@ -79,9 +88,9 @@ def main():
     ss_plain = [i for i in ss if i % RAD_PERIOD != RAD_PHASE]
     steady = {
         "first_step": lo,
-        "hours": (n - lo) // DIAG_PERIOD,
+        "cycles": (n - lo) // DIAG_PERIOD,
         "criterion": (
-            f"first hour boundary at or after the last step whose penalty "
+            f"first diagnostics-cycle boundary at or after the last step whose penalty "
             f"exceeded 200 ms (step {last_spike})"
         ),
         "saved_pct": saving(ss),
@@ -160,7 +169,7 @@ def main():
     print(f"typical plain step saves {med_diff:.2f} ms vs {device_per_step:.2f} ms predicted from device time")
     print(f"compile penalty {pen_total/1000:.1f}s on {len(pen)} steps; counterfactual saving {100*cf/tb:.2f}%")
     print(
-        f"steady state from step {lo} ({steady['hours']} whole hours): "
+        f"steady state from step {lo} ({steady['cycles']} whole diagnostics cycles): "
         f"{steady['saved_pct']:.2f}%, {steady['saved_pct_ex_diagnostics']:.2f}% excluding diagnostics steps"
     )
     for k, v in out["classes"].items():
