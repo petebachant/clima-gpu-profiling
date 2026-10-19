@@ -49,12 +49,17 @@ end
 
 # Now profile a window large enough that one-shot per-step variation
 # averages out and steady-state kernel times dominate.
-# 120 steps = one simulated hour = LCM(20, 60, 120) of this configuration's
-# periodic processes: radiation every 20 steps, both gravity-wave schemes every
-# 60, cloud fraction and the diagnostics write every 120. A window of exactly the
-# LCM is PHASE-INDEPENDENT -- each process fires its exact long-run share
-# wherever the window starts -- so the profile needs no offsetting and no
-# reweighting: a kernel appearing in 2 of 120 steps really is 2/120 of the work.
+# 120 steps = four simulated hours at this configuration's dt of 120secs, and a
+# whole number of radiation (30-step), cloud-fraction (30-step) and gravity-wave
+# (15-step) cycles. A window that is a multiple of every period is
+# PHASE-INDEPENDENT -- each process fires its exact long-run share wherever the
+# window starts -- so the profile needs no offsetting and no reweighting: a
+# kernel appearing in 2 of 120 steps really is 2/120 of the work.
+#
+# It is NOT a multiple of the diagnostics periods: the daily write is 720 steps
+# and the extra monthly-average block samples every 180. So this window contains
+# no write event and reports the sampling as ordinary every-step work --
+# diagnostics cost is measured by the amip-nodiag/diagnostics-cost stages.
 #
 # 10 was shorter than the gravity-wave period, so both schemes fired 0 or 1 times
 # depending on phase: a coin flip that lands differently between runs and reads

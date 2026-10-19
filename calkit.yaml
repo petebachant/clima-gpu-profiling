@@ -13,129 +13,6 @@ questions:
   # results/summary.json must therefore NOT be templated: it would render
   # whichever run wrote that file last. Those figures stay typed and pinned.
   - question: >-
-      What is the current bottleneck in the AMIP simulation?
-    answer: >-
-      Kernel time for the steps that are kernel time -- but the cost is unevenly spread across steps, and earlier versions of this answer got that shape wrong twice.
-      The {diag_steps:.0f} daily diagnostics writes carry {diag_wall:.1f}% of the wall clock on their own, at {diag_mult:.0f}x an ordinary step each, and the {rad_steps:.0f} radiation steps another {rad_wall:.1f}%, leaving {plain_wall:.1f}% in the {plain_steps:,.0f} ordinary steps -- a {base_median_ms:.0f} ms median step against a {base_mean_ms:.0f} ms mean. A saving on a kernel that runs on every step therefore acts on about seven tenths of the budget.
-      That is the benchmark mirroring `config/nightly_configs/amip_coarse_progedmf_1m_land.yml`, which is what it is for. It did not always: on a one-day window with a 30-second coupled timestep the writes took 32.1% and the ordinary steps only 51.9%, because ClimaAtmos picks the default diagnostics cadence from `sim_duration = t_end - dt` and buckets it at `duration >= 86400`, so a `t_end` of exactly one simulated day handed it 86370 and fell through to hourly -- 24 write events per day instead of one, each a single `orchestrate_diagnostics` call carrying all 74 variables. A window 30 seconds longer would have crossed the threshold. Reported as CliMA/ClimaAtmos.jl#4891 with a fix proposed in #4900; the benchmark now takes `dt` 120secs and four simulated days, so the cadence is daily either way and the measurement no longer depends on that threshold.
-      The lesson outlasts the bug: a benchmark whose periodic work dominates its wall clock reports a fraction of any every-step saving, and reports it silently. The same fold measured 1.90% in SYPD on the old window and {q5_saved_pct:.2f}% over this one.
-      Both arms are measured; an earlier version of this answer read the mod arm's own `expensive_wall_frac` as a property of the model, and that field is thresholded against each arm's median, so it moves when the treatment moves the median.
-      The periodic structure that remains is the model's and does not go away.
-      Host time outside the GPU timeline measures {gap_frac_of_wall:.3%} of wall, and that number will not carry the claim it used to: it is a median over steps, and `gpu_span` runs first-to-last GPU activity, so host time sandwiched between two GPU operations falls inside the span rather than into the gap. The heaviest steps here are dominated by first-call compilation and the diagnostics write and still report a gap of zero. The gap is a lower bound on host time that is ~0 by construction, so "densely GPU-bound" is withdrawn rather than restated.
-      Inside the device total the cost is concentrated at the top and then spreads fast: {kernels_for_50pct:.0f} of {distinct_kernels:.0f} distinct kernels carry half the device time, but it takes {kernels_for_80pct:.0f} to reach 80% and {kernels_for_90pct:.0f} to reach 90%.
-      Radiation and the microphysics cache are the same size to within a rounding error, {radiation_pct:.1f}% and {microphysics_pct:.1f}%, even with the fused all-sky/clear-sky solves now in both arms -- there is no single largest named block to attack. Then the implicit solver's MatrixFields kernels at {matrix_pct:.1f}%, spectral-element operators at {spectral_pct:.1f}% and EDMF at {edmf_pct:.1f}%, with {other_pct:.1f}% spread across everything else.
-      So the honest answer is that attacking the next 10% now means a population rather than a kernel, and the small-launch band is not where it lives: the {small_launches:,.0f} launches under {small_threshold:.0f}us are {small_pct_of_launches:.0f}% of all launches and only {small_pct_of_time:.1f}% of the time.
-      What bounds the population approach is occupancy: of {reg_kernels:.0f} pointwise kernels measured under Nsight Compute, {reg_addressable:.0f} ({reg_addressable_pct:.1f}%) are capped by registers ALONE and below full occupancy, so a register saving could buy them something, while {reg_at_full:.0f} are already at full occupancy and can gain nothing however well their parameters fold.
-      The `other` share is a residual and is reported as one; `other_top` in the same file names its largest members, which is how the implicit solver's biggest kernel was found to be misattributed to it.
-    evidence:
-      - kind: result
-        path: results/step-breakdown.toml
-        values:
-          gap_frac_of_wall: gap_frac_of_wall
-        explanation: >-
-          Measured WITHOUT a profiler, using CUDA events. nsys cannot answer
-          this: its own instrumentation dominates the idle measurement, and it
-          reports MORE idle for the faster arm (docs/learnings.md 2b-i, 4f).
-          Read the step distribution, not the gap. `gap_ms` is wall minus
-          gpu_span, and gpu_span is first-to-last GPU activity, so it is only a
-          LOWER bound on host time -- anything between two GPU operations is
-          inside the span. It is ~0 even on the steps that are almost entirely
-          first-call compilation, so it cannot show the run is GPU-bound.
-          Until 2026-10-12 this stage also silently measured 12 steps rather
-          than the 2880 its args ask for (`--steps` was parsed inside a
-          top-level `let`, so it assigned a local), and 12 consecutive steps
-          never fire radiation, the cloud-fraction update or the diagnostics
-          write -- the cheapest steps in the cycle.
-      - kind: result
-        path: results/step-comparison.json
-        values:
-          diag_steps: classes.diagnostics.steps
-          diag_wall: classes.diagnostics.pct_of_baseline_wall
-          diag_mult: classes.diagnostics.multiple_of_plain_step
-          q5_saved_pct: saved_pct
-          rad_steps: classes.radiation.steps
-          rad_wall: classes.radiation.pct_of_baseline_wall
-          plain_steps: classes.plain.steps
-          plain_wall: classes.plain.pct_of_baseline_wall
-          base_median_ms: own_threshold.baseline_median_ms
-          base_mean_ms: baseline_mean_ms
-        explanation: >-
-          The BASELINE arm's step distribution, which is what a bottleneck
-          question needs; the stage above measures the mod arm. Steps are
-          classified by the periodic schedule -- one diagnostics write every
-          720 steps, radiation every 30 at this configuration's dt of 120secs --
-          rather than by a threshold on the median, because a threshold moves
-          with the arm and cannot be read across the two. The script asserts
-          that the steps it classified as writes really are the most expensive
-          ones, so a config change that moves a period fails the stage rather
-          than quietly mislabeling it.
-      - kind: result
-        path: results/kernel-population.json
-        values:
-          kernels_for_50pct: baseline.concentration.kernels_for_50pct
-          kernels_for_80pct: baseline.concentration.kernels_for_80pct
-          kernels_for_90pct: baseline.concentration.kernels_for_90pct
-          distinct_kernels: baseline.concentration.distinct_kernels
-          radiation_pct: baseline.subsystems.radiation.pct_of_kernel_time
-          microphysics_pct: baseline.subsystems.microphysics_cache.pct_of_kernel_time
-          matrix_pct: baseline.subsystems.matrix_field_solve.pct_of_kernel_time
-          spectral_pct: baseline.subsystems.spectral_element.pct_of_kernel_time
-          edmf_pct: baseline.subsystems.edmf.pct_of_kernel_time
-          other_pct: baseline.subsystems.other.pct_of_kernel_time
-        explanation: >-
-          The baseline arm's full device decomposition, which sums to 100% by
-          construction, plus how many kernels it takes to cover half, 80% and
-          90% of kernel time. The concentration figures are what distinguish a
-          single bottleneck from a population and are the reason this answer
-          does not name one. Radiation is attributed by the `rte_` prefix and
-          claimed before any other pattern. The `radiation` sub-table in the
-          same file split that total by whether the solve took a LookUpCld
-          argument, which is how two solves sharing one kernel shortName were
-          told apart; post-fusion one kernel computes both skies, so it now
-          reports every launch as all-sky and zero clear-sky kernels. That is
-          correct and no longer informative -- the split is kept because it is
-          what shows the fused solve replaced the pair rather than one of them.
-      - kind: result
-        path: results/kernel-shares.json
-        values:
-          small_launches: baseline.small_kernels.launches
-          small_threshold: baseline.small_kernels.threshold_us
-          small_pct_of_launches: baseline.small_kernels.pct_of_launches
-          small_pct_of_time: baseline.small_kernels.pct_of_kernel_time
-        explanation: >-
-          The short-launch band, as device time rather than host overhead. It
-          is the standing temptation on this project -- most launches are tiny,
-          so fusing them looks like the obvious win -- and it is quantified
-          here precisely so that it can be ruled out: a majority of launches
-          carrying a few percent of the time cannot pay for the work.
-      - kind: result
-        path: results/pointwise-registers.json
-        values:
-          reg_kernels: kernels
-          reg_addressable: addressable
-          reg_addressable_pct: addressable_pct
-          reg_at_full: at_full_occupancy
-        explanation: >-
-          From Nsight Compute, so it carries occupancy limiters that nsys does
-          not collect. `addressable` is the count capped by registers ALONE and
-          below full occupancy, which is the only group a parameter fold can
-          help; `at_full_occupancy` is the group that bounds the approach from
-          the other side. A kernel already over the 255-register cap spends any
-          freed register on its live state rather than on occupancy.
-      - kind: table
-        path: results/top-kernels.csv
-        explanation: >-
-          The per-kernel breakdown on the 120-step window, which at this
-          configuration's dt of 120secs is four simulated hours and a whole
-          number of radiation (30-step), cloud-fraction (30-step) and
-          gravity-wave (15-step) cycles, so each of those fires its exact
-          long-run share and the profile needs no reweighting. The earlier
-          40-step window was shorter than the gravity-wave period and made
-          microphysics look dominant. It is NOT a whole number of diagnostics
-          cycles -- the daily write is 720 steps and the extra monthly-average
-          block samples every 180 -- so diagnostics cost cannot be read off this
-          table; results/diagnostics-cost.json measures it instead.
-  - question: >-
       How much of a GPU kernel-time saving actually reaches SYPD?
     answer: >-
       It depends on where the saving is, and the difference is large enough to change what is worth doing: radiation work converts at {radiation_mean:.0f}% ({radiation_min:.0f}-{radiation_max:.0f}% over {radiation_n} experiments), microphysics work at {microphysics_mean:.0f}% ({microphysics_min:.0f}-{microphysics_max:.0f}% over {microphysics_n}).
@@ -184,139 +61,6 @@ questions:
           The experiments themselves, each reproducible from its tag. The
           pass-through stage reads both halves of every ratio out of those
           tags with git show rather than from the working tree.
-  - question: >-
-      What actually limits the hot SGS-quadrature microphysics kernel, and which
-      of the available levers can move it?
-    answer: >-
-      Register pressure, and it is addressable by payload after all -- which is the opposite of what this answer said for three weeks.
-      The kernel the model runs compiled to {fold_quad_regs_baseline:.0f} registers, the hardware maximum per thread, which bought it {fold_quad_warps_baseline:.0f} warps per SM out of 64; the isolated quadrature body also wants more than the cap and spills {quad_spill:.0f} bytes, so the live state is genuinely large.
-      The payload lever is open after all, and reading it as shut cost three null measurements: the parameters were reaching the kernel inside an evaluator struct, which boxes a compile-time constant into a field and reads it back per quadrature point, so the fold was being erased at the struct boundary rather than refused by the loop.
-      Putting them in the struct's TYPE instead takes the kernel from {fold_quad_regs_baseline:.0f} registers to {fold_quad_regs_mod:.0f} and {fold_quad_warps_baseline:.0f} warps per SM to {fold_quad_warps_mod:.0f}, worth {fold_quad_change:.1f}% on the kernel (see the question on Val and CliMA/ClimaCore.jl#2676).
-      What remains is reducing the live state itself -- fewer quadrature points, which was priced and withdrawn, or fewer live values per point -- and that is now the lever for the NEXT occupancy step, which this kernel reaches at {fold_quad_next_step:.0f} registers.
-    notes: >-
-      Answered for the stack before the 2026-09-21 update in docs/learnings.md 2c
-      and 4a: register pressure at the 255-register cap, with a guarded
-      __launch_bounds__ occupancy target as the lever that works. That update
-      re-enabled cloud ice formation and liquid freezing in the 1M microphysics,
-      which changes this kernel, so it needs re-measuring; the ncu stages that would
-      show its registers and spilling are frozen.
-
-      One lever is now ruled out by measurement rather than argument. The
-      kernel's parameters -- CloudMicrophysics 1M params at 348 bytes and
-      thermodynamics params at 104 -- are isbits, so Julia accepts them as type
-      parameters, and folding them that way is something ClimaAtmos can do
-      alone: microphysics_tendencies_1m, Microphysics1MEvaluator and
-      integrate_over_sgs are all ClimaAtmos code, so no CloudMicrophysics
-      release is involved. In isolation the fold is dramatic, taking one
-      evaluation body from {val_args:.0f} registers to {val_val:.0f} and
-      clearing two occupancy steps.
-
-      On the path the model runs, a plain Val bought nothing: the quadrature
-      body sits at {quad_args:.0f} registers with or without it, spilling
-      {quad_spill:.0f} bytes. That was read as the loop's live state consuming
-      every freed register, and it was wrong -- the Val was being passed to a
-      function that stored it in an evaluator FIELD, which boxes the constant
-      and reads it back per quadrature point. The same body with the parameters
-      in the struct's type compiles to {eval_type_regs:.0f} registers and
-      {eval_type_spill:.0f} bytes against {eval_field_regs:.0f} and
-      {eval_field_spill:.0f}, and the change applied to the model is worth
-      {fold_quad_change:.1f}% on this kernel. What docs/learnings.md left open
-      -- whether the 255 is a demand or the cap -- is answered the other way:
-      enough of it was payload to clear an occupancy step.
-    evidence:
-      - kind: result
-        path: results/val-params-registers.toml
-        values:
-          val_args: runtime_arguments.registers
-          val_val: val_type_parameters.registers
-          quad_args: quad_runtime_arguments.registers
-          quad_spill: quad_runtime_arguments.local_bytes
-          eval_field_regs: evaluator_params_as_fields.registers
-          eval_field_spill: evaluator_params_as_fields.local_bytes
-          eval_type_regs: evaluator_params_in_type.registers
-          eval_type_spill: evaluator_params_in_type.local_bytes
-        explanation: >-
-          One microphysics body compiled three ways -- parameters as runtime
-          arguments, as const globals, and folded through Val -- for an isolated
-          evaluation and for the quadrature path the model actually calls. The
-          isolated columns are why the idea looked promising and the quadrature
-          columns are why it is dead: Val lands exactly on the const-global
-          figure in both, which is the mechanism working, and in the quadrature
-          case that figure is the 255-register cap. Compile-only, so nothing
-          runs, and standalone, so it needs no coupled simulation.
-      - kind: result
-        path: results/param-fold.json
-        values:
-          fold_quad_regs_baseline: kernels.microphysics_quadrature.baseline.registers
-          fold_quad_regs_mod: kernels.microphysics_quadrature.mod.registers
-          fold_quad_warps_baseline: kernels.microphysics_quadrature.baseline.warps_per_sm
-          fold_quad_warps_mod: kernels.microphysics_quadrature.mod.warps_per_sm
-          fold_quad_change: kernels.microphysics_quadrature.mean_change_pct
-          fold_quad_next_step: kernels.microphysics_quadrature.mod.registers_for_next_step
-        explanation: >-
-          The kernel as the profiled run compiled it, in both arms: registers
-          per thread, the block size ClimaCore chose from them, and the warps
-          per SM the pair allows. Read from the nsys databases rather than
-          results/top-kernels.csv because that table averages over a kernel
-          name, and one name this treatment touches covers two kernels at
-          different register counts.
-      - kind: value
-        path: results/cm-registers.toml
-        key: layers.LinearizedAverage nsub=2.registers
-        name: linearized_avg_registers
-        explanation: >-
-          A full 1M CloudMicrophysics evaluation, compiled standalone with the
-          parameter structs passed as kernel ARGUMENTS -- as const globals the
-          compiler folds their fields and understates pressure enough to invert
-          the conclusion, which it once did. Independent of substep count, so
-          microphysics_n_substeps_quadrature costs time but not occupancy. This
-          stage is cheap and not frozen, so it re-runs against whatever is
-          checked out; read its revision before comparing.
-      - kind: value
-        path: results/kernel-population.json
-        key: baseline.gpu_idle_pct
-        name: gpu_idle_pct
-        explanation: >-
-          READ AS A PROFILING ARTIFACT, NOT A TARGET. The profiler's own tracing
-          runs to ~33 CUDA API calls per launch and accounts for the bulk of
-          this idle; the profiled window does not even run at the same rate as
-          the real one. Kernel TIMES from nsys are device-side and trustworthy;
-          the gaps between them are not. See docs/learnings.md 2b-i.
-      - kind: result
-        path: results/launch-bounds/launch-bounds.toml
-        git_ref: exp/2026-09-01-cm-fuse
-        explanation: >-
-          The three phases this answer compares, in one file: the hot
-          SGS-quadrature kernel with launch bounds off, which is what the
-          baseline arm runs; the counterfactual with the spill budget loosened
-          until the annotation is accepted, reaching 12 warps/SM; and the
-          shipped configuration, where the single-call kernel is annotated for
-          a small spill cost. guarded.decisions records which kernels were
-          accepted. Measuring the rejected configuration deliberately is the
-          point, and is what showed the guard was right rather than arbitrary.
-      - kind: table
-        path: results/kernel-resources.csv
-        git_ref: exp/2026-09-07-evaluator-repeat
-        explanation: >-
-          What establishes the kernel as register-limited rather than
-          memory-limited. Pinned because the ncu stages are frozen; cited for
-          the characterization of the baseline kernel, which has been stable
-          across revisions, not as evidence for any treatment's effect.
-      - kind: value
-        path: results/summary.json
-        key: speedup_pct
-        name: speedup_pct
-        explanation: >-
-          The pipeline-level number this kernel work has to show up in
-          eventually. Kernel times are not SYPD, and this mechanism measured a
-          SYPD null on its own. Since the 2026-10-09 re-baseline this IS the
-          fold alone: RRTMGP #631 is upstream in both arms, so the arms differ
-          only by the fold's three source files and nothing else is folded in.
-          It was not so between 2026-10-07 and the re-baseline, when the mod
-          arm carried the fused radiation too and this figure was the pair.
-          Still not templated into the answer, and must not be: rendering reads
-          the working tree, so a future treatment stacked on the mod arm would
-          silently change what this number means again.
   - question: >-
       Does putting the parameters in `Val` make pointwise kernels measurably faster across the board, as CliMA/ClimaCore.jl#2676 asks?
     answer: >-
@@ -446,6 +190,7 @@ questions:
       Mirroring the nightly configuration instead -- `dt` 120secs, `dt_rad` 1hours, four simulated days -- leaves ordinary steps {plain_wall:.1f}% of the wall clock and the {diag_steps:.0f} daily diagnostics writes {diag_wall:.1f}%, still {diag_mult:.0f}x an ordinary step each and still absorbing almost none of the saving, {diag_saving_pct:.1f}% of it. The periodic ceiling did not go away; it stopped dominating.
       Compilation shrank with it: {pen_steps:.0f} ordinary steps, {pen_pct:.1f}% of them, are slower in the specialized arm, {pen_s:.1f} s in total or {pen_per_step:.2f} ms averaged over every ordinary step, worst single step {pen_worst_ms:,.0f} ms and the last above 200 ms at step {pen_last:,.0f}. It is first-call compilation of the specialized methods rather than noise, which would be symmetric, but at {pen_s:.1f} s it no longer moves the headline.
       The steady-state figure now agrees with the whole window rather than correcting it: {ss_pct:.2f}% over the final {ss_cycles:.0f} diagnostics cycles, {ss_exdiag_pct:.2f}% excluding the diagnostics steps, against {saved_pct:.2f}% for the window entire. It is flat wherever the cutoff is put -- {sens720:.2f}% from step 720, {sens1440:.2f}% from step 1440, {sens2400:.2f}% from step 2400 -- which is what a run with little compilation left in it looks like. On the old window the same series climbed from 5.28% to 6.61%.
+      End to end, on the unprofiled AMIP pair rather than this step-breakdown pair, the treatment is worth {speedup_pct:.2f}% of wall clock, {sypd_base:.4f} to {sypd_mod:.4f} SYPD -- the figures CliMA/ClimaAtmos.jl#4879 quotes. Three measurements of one treatment on three pairs of runs will not agree to the last digit, and the SYPD pair is a throughput ratio while {saved_pct:.2f}% is a duration reduction, so the two must never be quoted as one number.
       So the lesson is not about conversion, which was never the problem. It is that a benchmark whose periodic work dominates its wall clock will report a fraction of any every-step saving, and will do so without any sign that it is doing it. Convert a kernel result through the step distribution before promising it as a speedup, and check what fraction of the window the ordinary steps actually hold.
       Measure both arms. The one-arm version of this stage reported {mod_frac:.1f}% of wall in the mod arm's expensive steps against {base_frac:.1f}% in the baseline's, which reads as a treatment effect and is not one: the threshold is 1.25x each arm's OWN median, and the fold moved the median from {base_med:.1f} to {mod_med:.1f} ms, so an unchanged distribution crosses a lower bar. Those fields cannot be read across arms; a fixed periodic classification can.
     evidence:
@@ -501,6 +246,23 @@ questions:
           one-day pair, not a longer run: it shows the fixed costs amortizing
           within the window measured, and does not measure a regime where the
           diagnostics cadence itself changes.
+      - kind: result
+        path: results/summary.json
+        values:
+          speedup_pct: speedup_pct
+          sypd_base: baseline.sypd
+          sypd_mod: mod.sypd
+        explanation: >-
+          The end-to-end figures, from the two unprofiled AMIP arms rather than
+          the step-breakdown pair the rest of this answer uses. They are cited
+          here because CliMA/ClimaAtmos.jl#4879 quotes them, and a figure a PR
+          body quotes has to be one the pipeline checks. `speedup_pct` is a
+          reduction in wall clock and the two `sypd` values are a throughput
+          ratio; they describe the same treatment and are not interchangeable,
+          which is the error the earlier 1.90% version of this answer made.
+          summary.json also carries `nsys_*` fields that come from the frozen
+          nsys stages and so describe an older revision; nothing here cites
+          them.
   - question: >-
       How much of the wall clock do diagnostics cost, and is it worth optimizing them?
     answer: >-
@@ -631,6 +393,11 @@ pipeline:
         - path: diffs
           storage: git
     baseline-nsys:
+      # Frozen 2026-10-19: Q5 and Q6 are the current work and neither cites the
+      # nsys profiles; they feed top-kernels/kernel-shares for Q1 and Q3. Note
+      # summarize still reads results/nsys/*.sqlite, so summary.json's nsys_*
+      # fields describe the frozen revision while its sypd fields are current.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-nsys.sh
@@ -655,6 +422,11 @@ pipeline:
         - results/nsys/baseline.nsys-rep
         - results/nsys/baseline.sqlite
     mod-nsys:
+      # Frozen 2026-10-19: Q5 and Q6 are the current work and neither cites the
+      # nsys profiles; they feed top-kernels/kernel-shares for Q1 and Q3. Note
+      # summarize still reads results/nsys/*.sqlite, so summary.json's nsys_*
+      # fields describe the frozen revision while its sypd fields are current.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-nsys.sh
@@ -1117,6 +889,9 @@ pipeline:
           storage: git
 
     pointwise-registers:
+      # Frozen 2026-10-19: serves only Q1/Q3/Q4, which are not the current work.
+      # Unfreeze with the question that needs it.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu-pointwise.sh
@@ -1156,6 +931,9 @@ pipeline:
           storage: dvc
 
     export-pointwise-registers:
+      # Frozen 2026-10-19: serves only Q1/Q3/Q4, which are not the current work.
+      # Unfreeze with the question that needs it.
+      frozen: true
       kind: python-script
       environment: py
       script_path: scripts/export-pointwise-registers.py
@@ -1188,6 +966,9 @@ pipeline:
           storage: git
 
     val-params-registers:
+      # Frozen 2026-10-19: serves only Q1/Q3/Q4, which are not the current work.
+      # Unfreeze with the question that needs it.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-val-params-registers.sh
@@ -1215,6 +996,9 @@ pipeline:
           storage: git
 
     cm-registers:
+      # Frozen 2026-10-19: serves only Q1/Q3/Q4, which are not the current work.
+      # Unfreeze with the question that needs it.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-cm-registers.sh

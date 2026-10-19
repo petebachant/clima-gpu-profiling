@@ -330,7 +330,10 @@ deliberate:
 The stale periods above outlived the config change by weeks, in this file, in
 `scripts/run.jl` and in two `calkit.yaml` explanations. `run.jl` is an input to
 both nsys stages, so correcting its comment costs ~2 GPU-hours of re-profiling
-and is worth bundling with a pass that re-runs them for a real reason.
+and is worth bundling with a pass that re-runs them for a real reason. It was
+corrected on 2026-10-19, bundled with the re-baseline onto ClimaCore `cfdd310`
+and ClimaAtmos `352fe98`, which had already invalidated both nsys stages -- so
+the fix cost nothing.
 
 Both arms' benchmark configs are edited **in the submodules** and must stay
 byte-identical to each other. That is a deliberate deviation from "identical to
