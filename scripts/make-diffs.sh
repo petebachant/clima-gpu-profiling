@@ -14,6 +14,12 @@ rm -rf diffs
 mkdir -p diffs/not-treatments
 
 MANIFEST_PATH="experiments/AMIP/Manifest-v1.11.toml"
+
+# Paths no stage reads, so an arm difference in them cannot reach a run. Upstream's
+# own CI configuration is the case in hand: on 2026-10-19 a one-line bump to
+# ClimaAtmos's `[perf]` pipeline turned the index line into "61 changed lines across
+# 4 file(s). **Under test.**", which is three true words and two false ones.
+NOT_RUN_PATHS='^\.buildkite/'
 index=""
 
 # RRTMGP is here because both arms have their own submodule at the same base,
@@ -30,6 +36,8 @@ for repo in ClimaAtmos.jl ClimaCore.jl ClimaCoupler.jl RRTMGP.jl; do
     base_files=$(git -C "${base}" ls-files; git -C "${base}" ls-files --others --exclude-standard)
     mod_files=$(git -C "${mod}" ls-files; git -C "${mod}" ls-files --others --exclude-standard)
     all_files=$(printf '%s\n%s\n' "${base_files}" "${mod_files}" | sort -u)
+    run_files=$(printf '%s\n' "${all_files}" | grep -Ev "${NOT_RUN_PATHS}" || true)
+    skip_files=$(printf '%s\n' "${all_files}" | grep -E "${NOT_RUN_PATHS}" || true)
 
     while IFS= read -r file; do
         [ -n "${file}" ] || continue
@@ -38,7 +46,25 @@ for repo in ClimaAtmos.jl ClimaCore.jl ClimaCoupler.jl RRTMGP.jl; do
         [ -f "${base_f}" ] || base_f="/dev/null"
         [ -f "${mod_f}" ] || mod_f="/dev/null"
         git diff --no-index "${base_f}" "${mod_f}" || true
-    done <<< "${all_files}" > "${tmp}"
+    done <<< "${run_files}" > "${tmp}"
+
+    # Counted, not diffed: the index states the difference exists rather than
+    # leaving a reader to infer it from an absent file.
+    tmp_skip="$(mktemp)"
+    while IFS= read -r file; do
+        [ -n "${file}" ] || continue
+        base_f="${base}/${file}"
+        mod_f="${mod}/${file}"
+        [ -f "${base_f}" ] || base_f="/dev/null"
+        [ -f "${mod_f}" ] || mod_f="/dev/null"
+        git diff --no-index "${base_f}" "${mod_f}" || true
+    done <<< "${skip_files}" > "${tmp_skip}"
+    n_skip=$(grep -c '^[+-][^+-]' "${tmp_skip}" || true)
+    rm -f "${tmp_skip}"
+    skip_note=""
+    if [ "${n_skip}" -gt 0 ]; then
+        skip_note=" The arms also differ by ${n_skip} line(s) under .buildkite/, which no stage reads, so that is not in the diff."
+    fi
 
     # Which files the diff actually touches, as paths inside the package.
     changed=$(grep '^diff --git ' "${tmp}" | sed -E "s|^diff --git a/${base}/||; s| b/.*$||" | sort -u || true)
@@ -48,13 +74,13 @@ for repo in ClimaAtmos.jl ClimaCore.jl ClimaCoupler.jl RRTMGP.jl; do
 
     if [ -z "${changed}" ]; then
         rm -f "${tmp}"
-        index="${index}- **${repo}** --- identical in both arms, so no diff file.\n"
+        index="${index}- **${repo}** --- identical in both arms, so no diff file.${skip_note}\n"
     elif [ -z "${other}" ]; then
         mv "${tmp}" "diffs/not-treatments/${repo}.diff"
-        index="${index}- **${repo}** --- not-treatments/${repo}.diff: ${n_lines} changed lines, all in ${MANIFEST_PATH}. This is the dev-path rewiring that points the mod arm at the -mod submodules. It is how the arm is built, not what is under test.\n"
+        index="${index}- **${repo}** --- not-treatments/${repo}.diff: ${n_lines} changed lines, all in ${MANIFEST_PATH}. This is the dev-path rewiring that points the mod arm at the -mod submodules. It is how the arm is built, not what is under test.${skip_note}\n"
     else
         mv "${tmp}" "diffs/${repo}.diff"
-        index="${index}- **${repo}** --- ${repo}.diff: ${n_lines} changed lines across ${n_files} file(s). **Under test.**\n"
+        index="${index}- **${repo}** --- ${repo}.diff: ${n_lines} changed lines across ${n_files} file(s). **Under test.**${skip_note}\n"
     fi
 done
 
