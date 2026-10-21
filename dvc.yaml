@@ -517,6 +517,22 @@ stages:
           persist: false
     desc: Automatically generated from the 'export-pointwise-registers' stage in
       calkit.yaml. Changes made here will be overwritten.
+  val-mileage:
+    cmd: calkit xenv -n py --no-check -- python scripts/val-mileage.py
+    deps:
+      - scripts/val-mileage.py
+      - .calkit/env-locks/py
+      - results/nsys/mod.nsys-rep
+      - results/nsys/mod.sqlite
+      - .calkit/scheduler/logs/mod-nsys.out
+      - results/pointwise-registers.csv
+      - results/pointwise-registers.json
+    outs:
+      - results/val-mileage.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'val-mileage' stage in calkit.yaml.
+      Changes made here will be overwritten.
   export-param-fold:
     cmd: calkit xenv -n py --no-check -- python scripts/export-param-fold.py
     deps:

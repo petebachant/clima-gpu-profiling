@@ -901,6 +901,20 @@ pipeline:
         - path: results/pointwise-registers.json
           storage: git
 
+    val-mileage:
+      kind: python-script
+      environment: py
+      script_path: scripts/val-mileage.py
+      # Joins kernel expense (nsys, whole population) against occupancy limiter
+      # (ncu). Both inputs must describe one build, which is why they are taken
+      # from the stages rather than the working tree; the script refuses to write
+      # a table when too little device time is accounted for.
+      inputs:
+        - from_stage_outputs: mod-nsys
+        - from_stage_outputs: export-pointwise-registers
+      outputs:
+        - path: results/val-mileage.json
+          storage: git
     export-param-fold:
       kind: python-script
       environment: py
