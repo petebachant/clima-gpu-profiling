@@ -68,10 +68,9 @@ questions:
       Four kernels in ClimaAtmos now have it, measured in the model rather than in isolation, and measured across two successive upstream rewrites of those kernels, which is what prices the step itself.
       Two cross one on the current stack: the SGS quadrature {fold_quad_regs_baseline:.0f} -> {fold_quad_regs_mod:.0f} registers, {fold_quad_warps_baseline:.0f} -> {fold_quad_warps_mod:.0f} warps per SM, {fold_quad_change:.1f}% on the kernel; and the cloud-fraction kernel {fold_cf_regs_baseline:.0f} -> {fold_cf_regs_mod:.0f} registers, {fold_cf_warps_baseline:.0f} -> {fold_cf_warps_mod:.0f} warps, {fold_cf_change:.1f}%.
       The other two do not: the updraft path sheds {fold_upd_regs_saved:.0f} registers, {fold_upd_regs_baseline:.0f} -> {fold_upd_regs_mod:.0f}, and still sits at {fold_upd_warps_mod:.0f} warps per SM, one block short of the next step, which it would reach at {fold_upd_next_step:.0f}; the SGS-moments kernel sheds {fold_sgs_regs_saved:.0f}, {fold_sgs_regs_baseline:.0f} -> {fold_sgs_regs_mod:.0f}, and stays at {fold_sgs_warps_mod:.0f} warps, needing {fold_sgs_next_step:.0f}.
-      The updraft path took {fold_upd_change:.1f}% anyway, so a fold that misses a step is not a fold that does nothing -- an earlier answer here said the payoff was all-or-nothing, and this measurement withdraws that.
-      The SGS-moments kernel no longer carries that claim: on the re-baselined stack it sheds {fold_sgs_regs_saved:.0f} registers, so its {fold_sgs_change:.1f}% is noise rather than a payoff, and the upstream rewrite that fused it into the cloud-fraction pass has absorbed the fold there entirely.
+      The updraft path took {fold_upd_change:.1f}% anyway, so a fold that misses a step is not a fold that does nothing.
+      The SGS-moments kernel is the counter-case: it sheds only {fold_sgs_regs_saved:.0f} registers, so its {fold_sgs_change:.1f}% is noise rather than a payoff, and the upstream rewrite that fused it into the cloud-fraction pass has absorbed the fold there entirely.
       What the step is worth can be read off a kernel that switched sides: the updraft path crossed one before and lost it to an added argument, giving back {fold_upd_lost_points:.1f} points of payoff.
-      The SGS-moments kernel supplied the other half of that comparison last time, having gained a step and picked up a comparable amount in the opposite direction; the rewrite that fused it into the cloud-fraction pass has since taken that step away again, so the two-sided form of this evidence is withdrawn and only the losing side is live.
       Neither direction is a controlled comparison, because each of those rewrites also altered the kernel bodies.
       Share of the device bounds the whole question, and the SGS-moments kernel is the case: at {fold_sgs_ms:.1f} ms of a {fold_dev_ms:.0f} ms baseline device total, a perfect fold there is worth less than a run can resolve, and closing the last two bare-parameter terms in it -- so the fold applies to all of the kernel rather than most of it -- moved the AMIP pair by less than the noise floor.
       Register count does not predict which case a kernel is in: two kernels that both start at the {fold_quad_regs_baseline:.0f}-register cap land on opposite sides of a step, while a {fold_cf_regs_baseline:.0f}-register one crosses.
@@ -80,7 +79,6 @@ questions:
       The population bounds how far it can go: of {kernels:.0f} kernels profiled, {addressable:.0f} ({addressable_pct}%) are capped by registers alone AND below full occupancy, while {at_full_occupancy:.0f} are already at full occupancy and can gain nothing however well their parameters fold.
       The mechanism is settled: Val folds an isbits parameter set to literals and lands on the const-global register count exactly, taking an isolated microphysics evaluation body from {val_args:.0f} registers to {val_val:.0f}, {arg_warps:.0f} to {val_warps:.0f} warps per SM.
       The thing that will defeat anyone applying it is the struct boundary: an evaluator holding the parameters as FIELDS boxes the constant and reads it back per point, {eval_field_regs:.0f} registers and {eval_field_spill:.0f} bytes of spill against {eval_type_regs:.0f} and {eval_type_spill:.0f} for the same body with the parameters in the type.
-      Three earlier measurements here reported Val as worthless for exactly that reason, including on the kernel it later improved by half.
     evidence:
       - kind: result
         path: results/val-params-registers.toml
@@ -186,10 +184,10 @@ questions:
       Essentially all of it, once the benchmark resembles the run you care about. On a benchmark that does not, most of it disappears -- and that is a property of the benchmark, not of the optimization.
       The typical step converts the device saving completely: {typ_saved:.2f} ms measured against the {typ_device:.2f} ms the profiled device time predicts, {conversion:.0f}%, across {plain_steps:,.0f} ordinary steps. Nothing is lost between the kernel and the clock.
       It also survives to the run total. The window reports {saved_pct:.2f}% against the {cf_pct:.2f}% that per-step rate would give, a shortfall of {shortfall:.2f} points -- nothing. So there is no conversion gap to explain.
-      That is the second answer this question has had, and the first one was wrong in an instructive way. Measured on a one-day window with a 30-second coupled timestep, the same treatment returned 1.90% in SYPD and 2.83% over the window against a 5.47% counterfactual, and the 2.65-point shortfall split into periodic work and first-call compilation. Both components were real. Both were artifacts of the window: that configuration wrote diagnostics 24 times a simulated day instead of once, which took 32.1% of its wall clock and left ordinary steps only 51.9% of the budget for an every-step saving to act on.
+      The benchmark that does not is the one this project measured on first: a one-day window at a 30-second coupled timestep, which wrote diagnostics 24 times a simulated day instead of once and left ordinary steps about half the wall clock, so an every-step saving had half the budget to act on and reported a fraction of itself. See the window rationale in AGENTS.md.
       Mirroring the nightly configuration instead -- `dt` 120secs, `dt_rad` 1hours, four simulated days -- leaves ordinary steps {plain_wall:.1f}% of the wall clock and the {diag_steps:.0f} daily diagnostics writes {diag_wall:.1f}%, still {diag_mult:.0f}x an ordinary step each and still absorbing almost none of the saving, {diag_saving_pct:.1f}% of it. The periodic ceiling did not go away; it stopped dominating.
       Compilation shrank with it: {pen_steps:.0f} ordinary steps, {pen_pct:.1f}% of them, are slower in the specialized arm, {pen_s:.1f} s in total or {pen_per_step:.2f} ms averaged over every ordinary step, worst single step {pen_worst_ms:,.0f} ms and the last above 200 ms at step {pen_last:,.0f}. It is first-call compilation of the specialized methods rather than noise, which would be symmetric, but at {pen_s:.1f} s it no longer moves the headline.
-      The steady-state figure now agrees with the whole window rather than correcting it: {ss_pct:.2f}% over the final {ss_cycles:.0f} diagnostics cycles, {ss_exdiag_pct:.2f}% excluding the diagnostics steps, against {saved_pct:.2f}% for the window entire. It is flat wherever the cutoff is put -- {sens720:.2f}% from step 720, {sens1440:.2f}% from step 1440, {sens2400:.2f}% from step 2400 -- which is what a run with little compilation left in it looks like. On the old window the same series climbed from 5.28% to 6.61%.
+      The steady-state figure now agrees with the whole window rather than correcting it: {ss_pct:.2f}% over the final {ss_cycles:.0f} diagnostics cycles, {ss_exdiag_pct:.2f}% excluding the diagnostics steps, against {saved_pct:.2f}% for the window entire. It is flat wherever the cutoff is put -- {sens720:.2f}% from step 720, {sens1440:.2f}% from step 1440, {sens2400:.2f}% from step 2400 -- which is what a run with little compilation left in it looks like.
       End to end, on the unprofiled AMIP pair rather than this step-breakdown pair, the treatment is worth {speedup_pct:.2f}% of wall clock, {sypd_base:.4f} to {sypd_mod:.4f} SYPD -- the figures CliMA/ClimaAtmos.jl#4879 quotes. Three measurements of one treatment on three pairs of runs will not agree to the last digit, and the SYPD pair is a throughput ratio while {saved_pct:.2f}% is a duration reduction, so the two must never be quoted as one number.
       So the lesson is not about conversion, which was never the problem. It is that a benchmark whose periodic work dominates its wall clock will report a fraction of any every-step saving, and will do so without any sign that it is doing it. Convert a kernel result through the step distribution before promising it as a speedup, and check what fraction of the window the ordinary steps actually hold.
       Measure both arms. The one-arm version of this stage reported {mod_frac:.1f}% of wall in the mod arm's expensive steps against {base_frac:.1f}% in the baseline's, which reads as a treatment effect and is not one: the threshold is 1.25x each arm's OWN median, and the fold moved the median from {base_med:.1f} to {mod_med:.1f} ms, so an unchanged distribution crosses a lower bar. Those fields cannot be read across arms; a fixed periodic classification can.
@@ -258,8 +256,7 @@ questions:
           here because CliMA/ClimaAtmos.jl#4879 quotes them, and a figure a PR
           body quotes has to be one the pipeline checks. `speedup_pct` is a
           reduction in wall clock and the two `sypd` values are a throughput
-          ratio; they describe the same treatment and are not interchangeable,
-          which is the error the earlier 1.90% version of this answer made.
+          ratio; they describe the same treatment and are not interchangeable.
           summary.json also carries `nsys_*` fields that come from the frozen
           nsys stages and so describe an older revision; nothing here cites
           them.
@@ -393,11 +390,6 @@ pipeline:
         - path: diffs
           storage: git
     baseline-nsys:
-      # Frozen 2026-10-19: Q5 and Q6 are the current work and neither cites the
-      # nsys profiles; they feed top-kernels/kernel-shares for Q1 and Q3. Note
-      # summarize still reads results/nsys/*.sqlite, so summary.json's nsys_*
-      # fields describe the frozen revision while its sypd fields are current.
-      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-nsys.sh
@@ -422,11 +414,6 @@ pipeline:
         - results/nsys/baseline.nsys-rep
         - results/nsys/baseline.sqlite
     mod-nsys:
-      # Frozen 2026-10-19: Q5 and Q6 are the current work and neither cites the
-      # nsys profiles; they feed top-kernels/kernel-shares for Q1 and Q3. Note
-      # summarize still reads results/nsys/*.sqlite, so summary.json's nsys_*
-      # fields describe the frozen revision while its sypd fields are current.
-      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-nsys.sh
@@ -478,15 +465,6 @@ pipeline:
       # the two arms describe the same revision), run `calkit run`, then freeze
       # again. results/treatment.json records which arms the current evidence
       # describes.
-      # FROZEN 2026-09-03, both together and at the same revision. They cost
-      # ~1.5 h each, more than half the pipeline's cluster time. Unfreeze BOTH
-      # or NEITHER: they were previously frozen independently and last ran three
-      # days apart (baseline 2026-08-20, a null test; mod 2026-08-23, the
-      # clear-air early-out), so results/kernel-resources.csv presented two
-      # unrelated runs as one comparison. See "Freeze and unfreeze the two ncu
-      # stages together" in AGENTS.md.
-      # Re-frozen 2026-10-16; both arms ran as a pair at ClimaAtmos 1cbdd52.
-      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
@@ -541,15 +519,6 @@ pipeline:
       # the two arms describe the same revision), run `calkit run`, then freeze
       # again. results/treatment.json records which arms the current evidence
       # describes.
-      # FROZEN 2026-09-03, both together and at the same revision. They cost
-      # ~1.5 h each, more than half the pipeline's cluster time. Unfreeze BOTH
-      # or NEITHER: they were previously frozen independently and last ran three
-      # days apart (baseline 2026-08-20, a null test; mod 2026-08-23, the
-      # clear-air early-out), so results/kernel-resources.csv presented two
-      # unrelated runs as one comparison. See "Freeze and unfreeze the two ncu
-      # stages together" in AGENTS.md.
-      # Re-frozen 2026-10-16; both arms ran as a pair at ClimaAtmos 1cbdd52.
-      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
@@ -729,16 +698,6 @@ pipeline:
         - path: results/pass-through.json
           storage: git
 
-    kernel-shares:
-      kind: python-script
-      script_path: scripts/kernel-shares.py
-      environment: py
-      inputs:
-        - results/top-kernels.csv
-        - results/kernel-population.json
-      outputs:
-        - path: results/kernel-shares.json
-          storage: git
     export-kernel-resources:
       kind: python-script
       environment: py
@@ -889,9 +848,6 @@ pipeline:
           storage: git
 
     pointwise-registers:
-      # Frozen 2026-10-19: serves only Q1/Q3/Q4, which are not the current work.
-      # Unfreeze with the question that needs it.
-      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu-pointwise.sh
@@ -931,9 +887,6 @@ pipeline:
           storage: dvc
 
     export-pointwise-registers:
-      # Frozen 2026-10-19: serves only Q1/Q3/Q4, which are not the current work.
-      # Unfreeze with the question that needs it.
-      frozen: true
       kind: python-script
       environment: py
       script_path: scripts/export-pointwise-registers.py
@@ -966,9 +919,6 @@ pipeline:
           storage: git
 
     val-params-registers:
-      # Frozen 2026-10-19: serves only Q1/Q3/Q4, which are not the current work.
-      # Unfreeze with the question that needs it.
-      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-val-params-registers.sh
@@ -996,8 +946,10 @@ pipeline:
           storage: git
 
     cm-registers:
-      # Frozen 2026-10-19: serves only Q1/Q3/Q4, which are not the current work.
-      # Unfreeze with the question that needs it.
+      # Frozen because this file cannot be regenerated on the current checkout:
+      # the broadcast layers need ClimaCore.jl-mod on `pb/launch-bounds`, and
+      # without it the script drops them silently (see below), which would take
+      # the layer figure cited by the Val question with it.
       frozen: true
       kind: shell-script
       environment: clima
@@ -1168,18 +1120,3 @@ pipeline:
           storage: git
         - path: experiments.csv
           storage: git
-    analyze-logs:
-      kind: jupyter-notebook
-      notebook_path: notebooks/analyze-logs.ipynb
-      environment: py
-      inputs:
-        - from_stage_outputs: amip-baseline
-        - from_stage_outputs: amip-mod
-      outputs:
-        - path: figures/sypd-time-series.png
-          storage: git
-      html_storage: git
-      executed_ipynb_storage: git
-
-showcase:
-  - notebook: notebooks/analyze-logs.ipynb
