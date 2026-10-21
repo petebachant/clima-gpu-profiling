@@ -9,12 +9,6 @@ sat at the 255-register cap in BOTH arms and at the same 12.4% occupancy, so the
 nsys table showed an unchanged number while the kernel ran 28.6% faster. All of
 the difference was spill traffic.
 
-Refreshed 2026-09-05, with launch bounds now targeting 16 warps/SM, the two arms
-separate on every axis: 255 vs 128 registers, 32.9% vs 12.8% spill overhead,
-12.4% vs 24.6% achieved occupancy, 31.7 vs 11.4 ms. The mod arm still spills --
-an earlier version of this note said it spilled none, which held only for the
-intermediate fusion-without-launch-bounds build.
-
 The `_baseline` and `_mod` columns are only a real comparison if both ncu
 stages ran at the same revision. They did not between 2026-08-20 and 2026-08-23,
 when the stages were frozen independently, and the table silently presented two
@@ -23,12 +17,19 @@ unfreeze the two ncu stages TOGETHER. This script prints each arm's revision and
 treatment when it runs, so the stage log records which state the table
 describes.
 
+Arms are paired by Nsight Compute's launch ID rather than by kernel name. The
+name embeds the source line of the broadcast, which moves whenever code is added
+above it: on 2026-10-21 every line had shifted by four, so all twelve rows came
+out half empty, one arm each, and nothing in the file said the comparison had
+gone missing.
+
 Reads the `*-details.csv` files Nsight Compute exports, so it needs no GPU and
 no ncu install.
 """
 
 import csv
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -49,20 +50,32 @@ METRICS = {
 
 
 def load(tag):
-    """Collapse the long-format ncu export into one record per kernel."""
+    """Collapse the long-format ncu export into one record per profiled launch."""
     path = RESULTS / f"{tag}-details.csv"
     if not path.exists():
         sys.exit(f"missing {path}; run the ncu stages first")
     out = {}
     for row in csv.DictReader(path.open()):
+        fn, _, src = row["Kernel Name"].partition("__FILE_")
+        line = re.search(r"_L(\d+)$", src)
+        rec = out.setdefault(
+            int(row["ID"]),
+            {
+                "fn": fn,
+                # The path differs between arms only by the `-mod` suffix on the
+                # package directory; the line number is held separately because
+                # it legitimately differs and so cannot identify the kernel.
+                "file": re.sub(r"_L\d+$", "", src).replace(
+                    "ClimaAtmos_jl_mod", "ClimaAtmos_jl"
+                ),
+                "line": line.group(1) if line else "",
+                "grid": row["Grid Size"],
+                "block": row["Block Size"],
+            },
+        )
         metric = METRICS.get(row["Metric Name"])
-        if metric is None:
-            continue
-        # Kernel names embed the source path, which differs between the two
-        # cases only by the `-mod` suffix on the package directory. Strip it so
-        # the same kernel lines up across cases.
-        name = row["Kernel Name"].replace("ClimaAtmos_jl_mod", "ClimaAtmos_jl")
-        out.setdefault(name, {})[metric] = row["Metric Value"]
+        if metric is not None:
+            rec[metric] = row["Metric Value"]
     return out
 
 
@@ -130,10 +143,33 @@ def main():
     base, mod = load("baseline"), load("mod")
     cols = list(METRICS.values())
 
+    # Nsight Compute numbers the launches it profiles in execution order and both
+    # arms run the same config, so launch i is the same broadcast in both. The
+    # guard is that its function and GRID agree; the BLOCK is allowed to differ,
+    # because ClimaCore sizes it from the register count, which is the treatment.
+    if set(base) != set(mod):
+        sys.exit(
+            f"arms profiled different launches: baseline {sorted(base)},"
+            f" mod {sorted(mod)}; the table cannot be paired"
+        )
+    for i in sorted(base):
+        for field in ("fn", "file", "grid"):
+            if base[i][field] != mod[i][field]:
+                sys.exit(
+                    f"launch {i} is not the same kernel in both arms:"
+                    f" {field} {base[i][field]!r} vs {mod[i][field]!r};"
+                    " the table cannot be paired"
+                )
+
     rows = []
-    for name in sorted(set(base) | set(mod)):
-        b, m = base.get(name, {}), mod.get(name, {})
-        rec = {"kernel": name}
+    for i in sorted(base):
+        b, m = base[i], mod[i]
+        rec = {
+            "launch": i,
+            "kernel": f"{b['fn']}__FILE_{b['file']}",
+            "line_baseline": b["line"],
+            "line_mod": m["line"],
+        }
         for c in cols:
             rec[f"{c}_baseline"] = b.get(c, "")
             rec[f"{c}_mod"] = m.get(c, "")
@@ -151,7 +187,9 @@ def main():
     # is the freeze rule in AGENTS.md -- the two ncu stages are frozen and
     # unfrozen together, so the arms cannot drift apart in the first place.
     with OUT.open("w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["kernel"] + [
+        w = csv.DictWriter(f, fieldnames=[
+            "launch", "kernel", "line_baseline", "line_mod",
+        ] + [
             f"{c}_{case}" for c in cols for case in ("baseline", "mod")
         ])
         w.writeheader()
