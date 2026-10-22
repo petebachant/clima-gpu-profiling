@@ -547,6 +547,13 @@ pipeline:
       # the two arms describe the same revision), run `calkit run`, then freeze
       # again. results/treatment.json records which arms the current evidence
       # describes.
+      #
+      # Re-frozen 2026-10-22 after the unfreeze that produced
+      # exp/2026-10-21-fold-same-revision. The arms are byte-identical on main
+      # now that the fold is upstream, so re-running this pair would replace a
+      # table showing 255 -> 153 registers and 41.65% -> 0% spill with a table of
+      # zeros, at the cost of about three GPU hours.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
@@ -601,6 +608,13 @@ pipeline:
       # the two arms describe the same revision), run `calkit run`, then freeze
       # again. results/treatment.json records which arms the current evidence
       # describes.
+      #
+      # Re-frozen 2026-10-22 after the unfreeze that produced
+      # exp/2026-10-21-fold-same-revision. The arms are byte-identical on main
+      # now that the fold is upstream, so re-running this pair would replace a
+      # table showing 255 -> 153 registers and 41.65% -> 0% spill with a table of
+      # zeros, at the cost of about three GPU hours.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-ncu.sh
