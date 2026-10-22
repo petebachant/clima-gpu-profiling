@@ -441,10 +441,11 @@ pipeline:
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
-        # The mod arm devs CloudMicrophysics.jl-mod (see the manifest and
-        # scripts/dev-local-repos-coupler.sh), so a CM-only treatment is invisible
-        # to DVC without this and the stage silently reuses a cached result.
-        - CloudMicrophysics.jl-mod/src
+        # CloudMicrophysics.jl-mod/src is deliberately NOT an input: neither arm
+        # devs it (the AMIP manifest pins v0.45.0 by git-tree-sha1, and
+        # scripts/dev-local-repos-coupler.sh devs only ClimaCore, ClimaAtmos and
+        # RRTMGP), so editing that submodule cannot change what any mod stage
+        # runs, and listing it made a harmless edit cost hours of re-profiling.
         - ClimaAtmos.jl-mod/config
       outputs:
         - results/nsys/mod.nsys-rep
@@ -559,10 +560,6 @@ pipeline:
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
-        # The mod arm devs CloudMicrophysics.jl-mod (see the manifest and
-        # scripts/dev-local-repos-coupler.sh), so a CM-only treatment is invisible
-        # to DVC without this and the stage silently reuses a cached result.
-        - CloudMicrophysics.jl-mod/src
       outputs:
         - results/ncu/mod.ncu-rep
         - path: results/ncu/mod-details.csv
@@ -624,10 +621,6 @@ pipeline:
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
-        # The mod arm devs CloudMicrophysics.jl-mod (see the manifest and
-        # scripts/dev-local-repos-coupler.sh), so a CM-only treatment is invisible
-        # to DVC without this and the stage silently reuses a cached result.
-        - CloudMicrophysics.jl-mod/src
         - ClimaAtmos.jl-mod/toml
         - ClimaAtmos.jl-mod/config
     amip-nodiag:
@@ -774,7 +767,6 @@ pipeline:
         - ClimaCore.jl-mod/ext
         - ClimaCore.jl-mod/src
         - ClimaAtmos.jl-mod/src
-        - CloudMicrophysics.jl-mod/src
       outputs:
         - path: results/step-breakdown.toml
           storage: git
@@ -993,10 +985,6 @@ pipeline:
         - scripts/measure-cm-registers.jl
         - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
         - ClimaAtmos.jl-mod/src
-        # The mod arm devs CloudMicrophysics.jl-mod (see the manifest and
-        # scripts/dev-local-repos-coupler.sh), so a CM-only treatment is invisible
-        # to DVC without this and the stage silently reuses a cached result.
-        - CloudMicrophysics.jl-mod/src
         - ClimaCore.jl-mod/ext
       outputs:
         - path: results/cm-registers.toml
@@ -1066,10 +1054,6 @@ pipeline:
         - ClimaCore.jl-mod/src
         - ClimaCore.jl-mod/lib
         - ClimaAtmos.jl-mod/src
-        # The mod arm devs CloudMicrophysics.jl-mod (see the manifest and
-        # scripts/dev-local-repos-coupler.sh), so a CM-only treatment is invisible
-        # to DVC without this and the stage silently reuses a cached result.
-        - CloudMicrophysics.jl-mod/src
       outputs:
         # Small TOML that answers the question directly -- keep it in Git so the
         # evidence is readable without a `calkit pull`.

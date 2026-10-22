@@ -79,11 +79,10 @@ stages:
       --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
       ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
       ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep ClimaCore.jl-mod/lib
-      --dep ClimaAtmos.jl-mod/src --dep CloudMicrophysics.jl-mod/src --dep
-      ClimaAtmos.jl-mod/config --dep .calkit/env-locks/clima --out
-      results/nsys/mod.nsys-rep --out results/nsys/mod.sqlite --option --gpus=1
-      --option --time=120 -- scripts/run-nsys.sh results/nsys/mod
-      ClimaCoupler.jl-mod/experiments/AMIP
+      --dep ClimaAtmos.jl-mod/src --dep ClimaAtmos.jl-mod/config --dep
+      .calkit/env-locks/clima --out results/nsys/mod.nsys-rep --out
+      results/nsys/mod.sqlite --option --gpus=1 --option --time=120 --
+      scripts/run-nsys.sh results/nsys/mod ClimaCoupler.jl-mod/experiments/AMIP
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
       - scripts/run-nsys.sh
@@ -99,7 +98,6 @@ stages:
       - ClimaCore.jl-mod/src
       - ClimaCore.jl-mod/lib
       - ClimaAtmos.jl-mod/src
-      - CloudMicrophysics.jl-mod/src
       - ClimaAtmos.jl-mod/config
       - .calkit/env-locks/clima
     outs:
@@ -159,10 +157,10 @@ stages:
       --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
       ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
       ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep ClimaCore.jl-mod/lib
-      --dep ClimaAtmos.jl-mod/src --dep CloudMicrophysics.jl-mod/src --dep
-      .calkit/env-locks/clima --out results/ncu/mod.ncu-rep --out
-      results/ncu/mod-details.csv --option --gpus=1 --option --time=120 --
-      scripts/run-ncu.sh results/ncu/mod --kernel-name
+      --dep ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
+      results/ncu/mod.ncu-rep --out results/ncu/mod-details.csv --option
+      --gpus=1 --option --time=120 -- scripts/run-ncu.sh results/ncu/mod
+      --kernel-name
       regex:set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L[0-9]+
       --project ClimaCoupler.jl-mod/experiments/AMIP --config
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -179,7 +177,6 @@ stages:
       - ClimaCore.jl-mod/src
       - ClimaCore.jl-mod/lib
       - ClimaAtmos.jl-mod/src
-      - CloudMicrophysics.jl-mod/src
       - .calkit/env-locks/clima
     outs:
       - results/ncu/mod.ncu-rep:
@@ -239,10 +236,10 @@ stages:
       --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
       ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
       ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep ClimaCore.jl-mod/lib
-      --dep ClimaAtmos.jl-mod/src --dep CloudMicrophysics.jl-mod/src --dep
-      ClimaAtmos.jl-mod/toml --dep ClimaAtmos.jl-mod/config --dep
-      .calkit/env-locks/clima --option --gpus=1 --option --time=120 --
-      scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
+      --dep ClimaAtmos.jl-mod/src --dep ClimaAtmos.jl-mod/toml --dep
+      ClimaAtmos.jl-mod/config --dep .calkit/env-locks/clima --option --gpus=1
+      --option --time=120 -- scripts/run-julia-script.sh
+      --project=ClimaCoupler.jl-mod/experiments/AMIP
       ClimaCoupler.jl-mod/experiments/AMIP/run_simulation.jl --config_file
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --job_id gpu_amip_progedmf_1M_land_he16_mod
@@ -260,7 +257,6 @@ stages:
       - ClimaCore.jl-mod/src
       - ClimaCore.jl-mod/lib
       - ClimaAtmos.jl-mod/src
-      - CloudMicrophysics.jl-mod/src
       - ClimaAtmos.jl-mod/toml
       - ClimaAtmos.jl-mod/config
       - .calkit/env-locks/clima
@@ -394,10 +390,9 @@ stages:
       --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
       ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
       ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep
-      ClimaAtmos.jl-mod/src --dep CloudMicrophysics.jl-mod/src --dep
-      .calkit/env-locks/clima --out results/step-breakdown.toml --option
-      --gpus=1 --option --time=90 -- scripts/run-julia-script.sh
-      --project=ClimaCoupler.jl-mod/experiments/AMIP
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
+      results/step-breakdown.toml --option --gpus=1 --option --time=90 --
+      scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
       scripts/measure-step-breakdown.jl --config_file
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --steps 2880 --out results/step-breakdown.toml
@@ -412,7 +407,6 @@ stages:
       - ClimaCore.jl-mod/ext
       - ClimaCore.jl-mod/src
       - ClimaAtmos.jl-mod/src
-      - CloudMicrophysics.jl-mod/src
       - .calkit/env-locks/clima
     outs:
       - results/step-breakdown.toml:
@@ -577,16 +571,15 @@ stages:
     cmd: calkit scheduler batch --name cm-registers --environment clima --dep
       scripts/measure-cm-registers.jl --dep
       ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
-      ClimaAtmos.jl-mod/src --dep CloudMicrophysics.jl-mod/src --dep
-      ClimaCore.jl-mod/ext --dep .calkit/env-locks/clima --out
-      results/cm-registers.toml --option --gpus=1 --option --time=40 --
-      scripts/run-cm-registers.sh ClimaCoupler.jl-mod/experiments/AMIP
+      ClimaAtmos.jl-mod/src --dep ClimaCore.jl-mod/ext --dep
+      .calkit/env-locks/clima --out results/cm-registers.toml --option --gpus=1
+      --option --time=40 -- scripts/run-cm-registers.sh
+      ClimaCoupler.jl-mod/experiments/AMIP
     deps:
       - scripts/run-cm-registers.sh
       - scripts/measure-cm-registers.jl
       - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
       - ClimaAtmos.jl-mod/src
-      - CloudMicrophysics.jl-mod/src
       - ClimaCore.jl-mod/ext
       - .calkit/env-locks/clima
     outs:
@@ -621,10 +614,10 @@ stages:
       --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
       ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
       ClimaCore.jl-mod/ext --dep ClimaCore.jl-mod/src --dep ClimaCore.jl-mod/lib
-      --dep ClimaAtmos.jl-mod/src --dep CloudMicrophysics.jl-mod/src --dep
-      .calkit/env-locks/clima --out results/launch-bounds/launch-bounds.toml
-      --option --gpus=1 --option --time=300 --
-      scripts/run-launch-bounds-study.sh ClimaCoupler.jl-mod/experiments/AMIP
+      --dep ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
+      results/launch-bounds/launch-bounds.toml --option --gpus=1 --option
+      --time=300 -- scripts/run-launch-bounds-study.sh
+      ClimaCoupler.jl-mod/experiments/AMIP
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       results/launch-bounds/launch-bounds.toml
     deps:
@@ -639,7 +632,6 @@ stages:
       - ClimaCore.jl-mod/src
       - ClimaCore.jl-mod/lib
       - ClimaAtmos.jl-mod/src
-      - CloudMicrophysics.jl-mod/src
       - .calkit/env-locks/clima
     outs:
       - results/launch-bounds/launch-bounds.toml:
