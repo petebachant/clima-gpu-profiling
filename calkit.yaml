@@ -381,10 +381,15 @@ tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod
     description: >-
-      Per-kernel Nsight Systems aggregates for the top 20 kernels ranked by
-      baseline total time, covering both the baseline and modified runs:
-      invocation counts, total and mean duration, share of total GPU time,
-      registers per thread, and the percent change in total time.
+      Per-kernel Nsight Systems aggregates for the top 20 kernels, ranked by
+      whichever arm spends longer in them so a kernel that exists only in the
+      modified arm is not dropped: invocation counts, total and mean duration,
+      share of total GPU time, registers per thread, and the percent change in
+      total time. `pairing` says how each row's two arms were matched --
+      `exact` on the full mangled name, `rank` where an upstream edit renumbered
+      the kernel's source line and the group was separated enough in time to
+      match it unambiguously, or `baseline only`/`mod only` where no confident
+      match exists and the row is left half empty rather than guessed.
 
   - path: results/kernel-resources.csv
     title: Per-kernel register, spill, and occupancy stats
