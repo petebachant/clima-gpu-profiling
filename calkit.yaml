@@ -195,7 +195,7 @@ questions:
           total now agree, because the arms differ by the fold and nothing else;
           the earlier run of this stage had to warn that they did not. Read out
           of results/fold-record/, a verbatim copy of the measurement's tag that
-          scripts/snapshot-fold-record.py re-makes on every pass, since
+          scripts/snapshot-tag-records.py re-makes on every pass, since
           ClimaAtmos main now carries the fold and the live file describes a null
           test.
       - kind: value
@@ -269,6 +269,8 @@ questions:
       Compilation shrank with it: {pen_steps:.0f} ordinary steps, {pen_pct:.1f}% of them, are slower in the specialized arm, {pen_s:.1f} s in total or {pen_per_step:.2f} ms averaged over every ordinary step, worst single step {pen_worst_ms:,.0f} ms and the last above 200 ms at step {pen_last:,.0f}. It is first-call compilation of the specialized methods rather than noise, which would be symmetric, but at {pen_s:.1f} s it no longer moves the headline.
       The steady-state figure now agrees with the whole window rather than correcting it: {ss_pct:.2f}% over the final {ss_cycles:.0f} diagnostics cycles, {ss_exdiag_pct:.2f}% excluding the diagnostics steps, against {saved_pct:.2f}% for the window entire. It is flat wherever the cutoff is put -- {sens720:.2f}% from step 720, {sens1440:.2f}% from step 1440, {sens2400:.2f}% from step 2400 -- which is what a run with little compilation left in it looks like.
       End to end, on the unprofiled AMIP pair rather than this step-breakdown pair, the treatment is worth {speedup_pct:.2f}% of wall clock, {sypd_base:.4f} to {sypd_mod:.4f} SYPD -- the figures CliMA/ClimaAtmos.jl#4879 quotes. Three measurements of one treatment on three pairs of runs will not agree to the last digit, and the SYPD pair is a throughput ratio while {saved_pct:.2f}% is a duration reduction, so the two must never be quoted as one number.
+      The null test prices that disagreement instead of conceding it. With CliMA/ClimaAtmos.jl#4879 merged both arms sit on one commit, so the same three measurements describe a treatment of nothing: {null_amip:.2f}% on the unprofiled AMIP pair, {null_step:.2f}% on the step-breakdown pair, {null_nsys:.2f}% profiled, and {null_ss:.2f}% in steady state. All four are zero, and two have the wrong sign. The device chain agrees it is zero where it should -- {null_device:.2f}% across the treated kernels, {null_arm:.2f}% over the whole arm -- which is the direct check that device-side nsys figures are the trustworthy ones.
+      So the floor is a few points of wall clock, and it is not reduced by averaging runs that disagree this much. Read against it, this treatment's {speedup_pct:.2f}% is a small multiple of the spread rather than comfortably clear of it, and a candidate worth a percent or two is below the resolution of a single pair of runs however carefully the pair is run.
       So the lesson is not about conversion, which was never the problem. It is that a benchmark whose periodic work dominates its wall clock will report a fraction of any every-step saving, and will do so without any sign that it is doing it. Convert a kernel result through the step distribution before promising it as a speedup, and check what fraction of the window the ordinary steps actually hold.
       Measure both arms. The one-arm version of this stage reported {mod_frac:.1f}% of wall in the mod arm's expensive steps against {base_frac:.1f}% in the baseline's, which reads as a treatment effect and is not one: the threshold is 1.25x each arm's OWN median, and the fold moved the median from {base_med:.1f} to {mod_med:.1f} ms, so an unchanged distribution crosses a lower bar. Those fields cannot be read across arms; a fixed periodic classification can.
     evidence:
@@ -337,11 +339,41 @@ questions:
           body quotes has to be one the pipeline checks. `speedup_pct` is a
           reduction in wall clock and the two `sypd` values are a throughput
           ratio; they describe the same treatment and are not interchangeable.
-          Read out of results/fold-record/, which scripts/snapshot-fold-record.py
+          Read out of results/fold-record/, which scripts/snapshot-tag-records.py
           re-copies from the measurement's tag on every pass. The live
           results/summary.json describes whatever ran last, and what ran last is
           now a null test: ClimaAtmos main carries the fold, so both arms are
           identical and the live file would render ~0% under this prose.
+      - kind: result
+        path: results/null-record/summary.json
+        values:
+          null_amip: speedup_pct
+          null_nsys: nsys_speedup_pct
+          null_ss: steady_state_pct
+        explanation: >-
+          The same pipeline run with both arms on one commit, so every figure it
+          reports is a measurement of nothing. It is what the treatment's
+          percentages must be read against, and it is as perishable as they are
+          -- so it is pinned out of its tag by the same stage, not read live.
+      - kind: result
+        path: results/null-record/step-comparison.json
+        values:
+          null_step: saved_pct
+        explanation: >-
+          The step-breakdown pair's own verdict on the null test, which is the
+          third of the three wall-clock measurements and disagrees in sign with
+          the AMIP pair. Also the run that showed the steady-state cutoff was
+          calibrated inside this noise: with no compilation difference possible
+          it still found spikes, one of them late enough to empty the window.
+      - kind: result
+        path: results/null-record/param-fold.json
+        values:
+          null_device: fold_attributable.change_pct
+          null_arm: device_total.change_pct
+        explanation: >-
+          The device side of the null test. Unlike the wall clock it comes back
+          flat, which is the evidence for treating kernel times as the solid
+          measurement and wall clock as the noisy one rather than the reverse.
   - question: >-
       How much of the wall clock do diagnostics cost, and is it worth optimizing them?
     answer: >-
@@ -792,12 +824,13 @@ pipeline:
         - path: results/pass-through.json
           storage: git
 
-    snapshot-fold-record:
+    snapshot-tag-records:
       kind: python-script
-      script_path: scripts/snapshot-fold-record.py
+      script_path: scripts/snapshot-tag-records.py
       environment: py
-      # Copies the fold's measured figures out of its tag with git show, so it
-      # has no file inputs and the next pass cannot rewrite what it reports.
+      # Copies each measurement's figures out of its tag with git show, so it has
+      # no file inputs and the next pass cannot rewrite what it reports. The fold
+      # is one record and the null test that calibrates it is the other.
       always_run: true
       outputs:
         - path: results/fold-record/summary.json
@@ -807,6 +840,14 @@ pipeline:
         - path: results/fold-record/param-fold.json
           storage: git
         - path: results/fold-record/provenance.json
+          storage: git
+        - path: results/null-record/summary.json
+          storage: git
+        - path: results/null-record/step-comparison.json
+          storage: git
+        - path: results/null-record/param-fold.json
+          storage: git
+        - path: results/null-record/provenance.json
           storage: git
 
     export-kernel-resources:

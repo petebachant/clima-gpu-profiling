@@ -1379,8 +1379,8 @@ stages:
       nfiles: 2
     - path: calkit.yaml
       hash: md5
-      md5: 7a68c5c9ad0f3bb17b4b8ea87c090a30
-      size: 71631
+      md5: 8bef65cf56c6536c0ad6fd37a906cca9
+      size: 75105
     - path: diffs
       hash: md5
       md5: 90c837f97ed6cb9a6f5dcdfcf7672b96.dir
@@ -1393,7 +1393,7 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: e90ebdca16edb6d04f748240b68e207c
+      md5: c95aa44ec2aa70f119378976dfbc2b40
       size: 31490
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
@@ -3621,3 +3621,48 @@ stages:
       hash: md5
       md5: 7dca76160afbc2b1da8a5465374ef171
       size: 2218
+  snapshot-tag-records:
+    cmd: calkit xenv -n py --no-check -- python scripts/snapshot-tag-records.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: scripts/snapshot-tag-records.py
+      hash: md5
+      md5: 424d7357ebc7a0a87e03f19b1e22a0a6
+      size: 4119
+    outs:
+    - path: results/fold-record/param-fold.json
+      hash: md5
+      md5: af85a0d8b0c5b6e4bf2954188c0833e4
+      size: 7564
+    - path: results/fold-record/provenance.json
+      hash: md5
+      md5: 20890a4f6e63007935127f9b58387fb2
+      size: 1173
+    - path: results/fold-record/step-comparison.json
+      hash: md5
+      md5: 3e2c4fd6f6c66507dad0a48943178aaa
+      size: 3102
+    - path: results/fold-record/summary.json
+      hash: md5
+      md5: 7dca76160afbc2b1da8a5465374ef171
+      size: 2218
+    - path: results/null-record/param-fold.json
+      hash: md5
+      md5: e27750c75b19891ac55ad7e98509582d
+      size: 7979
+    - path: results/null-record/provenance.json
+      hash: md5
+      md5: ffbc1348dfd0477a4edc3837fa0b8282
+      size: 1125
+    - path: results/null-record/step-comparison.json
+      hash: md5
+      md5: c642d2b1da4b6169dcfe354cbc202736
+      size: 3223
+    - path: results/null-record/summary.json
+      hash: md5
+      md5: 5b0ad5807b95506a47d77fcb7a84af19
+      size: 2220
