@@ -21,6 +21,8 @@ EXPERIMENTS = [
     ("exp/2026-09-24-fused-radiation", "radiation", "both bands fused"),
     ("exp/2026-10-10-fold-alone", "microphysics",
      "microphysics parameters folded into the struct type, fold alone"),
+    ("exp/2026-10-21-fold-same-revision", "microphysics",
+     "the same fold on the merged stack, every profiling stage on one revision"),
 ]
 
 
