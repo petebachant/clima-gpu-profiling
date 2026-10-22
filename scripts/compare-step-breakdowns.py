@@ -77,8 +77,29 @@ def main():
     # diagnostics-cycle boundary so it holds whole periodic cycles. The cutoff is derived
     # from the penalty itself rather than chosen, and `sensitivity` below lets
     # the choice be audited -- the figure plateaus well before it.
-    last_spike = max((i for i, v in pen if v > 200), default=0)
+    #
+    # What counts as a spike is calibrated against this run's own jitter instead
+    # of a fixed threshold. Only the mod arm compiles extra specializations, so a
+    # step where the BASELINE ran slow cannot be compilation; the largest such
+    # excursion is therefore a floor on what jitter alone produces, and only a
+    # penalty exceeding it is evidence of anything else. The fixed 200 ms this
+    # replaced was inside the jitter: the 2026-10-22 null test, both arms on the
+    # same commit and so compiling identically, still showed four "spikes" (steps
+    # 47, 768, 1992, 2613) against six excursions the other way. The last of them
+    # sat in the final diagnostics cycle, which pushed `lo` to `n` and divided by
+    # zero below -- and on the fold run the same noise picked the window that
+    # produced the published figure, step 799 setting lo = 1440.
+    jitter_floor = max((bw[i] - mw[i] for i in plain), default=0.0)
+    spikes = [i for i, v in pen if v > jitter_floor]
+    last_spike = max(spikes, default=0)
     lo = -(-(last_spike + 1) // DIAG_PERIOD) * DIAG_PERIOD
+    if lo >= n:
+        sys.exit(
+            f"no steady-state window: the last compilation spike (step {last_spike}, "
+            f"above this run's {jitter_floor:.0f} ms jitter floor) leaves fewer than "
+            f"{DIAG_PERIOD} steps, so the window would be empty. The mod arm is still "
+            "compiling at the end of the run; measure a longer window."
+        )
 
     def saving(idx):
         sb, sm = sum(bw[i] for i in idx), sum(mw[i] for i in idx)
@@ -91,8 +112,10 @@ def main():
         "cycles": (n - lo) // DIAG_PERIOD,
         "criterion": (
             f"first diagnostics-cycle boundary at or after the last step whose penalty "
-            f"exceeded 200 ms (step {last_spike})"
+            f"exceeded this run's jitter floor of {jitter_floor:.0f} ms (step {last_spike})"
         ),
+        "jitter_floor_ms": jitter_floor,
+        "spikes_above_jitter_floor": spikes,
         "saved_pct": saving(ss),
         "saved_pct_ex_diagnostics": saving([i for i in ss if i % DIAG_PERIOD != DIAG_PHASE]),
         "saved_median_plain_ms": st.median([bw[i] - mw[i] for i in ss_plain]),
