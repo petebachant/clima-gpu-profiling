@@ -50,10 +50,12 @@ results = Dict{String, Any}(
     "tps_isbits" => isbits(TPS),
     "mp_sizeof_bytes" => sizeof(MP),
     "tps_sizeof_bytes" => sizeof(TPS),
-    "note" => "registers for one microphysics body compiled three ways: " *
-              "parameters as runtime arguments, as const globals, and via " *
-              "Val. The const-global column is the target Val is trying to " *
-              "reach; runtime arguments are what the model does today.",
+    "note" => "registers for one body compiled several ways: parameters as " *
+              "runtime arguments, as const globals, and via Val. The " *
+              "const-global column is the target Val is trying to reach; " *
+              "runtime arguments are what the model does today. The `quad_` " *
+              "rows are the path the model runs, the `td_` rows the " *
+              "Thermodynamics call it makes.",
 )
 @printf("MP isbits=%s (%d B)   TPS isbits=%s (%d B)\n",
         isbits(MP), sizeof(MP), isbits(TPS), sizeof(TPS))
@@ -283,6 +285,45 @@ results["evaluator_fold_gains_step"] = warps(te) > warps(fe)
     "\nmoving the parameters out of the evaluator's fields saves %d registers (%d -> %d); warps/SM %d -> %d%s\n",
     fe - te, fe, te, warps(fe), warps(te),
     warps(te) > warps(fe) ? "  (gains a step)" : "  (no step)",
+)
+
+# --- is there anything left to fold further down the stack? --------------
+# CliMA/ClimaCore.jl#2694 asks whether the pattern is worth spreading into
+# Thermodynamics and CloudMicrophysics. The CloudMicrophysics half is answered
+# above: val_type_parameters lands on const_globals exactly, so no change inside
+# CM can beat what the caller already gets by wrapping.
+#
+# This asks the same of Thermodynamics, on the call the folded kernels make --
+# cloud_fraction.jl passes _unwrapped(thp) to q_vap_saturation, so the parameter
+# set arrives bare there whatever the caller knew. The decisive column is
+# const_globals: if a compile-time constant parameter set buys nothing on this
+# call, no amount of Val can, because Val is only a way of reaching that column.
+@inline function td_body(o, s, tps)
+    o[1] = TD.q_vap_saturation(tps, s.T, s.ρ, s.q_lcl, s.q_icl)
+    return nothing
+end
+
+td_arg(o, s, tps) = td_body(o, s, tps)
+td_const(o, s) = td_body(o, s, TPS)
+td_val(o, s, ::Val{P}) where {P} = td_body(o, s, P)
+
+println("\n=== Thermodynamics: q_vap_saturation, by how the parameters arrive ===")
+td_r_arg = record!("td_runtime_arguments",
+                   CUDA.@cuda launch = false always_inline = true td_arg(out, ST, TPS))
+td_r_const = record!("td_const_globals",
+                     CUDA.@cuda launch = false always_inline = true td_const(out, ST))
+td_r_val = record!("td_val_type_parameters",
+                   CUDA.@cuda launch = false always_inline = true td_val(
+                       out, ST, Val(TPS)))
+
+results["td_const_saving_vs_arguments"] = td_r_arg - td_r_const
+results["td_val_saving_vs_arguments"] = td_r_arg - td_r_val
+results["td_val_matches_const"] = td_r_val <= td_r_const
+results["td_val_gains_occupancy_step"] = warps(td_r_val) > warps(td_r_arg)
+@printf(
+    "\nTD: const globals save %d registers, Val %d; warps/SM %d -> %d%s\n",
+    td_r_arg - td_r_const, td_r_arg - td_r_val, warps(td_r_arg), warps(td_r_val),
+    warps(td_r_val) > warps(td_r_arg) ? "  (gains a step)" : "  (no step)",
 )
 
 open(out_path, "w") do io

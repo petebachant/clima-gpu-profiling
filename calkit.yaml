@@ -207,6 +207,51 @@ questions:
           register experiment answers for the body it compiles.
 
   - question: >-
+      Is it worth spreading the `Val(params)` pattern into Thermodynamics and CloudMicrophysics, as CliMA/ClimaCore.jl#2694 asks?
+    answer: >-
+      No, on the evidence so far, and the reason is that the pattern has already collected what there is to collect from the caller's side.
+      CloudMicrophysics is settled by measurement rather than argument: wrapping the parameters at the ClimaAtmos call site takes the isolated microphysics body from {val_args:.0f} registers to {val_val:.0f}, which is exactly the {val_const:.0f} a compile-time const global reaches.
+      Const globals are the ceiling of any constant-folding scheme, so no change inside CloudMicrophysics can beat what ClimaAtmos already gets by wrapping on its own side.
+      That matters practically as well as logically, because neither arm of this project devs CloudMicrophysics and a CM release is the slowest path available.
+      On the path the model actually runs, const globals buy nothing at all: the quadrature body compiles to {quad_args:.0f} registers with the parameters as runtime arguments and {quad_const:.0f} as const globals.
+      Whatever pins that kernel at the register cap, it is not the cost of getting parameters into it, so a deeper fold has no target there either.
+      The device budget bounds whatever is left. Of the {mileage_ceiling:.2f}% of device time where cheaper registers could raise occupancy at all, {mileage_treated:.2f}% is the kernels already folded, leaving {mileage_untreated:.2f}% over {mileage_untreated_n:.0f} kernels -- and the largest single piece of that, {mileage_largest_pct:.2f}% of the device, is a ClimaCore broadcast kernel with no parameter struct in it to fold.
+      So there is no kernel left that is both large enough to matter and shaped so that pushing the pattern into a dependency would reach it.
+      Thermodynamics is the half not yet measured on this stack, and the prediction is recorded here before the run rather than after: at the pinned v1.3.0 both `q_vap_saturation` methods the folded kernels call are `@inline` and forward the parameter set straight down, so Thermodynamics has no struct field boundary of the kind that erased the fold inside ClimaAtmos's own evaluator.
+      The `td_` rows that scripts/measure-val-params-registers.jl now records are the test, and if they come back showing const globals saving registers on that call then this answer is wrong and the measurement will say so.
+    evidence:
+      - kind: result
+        path: results/val-params-registers.toml
+        values:
+          val_args: runtime_arguments.registers
+          val_val: val_type_parameters.registers
+          val_const: const_globals.registers
+          quad_args: quad_runtime_arguments.registers
+          quad_const: quad_const_globals.registers
+        explanation: >-
+          The three ways a parameter set can reach a kernel, compiled on the
+          CloudMicrophysics body and on the quadrature path that calls it. The
+          const-global column is what makes this an answer about the dependency
+          rather than about Val: it is the best any constant-folding scheme can
+          do, reachable only because the harness is standalone, and a dependency
+          change cannot go past it. Compile-only with
+          `CUDA.@cuda launch=false`, so nothing executes.
+      - kind: result
+        path: results/val-mileage.json
+        values:
+          mileage_ceiling: ceiling_pct_of_device
+          mileage_treated: treated_pct_of_device
+          mileage_untreated: untreated_pct_of_device
+          mileage_untreated_n: untreated_kernels
+          mileage_largest_pct: largest_untreated_pct_of_device
+        explanation: >-
+          What is left to aim at, in device time rather than kernel counts. A
+          dependency-wide change has to pay for itself out of this, and the
+          figure to compare it against is the untreated remainder, not the
+          ceiling: the ceiling's two largest entries are the kernels this
+          project has already folded from the ClimaAtmos side.
+
+  - question: >-
       A kernel optimization saves N ms of device time on every step. How much wall clock does it return?
     answer: >-
       Essentially all of it, once the benchmark resembles the run you care about. On a benchmark that does not, most of it disappears -- and that is a property of the benchmark, not of the optimization.
