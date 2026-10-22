@@ -11,6 +11,12 @@
   "addressable_ms": 3754.1,
   "addressable_kernels": 21,
   "unmatched_pct_of_device": 72.71,
+  "treated_pct_of_device": 15.89,
+  "untreated_pct_of_device": 4.8,
+  "untreated_kernels": 18,
+  "largest_untreated_pct_of_device": 3.159,
+  "largest_untreated_kernel": "copyto_by_slices",
+  "largest_untreated_registers_to_shed": 2,
   "at_full_occupancy_pct_of_device": 4.44,
   "note": "ceiling_pct_of_device is the share of device time held by kernels capped by registers alone and below full occupancy. It is an upper bound on what cheaper registers could reach, NOT a predicted saving: it assumes nothing about how many registers a fold sheds or what a block per SM is worth. No SYPD figure is derived here.",
   "candidates": [
@@ -23,7 +29,8 @@
       "block_size": 384,
       "warps_per_sm": 12,
       "registers_for_next_step": 85,
-      "registers_to_shed": 68
+      "registers_to_shed": 68,
+      "already_folded": true
     },
     {
       "kernel": "copyto_by_slices__FILE_ClimaCore_jl_src_Operators_broadcast_jl_L252",
@@ -34,7 +41,8 @@
       "block_size": 128,
       "warps_per_sm": 40,
       "registers_for_next_step": 46,
-      "registers_to_shed": 2
+      "registers_to_shed": 2,
+      "already_folded": false
     },
     {
       "kernel": "set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L982",
@@ -45,7 +53,8 @@
       "block_size": 512,
       "warps_per_sm": 16,
       "registers_for_next_step": 64,
-      "registers_to_shed": 54
+      "registers_to_shed": 54,
+      "already_folded": true
     },
     {
       "kernel": "non_orographic_gravity_wave_forcing_FILE_ClimaAtmos_jl_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gra",
@@ -56,7 +65,8 @@
       "block_size": 128,
       "warps_per_sm": 8,
       "registers_for_next_step": 170,
-      "registers_to_shed": 85
+      "registers_to_shed": 85,
+      "already_folded": false
     },
     {
       "kernel": "materialized_variance_fidelity__FILE_ClimaAtmos_jl_src_parameterized_tendencies_microphysics_cloud_fraction_jl_L482",
@@ -67,7 +77,8 @@
       "block_size": 640,
       "warps_per_sm": 20,
       "registers_for_next_step": 51,
-      "registers_to_shed": 35
+      "registers_to_shed": 35,
+      "already_folded": false
     },
     {
       "kernel": "_FILE_ClimaCore_jl_src_Operators_integrals_jl_L150",
@@ -78,7 +89,8 @@
       "block_size": 224,
       "warps_per_sm": 49,
       "registers_for_next_step": 36,
-      "registers_to_shed": 4
+      "registers_to_shed": 4,
+      "already_folded": false
     },
     {
       "kernel": "set_sgs_moments_and_cloud_fraction__NVTX",
@@ -89,7 +101,8 @@
       "block_size": 640,
       "warps_per_sm": 40,
       "registers_for_next_step": 34,
-      "registers_to_shed": 9
+      "registers_to_shed": 9,
+      "already_folded": true
     },
     {
       "kernel": "calc_saturation_profile__FILE_ClimaAtmos_jl_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1",
@@ -100,7 +113,8 @@
       "block_size": 224,
       "warps_per_sm": 21,
       "registers_for_next_step": 73,
-      "registers_to_shed": 23
+      "registers_to_shed": 23,
+      "already_folded": false
     },
     {
       "kernel": "set_edmfx_surface_conditions__FILE_ClimaAtmos_jl_src_prognostic_equations_edmfx_boundary_condition_jl_L123",
@@ -111,7 +125,8 @@
       "block_size": 224,
       "warps_per_sm": 35,
       "registers_for_next_step": 48,
-      "registers_to_shed": 4
+      "registers_to_shed": 4,
+      "already_folded": false
     },
     {
       "kernel": "set_edmfx_surface_conditions__FILE_ClimaAtmos_jl_src_prognostic_equations_edmfx_boundary_condition_jl_L101",
@@ -122,7 +137,8 @@
       "block_size": 224,
       "warps_per_sm": 49,
       "registers_for_next_step": 36,
-      "registers_to_shed": 2
+      "registers_to_shed": 2,
+      "already_folded": false
     },
     {
       "kernel": "set_edmfx_surface_conditions__FILE_ClimaAtmos_jl_src_prognostic_equations_edmfx_boundary_condition_jl_L112",
@@ -133,7 +149,8 @@
       "block_size": 224,
       "warps_per_sm": 49,
       "registers_for_next_step": 36,
-      "registers_to_shed": 2
+      "registers_to_shed": 2,
+      "already_folded": false
     },
     {
       "kernel": "calc_saturation_profile__FILE_ClimaAtmos_jl_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1",
@@ -144,7 +161,8 @@
       "block_size": 224,
       "warps_per_sm": 49,
       "registers_for_next_step": 36,
-      "registers_to_shed": 4
+      "registers_to_shed": 4,
+      "already_folded": false
     },
     {
       "kernel": "calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_j",
@@ -155,7 +173,8 @@
       "block_size": 224,
       "warps_per_sm": 49,
       "registers_for_next_step": 36,
-      "registers_to_shed": 4
+      "registers_to_shed": 4,
+      "already_folded": false
     },
     {
       "kernel": "calc_base_flux__FILE_ClimaAtmos_jl_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L978",
@@ -166,7 +185,8 @@
       "block_size": 224,
       "warps_per_sm": 49,
       "registers_for_next_step": 36,
-      "registers_to_shed": 4
+      "registers_to_shed": 4,
+      "already_folded": false
     },
     {
       "kernel": "calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_j",
@@ -177,7 +197,8 @@
       "block_size": 224,
       "warps_per_sm": 49,
       "registers_for_next_step": 36,
-      "registers_to_shed": 2
+      "registers_to_shed": 2,
+      "already_folded": false
     },
     {
       "kernel": "get_pbl_z__FILE_ClimaAtmos_jl_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L828",
@@ -188,7 +209,8 @@
       "block_size": 224,
       "warps_per_sm": 49,
       "registers_for_next_step": 36,
-      "registers_to_shed": 4
+      "registers_to_shed": 4,
+      "already_folded": false
     },
     {
       "kernel": "non_orographic_gravity_wave_compute_tendency__FILE_ClimaAtmos_jl_src_parameterized_tendencies_gravity_wave_drag_non_orog",
@@ -199,7 +221,8 @@
       "block_size": 224,
       "warps_per_sm": 28,
       "registers_for_next_step": 58,
-      "registers_to_shed": 14
+      "registers_to_shed": 14,
+      "already_folded": false
     },
     {
       "kernel": "calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_j",
@@ -210,7 +233,8 @@
       "block_size": 224,
       "warps_per_sm": 49,
       "registers_for_next_step": 36,
-      "registers_to_shed": 4
+      "registers_to_shed": 4,
+      "already_folded": false
     },
     {
       "kernel": "calc_base_flux__FILE_ClimaAtmos_jl_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1036",
@@ -221,7 +245,8 @@
       "block_size": 224,
       "warps_per_sm": 49,
       "registers_for_next_step": 36,
-      "registers_to_shed": 4
+      "registers_to_shed": 4,
+      "already_folded": false
     },
     {
       "kernel": "calc_base_flux__FILE_ClimaAtmos_jl_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1028",
@@ -232,7 +257,8 @@
       "block_size": 224,
       "warps_per_sm": 49,
       "registers_for_next_step": 36,
-      "registers_to_shed": 2
+      "registers_to_shed": 2,
+      "already_folded": false
     },
     {
       "kernel": "set_insolation_variables__FILE_ClimaAtmos_jl_src_callbacks_callbacks_jl_L258",
@@ -243,7 +269,8 @@
       "block_size": 224,
       "warps_per_sm": 28,
       "registers_for_next_step": 58,
-      "registers_to_shed": 9
+      "registers_to_shed": 9,
+      "already_folded": false
     }
   ]
 }

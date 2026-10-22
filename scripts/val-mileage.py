@@ -56,6 +56,17 @@ TOP_N = 25
 # Below this share of device time accounted for, nothing can be bounded.
 MIN_COVERAGE_PCT = 25.0
 
+# The kernels that already carry the fold, by the same name patterns
+# scripts/export-param-fold.py selects on. The ceiling counts them, because they
+# are still register-limited and below full occupancy after the fold -- so the
+# interesting figure is the ceiling with them taken out, which is what is left
+# for anyone applying the pattern somewhere new.
+TREATED = (
+    "set_microphysics_tendency_cache",
+    "set_cloud_fraction",
+    "set_sgs_moments_and_cloud_fraction",
+)
+
 # A100 sm_80, per SM. Same constants as scripts/export-param-fold.py.
 REGS_PER_SM = 65536
 MAX_WARPS_PER_SM = 64
@@ -195,6 +206,11 @@ def main():
         })
     rows.sort(key=lambda r: r["total_ms"], reverse=True)
 
+    for r in rows:
+        r["already_folded"] = any(t in r["kernel"] for t in TREATED)
+    treated_ms = sum(r["total_ms"] for r in rows if r["already_folded"])
+    untreated = [r for r in rows if not r["already_folded"]]
+
     out = {
         "source_nsys": str(NSYS),
         "source_population": str(POP),
@@ -208,6 +224,16 @@ def main():
         "addressable_ms": round(addressable_ns / 1e6, 1),
         "addressable_kernels": sum(1 for v in matched.values() if v["addressable"]),
         "unmatched_pct_of_device": round(100 - 100 * matched_ns / device_ns, 2),
+        "treated_pct_of_device": round(100 * treated_ms * 1e6 / device_ns, 2),
+        "untreated_pct_of_device": round(
+            sum(r["pct_of_device"] for r in untreated), 2),
+        "untreated_kernels": len(untreated),
+        "largest_untreated_pct_of_device": (
+            untreated[0]["pct_of_device"] if untreated else 0.0),
+        "largest_untreated_kernel": (
+            untreated[0]["kernel"].split("__FILE_")[0] if untreated else None),
+        "largest_untreated_registers_to_shed": (
+            untreated[0]["registers_to_shed"] if untreated else None),
         "at_full_occupancy_pct_of_device": round(100 * full_occ_ns / device_ns, 2),
         "note": (
             "ceiling_pct_of_device is the share of device time held by kernels "
@@ -231,6 +257,9 @@ def main():
     print(f"  addressable             {out['addressable_kernels']} kernels, "
           f"{out['addressable_ms']:.1f} ms")
     print(f"  CEILING                 {out['ceiling_pct_of_device']:.2f}% of device time")
+    print(f"    of which already folded {out['treated_pct_of_device']:.2f}%, "
+          f"leaving {out['untreated_pct_of_device']:.2f}% over "
+          f"{out['untreated_kernels']} kernels")
     print(f"  already full occupancy  {out['at_full_occupancy_pct_of_device']:.2f}% of device time")
     print()
     print(f"  {'ms':>9} {'%dev':>6} {'regs':>5} {'blk':>5} {'warps':>5} "

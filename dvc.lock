@@ -3617,10 +3617,39 @@ stages:
       size: 1057
     - path: scripts/val-mileage.py
       hash: md5
-      md5: e033da3467a38c52308ecf8e0a9a9411
-      size: 11204
+      md5: ffacd11699d611a0edb754ee2cab8a8e
+      size: 12674
     outs:
     - path: results/val-mileage.json
       hash: md5
-      md5: c7c56c53a6e96a64603f7229ab7f262c
-      size: 8206
+      md5: 7d23faa611ccc2d8a03105174b86f27d
+      size: 9087
+  snapshot-fold-record:
+    cmd: calkit xenv -n py --no-check -- python scripts/snapshot-fold-record.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: scripts/snapshot-fold-record.py
+      hash: md5
+      md5: 70bbd2f266739b45f38b33834aa4c433
+      size: 3662
+    outs:
+    - path: results/fold-record/param-fold.json
+      hash: md5
+      md5: af85a0d8b0c5b6e4bf2954188c0833e4
+      size: 7564
+    - path: results/fold-record/provenance.json
+      hash: md5
+      md5: ff656263977389a2d1073d72ef6da5e0
+      size: 1173
+    - path: results/fold-record/step-comparison.json
+      hash: md5
+      md5: 3e2c4fd6f6c66507dad0a48943178aaa
+      size: 3102
+    - path: results/fold-record/summary.json
+      hash: md5
+      md5: 7dca76160afbc2b1da8a5465374ef171
+      size: 2218

@@ -44,7 +44,7 @@ questions:
           working tree. The microphysics mean is where the "about a third" rule
           came from; radiation converts at roughly twice that.
       - kind: result
-        path: results/param-fold.json
+        path: results/fold-record/param-fold.json
         values:
           fold_quad_launches: kernels.microphysics_quadrature.baseline.launches
           fold_quad_mean_ms: kernels.microphysics_quadrature.baseline.mean_ms
@@ -52,9 +52,10 @@ questions:
           The shape of the kernel the fold saved its time in, which is what the
           reframing rests on. A few long dense launches behave like radiation;
           thousands of small ones per step behave like the two fusion
-          experiments. Cited unpinned because it describes the current stack,
-          and the figures are the baseline arm's, i.e. the kernel as the model
-          runs it without the fold.
+          experiments. The figures are the baseline arm's, i.e. the kernel
+          without the fold -- which is no longer a stack anyone can run, since
+          ClimaAtmos main now carries the fold, so they are read out of the
+          snapshot of the measurement's tag rather than the live file.
       - kind: table
         path: experiments.csv
         explanation: >-
@@ -64,22 +65,47 @@ questions:
   - question: >-
       Does putting the parameters in `Val` make pointwise kernels measurably faster across the board, as CliMA/ClimaCore.jl#2676 asks?
     answer: >-
-      Yes, where the parameters are a real share of the kernel's live state AND the kernel is a real share of the device, and the SIZE of the payoff is set by whether the freed registers let one more block fit on an SM.
-      Four kernels in ClimaAtmos now have it, measured in the model rather than in isolation, and measured across two successive upstream rewrites of those kernels, which is what prices the step itself.
-      Two cross one on the current stack: the SGS quadrature {fold_quad_regs_baseline:.0f} -> {fold_quad_regs_mod:.0f} registers, {fold_quad_warps_baseline:.0f} -> {fold_quad_warps_mod:.0f} warps per SM, {fold_quad_change:.1f}% on the kernel; and the cloud-fraction kernel {fold_cf_regs_baseline:.0f} -> {fold_cf_regs_mod:.0f} registers, {fold_cf_warps_baseline:.0f} -> {fold_cf_warps_mod:.0f} warps, {fold_cf_change:.1f}%.
-      The other two do not: the updraft path sheds {fold_upd_regs_saved:.0f} registers, {fold_upd_regs_baseline:.0f} -> {fold_upd_regs_mod:.0f}, and still sits at {fold_upd_warps_mod:.0f} warps per SM, one block short of the next step, which it would reach at {fold_upd_next_step:.0f}; the SGS-moments kernel sheds {fold_sgs_regs_saved:.0f}, {fold_sgs_regs_baseline:.0f} -> {fold_sgs_regs_mod:.0f}, and stays at {fold_sgs_warps_mod:.0f} warps, needing {fold_sgs_next_step:.0f}.
-      The updraft path took {fold_upd_change:.1f}% anyway, so a fold that misses a step is not a fold that does nothing.
-      The SGS-moments kernel is the counter-case: it sheds only {fold_sgs_regs_saved:.0f} registers, so its {fold_sgs_change:.1f}% is noise rather than a payoff, and the upstream rewrite that fused it into the cloud-fraction pass has absorbed the fold there entirely.
-      What the step is worth can be read off a kernel that switched sides: the updraft path crossed one before and lost it to an added argument, giving back {fold_upd_lost_points:.1f} points of payoff.
-      Neither direction is a controlled comparison, because each of those rewrites also altered the kernel bodies.
-      Share of the device bounds the whole question, and the SGS-moments kernel is the case: at {fold_sgs_ms:.1f} ms of a {fold_dev_ms:.0f} ms baseline device total, a perfect fold there is worth less than a run can resolve, and closing the last two bare-parameter terms in it -- so the fold applies to all of the kernel rather than most of it -- moved the AMIP pair by less than the noise floor.
-      Register count does not predict which case a kernel is in: two kernels that both start at the {fold_quad_regs_baseline:.0f}-register cap land on opposite sides of a step, while a {fold_cf_regs_baseline:.0f}-register one crosses.
-      The distance to the next step does predict it, and it is computable before any code is written, because ClimaCore sizes the launch block from the register count and warps per SM follow from the pair.
-      Across the four kernels this is {fold_own_change:.2f}% of their time on a 120-step window, {fold_total_saved:.0f} ms, concentrated almost entirely in the first kernel, which is {fold_total_change:.2f}% of the whole device.
-      The population bounds how far it can go: of {kernels:.0f} kernels profiled, {addressable:.0f} ({addressable_pct}%) are capped by registers alone AND below full occupancy, while {at_full_occupancy:.0f} are already at full occupancy and can gain nothing however well their parameters fold.
+      Not across the board, and the bound is measured rather than argued: {mileage_ceiling:.2f}% of device time sits in kernels where a register saving could raise occupancy at all, {mileage_treated:.2f}% of that is the kernels this project has already folded, and what is left for anyone applying the pattern somewhere new is {mileage_untreated:.2f}% spread over {mileage_untreated_n:.0f} kernels.
+      Where it does bite it is large, so the useful form of the answer is which kernels and why.
+      Four kernels in ClimaAtmos have the fold, measured in the model rather than in isolation, and three of them cross an occupancy step: the SGS quadrature goes {fold_quad_regs_baseline:.0f} -> {fold_quad_regs_mod:.0f} registers, {fold_quad_warps_baseline:.0f} -> {fold_quad_warps_mod:.0f} warps per SM, {fold_quad_change:.1f}% on the kernel; the updraft path {fold_upd_regs_baseline:.0f} -> {fold_upd_regs_mod:.0f} registers, {fold_upd_warps_baseline:.0f} -> {fold_upd_warps_mod:.0f} warps, {fold_upd_change:.1f}%; the cloud-fraction kernel {fold_cf_regs_baseline:.0f} -> {fold_cf_regs_mod:.0f}, {fold_cf_warps_baseline:.0f} -> {fold_cf_warps_mod:.0f} warps, {fold_cf_change:.1f}%.
+      Crossing a step is necessary and not sufficient, and the cloud-fraction kernel is the demonstration: it crosses and returns {fold_cf_change:.1f}%, because {fold_cf_ms:.1f} ms of a {fold_dev_ms:.0f} ms device total has nothing in it to return.
+      The SGS-moments kernel is the control the other three need: the fold was applied to it the same way, it sheds {fold_sgs_regs_saved:.0f} registers, it stays at {fold_sgs_warps_mod:.0f} warps where the next step would need {fold_sgs_next_step:.0f}, and its {fold_sgs_change:.1f}% is noise rather than a payoff.
+      So there are two gates rather than one -- distance to the next occupancy step, and share of the device -- and both can be computed before any code is written, since ClimaCore sizes the launch block from the register count and warps per SM follow from the pair.
+      Register count predicts neither gate: the quadrature kernel starts at the {fold_quad_regs_baseline:.0f}-register cap and crosses, a {fold_cf_regs_baseline:.0f}-register one crosses as well, and the largest untreated candidate in the whole population is a {mileage_largest_pct:.2f}% ClimaCore broadcast kernel that would cross by shedding {mileage_largest_shed:.0f} registers and carries no parameter struct to fold in the first place.
+      Across the four kernels the fold is worth {fold_own_change:.2f}% of their own time, {fold_total_saved:.0f} ms on a 120-step window, {fold_total_change:.2f}% of the whole device -- and the quadrature kernel is most of that.
+      That subtotal and the whole-arm device saving now agree, {fold_total_saved:.0f} ms against {fold_dev_saved:.0f} ms, which is the arms differing by the fold and nothing else; earlier passes had a second treatment in the mod arm and the two figures could not be read as one.
+      One caution on durability: the same fold on the same kernels measured {fold_upd_prior_change:.1f}% on the updraft path and {fold_cf_prior_change:.1f}% on the cloud-fraction kernel one stack earlier, against {fold_upd_change:.1f}% and {fold_cf_change:.1f}% here, because the upstream rewrites in between changed the kernel bodies.
+      A payoff is a property of the body as it currently stands, not of the pattern.
       The mechanism is settled: Val folds an isbits parameter set to literals and lands on the const-global register count exactly, taking an isolated microphysics evaluation body from {val_args:.0f} registers to {val_val:.0f}, {arg_warps:.0f} to {val_warps:.0f} warps per SM.
-      The thing that will defeat anyone applying it is the struct boundary: an evaluator holding the parameters as FIELDS boxes the constant and reads it back per point, {eval_field_regs:.0f} registers and {eval_field_spill:.0f} bytes of spill against {eval_type_regs:.0f} and {eval_type_spill:.0f} for the same body with the parameters in the type.
+      What defeats people applying it is the struct field boundary rather than inlining: an evaluator holding the parameters as FIELDS boxes the constant and reads it back per point, {eval_field_regs:.0f} registers and {eval_field_spill:.0f} bytes of spill against {eval_type_regs:.0f} and {eval_type_spill:.0f} for the same body with the parameters in the type.
+      That boundary is also why `Val` applied naively to the quadrature body buys nothing: unwrapped and stored it stays at {quad_val:.0f} registers and {quad_val_spill:.0f} bytes of spill, indistinguishable from runtime arguments ({quad_args:.0f} and {quad_spill:.0f}) and from compile-time const globals ({quad_const:.0f}), while carried through still wrapped it drops to {quad_val_carried:.0f} registers and {quad_val_carried_spill:.0f} bytes.
+      And it settles how much further this can be pushed on the one kernel big enough to matter: in the model that kernel now sits at {fold_quad_regs_mod:.0f} registers and needs {fold_quad_next_step:.0f} for a second block per SM, while the fully folded body floors at {quad_val_carried:.0f} in isolation with nothing else in it, so there is no second step to buy there by folding harder.
+      The population says the same thing by counting rather than timing: of {kernels:.0f} kernels profiled, {addressable:.0f} ({addressable_pct}%) are capped by registers alone AND below full occupancy, while {at_full_occupancy:.0f} are already at full occupancy and can gain nothing however well their parameters fold.
+      Read the {mileage_ceiling:.2f}% as a lower bound on the ceiling rather than the ceiling itself: the ncu population covers {mileage_matched:.1f}% of device time, so kernels it did not reach could add to it.
     evidence:
+      - kind: result
+        path: results/val-mileage.json
+        values:
+          mileage_ceiling: ceiling_pct_of_device
+          mileage_treated: treated_pct_of_device
+          mileage_untreated: untreated_pct_of_device
+          mileage_untreated_n: untreated_kernels
+          mileage_largest_pct: largest_untreated_pct_of_device
+          mileage_largest_shed: largest_untreated_registers_to_shed
+          mileage_matched: matched_pct_of_device
+        explanation: >-
+          The question asked in units of time rather than kernels, which is what
+          SYPD is made of: a hundred addressable kernels holding 2% of the device
+          are worth less than one unaddressable kernel holding 20%. Expense comes
+          from the nsys profile, which times every kernel in the window;
+          addressability from the ncu static pass, which records each kernel's
+          occupancy limiter. The join is keyed on name, registers AND block size,
+          because one kernel name covers several compiled specializations --
+          keying on name alone collapsed the ClimaCore broadcast kernel's 42
+          variants into one row and produced a ceiling more than twice this.
+          It is an upper bound and nothing more: being addressable means a
+          register saving COULD buy a block per SM, not that folding parameters
+          sheds enough registers or that a block per SM is worth anything.
       - kind: result
         path: results/val-params-registers.toml
         values:
@@ -91,19 +117,22 @@ questions:
           quad_val: quad_val_type_parameters.registers
           quad_spill: quad_runtime_arguments.local_bytes
           quad_val_spill: quad_val_type_parameters.local_bytes
+          quad_const: quad_const_globals.registers
+          quad_val_carried: quad_val_carried_in.registers
+          quad_val_carried_spill: quad_val_carried_in.local_bytes
           eval_field_regs: evaluator_params_as_fields.registers
           eval_field_spill: evaluator_params_as_fields.local_bytes
           eval_type_regs: evaluator_params_in_type.registers
           eval_type_spill: evaluator_params_in_type.local_bytes
-          mp_bytes: mp_sizeof_bytes
-          tps_bytes: tps_sizeof_bytes
         explanation: >-
-          One microphysics body compiled three ways -- parameters as runtime
+          One microphysics body compiled several ways -- parameters as runtime
           arguments, as const globals, and folded through Val -- for an isolated
-          evaluation and for the quadrature path the model calls. The
-          const-global column is the target, so Val matching it is the mechanism
-          working rather than a coincidence, and in the quadrature case that
-          target is itself the register cap. Compile-only with
+          evaluation and for the quadrature path the model calls. The const-global
+          column is the target, so Val matching it is the mechanism working rather
+          than a coincidence. The two quadrature Val columns are the ones to read
+          together: they look almost identical and measure opposite things, one
+          unwrapping the parameters and storing them, the other keeping them
+          wrapped across the struct boundary. Compile-only with
           `CUDA.@cuda launch=false`, so nothing executes, and standalone, so it
           needs no coupled simulation: the stage is minutes.
       - kind: result
@@ -112,9 +141,7 @@ questions:
           kernels: kernels
           addressable: addressable
           addressable_pct: addressable_pct
-          addressable_at_cap: addressable_at_cap
           at_full_occupancy: at_full_occupancy
-          register_limited: register_limited
         explanation: >-
           The population the question asks about, measured rather than
           extrapolated: for every kernel in a 120-step run, its registers and
@@ -124,54 +151,55 @@ questions:
           full stages cost. results/pointwise-registers.csv has the per-kernel
           rows behind it, including which kernels sit at the cap.
       - kind: result
-        path: results/param-fold.json
+        path: results/fold-record/param-fold.json
         values:
           fold_quad_regs_baseline: kernels.microphysics_quadrature.baseline.registers
           fold_quad_regs_mod: kernels.microphysics_quadrature.mod.registers
           fold_quad_warps_baseline: kernels.microphysics_quadrature.baseline.warps_per_sm
           fold_quad_warps_mod: kernels.microphysics_quadrature.mod.warps_per_sm
+          fold_quad_next_step: kernels.microphysics_quadrature.mod.registers_for_next_step
           fold_quad_change: kernels.microphysics_quadrature.mean_change_pct
           fold_upd_regs_baseline: kernels.microphysics_updraft.baseline.registers
           fold_upd_regs_mod: kernels.microphysics_updraft.mod.registers
-          fold_upd_regs_saved: kernels.microphysics_updraft.registers_saved
+          fold_upd_warps_baseline: kernels.microphysics_updraft.baseline.warps_per_sm
           fold_upd_warps_mod: kernels.microphysics_updraft.mod.warps_per_sm
-          fold_upd_next_step: kernels.microphysics_updraft.mod.registers_for_next_step
           fold_upd_change: kernels.microphysics_updraft.mean_change_pct
-          fold_upd_lost_points: vs_prior_stack.switched.microphysics_updraft.payoff_points
+          fold_upd_prior_change: vs_prior_stack.kernels.microphysics_updraft.prior_change_pct
           fold_cf_regs_baseline: kernels.cloud_fraction.baseline.registers
           fold_cf_regs_mod: kernels.cloud_fraction.mod.registers
           fold_cf_warps_baseline: kernels.cloud_fraction.baseline.warps_per_sm
           fold_cf_warps_mod: kernels.cloud_fraction.mod.warps_per_sm
           fold_cf_change: kernels.cloud_fraction.mean_change_pct
-          fold_sgs_regs_baseline: kernels.sgs_moments.baseline.registers
-          fold_sgs_regs_mod: kernels.sgs_moments.mod.registers
-          fold_sgs_warps_baseline: kernels.sgs_moments.baseline.warps_per_sm
+          fold_cf_prior_change: vs_prior_stack.kernels.cloud_fraction.prior_change_pct
+          fold_cf_ms: kernels.cloud_fraction.baseline.total_ms
           fold_sgs_warps_mod: kernels.sgs_moments.mod.warps_per_sm
           fold_sgs_change: kernels.sgs_moments.mean_change_pct
           fold_sgs_regs_saved: kernels.sgs_moments.registers_saved
           fold_sgs_next_step: kernels.sgs_moments.mod.registers_for_next_step
-          fold_sgs_ms: kernels.sgs_moments.baseline.total_ms
           fold_dev_ms: device_total.baseline_ms
+          fold_dev_saved: device_total.ms_saved
           fold_total_change: fold_attributable.pct_of_device_total
           fold_total_saved: fold_attributable.ms_saved
           fold_own_change: fold_attributable.change_pct
         explanation: >-
           The four kernels the pattern was applied to, as the profiled runs
           compiled them: registers per thread, the block size ClimaCore chose
-          from them, the warps per SM the pair allows, and the time. This is
-          what makes the answer an in-model result rather than a compile-only
-          one -- and the SGS-moments row is the control the other three need,
-          since it had the fold applied the same way and did not cross a step.
-          Read from the nsys databases rather than results/top-kernels.csv,
-          which averages over a kernel name that here covers two kernels at
-          different register counts. The device figure quoted is
-          fold_attributable, the subtotal over these four kernels, not
-          device_total: the mod arm now also carries the fused radiation, so
-          the whole-arm total measures two treatments at once.
+          from them, the warps per SM the pair allows, and the time. This is what
+          makes the answer an in-model result rather than a compile-only one --
+          and the SGS-moments row is the control the other three need, since it
+          had the fold applied the same way and did not cross a step. Read from
+          the nsys databases rather than results/top-kernels.csv, which averages
+          over a kernel name that here covers two kernels at different register
+          counts. The subtotal over these four kernels and the whole-arm device
+          total now agree, because the arms differ by the fold and nothing else;
+          the earlier run of this stage had to warn that they did not. Read out
+          of results/fold-record/, a verbatim copy of the measurement's tag that
+          scripts/snapshot-fold-record.py re-makes on every pass, since
+          ClimaAtmos main now carries the fold and the live file describes a null
+          test.
       - kind: value
         path: results/cm-registers.toml
         key: layers.LinearizedAverage nsub=2.registers
-        name: linearized_avg_registers
         explanation: >-
           Why a layer compiled on its own misleads: it has room for a payload
           saving to appear in its register count, where the broadcast the model
@@ -193,7 +221,7 @@ questions:
       Measure both arms. The one-arm version of this stage reported {mod_frac:.1f}% of wall in the mod arm's expensive steps against {base_frac:.1f}% in the baseline's, which reads as a treatment effect and is not one: the threshold is 1.25x each arm's OWN median, and the fold moved the median from {base_med:.1f} to {mod_med:.1f} ms, so an unchanged distribution crosses a lower bar. Those fields cannot be read across arms; a fixed periodic classification can.
     evidence:
       - kind: result
-        path: results/step-comparison.json
+        path: results/fold-record/step-comparison.json
         values:
           typ_saved: typical_step.saved_median_ms
           typ_device: typical_step.device_predicted_ms
@@ -230,7 +258,7 @@ questions:
           figure is the MEDIAN paired difference, not the mean: the mean is
           lower by exactly the compilation penalty this answer decomposes, so
           quoting the mean would hide the effect inside the headline. The device
-          prediction comes from results/param-fold.json, the subtotal over the
+          prediction comes from results/fold-record/param-fold.json, the subtotal over the
           four folded kernels divided by the profiled window, so the comparison
           is device saving against wall-clock saving for one treatment.
           The counterfactual holds every ordinary step at the median rate and
@@ -245,7 +273,7 @@ questions:
           within the window measured, and does not measure a regime where the
           diagnostics cadence itself changes.
       - kind: result
-        path: results/summary.json
+        path: results/fold-record/summary.json
         values:
           speedup_pct: speedup_pct
           sypd_base: baseline.sypd
@@ -257,9 +285,11 @@ questions:
           body quotes has to be one the pipeline checks. `speedup_pct` is a
           reduction in wall clock and the two `sypd` values are a throughput
           ratio; they describe the same treatment and are not interchangeable.
-          summary.json also carries `nsys_*` fields that come from the frozen
-          nsys stages and so describe an older revision; nothing here cites
-          them.
+          Read out of results/fold-record/, which scripts/snapshot-fold-record.py
+          re-copies from the measurement's tag on every pass. The live
+          results/summary.json describes whatever ran last, and what ran last is
+          now a null test: ClimaAtmos main carries the fold, so both arms are
+          identical and the live file would render ~0% under this prose.
   - question: >-
       How much of the wall clock do diagnostics cost, and is it worth optimizing them?
     answer: >-
@@ -689,6 +719,23 @@ pipeline:
       always_run: true
       outputs:
         - path: results/pass-through.json
+          storage: git
+
+    snapshot-fold-record:
+      kind: python-script
+      script_path: scripts/snapshot-fold-record.py
+      environment: py
+      # Copies the fold's measured figures out of its tag with git show, so it
+      # has no file inputs and the next pass cannot rewrite what it reports.
+      always_run: true
+      outputs:
+        - path: results/fold-record/summary.json
+          storage: git
+        - path: results/fold-record/step-comparison.json
+          storage: git
+        - path: results/fold-record/param-fold.json
+          storage: git
+        - path: results/fold-record/provenance.json
           storage: git
 
     export-kernel-resources:

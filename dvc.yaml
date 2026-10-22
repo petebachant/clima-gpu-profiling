@@ -364,6 +364,27 @@ stages:
     always_changed: true
     desc: Automatically generated from the 'pass-through' stage in calkit.yaml.
       Changes made here will be overwritten.
+  snapshot-fold-record:
+    cmd: calkit xenv -n py --no-check -- python scripts/snapshot-fold-record.py
+    deps:
+      - scripts/snapshot-fold-record.py
+      - .calkit/env-locks/py
+    outs:
+      - results/fold-record/summary.json:
+          cache: false
+          persist: false
+      - results/fold-record/step-comparison.json:
+          cache: false
+          persist: false
+      - results/fold-record/param-fold.json:
+          cache: false
+          persist: false
+      - results/fold-record/provenance.json:
+          cache: false
+          persist: false
+    always_changed: true
+    desc: Automatically generated from the 'snapshot-fold-record' stage in
+      calkit.yaml. Changes made here will be overwritten.
   export-kernel-resources:
     cmd: calkit xenv -n py --no-check -- python
       scripts/export-kernel-resources.py
