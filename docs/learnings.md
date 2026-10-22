@@ -2818,3 +2818,57 @@ Deleted with the stages: `compare-state-divergence.py`,
 `measure-state-divergence.jl` and `verify-fused-lw.jl`, by 8a's rule that a
 script no stage runs is dead weight. `run-julia-script.sh` stays --- three live
 stages use it, and AGENTS.md warns against touching its GPU-guard block.
+
+## 8e. The null test measures the noise floor, and one criterion was inside it (2026-10-22)
+
+CliMA/ClimaAtmos.jl#4879 merged, so the fold is in `main` and both arms sit on
+one commit. `record-treatment` prints `arms differ in: NOTHING (null test)`,
+which makes this pass a measurement of the pipeline rather than of a treatment,
+and the first one that can say how large a difference has to be to mean
+anything. The figures are injected into the question that uses them rather than
+written here, per the rule at the top of AGENTS.md: see the conversion question
+in `calkit.yaml` and `results/null-record/`.
+`exp/2026-10-21-fold-same-revision` holds the fold's figures; this pass holds
+the floor they should be read against.
+
+On the device the chain reports what it should: the treated kernels do not move,
+and the quadrature kernel shows the same register count and the same warps per
+SM in both columns. Device-side nsys numbers are trustworthy, as section 2b-i
+already had it, and this is the direct check of that.
+
+The wall clock is the part worth remembering, because the three wall-clock
+measurements of nothing --- the unprofiled AMIP pair, the step-breakdown pair
+and the profiled nsys pair --- disagree with each other by several points, and
+two of the three have the wrong sign. All three are zero. So a wall-clock result
+of a few percent on one pair of runs is not a result; the fold's headline is a
+small multiple of the spread rather than comfortably outside it; and the three
+figures must keep being quoted separately, because a throughput ratio and a
+duration reduction are not one number, and neither is an average of runs that
+disagree this much.
+
+The criterion that broke is the lesson. `compare-step-breakdowns.py` picked its
+steady-state window as "after the last compilation spike", with a spike defined
+as the mod arm running more than 200 ms slow --- a threshold chosen on a run
+where the mod arm genuinely compiled extra specializations early. With identical
+code and no compilation difference possible, the null test still found several
+such spikes, and slightly fewer excursions the other way: the threshold was
+inside the jitter all along, and the filter was counting noise in the direction
+it happened to be looking. One of them landed in the final diagnostics cycle,
+which pushed the window start past the end of the run and divided by zero.
+
+A fixed threshold cannot work here, because the quantity it is compared against
+has no fixed scale. The cutoff is now calibrated against the run's own jitter:
+only the mod arm compiles extra specializations, so a step where the *baseline*
+ran slow cannot be compilation, and the largest such excursion is a floor on
+what noise alone produces. Only a penalty above it counts as evidence. Both runs
+then find no spikes and settle on the first diagnostics boundary, and an
+explicit guard reports an unusable window instead of dividing by zero.
+
+This reaches back one step. The fold's published steady-state figure came from a
+window that a noise spike selected, and the same data under the calibrated rule
+gives a slightly larger saving. Both sit inside the sensitivity spread the stage
+already recorded, so nothing published was wrong --- the sensitivity table was
+doing its job, which is why this is a correction to a criterion and not to a
+result. But a window chosen by jitter is a window chosen by nothing, and the
+pinned record keeps the figure that was actually published rather than drifting
+to the new one.

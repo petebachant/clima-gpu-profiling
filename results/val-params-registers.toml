@@ -3,7 +3,7 @@ evaluator_fold_gains_step = true
 evaluator_fold_saving = 109
 mp_isbits = true
 mp_sizeof_bytes = 364
-note = "registers for one microphysics body compiled three ways: parameters as runtime arguments, as const globals, and via Val. The const-global column is the target Val is trying to reach; runtime arguments are what the model does today."
+note = "registers for one body compiled several ways: parameters as runtime arguments, as const globals, and via Val. The const-global column is the target Val is trying to reach; runtime arguments are what the model does today. The `quad_` rows are the path the model runs, the `td_` rows the Thermodynamics call it makes."
 quad_inlining_cost_registers = 0
 quad_noinline_gains_step = false
 quad_noinline_val_gains_step = false
@@ -12,6 +12,10 @@ quad_val_carried_saving = 124
 quad_val_gains_occupancy_step = false
 quad_val_matches_const = true
 quad_val_saving_vs_arguments = 0
+td_const_saving_vs_arguments = 0
+td_val_gains_occupancy_step = false
+td_val_matches_const = true
+td_val_saving_vs_arguments = 0
 tps_isbits = true
 tps_sizeof_bytes = 104
 val_gains_occupancy_step = true
@@ -67,6 +71,21 @@ warps_per_sm = 8
 local_bytes = 32
 registers = 215
 warps_per_sm = 8
+
+[td_const_globals]
+local_bytes = 32
+registers = 32
+warps_per_sm = 16
+
+[td_runtime_arguments]
+local_bytes = 32
+registers = 32
+warps_per_sm = 16
+
+[td_val_type_parameters]
+local_bytes = 32
+registers = 32
+warps_per_sm = 16
 
 [val_type_parameters]
 local_bytes = 32

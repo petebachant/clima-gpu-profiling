@@ -218,8 +218,9 @@ questions:
       Whatever pins that kernel at the register cap, it is not the cost of getting parameters into it, so a deeper fold has no target there either.
       The device budget bounds whatever is left. Of the {mileage_ceiling:.2f}% of device time where cheaper registers could raise occupancy at all, {mileage_treated:.2f}% is the kernels already folded, leaving {mileage_untreated:.2f}% over {mileage_untreated_n:.0f} kernels -- and the largest single piece of that, {mileage_largest_pct:.2f}% of the device, is a ClimaCore broadcast kernel with no parameter struct in it to fold.
       So there is no kernel left that is both large enough to matter and shaped so that pushing the pattern into a dependency would reach it.
-      Thermodynamics is the half not yet measured on this stack, and the prediction is recorded here before the run rather than after: at the pinned v1.3.0 both `q_vap_saturation` methods the folded kernels call are `@inline` and forward the parameter set straight down, so Thermodynamics has no struct field boundary of the kind that erased the fold inside ClimaAtmos's own evaluator.
-      The `td_` rows that scripts/measure-val-params-registers.jl now records are the test, and if they come back showing const globals saving registers on that call then this answer is wrong and the measurement will say so.
+      Thermodynamics was the half not yet measured, and the prediction was recorded before the run rather than after: at the pinned v1.3.0 both `q_vap_saturation` methods the folded kernels call are `@inline` and forward the parameter set straight down, so Thermodynamics has no struct field boundary of the kind that erased the fold inside ClimaAtmos's own evaluator, and const globals saving registers on that call would have falsified this answer.
+      It held, and more cleanly than predicted. The call compiles to {td_args:.0f} registers with the parameter set as a runtime argument, {td_const:.0f} as a const global and {td_val:.0f} through `Val` -- the same number three times, so its {td_bytes:.0f}-byte parameter struct costs nothing to pass however it is passed.
+      The prediction was that folding would not pay there; the measurement says the call never paid for its parameters in the first place, which closes the question rather than bounding it.
     evidence:
       - kind: result
         path: results/val-params-registers.toml
@@ -229,9 +230,14 @@ questions:
           val_const: const_globals.registers
           quad_args: quad_runtime_arguments.registers
           quad_const: quad_const_globals.registers
+          td_args: td_runtime_arguments.registers
+          td_const: td_const_globals.registers
+          td_val: td_val_type_parameters.registers
+          td_bytes: tps_sizeof_bytes
         explanation: >-
           The three ways a parameter set can reach a kernel, compiled on the
-          CloudMicrophysics body and on the quadrature path that calls it. The
+          CloudMicrophysics body, on the quadrature path that calls it, and on
+          the Thermodynamics call that path makes. The
           const-global column is what makes this an answer about the dependency
           rather than about Val: it is the best any constant-folding scheme can
           do, reachable only because the harness is standalone, and a dependency
