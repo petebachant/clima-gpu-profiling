@@ -45,6 +45,14 @@ MIN_RANK_SEPARATION = 5.0
 DEEPEST_RANK = {p: max(r for q, r in TARGETS.values() if q == p)
                 for p, _ in TARGETS.values()}
 
+# Families summed over every matching name, which is the only comparison that
+# survives the fold changing the kernel INVENTORY rather than just kernel
+# bodies. Wrapping the parameters can make two call sites compile to one
+# specialization, so an arm's name covers work the other arm splits in two and
+# no name-to-name pairing is sound -- but the family's total work is the same
+# either way, which the launch counts verify.
+FAMILIES = {"microphysics_cache": "%microphysics_tendency_cache%"}
+
 Q = """
 SELECT s.value, k.registersPerThread, k.blockX * k.blockY * k.blockZ,
        k.localMemoryPerThread, COUNT(*), SUM(k.end - k.start)
@@ -148,7 +156,7 @@ def compare_to_prior(kernels):
            "kernels": {}, "switched": {}}
     for key, now in kernels.items():
         was = prior["kernels"].get(key)
-        if was is None:
+        if was is None or "pairing" in now or "pairing" in was:
             continue
         entry = {
             "prior_change_pct": was["mean_change_pct"],
@@ -205,14 +213,23 @@ def main():
         b, m = select(bdb, pattern, rank), select(mdb, pattern, rank)
         if b is None or m is None:
             sys.exit(f"{key}: nothing at rank {rank} of {pattern!r}")
-        out["kernels"][key] = {
+        rec = {
             "baseline": b,
             "mod": m,
-            "mean_change_pct": pct(b["mean_us"], m["mean_us"]),
-            "total_ms_saved": round(b["total_ms"] - m["total_ms"], 3),
             "registers_saved": b["registers"] - m["registers"],
             "crossed_occupancy_step": m["warps_per_sm"] > b["warps_per_sm"],
         }
+        if b["launches"] == m["launches"]:
+            rec["mean_change_pct"] = pct(b["mean_us"], m["mean_us"])
+            rec["total_ms_saved"] = round(b["total_ms"] - m["total_ms"], 3)
+        else:
+            # Unequal launches mean the two names do not cover the same work, so
+            # a per-launch mean compares one call site against several and a
+            # total compares different amounts of it. Neither is reported; the
+            # family aggregate below is what pairs.
+            rec["pairing"] = "launch_count_mismatch"
+            rec["launches"] = {"baseline": b["launches"], "mod": m["launches"]}
+        out["kernels"][key] = rec
 
     # The two microphysics kernels are told apart by time rank, so check the
     # ranking against the source order, which is the thing it stands in for:
@@ -243,10 +260,32 @@ def main():
     # treatment the mod arm happens to be running. The fold's own contribution
     # is the sum over the kernels it was applied to, against the same
     # whole-device denominator.
-    fb = sum(v["baseline"]["total_ms"] for v in out["kernels"].values())
-    fm = sum(v["mod"]["total_ms"] for v in out["kernels"].values())
+    out["families"] = {}
+    for key, pattern in FAMILIES.items():
+        fam = {}
+        for arm, db in (("baseline", bdb), ("mod", mdb)):
+            names = by_total_time(db, pattern)
+            fam[arm] = {
+                "names": len(names),
+                "launches": sum(r[3] for _, _, rows in names for r in rows),
+                "total_ms": round(sum(t for _, t, _ in names) / 1e6, 3),
+            }
+        if fam["baseline"]["launches"] != fam["mod"]["launches"]:
+            sys.exit(
+                f"{key}: the family does not cover the same work in both arms "
+                f"({fam['baseline']['launches']} launches vs "
+                f"{fam['mod']['launches']}); it cannot be compared"
+            )
+        fam["change_pct"] = pct(fam["baseline"]["total_ms"], fam["mod"]["total_ms"])
+        fam["ms_saved"] = round(fam["baseline"]["total_ms"] - fam["mod"]["total_ms"], 3)
+        fam["names_merged"] = fam["baseline"]["names"] - fam["mod"]["names"]
+        out["families"][key] = fam
+
+    paired = [v for v in out["kernels"].values() if "pairing" not in v]
+    fb = sum(v["baseline"]["total_ms"] for v in paired)
+    fm = sum(v["mod"]["total_ms"] for v in paired)
     out["fold_attributable"] = {
-        "kernels": len(out["kernels"]),
+        "kernels": len(paired),
         "baseline_ms": round(fb, 1),
         "mod_ms": round(fm, 1),
         "ms_saved": round(fb - fm, 1),
@@ -273,11 +312,21 @@ def main():
 
     for key, v in out["kernels"].items():
         step = "step" if v["crossed_occupancy_step"] else "    "
-        print(f"{key:24s} {v['baseline']['registers']:3d} -> {v['mod']['registers']:3d} regs  "
-              f"{v['baseline']['warps_per_sm']:2d} -> {v['mod']['warps_per_sm']:2d} warps/SM  "
-              f"{v['baseline']['mean_us']:9.1f} -> {v['mod']['mean_us']:9.1f} us  "
+        head = (f"{key:24s} {v['baseline']['registers']:3d} -> {v['mod']['registers']:3d} regs  "
+                f"{v['baseline']['warps_per_sm']:2d} -> {v['mod']['warps_per_sm']:2d} warps/SM  ")
+        if "pairing" in v:
+            print(head + f"NOT PAIRED: {v['launches']['baseline']} vs "
+                         f"{v['launches']['mod']} launches, so the names do not "
+                         f"cover the same work")
+            continue
+        print(head + f"{v['baseline']['mean_us']:9.1f} -> {v['mod']['mean_us']:9.1f} us  "
               f"{v['mean_change_pct']:+6.2f}%  ({v['total_ms_saved']:+.1f} ms)  "
               f"{step}  next at {v['mod']['registers_for_next_step']} regs")
+    for key, fam in out.get("families", {}).items():
+        print(f"{key:24s} family {fam['baseline']['total_ms']:.1f} -> "
+              f"{fam['mod']['total_ms']:.1f} ms ({fam['change_pct']:+.2f}%, "
+              f"{fam['ms_saved']:+.1f} ms) over {fam['baseline']['launches']} launches; "
+              f"{fam['names_merged']} name(s) merged")
     f = out["fold_attributable"]
     print(f"these {f['kernels']} kernels: {f['baseline_ms']} -> {f['mod_ms']} ms "
           f"({f['change_pct']:+.2f}%), {f['pct_of_device_total']:+.2f}% of the device")
