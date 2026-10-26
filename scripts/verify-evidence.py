@@ -13,6 +13,13 @@ calkit injects a named value by rendering it from the WORKING TREE and ignoring
 `git_ref`, so a pinned citation can display one number while the tag it cites
 holds another. That is reported as DRIFT, and it found a real case --
 `guard_fires_pct` rendered 81.80% while citing a tag carrying 88.31%.
+
+Unpinned evidence is checked too, and that is not a refinement. This script
+skipped anything without a `git_ref`, and the last pinned citation was removed
+at some point, so it had quietly become a no-op that printed nothing and exited
+0 -- while AGENTS.md says to run it before pushing a tag. A check whose silence
+is indistinguishable from success is worse than no check, so it now prints a
+count of what it looked at.
 """
 
 import json
@@ -20,6 +27,7 @@ import re
 import subprocess
 import sys
 import tomllib
+from pathlib import Path
 
 import yaml
 
@@ -82,9 +90,48 @@ def in_answer(value, answer: str) -> bool:
     return any(c and c in text for c in candidates)
 
 
+def live_value(path: str, key: str):
+    """A dotted key out of the working tree, or an exception."""
+    return dig(open(path).read(), path, key)
+
+
+def check_unpinned(e: dict, answer: str) -> tuple[str, str]:
+    """An evidence item with no `git_ref`, checked against the working tree.
+
+    There is nothing to compare two revisions of, so the failures available are
+    a path that is not there, a key the file does not hold -- which renders the
+    answer blank or breaks it -- and a declared name the answer never uses.
+    """
+    path, key, name = e.get("path"), e.get("key"), e.get("name")
+    if not path:
+        return "NO PATH", ""
+    if not Path(path).exists():
+        return "MISSING", " (not in the working tree)"
+    if not key:
+        return "supporting", ""
+    try:
+        value = live_value(path, key)
+    except Exception as exc:
+        return "KEY", f" {key}: {exc}"
+    if name and "{" + name in answer:
+        return "live", f" {key}={value}"
+    if name:
+        return (
+            ("live", f" {key}={value}")
+            if in_answer(value, answer)
+            else ("NOT IN ANSWER", f" (declares '{name}', unused)")
+        )
+    return (
+        ("live", f" {key}={value}")
+        if in_answer(value, answer)
+        else ("supporting", "")
+    )
+
+
 def main() -> int:
     info = yaml.safe_load(open("calkit.yaml"))
     bad = 0
+    pinned = live = 0
     for q in info.get("questions", []):
         answer = str(q.get("answer", ""))
         # A `result` carrying a `values` map is several values in one entry, and
@@ -102,7 +149,13 @@ def main() -> int:
         for e in expanded:
             ref, path, key = e.get("git_ref"), e.get("path"), e.get("key")
             if not ref:
+                live += 1
+                mark, note = check_unpinned(e, answer)
+                if mark not in ("ok", "live", "supporting"):
+                    bad += 1
+                    print(f"{mark:14s} {path}{note}")
                 continue
+            pinned += 1
             blob = at_ref(ref, path)
             if blob is None:
                 print(f"MISSING  {ref}:{path}")
@@ -158,6 +211,13 @@ def main() -> int:
                 pct = radiation_pct(blob)
                 extra = "" if pct is None else f" radiation={pct:+.2f}%"
                 print(f"{'table':14s} {ref}:{path}{extra}")
+    # Printed unconditionally: this script was silent and passing for a while
+    # because every citation had lost its `git_ref` and nothing was examined.
+    print(
+        f"checked {pinned + live} evidence values "
+        f"({pinned} pinned, {live} against the working tree), "
+        f"{bad} problem(s)"
+    )
     return 1 if bad else 0
 
 

@@ -1,0 +1,383 @@
+{
+  "attempts": [
+    {
+      "boxed_into_a_struct_field": false,
+      "const_global_registers": 99,
+      "crossed_step": true,
+      "kernel_larger_than_payload": true,
+      "measured": "compile-only",
+      "payload_bytes": 468,
+      "payload_recovered_pct": 99.1,
+      "payload_registers": 117,
+      "registers_after": 99,
+      "registers_before": 215,
+      "registers_saved": 116,
+      "site": "one microphysics evaluation",
+      "val_matches_const_globals": true,
+      "warps_after": 16,
+      "warps_before": 8
+    },
+    {
+      "boxed_into_a_struct_field": true,
+      "const_global_registers": 255,
+      "crossed_step": false,
+      "kernel_larger_than_payload": true,
+      "measured": "compile-only",
+      "payload_bytes": 468,
+      "payload_recovered_pct": 0.0,
+      "payload_registers": 117,
+      "registers_after": 255,
+      "registers_before": 255,
+      "registers_saved": 0,
+      "site": "quadrature path, Val unwrapped at the boundary",
+      "val_matches_const_globals": true,
+      "warps_after": 8,
+      "warps_before": 8
+    },
+    {
+      "boxed_into_a_struct_field": false,
+      "crossed_step": true,
+      "kernel_larger_than_payload": true,
+      "measured": "compile-only",
+      "payload_bytes": 468,
+      "payload_recovered_pct": 100.0,
+      "payload_registers": 117,
+      "registers_after": 138,
+      "registers_before": 255,
+      "registers_saved": 117,
+      "site": "quadrature path, Val carried through",
+      "warps_after": 12,
+      "warps_before": 8
+    },
+    {
+      "boxed_into_a_struct_field": false,
+      "crossed_step": true,
+      "kernel_larger_than_payload": true,
+      "measured": "compile-only",
+      "payload_bytes": 468,
+      "payload_recovered_pct": 93.2,
+      "payload_registers": 117,
+      "registers_after": 146,
+      "registers_before": 255,
+      "registers_saved": 109,
+      "site": "evaluator, parameters moved from fields into the type",
+      "warps_after": 12,
+      "warps_before": 8
+    },
+    {
+      "boxed_into_a_struct_field": false,
+      "const_global_registers": 32,
+      "crossed_step": false,
+      "kernel_larger_than_payload": true,
+      "measured": "compile-only",
+      "payload_bytes": 104,
+      "payload_recovered_pct": 0.0,
+      "payload_registers": 26,
+      "registers_after": 32,
+      "registers_before": 32,
+      "registers_saved": 0,
+      "site": "Thermodynamics q_vap_saturation",
+      "val_matches_const_globals": true,
+      "warps_after": 16,
+      "warps_before": 16
+    },
+    {
+      "baseline_ms": 74.666,
+      "boxed_into_a_struct_field": false,
+      "crossed_step": true,
+      "kernel_time_change_pct": -1.16,
+      "measured": "in the model",
+      "pct_of_device_total": 0.4,
+      "registers_after": 51,
+      "registers_before": 64,
+      "registers_saved": 13,
+      "residency_gain_pct": 12.5,
+      "site": "cloud_fraction",
+      "warps_after": 36,
+      "warps_before": 32
+    },
+    {
+      "baseline_ms": 4646.185,
+      "boxed_into_a_struct_field": false,
+      "crossed_step": true,
+      "kernel_larger_than_payload": true,
+      "kernel_time_change_pct": -45.69,
+      "measured": "in the model",
+      "payload_bytes": 468,
+      "payload_recovered_pct": 87.2,
+      "payload_registers": 117,
+      "pct_of_device_total": 22.6,
+      "registers_after": 153,
+      "registers_before": 255,
+      "registers_saved": 102,
+      "residency_gain_pct": 50.0,
+      "site": "microphysics_quadrature",
+      "warps_after": 12,
+      "warps_before": 8
+    },
+    {
+      "baseline_ms": 696.223,
+      "boxed_into_a_struct_field": false,
+      "crossed_step": true,
+      "kernel_larger_than_payload": true,
+      "kernel_time_change_pct": -49.34,
+      "measured": "in the model",
+      "payload_bytes": 468,
+      "payload_recovered_pct": 89.7,
+      "payload_registers": 117,
+      "pct_of_device_total": 3.4,
+      "registers_after": 118,
+      "registers_before": 223,
+      "registers_saved": 105,
+      "residency_gain_pct": 100.0,
+      "site": "microphysics_updraft",
+      "warps_after": 16,
+      "warps_before": 8
+    },
+    {
+      "baseline_ms": 78.69,
+      "boxed_into_a_struct_field": false,
+      "crossed_step": false,
+      "kernel_time_change_pct": -1.89,
+      "measured": "in the model",
+      "pct_of_device_total": 0.4,
+      "registers_after": 89,
+      "registers_before": 89,
+      "registers_saved": 0,
+      "residency_gain_pct": 0.0,
+      "site": "sgs_moments",
+      "warps_after": 20,
+      "warps_before": 20
+    }
+  ],
+  "ceiling_test": {
+    "a_no_has_two_causes": {
+      "constant_boxed_into_a_struct_field": {
+        "const_global_registers": 255,
+        "registers": 255,
+        "registers_after_removing_the_boundary": 146,
+        "registers_saved_after_removing_the_boundary": 109,
+        "remedy": "carry the wrapper through to the arithmetic instead of storing the parameters in a struct field",
+        "settled_by": "another compile-only probe, not a profile",
+        "site": "quadrature path, Val unwrapped at the boundary"
+      },
+      "note": "Both of this project's `no` results came from the same probe reading the same number, and only one of them was final. So a `no` is a verdict on the body as written: it closes the fold as written and asks which cause it is, and both answers are compile-only.",
+      "nothing_to_fold": {
+        "payload_registers": 26,
+        "registers": 32,
+        "remedy": "none; the kernel was not paying for its parameters",
+        "site": "Thermodynamics q_vap_saturation"
+      }
+    },
+    "flagged_a_site_that_would_have_paid": [],
+    "flagged_every_non_landing_site": true,
+    "largest_disagreement_registers": 0,
+    "non_landing_sites": [
+      "Thermodynamics q_vap_saturation",
+      "quadrature path, Val unwrapped at the boundary"
+    ],
+    "note": "Const globals are the ceiling of any constant-folding scheme, so a body that does not move with them cannot be folded by any means. Compile-only with `CUDA.@cuda launch=false`: no simulation, no coupled model, no profile.",
+    "predicts_val_everywhere_measured": true,
+    "sites": [
+      {
+        "const_globals": 99,
+        "runtime_arguments": 215,
+        "site": "one microphysics evaluation",
+        "val": 99
+      },
+      {
+        "const_globals": 255,
+        "runtime_arguments": 255,
+        "site": "quadrature path, Val unwrapped at the boundary",
+        "val": 255
+      },
+      {
+        "const_globals": 32,
+        "runtime_arguments": 32,
+        "site": "Thermodynamics q_vap_saturation",
+        "val": 32
+      }
+    ],
+    "sites_compared": 3,
+    "sites_the_probe_flagged": [
+      "Thermodynamics q_vap_saturation",
+      "quadrature path, Val unwrapped at the boundary"
+    ],
+    "sites_where_val_matched_const_globals": 3
+  },
+  "magnitude_test": {
+    "control_change_pct": -1.89,
+    "control_site": "sgs_moments",
+    "crossed_a_step_and_stayed_flat": [
+      "cloud_fraction"
+    ],
+    "flat_at_warps_per_sm": [
+      20,
+      32
+    ],
+    "largest_flat_pct_of_device": 0.4,
+    "noise_band_pct": 1.89,
+    "note": "A fold returns time by letting another block onto the SM, so the quantity is warps per SM rather than registers. The control is the folded kernel whose register count did not move, and its change is the per-kernel noise this measurement can resolve.",
+    "occupancy_and_device_share_confounded": true,
+    "paid_at_warps_per_sm": [
+      8
+    ],
+    "sites_above_the_band": [
+      {
+        "kernel_time_change_pct": -49.34,
+        "pct_of_device_total": 3.4,
+        "residency_gain_pct": 100.0,
+        "site": "microphysics_updraft",
+        "warps_after": 16,
+        "warps_before": 8
+      },
+      {
+        "kernel_time_change_pct": -45.69,
+        "pct_of_device_total": 22.6,
+        "residency_gain_pct": 50.0,
+        "site": "microphysics_quadrature",
+        "warps_after": 12,
+        "warps_before": 8
+      }
+    ],
+    "sites_within_the_band": [
+      {
+        "crossed_step": false,
+        "kernel_time_change_pct": -1.89,
+        "pct_of_device_total": 0.4,
+        "registers_saved": 0,
+        "site": "sgs_moments",
+        "warps_after": 20,
+        "warps_before": 20
+      },
+      {
+        "crossed_step": true,
+        "kernel_time_change_pct": -1.16,
+        "pct_of_device_total": 0.4,
+        "registers_saved": 13,
+        "site": "cloud_fraction",
+        "warps_after": 36,
+        "warps_before": 32
+      }
+    ],
+    "smallest_paying_pct_of_device": 3.4
+  },
+  "note": "Every parameter-fold attempt this project has measured, against three candidate predictors. Assembled from earlier stages' outputs, so it needs no GPU: the point of the file is that the decision does not need a profile.",
+  "payload_test": {
+    "largest_excess_registers": 0,
+    "largest_payload_registers": 117,
+    "note": "payload_registers is sizeof(params)/4, the most a fold could free if the kernel held the whole struct. The test is whether that number orders the outcomes.",
+    "payload_recovered_pct_when_it_lands": [
+      87.2,
+      89.7,
+      93.2,
+      99.1,
+      100.0
+    ],
+    "recovered_max_pct": 100.0,
+    "recovered_min_pct": 87.2,
+    "saving_spread_registers": 117,
+    "savings_at_that_one_payload": [
+      0,
+      102,
+      105,
+      109,
+      116,
+      117
+    ],
+    "savings_exceeding_their_payload": 0,
+    "sites_sharing_that_payload": 6,
+    "sites_where_it_does_not": [
+      {
+        "boxed_into_a_struct_field": true,
+        "kernel_larger_than_payload": true,
+        "payload_registers": 117,
+        "registers_before": 255,
+        "registers_saved": 0,
+        "site": "quadrature path, Val unwrapped at the boundary"
+      },
+      {
+        "boxed_into_a_struct_field": false,
+        "kernel_larger_than_payload": true,
+        "payload_registers": 26,
+        "registers_before": 32,
+        "registers_saved": 0,
+        "site": "Thermodynamics q_vap_saturation"
+      }
+    ],
+    "sites_where_the_fold_lands": 5,
+    "size_is_an_upper_bound": true,
+    "size_predicts_the_saving": false
+  },
+  "screen": {
+    "addressable": 34,
+    "addressable_pct": 16.04,
+    "at_full_occupancy": 109,
+    "at_the_register_cap": 3,
+    "ceiling_pct_of_device": 26.57,
+    "kernels_profiled": 212,
+    "largest_untreated_kernel": "copyto_by_slices",
+    "largest_untreated_pct_of_device": 2.733,
+    "largest_untreated_registers_to_shed": 2,
+    "note": "The free screen, from one static ncu pass over a whole run and one nsys profile the pipeline already has. A kernel gains from cheaper registers only where registers cap its occupancy alone and it is below full occupancy.",
+    "register_limited": 132,
+    "treated_pct_of_device": 22.1,
+    "untreated_kernels": 12,
+    "untreated_pct_of_device": 4.46
+  },
+  "sites": 9,
+  "sources": {
+    "in_model": "results/fold-record/param-fold.json",
+    "in_model_prior_commit": "bcd24381abe670ce3c3c8e4b88ca2d0f5b0e7f22",
+    "mileage": "results/val-mileage.json",
+    "population": "results/pointwise-registers.json",
+    "probes": "results/val-params-registers.toml"
+  },
+  "summary": {
+    "addressable": 34,
+    "addressable_pct": 16.04,
+    "at_full_occupancy": 109,
+    "best_change_pct": -49.34,
+    "best_warps_after": 16,
+    "best_warps_before": 8,
+    "biggest_change_pct": -45.69,
+    "biggest_pct_of_device": 22.6,
+    "biggest_warps_after": 12,
+    "biggest_warps_before": 8,
+    "boxed_registers": 255,
+    "ceiling_agree": 3,
+    "ceiling_disagreement": 0,
+    "ceiling_false_alarms": 0,
+    "ceiling_flagged": 2,
+    "ceiling_pct_of_device": 26.57,
+    "ceiling_sites": 3,
+    "crossed_flat_change_pct": -1.16,
+    "crossed_flat_registers_saved": 13,
+    "crossed_flat_warps_after": 36,
+    "crossed_flat_warps_before": 32,
+    "excess_registers": 0,
+    "flat_warps": "20 and 32",
+    "kernels_profiled": 212,
+    "landing_sites": 5,
+    "largest_flat_pct_of_device": 0.4,
+    "largest_untreated_pct": 2.733,
+    "largest_untreated_shed": 2,
+    "noise_band_pct": 1.89,
+    "paid_warps": "8",
+    "payload_bytes": 468,
+    "payload_registers": 117,
+    "payload_sites": 6,
+    "recovered_max_pct": 100.0,
+    "recovered_min_pct": 87.2,
+    "recovered_spread_pct": 12.8,
+    "saving_spread": 117,
+    "savings_list": "0, 102, 105, 109, 116, 117",
+    "smallest_paying_pct_of_device": 3.4,
+    "td_payload_registers": 26,
+    "td_registers": 32,
+    "unboxed_registers": 146,
+    "unboxed_saving": 109,
+    "untreated_kernels": 12,
+    "untreated_pct_of_device": 4.46
+  }
+}

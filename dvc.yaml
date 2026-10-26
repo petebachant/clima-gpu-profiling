@@ -744,6 +744,23 @@ stages:
           persist: false
     desc: Automatically generated from the 'compile-time-doc/values' stage in
       calkit.yaml. Changes made here will be overwritten.
+  fold-decision-doc/analyze:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/fold-decision-rule.md/analyze.py
+    deps:
+      - .calkit/markdown/docs/fold-decision-rule.md/analyze.py
+      - scripts/export_fold_decision.py
+      - results/val-params-registers.toml
+      - results/pointwise-registers.json
+      - results/val-mileage.json
+      - results/fold-record/param-fold.json
+      - .calkit/env-locks/py
+    outs:
+      - results/fold-decision.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'fold-decision-doc/analyze' stage in
+      calkit.yaml. Changes made here will be overwritten.
   launch-cost/baseline:
     cmd: calkit scheduler batch --name launch-cost/baseline --environment clima
       --dep scripts/run-nsys.sh --dep scripts/run.jl --dep ClimaCoupler.jl/src

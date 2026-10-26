@@ -2365,6 +2365,49 @@ unfused kernel was already over budget.
 So the occupancy lever is closed from both ends, and the ledger's closing
 sentence holds for a third mechanism.
 
+### 4ae. The fold can be decided by compiling, not by profiling -- and not by counting parameters
+
+`docs/fold-decision-rule.md` and `results/fold-decision.json`, which
+`scripts/export-fold-decision.py` assembles from the stages below. The figures
+live there; this is the reasoning.
+
+The natural rule for "is this kernel worth folding" is the size of its parameter
+set, and it fails. One parameter payload produced savings from zero to the whole
+of it, at six sites in the same source file. The payload bounds them, so it
+prices the prize; it orders nothing, because a bound that every outcome from
+nothing to everything respects predicts none of them. A small payload does not
+mean a small prize either: the Thermodynamics call passes a parameter struct it
+never spends registers on, so there was nothing to recover whatever the size
+suggested.
+
+Size earns its keep in exactly one place, and 4z is the example rather than
+anything in the microphysics work: `RRTMGPParameters` is too small to close the
+gap to the next occupancy step however perfectly it folds, which settled that
+candidate by arithmetic alone. So the parameter count can veto and cannot
+approve.
+
+What does predict is const globals, which are the ceiling of any constant-
+folding scheme. A body whose register count does not move when its parameters
+become compile-time constants cannot be folded by any means, and that is a
+compile-only measurement -- `CUDA.@cuda launch=false` and `CUDA.registers`, no
+simulation, minutes. On the record it matched `Val` wherever both were measured,
+and it flagged in advance exactly the sites where a fold went on to return
+nothing, with no false condemnations. Both failures this project actually hit --
+the evaluator's struct field boundary (4ac) and a kernel not paying for its
+parameters at all -- were catchable before the fold was written.
+
+That is the useful conclusion and it is a process one: **a profile prices a
+fold, it does not decide one.** The occupancy screen (4ab) and the device-share
+screen come from measurements the pipeline already holds, the const-global probe
+is minutes, and 4ad's finding that a payoff is a property of the current kernel
+body rather than of the pattern is the reason to keep the decision cheap --
+it has to be redone whenever upstream moves.
+
+Two things the record does not settle, both stated in the file rather than left
+to the reader: the occupancy threshold is bracketed rather than located, and
+every kernel that stayed flat is also a small one, so these four kernels cannot
+separate occupancy headroom from device share.
+
 ### 4ad. The occupancy step sets the SIZE of the fold's payoff, not whether there is one
 
 `results/param-fold.json` for the current stack and

@@ -415,6 +415,90 @@ questions:
           cost that a step breakdown CAN see; it is cited here to make clear that
           the other half is not a residual anyone forgot to measure but one this
           method cannot reach.
+
+  - question: >-
+      Is there a rule of thumb for when folding parameters into the type is worth it, or does it always take a profile to find out?
+    answer: >-
+      There is a rule, it is not the one the question suggests, and a five-minute compile replaces the profile: counting the parameters predicts nothing, while compiling the body with its parameters as const globals settles whether a fold on that body can pay at all.
+      The parameter set ClimaAtmos folds is {payload_bytes:.0f} bytes, or {payload_registers:.0f} registers, and that one payload produced savings of {savings_list} registers at {payload_sites:.0f} sites in the same source -- a spread of {saving_spread:.0f} registers on identical parameters, so the size takes every value from nothing to everything.
+      The payload does bound them -- none of the {payload_sites:.0f} exceeded it and the largest landed exactly on it -- so the size prices the prize and orders nothing, which is the distinction worth keeping: a bound that outcomes from zero to all of it respect predicts none of them.
+      Read it as a tight bound rather than a hard one, since these are compile-only figures and they move when the stack moves, the same way the in-model payoffs do.
+      Nor does a small payload mean a small prize -- the Thermodynamics call carries a {td_payload_registers:.0f}-register payload into a {td_registers:.0f}-register kernel and saved nothing however the parameters arrived, which is a kernel that was never paying for them.
+      What the size does give is the scale once a fold is known to land: over the {landing_sites:.0f} sites where nothing boxed the parameters and the kernel was larger than the payload, the saving came to {recovered_min_pct:.1f}% to {recovered_max_pct:.0f}% of it, so `sizeof(params)/4` brackets the prize within {recovered_spread_pct:.1f} points of the payload and says nothing about the odds of collecting it.
+      The test that does predict is const globals, which are the ceiling of any constant-folding scheme -- a value the compiler already has, with no wrapper to lose it through -- so a body that does not move with them cannot be folded by any means.
+      It is compile-only: `CUDA.@cuda launch=false` compiles the kernel and `CUDA.registers` reads the count without executing it, so `val-params-registers` is minutes with no simulation and no coupled model, against hours for a profile pair.
+      It matched `Val` at {ceiling_agree:.0f} of {ceiling_sites:.0f} sites with a largest disagreement of {ceiling_disagreement:.0f} registers, and the part that makes it a decision rule rather than a correlation is that it flagged {ceiling_flagged:.0f} sites in advance which are exactly the two where a fold went on to return nothing, with {ceiling_false_alarms:.0f} sites condemned that would have paid.
+      Both failures this project actually hit were caught that way before any fold was written, and only one of them was final: a kernel not spending registers on its parameters is closed, while an evaluator holding them as struct FIELDS stores the constant and reads it back per point, which is a code shape to change rather than a verdict on the kernel -- the same body with the parameters moved into the evaluator's type goes {boxed_registers:.0f} -> {unboxed_registers:.0f} registers, {unboxed_saving:.0f} saved, and that is another compile-only probe.
+      So a `no` from the ceiling closes the fold as written and asks which of the two causes it is, rather than closing the kernel, and both answers cost a compile.
+      What the compile cannot tell you is the size, and for that the quantity is warps per SM rather than registers, since ClimaCore sizes the launch block from the register count.
+      Both payoffs started at {paid_warps} warps per SM, returning {best_change_pct:.2f}% ({best_warps_before:.0f} -> {best_warps_after:.0f} warps) and {biggest_change_pct:.2f}% ({biggest_warps_before:.0f} -> {biggest_warps_after:.0f}), while everything flat started at {flat_warps} warps, against a control kernel the fold left at the same register count whose own time still moved {noise_band_pct:.2f}%.
+      Crossing a step is necessary and nowhere near sufficient: the cloud-fraction kernel shed {crossed_flat_registers_saved:.0f} registers and crossed {crossed_flat_warps_before:.0f} -> {crossed_flat_warps_after:.0f} warps for {crossed_flat_change_pct:.2f}%, less than the control that crossed nothing.
+      So the procedure, cheapest first: confirm the parameter set is `isbits`, read the occupancy limiter and the distance to the next step off the static ncu pass the pipeline already holds, check the kernel holds enough device time to repay the work, then compile with const globals and stop there if nothing moves.
+      That is free or minutes, and it called every outcome on the record for the body it was handed -- including the ClimaAtmos change behind the largest payoff here, which was decided from the compile-only probes and only afterwards priced by a profile.
+      Which is the answer to the second half of the question: a profile prices a fold, it does not decide one.
+      Two limits travel with this. The threshold between {paid_warps} warps per SM, where folds paid, and {flat_warps}, where they did not, is bracketed rather than located; and in this record every flat kernel is also a small one, holding at most {largest_flat_pct_of_device:.1f}% of device time against {smallest_paying_pct_of_device:.1f}% for the smallest payoff, so occupancy headroom and device share cannot be separated from these four kernels alone.
+      Population-wide the screen is what keeps the rule cheap to apply: of {kernels_profiled:.0f} kernels in a 120-step run, {addressable:.0f} ({addressable_pct}%) are capped by registers alone and below full occupancy, {at_full_occupancy:.0f} are already at full occupancy and can gain nothing however well their parameters fold, and the largest untreated candidate -- {largest_untreated_pct:.2f}% of the device, {largest_untreated_shed:.0f} registers from its next step -- carries no parameter struct to fold in the first place.
+    evidence:
+      - kind: result
+        path: results/fold-decision.json
+        values:
+          payload_bytes: summary.payload_bytes
+          payload_registers: summary.payload_registers
+          payload_sites: summary.payload_sites
+          savings_list: summary.savings_list
+          saving_spread: summary.saving_spread
+          landing_sites: summary.landing_sites
+          recovered_min_pct: summary.recovered_min_pct
+          recovered_max_pct: summary.recovered_max_pct
+          recovered_spread_pct: summary.recovered_spread_pct
+          td_payload_registers: summary.td_payload_registers
+          td_registers: summary.td_registers
+          ceiling_sites: summary.ceiling_sites
+          ceiling_agree: summary.ceiling_agree
+          ceiling_flagged: summary.ceiling_flagged
+          ceiling_false_alarms: summary.ceiling_false_alarms
+          ceiling_disagreement: summary.ceiling_disagreement
+          unboxed_saving: summary.unboxed_saving
+          unboxed_registers: summary.unboxed_registers
+          boxed_registers: summary.boxed_registers
+          noise_band_pct: summary.noise_band_pct
+          paid_warps: summary.paid_warps
+          flat_warps: summary.flat_warps
+          best_change_pct: summary.best_change_pct
+          best_warps_before: summary.best_warps_before
+          best_warps_after: summary.best_warps_after
+          biggest_change_pct: summary.biggest_change_pct
+          biggest_warps_before: summary.biggest_warps_before
+          biggest_warps_after: summary.biggest_warps_after
+          crossed_flat_change_pct: summary.crossed_flat_change_pct
+          crossed_flat_warps_before: summary.crossed_flat_warps_before
+          crossed_flat_warps_after: summary.crossed_flat_warps_after
+          crossed_flat_registers_saved: summary.crossed_flat_registers_saved
+          largest_flat_pct_of_device: summary.largest_flat_pct_of_device
+          smallest_paying_pct_of_device: summary.smallest_paying_pct_of_device
+          kernels_profiled: summary.kernels_profiled
+          addressable: summary.addressable
+          addressable_pct: summary.addressable_pct
+          at_full_occupancy: summary.at_full_occupancy
+          largest_untreated_pct: summary.largest_untreated_pct
+          largest_untreated_shed: summary.largest_untreated_shed
+        explanation: >-
+          Every parameter-fold attempt the project has measured -- five
+          compile-only probes and the four kernels folded in the model -- put
+          against three candidate predictors, with the reasoning in
+          docs/fold-decision-rule.md. It is assembled from earlier stages'
+          outputs and runs no GPU, which is the point: if the decision needed a
+          profile this file could not exist. Two cross-checks are what make it
+          a test rather than a summary. `ceiling_test` records whether the
+          const-global probe's zeros coincide with the sites where a fold
+          returned nothing, in both directions, so a probe that condemned a
+          site that would have paid would show up. And `magnitude_test` reports
+          that its flat sites are also its smallest, so the file states the
+          confound rather than letting the occupancy reading take credit for
+          both gates. The control is the fourth folded kernel, whose register
+          count the fold did not move: its change is the per-kernel noise the
+          measurement resolves, and one kernel that crossed an occupancy step
+          came in under it.
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod
@@ -870,6 +954,15 @@ pipeline:
       # committed results/compile-time/compile-time.toml, which the frozen
       # compile-time-study stage does not regenerate here, so re-running this
       # cannot restate the experiment against a different run.
+    fold-decision-doc:
+      kind: markdown
+      target_path: docs/fold-decision-rule.md
+      environment: py
+      # Live on main like compile-time-doc, not frozen like the experiment
+      # documents. It declares its own analysis stage, which derives
+      # results/fold-decision.json from four earlier stages' outputs and runs
+      # no GPU, so re-running it restates nothing against a different run --
+      # it re-reads the files the pass just wrote.
     launch-cost:
       kind: markdown
       target_path: docs/experiments/launch-cost.md

@@ -2,6 +2,88 @@ gpu-guard: running on GPU(s) [0] -- OK (avoiding [])
 Loading climacommon/2025_05_15
   Loading requirement: climaauth/2025_05_15 openmpi/4.1.5-mpitrampoline
     julia/1.11.5 cuda/julia-pref
+Precompiling project...
+   9619.7 ms  ✓ RRTMGP → RRTMGPCUDAExt
+   8493.0 ms  ✓ RRTMGP → RRTMGPNCDatasetsExt
+  81162.3 ms  ✓ ClimaCore
+   9608.3 ms  ✓ ClimaTimeSteppers → ClimaTimeSteppersClimaCoreExt
+  11279.7 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreExt
+  16811.9 ms  ✓ ClimaCore → ClimaCoreRecipesBaseExt
+  17598.7 ms  ✓ ClimaCore → KrylovExt
+  25496.7 ms  ✓ ClimaCore → ClimaCoreCUDAExt
+  14037.2 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreNCDatasetsExt
+  17939.3 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreInterpolationsExt
+  19615.9 ms  ✓ ClimaDiagnostics
+  39798.6 ms  ✓ ClimaCore → ClimaCoreMakieExt
+  18413.4 ms  ✓ ClimaLand
+  19025.9 ms  ✓ ClimaCoupler
+  22936.4 ms  ✓ ClimaLand → FluxnetSimulationsExt
+  30315.8 ms  ✓ ClimaCoupler → ClimaCouplerClimaLandExt
+  56018.6 ms  ✓ ClimaAtmos
+  41949.6 ms  ✓ ClimaLand → ConstrainedNeuralModelExt
+  56775.8 ms  ✓ ClimaCoupler → ClimaCouplerMakieExt
+  22573.0 ms  ✓ ClimaCoupler → ClimaCouplerClimaAtmosExt
+  61544.8 ms  ✓ ClimaLand → LandSimulationVisualizationExt
+  21 dependencies successfully precompiled in 219 seconds. 613 already precompiled.
+  2 dependencies had output during precompilation:
+┌ RRTMGP → RRTMGPCUDAExt
+│  ┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
+│  │ This may cause errors.
+│  │ 
+│  │ If you're running under a profiler, this situation is expected. Otherwise,
+│  │ ensure that your library path environment variable (e.g., `PATH` on Windows
+│  │ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│  │ 
+│  │ In any other case, please file an issue.
+│  └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+│  ┌ Warning: CUDA runtime library `libnvJitLink.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libnvJitLink.so.13`.
+│  │ This may cause errors.
+│  │ 
+│  │ If you're running under a profiler, this situation is expected. Otherwise,
+│  │ ensure that your library path environment variable (e.g., `PATH` on Windows
+│  │ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│  │ 
+│  │ In any other case, please file an issue.
+│  └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+│  ┌ Warning: CUDA runtime library `libcusparse.so.12` was loaded from a system path, `/usr/local/cuda/lib64/libcusparse.so.12`.
+│  │ This may cause errors.
+│  │ 
+│  │ If you're running under a profiler, this situation is expected. Otherwise,
+│  │ ensure that your library path environment variable (e.g., `PATH` on Windows
+│  │ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│  │ 
+│  │ In any other case, please file an issue.
+│  └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+└  
+┌ ClimaCore → ClimaCoreCUDAExt
+│  ┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
+│  │ This may cause errors.
+│  │ 
+│  │ If you're running under a profiler, this situation is expected. Otherwise,
+│  │ ensure that your library path environment variable (e.g., `PATH` on Windows
+│  │ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│  │ 
+│  │ In any other case, please file an issue.
+│  └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+│  ┌ Warning: CUDA runtime library `libnvJitLink.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libnvJitLink.so.13`.
+│  │ This may cause errors.
+│  │ 
+│  │ If you're running under a profiler, this situation is expected. Otherwise,
+│  │ ensure that your library path environment variable (e.g., `PATH` on Windows
+│  │ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│  │ 
+│  │ In any other case, please file an issue.
+│  └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+│  ┌ Warning: CUDA runtime library `libcusparse.so.12` was loaded from a system path, `/usr/local/cuda/lib64/libcusparse.so.12`.
+│  │ This may cause errors.
+│  │ 
+│  │ If you're running under a profiler, this situation is expected. Otherwise,
+│  │ ensure that your library path environment variable (e.g., `PATH` on Windows
+│  │ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│  │ 
+│  │ In any other case, please file an issue.
+│  └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+└  
 ┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
 │ This may cause errors.
 │ 
@@ -42,12 +124,12 @@ Status `~/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/experiments/AMIP/Projec
   [4ade58fe] ClimaCoupler v0.2.3 `../..`
   [1ecacbb8] ClimaDiagnostics v0.3.11
   [08f4d4ce] ClimaLand v1.13.0
-⌃ [5c42b081] ClimaParams v1.3.2
+⌅ [5c42b081] ClimaParams v1.3.2
   [595c0a79] ClimaTimeSteppers v1.0.1
   [b3f4f4ca] ClimaUtilities v0.1.33
   [aa8a2aa5] EnsembleKalmanProcesses v2.7.4
 ⌅ [61eb1bfa] GPUCompiler v1.17.1
-  [db073c08] GeoMakie v0.7.17
+⌃ [db073c08] GeoMakie v0.7.17
   [e98cc03f] Insolation v1.2.1
 ⌅ [a98d9a8b] Interpolations v0.15.2
   [033835bb] JLD2 v0.6.7
@@ -57,16 +139,16 @@ Status `~/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/experiments/AMIP/Projec
   [5da4648a] NVTX v1.0.3
 ⌅ [b946abbf] NaNStatistics v0.6.56
   [08abe8d2] PrettyTables v3.5.0
-  [a01a1ee8] RRTMGP v1.1.0 `../../../RRTMGP.jl-mod`
+  [a01a1ee8] RRTMGP v1.1.1 `../../../RRTMGP.jl-mod`
   [1bc83da4] SafeTestsets v0.1.0
 ⌃ [90137ffa] StaticArrays v1.9.23
-  [49b00bb7] SurfaceFluxes v1.5.1
+⌃ [49b00bb7] SurfaceFluxes v1.5.1
   [b60c26fb] Thermodynamics v1.3.0
   [ddb6d928] YAML v0.4.17
 ⌅ [9c32591e] Poppler_jll v24.6.0+0
   [de0858da] Printf v1.11.0
 Info Packages marked with ⌃ and ⌅ have new versions available. Those with ⌃ may be upgradable, but those with ⌅ are restricted by compatibility constraints from upgrading. To see why use `status --outdated`
-==PROF== Connected to process 4070788 (/clima/software/julia/julia-1.11.5/bin/julia)
+==PROF== Connected to process 707667 (/clima/software/julia/julia-1.11.5/bin/julia)
 ==PROF== Profiling "gpu_getindex_kernel" - 0 (1/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 1 (2/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 2 (3/1500): 0%....50%....100% - 1 pass
@@ -74,164 +156,164 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 ==PROF== Profiling "compute_dss_weights_FILE_Clim..." - 4 (5/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copy_FILE_ClimaCore_jl_mod_sr..." - 5 (6/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 6 (7/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 7 (8/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 7 (8/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 8 (9/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 9 (10/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 9 (10/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 10 (11/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 11 (12/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 12 (13/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 12 (13/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 13 (14/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 14 (15/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 14 (15/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 15 (16/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 16 (17/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 17 (18/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 17 (18/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 18 (19/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 19 (20/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 19 (20/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 20 (21/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 21 (22/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 22 (23/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 22 (23/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 23 (24/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 24 (25/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 24 (25/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 25 (26/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 26 (27/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 27 (28/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 27 (28/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 28 (29/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 29 (30/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 29 (30/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 30 (31/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 31 (32/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 32 (33/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 32 (33/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 33 (34/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 34 (35/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 34 (35/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 35 (36/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 36 (37/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 37 (38/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 37 (38/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 38 (39/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 39 (40/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 39 (40/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 40 (41/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 41 (42/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 42 (43/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 42 (43/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 43 (44/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 44 (45/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 44 (45/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 45 (46/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 46 (47/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 47 (48/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 47 (48/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 48 (49/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 49 (50/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 49 (50/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 50 (51/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 51 (52/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 52 (53/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 52 (53/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 53 (54/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 54 (55/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 54 (55/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 55 (56/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 56 (57/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 57 (58/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 57 (58/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 58 (59/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 59 (60/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 59 (60/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 60 (61/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 61 (62/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 62 (63/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 62 (63/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 63 (64/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 64 (65/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 64 (65/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 65 (66/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 66 (67/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 67 (68/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 67 (68/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 68 (69/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 69 (70/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 69 (70/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 70 (71/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 71 (72/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 72 (73/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 72 (73/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 73 (74/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 74 (75/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 74 (75/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 75 (76/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 76 (77/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 77 (78/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 77 (78/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 78 (79/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 79 (80/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 79 (80/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 80 (81/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 81 (82/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 82 (83/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 82 (83/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 83 (84/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 84 (85/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 84 (85/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 85 (86/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 86 (87/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 87 (88/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 87 (88/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 88 (89/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 89 (90/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 89 (90/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 90 (91/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 91 (92/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 92 (93/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 92 (93/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 93 (94/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 94 (95/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 94 (95/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 95 (96/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 96 (97/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 97 (98/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 97 (98/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 98 (99/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 99 (100/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 99 (100/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 100 (101/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 101 (102/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 102 (103/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 102 (103/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 103 (104/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 104 (105/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 104 (105/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 105 (106/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 106 (107/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 107 (108/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 107 (108/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 108 (109/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 109 (110/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 109 (110/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 110 (111/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 111 (112/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 112 (113/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 112 (113/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 113 (114/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 114 (115/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 114 (115/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 115 (116/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 116 (117/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 117 (118/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 117 (118/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 118 (119/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 119 (120/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 119 (120/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 120 (121/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 121 (122/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 122 (123/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 122 (123/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 123 (124/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 124 (125/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 124 (125/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 125 (126/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 126 (127/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 127 (128/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 127 (128/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 128 (129/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 129 (130/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 129 (130/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 130 (131/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 131 (132/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 132 (133/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 132 (133/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 133 (134/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 134 (135/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 134 (135/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 135 (136/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 136 (137/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 137 (138/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 137 (138/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 138 (139/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 139 (140/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 139 (140/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 140 (141/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 141 (142/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 142 (143/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 142 (143/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 143 (144/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 144 (145/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 144 (145/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 145 (146/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 146 (147/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 147 (148/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 147 (148/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 148 (149/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 149 (150/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 149 (150/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 150 (151/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 151 (152/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 152 (153/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 152 (153/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 153 (154/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 154 (155/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 154 (155/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 155 (156/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 156 (157/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 157 (158/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 157 (158/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 158 (159/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 159 (160/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 159 (160/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 160 (161/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 161 (162/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 162 (163/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 162 (163/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "dss__FILE_ClimaCore_jl_mod_sr..." - 163 (164/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 164 (165/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 164 (165/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_diffuse_surface_elevation__F..." - 165 (166/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "hypsography_FILE_ClimaAtmos_j..." - 166 (167/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copy_FILE_ClimaCore_jl_mod_sr..." - 167 (168/1500): 0%....50%....100% - 1 pass
@@ -365,17 +447,17 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 ==PROF== Profiling "materialized_displacement_len..." - 295 (296/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_buoyancy_gradient_inputs_..." - 296 (297/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 297 (298/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 298 (299/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 298 (299/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 299 (300/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 300 (301/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 300 (301/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 301 (302/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 302 (303/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 302 (303/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 303 (304/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 304 (305/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 304 (305/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 305 (306/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 306 (307/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 306 (307/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 307 (308/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 308 (309/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 308 (309/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 309 (310/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 310 (311/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 311 (312/1500): 0%....50%....100% - 1 pass
@@ -400,17 +482,17 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 ==PROF== Profiling "materialized_displacement_len..." - 330 (331/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_buoyancy_gradient_inputs_..." - 331 (332/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 332 (333/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 333 (334/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 333 (334/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 334 (335/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 335 (336/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 335 (336/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 336 (337/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 337 (338/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 337 (338/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 338 (339/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 339 (340/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 339 (340/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 340 (341/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 341 (342/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 341 (342/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 342 (343/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 343 (344/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 343 (344/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 344 (345/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 345 (346/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 346 (347/1500): 0%....50%....100% - 1 pass
@@ -436,17 +518,17 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 ==PROF== Profiling "materialized_displacement_len..." - 366 (367/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_buoyancy_gradient_inputs_..." - 367 (368/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 368 (369/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 369 (370/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 369 (370/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 370 (371/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 371 (372/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 371 (372/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 372 (373/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 373 (374/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 373 (374/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 374 (375/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 375 (376/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 375 (376/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 376 (377/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 377 (378/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 377 (378/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 378 (379/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 379 (380/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 379 (380/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 380 (381/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 381 (382/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 382 (383/1500): 0%....50%....100% - 1 pass
@@ -797,17 +879,17 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 ==PROF== Profiling "materialized_displacement_len..." - 727 (728/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_buoyancy_gradient_inputs_..." - 728 (729/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 729 (730/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 730 (731/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 730 (731/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 731 (732/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 732 (733/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 732 (733/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 733 (734/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 734 (735/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 734 (735/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 735 (736/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 736 (737/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 736 (737/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 737 (738/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 738 (739/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 738 (739/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 739 (740/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 740 (741/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 740 (741/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 741 (742/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 742 (743/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 743 (744/1500): 0%....50%....100% - 1 pass
@@ -832,17 +914,17 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 ==PROF== Profiling "materialized_displacement_len..." - 762 (763/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_buoyancy_gradient_inputs_..." - 763 (764/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 764 (765/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 765 (766/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 765 (766/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 766 (767/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 767 (768/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 767 (768/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 768 (769/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 769 (770/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 769 (770/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 770 (771/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 771 (772/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 771 (772/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 772 (773/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 773 (774/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 773 (774/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 774 (775/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 775 (776/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 775 (776/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 776 (777/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 777 (778/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 778 (779/1500): 0%....50%....100% - 1 pass
@@ -868,17 +950,17 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 ==PROF== Profiling "materialized_displacement_len..." - 798 (799/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_buoyancy_gradient_inputs_..." - 799 (800/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 800 (801/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 801 (802/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 801 (802/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 802 (803/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 803 (804/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 803 (804/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 804 (805/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 805 (806/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 805 (806/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 806 (807/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 807 (808/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 807 (808/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 808 (809/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 809 (810/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 809 (810/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 810 (811/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 811 (812/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 811 (812/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 812 (813/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 813 (814/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache__FILE_Cl..." - 814 (815/1500): 0%....50%....100% - 1 pass
@@ -1473,16 +1555,16 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 ==PROF== Profiling "copyto_by_slices__FILE_ClimaC..." - 1403 (1404/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_covariance_cache_and_clou..." - 1404 (1405/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copy_FILE_ClimaCore_jl_mod_sr..." - 1405 (1406/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "fill_FILE_ClimaCore_jl_mod_sr..." - 1406 (1407/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "interpolate_pressure_FILE_Cli..." - 1406 (1407/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "interpolate1d_kernel_" - 1407 (1408/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "kernel" - 1408 (1409/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_FILE_ClimaDiagnostics_Q9hyU_..." - 1409 (1410/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "set_precipitation_surface_flu..." - 1410 (1411/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "fill_FILE_ClimaCore_jl_mod_sr..." - 1411 (1412/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "interpolate_pressure_FILE_Cli..." - 1411 (1412/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "interpolate1d_kernel_" - 1412 (1413/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "kernel" - 1413 (1414/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_FILE_ClimaDiagnostics_Q9hyU_..." - 1414 (1415/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "fill_FILE_ClimaCore_jl_mod_sr..." - 1415 (1416/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "interpolate_pressure_FILE_Cli..." - 1415 (1416/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "interpolate1d_kernel_" - 1416 (1417/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "kernel" - 1417 (1418/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "_FILE_ClimaDiagnostics_Q9hyU_..." - 1418 (1419/1500): 0%....50%....100% - 1 pass
@@ -1492,12 +1574,12 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 ==PROF== Profiling "ClimaAtmosSimulation_FILE_Cli..." - 1422 (1423/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "ClimaAtmosSimulation_FILE_Cli..." - 1423 (1424/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "ClimaAtmosSimulation_FILE_Cli..." - 1424 (1425/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 1425 (1426/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 1425 (1426/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 1426 (1427/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 1427 (1428/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_transform__FILE_ClimaCore..." - 1428 (1429/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 1427 (1428/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 1428 (1429/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "weighted_dss_internal__FILE_C..." - 1429 (1430/1500): 0%....50%....100% - 1 pass
-==PROF== Profiling "dss_untransform__FILE_ClimaCo..." - 1430 (1431/1500): 0%....50%....100% - 1 pass
+==PROF== Profiling "weighted_dss_internal__FILE_C..." - 1430 (1431/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copy_FILE_ClimaCore_jl_mod_sr..." - 1431 (1432/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "boundary_fields_FILE_ClimaCou..." - 1432 (1433/1500): 0%....50%....100% - 1 pass
 ==PROF== Profiling "copy_FILE_ClimaCore_jl_mod_sr..." - 1433 (1434/1500): 0%....50%....100% - 1 pass
@@ -1605,10 +1687,10 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
 [ Info: Active project: /home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/experiments/AMIP
 [ Info: Using Atmos configuration from ClimaCoupler in config/atmos_configs/climaatmos_progedmf_1m.yml
-[ Info: Dict{Any, Any}("sleve_eta" => 0.7, "use_coupler_diagnostics" => true, "era5_diurnal_warming" => nothing, "ocean_progress_interval" => "never", "dt" => "120secs", "prognostic_tke" => true, "use_newton_rtol" => false, "era5_ic_full_pressure" => false, "microphysics_model" => "1M", "output_dir_style" => "ActiveLink", "external_forcing" => nothing, "netcdf_output_at_levels" => true, "device" => "auto", "t_end" => "345600secs", "c_amd" => 0.29, "scm_surface_type" => "ocean", "y_elem" => 6, "z_stretch" => true, "dt_subcol" => "Inf", "extra_atmos_diagnostics" => Dict{Any, Any}[Dict("reduction_time" => "average", "short_name" => ["hur", "hus", "ta"], "pressure_coordinates" => true, "period" => "1months", "compute_every" => "6hours")], "edmfx_nh_pressure" => true, "nogw_beres_heating_latent" => false, "era5_initial_condition_dir" => nothing, "cloud_liquid_rain_accretion" => "CloudLiquidRainAccretion", "conservation_softfail" => false, "check_steady_state" => false, "restart_cache" => true, "update_jacobian_every" => "solve", "test_dycore_consistency" => false, "add_isothermal_boundary_layer" => true, "use_itime" => true, "rad" => "allskywithclear", "binary_area_fraction" => true, "seaice_progress_interval" => "never", "cloud_model" => "quadrature", "initial_condition" => "WeatherModel", "vapor_relaxation" => "Joint", "krylov_rtol" => 0.1, "eisenstat_walker_forcing_alpha" => 2.0, "dt_cloud_fraction" => "1hours", "surface_setup" => "PrescribedSurface", "cloud_ice_snow_accretion" => "CloudIceSnowAccretion", "cloud_ice_terminal_velocity" => "Fixed", "update_constrain_state_every" => "step", "jvp_step_adjustment" => 1.0, "microphysics_n_substeps" => 3, "insolation" => "timevarying", "ocean_diagnostic_mode" => "average", "snow_melt" => "SnowMelt", "log_progress" => true, "site_latitude" => 17.0, "h_elem" => 16, "coupler_toml" => ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/toml/amip_progedmf_1m.toml"], "netcdf_interpolation_num_points" => nothing, "coupler_output_dir" => "output", "z_max" => 60000.0, "cloud_liquid_terminal_velocity" => "Fixed", "diagnostics" => Any[], "edmfx_filter" => true, "debug_jacobian" => false, "job_id" => "amip_progedmf_1m_land_he16", "sst_adjustment" => 0.0, "log_to_file" => false, "orographic_gravity_wave" => "raw_topo_online", "dt_rad" => "1hours", "simple_ocean" => false, "edmfx_upwinding" => "first_order", "tracer_upwinding" => "vanleer_limiter", "nh_poly" => 3, "edmfx_sgs_diffusive_flux" => true, "y_max" => 300000.0, "non_orographic_gravity_wave" => true, "chemistry_model" => nothing, "print_config_dict" => true, "save_cache" => true, "microphysics_n_substeps_quadrature" => 2, "topography_damping_factor" => 5.0, "cloud_ice_rain_accretion" => "CloudIceRainAccretion", "config" => "sphere", "hyperdiffusion_prandtl_number" => 0.2, "reproducibility_test" => false, "component_dt_dict" => Dict("dt_atmos" => 120.0, "dt_land" => 120.0, "dt_seaice" => 120.0, "dt_ocean" => 120.0), "cloud_liquid_snow_accretion" => "CloudLiquidSnowAccretion", "check_conservation" => false, "rmse_check" => false, "land_spun_up_ic" => false, "cosp_n_subcolumns" => 100, "rain_terminal_velocity" => "Fixed", "vertical_water_borrowing_species" => nothing, "auto_jacobian_padding_bands" => nothing, "sgs_distribution" => "gaussian", "implicit_diffusion" => true, "walltime_dt" => nothing, "z_elem" => 63, "snow_autoconversion" => "NoSupersaturation", "ocean_model" => "prescribed", "use_auto_jacobian" => false, "cosp_overlap" => "maximum_random", "disable_surface_flux_tendency" => false, "cfsite_number" => "site23", "dt_ogw" => "1800secs", "turbconv" => "prognostic_edmfx", "x_elem" => 6, "idealized_clouds" => false, "edmfx_mse_q_tot_upwinding" => "first_order", "land_progress_interval" => "never", "check_nan_every" => 1024, "ice_model" => "prescribed", "use_dynamic_krylov_rtol" => false, "lai_source" => "modis_monthly", "reproducible_restart" => false, "strict_config" => false, "toml" => ["toml/prognostic_edmfx_1M.toml"], "mesh_warp_type" => "SLEVE", "edmfx_detr_model" => "Generalized", "cloud_ice_formation" => "TemperatureDependentIceNumber", "external_forcing_file" => nothing, "cloud_nn_architecture" => "arch_2layers_8nodes.jld2", "topo_smoothing" => true, "hyperdiff" => "Hyperdiffusion", "output_dir" => nothing, "use_intersection_grid" => true, "debug_tendency_diagnostics" => false, "rain_condensation_evaporation" => "RainEvaporation", "nogw_beres_detailed_diagnostics" => false, "constant_horizontal_diffusion" => false, "apply_sem_quasimonotone_limiter" => false, "bubble" => false, "cloud_ice_melt" => "CloudIceMelt", "ocean_3d_diagnostic_interval" => nothing, "ode_algo" => "ARS222", "max_newton_iters_ode" => 1, "start_date" => "20100101", "sgs_variance_curvature" => false, "time_varying_trace_gases" => ["CO2", "O3"], "ocean_diagnostic_interval" => "1days", "use_dense_jacobian" => false, "snow_terminal_velocity" => "Fixed", "snow_deposition_sublimation" => "DepositionAndSublimation", "detect_restart_file" => false, "prognostic_surface" => "PrescribedSST", "edmfx_vertical_diffusion" => true, "restart_file" => nothing, "unique_seed" => false, "rayleigh_sponge" => true, "nogw_beres_source" => false, "divergence_damping_factor" => 5.0, "edmfx_entr_model" => "Generalized", "edmfx_tracer_upwinding" => "first_order", "energy_check" => false, "land_model" => "integrated", "use_land_diagnostics" => true, "idealized_h2o" => false, "perturb_initstate" => true, "rain_autoconversion" => "Kessler1M", "edmfx_scale_blending" => "SmoothMinimum", "seaice_diagnostic_mode" => "average", "t_start" => "0secs", "land_fraction_source" => "etopo", "dz_bottom" => 30.0, "walltime_debug" => true, "dt_save_state_to_disk" => "30days", "restart_t" => nothing, "advection_test" => false, "tq_correlation_model" => "diagnosed", "dt_cpl" => "120secs", "checkpoint_dt" => "1months", "topography" => "Earth", "aerosol_radiation" => true, "reference_job_id" => nothing, "vorticity_hyperdiffusion_coefficient" => 0.1857, "viscous_sponge" => true, "strict_params" => true, "config_file" => "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml", "cloud_liquid_freezing" => "HomogeneousAndHeterogeneous", "ocean_grid" => "one_deg_tripolar", "bucket_initial_condition" => "", "domain_type" => "global", "approximate_linear_solve_iters" => 2, "land_diagnostics_reduction" => "average", "smagorinsky_lilly" => nothing, "rain_snow_accretion" => "RainSnowAccretion", "enable_diagnostics" => true, "tracer_nonnegativity_method" => nothing, "site_longitude" => -149.0, "evolving_ocean" => true, "cloud_liquid_formation" => "CloudLiquidFormation", "prescribe_clouds_in_radiation" => false, "albedo_model" => "CouplerAlbedo", "edmfx_sgs_horizontal_diffusive_flux" => false, "update_cache_every" => "step", "quadrature_order" => 3, "coupler_diagnostics_period" => nothing, "FLOAT_TYPE" => "Float32", "deep_atmosphere" => true, "updraft_number" => 1, "amd_les" => false, "restart_dir" => nothing, "detect_restart_files" => false, "column_latlon" => [0.0, 0.0], "energy_q_tot_upwinding" => "vanleer_limiter", "prescribed_aerosols" => ["CB1", "CB2", "DST01", "DST02", "DST03", "DST04", "DST05", "OC1", "OC2", "SO4", "SSLT01", "SSLT02", "SSLT03", "SSLT04", "SSLT05"], "dt_nogw" => "1800secs", "output_default_diagnostics" => true, "edmfx_sgs_mass_flux" => true, "x_max" => 300000.0, "radiation_reset_rng_seed" => true, "land_diagnostics_period" => "1months", "newton_rtol" => 1.0e-5, "atmos_config_file" => "config/atmos_configs/climaatmos_progedmf_1m.yml", "edmfx_sgsflux_upwinding" => "none", "mode_name" => "amip", "use_sgs_quadrature" => true, "bucket_albedo_type" => "map_static", "atmos_progress_interval" => "never", "vert_diff" => nothing, "use_krylov_method" => false, "sleve_s" => 10.0, "implicit_microphysics" => true, "seaice_diagnostic_interval" => "1days", "prescribed_flow" => nothing, "edmfx_horizontal_diffusion" => false, "coupler_diagnostics_reduction" => "average")
+[ Info: Dict{Any, Any}("sleve_eta" => 0.7, "use_coupler_diagnostics" => true, "era5_diurnal_warming" => nothing, "ocean_progress_interval" => "never", "dt" => "120secs", "prognostic_tke" => true, "use_newton_rtol" => false, "era5_ic_full_pressure" => false, "microphysics_model" => "1M", "output_dir_style" => "ActiveLink", "external_forcing" => nothing, "netcdf_output_at_levels" => true, "device" => "auto", "t_end" => "345600secs", "c_amd" => 0.29, "scm_surface_type" => "ocean", "y_elem" => 6, "z_stretch" => true, "dt_subcol" => "Inf", "extra_atmos_diagnostics" => Dict{Any, Any}[Dict("reduction_time" => "average", "short_name" => ["hur", "hus", "ta"], "pressure_coordinates" => true, "period" => "1months", "compute_every" => "6hours")], "edmfx_nh_pressure" => true, "nogw_beres_heating_latent" => false, "era5_initial_condition_dir" => nothing, "cloud_liquid_rain_accretion" => "CloudLiquidRainAccretion", "conservation_softfail" => false, "check_steady_state" => false, "restart_cache" => true, "update_jacobian_every" => "solve", "test_dycore_consistency" => false, "add_isothermal_boundary_layer" => true, "use_itime" => true, "rad" => "allskywithclear", "binary_area_fraction" => true, "seaice_progress_interval" => "never", "cloud_model" => "quadrature", "initial_condition" => "WeatherModel", "vapor_relaxation" => "Joint", "krylov_rtol" => 0.1, "eisenstat_walker_forcing_alpha" => 2.0, "dt_cloud_fraction" => "1hours", "surface_setup" => "PrescribedSurface", "cloud_ice_snow_accretion" => "CloudIceSnowAccretion", "cloud_ice_terminal_velocity" => "Fixed", "update_constrain_state_every" => "step", "jvp_step_adjustment" => 1.0, "microphysics_n_substeps" => 3, "insolation" => "timevarying", "ocean_diagnostic_mode" => "average", "snow_melt" => "SnowMelt", "log_progress" => true, "site_latitude" => 17.0, "h_elem" => 16, "coupler_toml" => ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/toml/amip_progedmf_1m.toml"], "netcdf_interpolation_num_points" => nothing, "coupler_output_dir" => "output", "edmfx_updraft_picard_rounds" => 2, "z_max" => 60000.0, "cloud_liquid_terminal_velocity" => "Fixed", "diagnostics" => Any[], "edmfx_filter" => true, "debug_jacobian" => false, "job_id" => "amip_progedmf_1m_land_he16", "sst_adjustment" => 0.0, "log_to_file" => false, "orographic_gravity_wave" => "raw_topo_online", "dt_rad" => "1hours", "simple_ocean" => false, "edmfx_upwinding" => "first_order", "tracer_upwinding" => "vanleer_limiter", "nh_poly" => 3, "edmfx_sgs_diffusive_flux" => true, "y_max" => 300000.0, "non_orographic_gravity_wave" => true, "chemistry_model" => nothing, "print_config_dict" => true, "save_cache" => true, "microphysics_n_substeps_quadrature" => 2, "topography_damping_factor" => 5.0, "cloud_ice_rain_accretion" => "CloudIceRainAccretion", "config" => "sphere", "hyperdiffusion_prandtl_number" => 0.2, "reproducibility_test" => false, "component_dt_dict" => Dict("dt_atmos" => 120.0, "dt_land" => 120.0, "dt_seaice" => 120.0, "dt_ocean" => 120.0), "cloud_liquid_snow_accretion" => "CloudLiquidSnowAccretion", "check_conservation" => false, "rmse_check" => false, "land_spun_up_ic" => false, "cosp_n_subcolumns" => 100, "rain_terminal_velocity" => "Fixed", "vertical_water_borrowing_species" => nothing, "auto_jacobian_padding_bands" => nothing, "sgs_distribution" => "gaussian", "implicit_diffusion" => true, "walltime_dt" => nothing, "z_elem" => 63, "snow_autoconversion" => "NoSupersaturation", "ocean_model" => "prescribed", "use_auto_jacobian" => false, "cosp_overlap" => "maximum_random", "disable_surface_flux_tendency" => false, "cfsite_number" => "site23", "dt_ogw" => "1800secs", "turbconv" => "prognostic_edmfx", "x_elem" => 6, "idealized_clouds" => false, "edmfx_mse_q_tot_upwinding" => "first_order", "land_progress_interval" => "never", "check_nan_every" => 1024, "ice_model" => "prescribed", "use_dynamic_krylov_rtol" => false, "lai_source" => "modis_monthly", "reproducible_restart" => false, "strict_config" => false, "toml" => ["toml/prognostic_edmfx_1M.toml"], "mesh_warp_type" => "SLEVE", "edmfx_detr_model" => "Generalized", "cloud_ice_formation" => "TemperatureDependentIceNumber", "external_forcing_file" => nothing, "cloud_nn_architecture" => "arch_2layers_8nodes.jld2", "topo_smoothing" => true, "hyperdiff" => "Hyperdiffusion", "output_dir" => nothing, "use_intersection_grid" => true, "debug_tendency_diagnostics" => false, "rain_condensation_evaporation" => "RainEvaporation", "nogw_beres_detailed_diagnostics" => false, "constant_horizontal_diffusion" => false, "apply_sem_quasimonotone_limiter" => false, "bubble" => false, "cloud_ice_melt" => "CloudIceMelt", "ocean_3d_diagnostic_interval" => nothing, "ode_algo" => "ARS222", "max_newton_iters_ode" => 1, "start_date" => "20100101", "sgs_variance_curvature" => false, "time_varying_trace_gases" => ["CO2", "O3"], "ocean_diagnostic_interval" => "1days", "use_dense_jacobian" => false, "snow_terminal_velocity" => "Fixed", "snow_deposition_sublimation" => "DepositionAndSublimation", "detect_restart_file" => false, "prognostic_surface" => "PrescribedSST", "edmfx_vertical_diffusion" => true, "restart_file" => nothing, "unique_seed" => false, "rayleigh_sponge" => true, "nogw_beres_source" => false, "divergence_damping_factor" => 5.0, "edmfx_entr_model" => "Generalized", "edmfx_tracer_upwinding" => "first_order", "energy_check" => false, "land_model" => "integrated", "use_land_diagnostics" => true, "idealized_h2o" => false, "perturb_initstate" => true, "rain_autoconversion" => "Kessler1M", "edmfx_scale_blending" => "SmoothMinimum", "seaice_diagnostic_mode" => "average", "t_start" => "0secs", "land_fraction_source" => "etopo", "dz_bottom" => 30.0, "walltime_debug" => true, "dt_save_state_to_disk" => "30days", "restart_t" => nothing, "advection_test" => false, "tq_correlation_model" => "diagnosed", "dt_cpl" => "120secs", "checkpoint_dt" => "1months", "topography" => "Earth", "aerosol_radiation" => true, "reference_job_id" => nothing, "vorticity_hyperdiffusion_coefficient" => 0.1857, "viscous_sponge" => true, "strict_params" => true, "config_file" => "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml", "cloud_liquid_freezing" => "HomogeneousAndHeterogeneous", "ocean_grid" => "one_deg_tripolar", "bucket_initial_condition" => "", "domain_type" => "global", "approximate_linear_solve_iters" => 2, "land_diagnostics_reduction" => "average", "smagorinsky_lilly" => nothing, "rain_snow_accretion" => "RainSnowAccretion", "enable_diagnostics" => true, "tracer_nonnegativity_method" => nothing, "site_longitude" => -149.0, "evolving_ocean" => true, "cloud_liquid_formation" => "CloudLiquidFormation", "prescribe_clouds_in_radiation" => false, "albedo_model" => "CouplerAlbedo", "edmfx_sgs_horizontal_diffusive_flux" => false, "update_cache_every" => "step", "quadrature_order" => 3, "coupler_diagnostics_period" => nothing, "FLOAT_TYPE" => "Float32", "deep_atmosphere" => true, "updraft_number" => 1, "amd_les" => false, "restart_dir" => nothing, "detect_restart_files" => false, "column_latlon" => [0.0, 0.0], "energy_q_tot_upwinding" => "vanleer_limiter", "prescribed_aerosols" => ["CB1", "CB2", "DST01", "DST02", "DST03", "DST04", "DST05", "OC1", "OC2", "SO4", "SSLT01", "SSLT02", "SSLT03", "SSLT04", "SSLT05"], "dt_nogw" => "1800secs", "output_default_diagnostics" => true, "edmfx_sgs_mass_flux" => true, "x_max" => 300000.0, "radiation_reset_rng_seed" => true, "land_diagnostics_period" => "1months", "newton_rtol" => 1.0e-5, "atmos_config_file" => "config/atmos_configs/climaatmos_progedmf_1m.yml", "edmfx_sgsflux_upwinding" => "none", "mode_name" => "amip", "use_sgs_quadrature" => true, "bucket_albedo_type" => "map_static", "atmos_progress_interval" => "never", "vert_diff" => nothing, "use_krylov_method" => false, "sleve_s" => 10.0, "implicit_microphysics" => true, "seaice_diagnostic_interval" => "1days", "prescribed_flow" => nothing, "edmfx_horizontal_diffusion" => false, "coupler_diagnostics_reduction" => "average")
 [ Info: Setting up single-process ClimaCoupler run on device: CUDADevice.
-[ Info: Dict{Any, Any}("sleve_eta" => 0.7, "use_coupler_diagnostics" => true, "era5_diurnal_warming" => nothing, "ocean_progress_interval" => "never", "dt" => "120secs", "prognostic_tke" => true, "use_newton_rtol" => false, "era5_ic_full_pressure" => false, "microphysics_model" => "1M", "output_dir_style" => "ActiveLink", "external_forcing" => nothing, "netcdf_output_at_levels" => true, "device" => "auto", "t_end" => "345600secs", "c_amd" => 0.29, "scm_surface_type" => "ocean", "y_elem" => 6, "z_stretch" => true, "dt_subcol" => "Inf", "extra_atmos_diagnostics" => Dict{Any, Any}[Dict("reduction_time" => "average", "short_name" => ["hur", "hus", "ta"], "pressure_coordinates" => true, "period" => "1months", "compute_every" => "6hours")], "edmfx_nh_pressure" => true, "nogw_beres_heating_latent" => false, "era5_initial_condition_dir" => nothing, "cloud_liquid_rain_accretion" => "CloudLiquidRainAccretion", "conservation_softfail" => false, "check_steady_state" => false, "restart_cache" => true, "update_jacobian_every" => "solve", "test_dycore_consistency" => false, "add_isothermal_boundary_layer" => true, "use_itime" => true, "rad" => "allskywithclear", "binary_area_fraction" => true, "seaice_progress_interval" => "never", "cloud_model" => "quadrature", "initial_condition" => "WeatherModel", "vapor_relaxation" => "Joint", "krylov_rtol" => 0.1, "eisenstat_walker_forcing_alpha" => 2.0, "dt_cloud_fraction" => "1hours", "surface_setup" => "PrescribedSurface", "cloud_ice_snow_accretion" => "CloudIceSnowAccretion", "cloud_ice_terminal_velocity" => "Fixed", "update_constrain_state_every" => "step", "jvp_step_adjustment" => 1.0, "microphysics_n_substeps" => 3, "insolation" => "timevarying", "ocean_diagnostic_mode" => "average", "snow_melt" => "SnowMelt", "log_progress" => true, "site_latitude" => 17.0, "h_elem" => 16, "coupler_toml" => ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/toml/amip_progedmf_1m.toml"], "netcdf_interpolation_num_points" => nothing, "coupler_output_dir" => "output", "z_max" => 60000.0, "cloud_liquid_terminal_velocity" => "Fixed", "diagnostics" => Any[], "edmfx_filter" => true, "debug_jacobian" => false, "job_id" => "amip_progedmf_1m_land_he16", "sst_adjustment" => 0.0, "log_to_file" => false, "orographic_gravity_wave" => "raw_topo_online", "dt_rad" => "1hours", "simple_ocean" => false, "edmfx_upwinding" => "first_order", "tracer_upwinding" => "vanleer_limiter", "nh_poly" => 3, "edmfx_sgs_diffusive_flux" => true, "y_max" => 300000.0, "non_orographic_gravity_wave" => true, "chemistry_model" => nothing, "print_config_dict" => true, "save_cache" => true, "microphysics_n_substeps_quadrature" => 2, "topography_damping_factor" => 5.0, "cloud_ice_rain_accretion" => "CloudIceRainAccretion", "config" => "sphere", "hyperdiffusion_prandtl_number" => 0.2, "reproducibility_test" => false, "component_dt_dict" => Dict("dt_atmos" => 120.0, "dt_land" => 120.0, "dt_seaice" => 120.0, "dt_ocean" => 120.0), "cloud_liquid_snow_accretion" => "CloudLiquidSnowAccretion", "check_conservation" => false, "rmse_check" => false, "land_spun_up_ic" => false, "cosp_n_subcolumns" => 100, "rain_terminal_velocity" => "Fixed", "vertical_water_borrowing_species" => nothing, "auto_jacobian_padding_bands" => nothing, "sgs_distribution" => "gaussian", "implicit_diffusion" => true, "walltime_dt" => nothing, "z_elem" => 63, "snow_autoconversion" => "NoSupersaturation", "ocean_model" => "prescribed", "use_auto_jacobian" => false, "cosp_overlap" => "maximum_random", "disable_surface_flux_tendency" => false, "cfsite_number" => "site23", "dt_ogw" => "1800secs", "turbconv" => "prognostic_edmfx", "x_elem" => 6, "idealized_clouds" => false, "edmfx_mse_q_tot_upwinding" => "first_order", "land_progress_interval" => "never", "check_nan_every" => 1024, "ice_model" => "prescribed", "use_dynamic_krylov_rtol" => false, "lai_source" => "modis_monthly", "reproducible_restart" => false, "strict_config" => false, "toml" => ["toml/prognostic_edmfx_1M.toml"], "mesh_warp_type" => "SLEVE", "edmfx_detr_model" => "Generalized", "cloud_ice_formation" => "TemperatureDependentIceNumber", "external_forcing_file" => nothing, "cloud_nn_architecture" => "arch_2layers_8nodes.jld2", "topo_smoothing" => true, "hyperdiff" => "Hyperdiffusion", "output_dir" => nothing, "use_intersection_grid" => true, "debug_tendency_diagnostics" => false, "rain_condensation_evaporation" => "RainEvaporation", "nogw_beres_detailed_diagnostics" => false, "constant_horizontal_diffusion" => false, "apply_sem_quasimonotone_limiter" => false, "bubble" => false, "cloud_ice_melt" => "CloudIceMelt", "ocean_3d_diagnostic_interval" => nothing, "ode_algo" => "ARS222", "max_newton_iters_ode" => 1, "start_date" => "20100101", "sgs_variance_curvature" => false, "time_varying_trace_gases" => ["CO2", "O3"], "ocean_diagnostic_interval" => "1days", "use_dense_jacobian" => false, "snow_terminal_velocity" => "Fixed", "snow_deposition_sublimation" => "DepositionAndSublimation", "detect_restart_file" => false, "prognostic_surface" => "PrescribedSST", "edmfx_vertical_diffusion" => true, "restart_file" => nothing, "unique_seed" => false, "rayleigh_sponge" => true, "nogw_beres_source" => false, "divergence_damping_factor" => 5.0, "edmfx_entr_model" => "Generalized", "edmfx_tracer_upwinding" => "first_order", "energy_check" => false, "land_model" => "integrated", "use_land_diagnostics" => true, "idealized_h2o" => false, "perturb_initstate" => true, "rain_autoconversion" => "Kessler1M", "edmfx_scale_blending" => "SmoothMinimum", "seaice_diagnostic_mode" => "average", "t_start" => "0secs", "land_fraction_source" => "etopo", "dz_bottom" => 30.0, "walltime_debug" => true, "dt_save_state_to_disk" => "30days", "restart_t" => nothing, "advection_test" => false, "tq_correlation_model" => "diagnosed", "dt_cpl" => "120secs", "checkpoint_dt" => "1months", "topography" => "Earth", "aerosol_radiation" => true, "reference_job_id" => nothing, "vorticity_hyperdiffusion_coefficient" => 0.1857, "viscous_sponge" => true, "strict_params" => true, "config_file" => "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml", "cloud_liquid_freezing" => "HomogeneousAndHeterogeneous", "ocean_grid" => "one_deg_tripolar", "bucket_initial_condition" => "", "domain_type" => "global", "approximate_linear_solve_iters" => 2, "land_diagnostics_reduction" => "average", "smagorinsky_lilly" => nothing, "rain_snow_accretion" => "RainSnowAccretion", "enable_diagnostics" => true, "tracer_nonnegativity_method" => nothing, "site_longitude" => -149.0, "evolving_ocean" => true, "cloud_liquid_formation" => "CloudLiquidFormation", "prescribe_clouds_in_radiation" => false, "albedo_model" => "CouplerAlbedo", "edmfx_sgs_horizontal_diffusive_flux" => false, "update_cache_every" => "step", "quadrature_order" => 3, "coupler_diagnostics_period" => nothing, "FLOAT_TYPE" => "Float32", "deep_atmosphere" => true, "updraft_number" => 1, "amd_les" => false, "restart_dir" => nothing, "detect_restart_files" => false, "column_latlon" => [0.0, 0.0], "energy_q_tot_upwinding" => "vanleer_limiter", "prescribed_aerosols" => ["CB1", "CB2", "DST01", "DST02", "DST03", "DST04", "DST05", "OC1", "OC2", "SO4", "SSLT01", "SSLT02", "SSLT03", "SSLT04", "SSLT05"], "dt_nogw" => "1800secs", "output_default_diagnostics" => true, "edmfx_sgs_mass_flux" => true, "x_max" => 300000.0, "radiation_reset_rng_seed" => true, "land_diagnostics_period" => "1months", "newton_rtol" => 1.0e-5, "atmos_config_file" => "config/atmos_configs/climaatmos_progedmf_1m.yml", "edmfx_sgsflux_upwinding" => "none", "mode_name" => "amip", "use_sgs_quadrature" => true, "bucket_albedo_type" => "map_static", "atmos_progress_interval" => "never", "vert_diff" => nothing, "use_krylov_method" => false, "sleve_s" => 10.0, "implicit_microphysics" => true, "seaice_diagnostic_interval" => "1days", "prescribed_flow" => nothing, "edmfx_horizontal_diffusion" => false, "coupler_diagnostics_reduction" => "average")
-[ Info: Output directories output/amip_progedmf_1m_land_he16/output_0013
+[ Info: Dict{Any, Any}("sleve_eta" => 0.7, "use_coupler_diagnostics" => true, "era5_diurnal_warming" => nothing, "ocean_progress_interval" => "never", "dt" => "120secs", "prognostic_tke" => true, "use_newton_rtol" => false, "era5_ic_full_pressure" => false, "microphysics_model" => "1M", "output_dir_style" => "ActiveLink", "external_forcing" => nothing, "netcdf_output_at_levels" => true, "device" => "auto", "t_end" => "345600secs", "c_amd" => 0.29, "scm_surface_type" => "ocean", "y_elem" => 6, "z_stretch" => true, "dt_subcol" => "Inf", "extra_atmos_diagnostics" => Dict{Any, Any}[Dict("reduction_time" => "average", "short_name" => ["hur", "hus", "ta"], "pressure_coordinates" => true, "period" => "1months", "compute_every" => "6hours")], "edmfx_nh_pressure" => true, "nogw_beres_heating_latent" => false, "era5_initial_condition_dir" => nothing, "cloud_liquid_rain_accretion" => "CloudLiquidRainAccretion", "conservation_softfail" => false, "check_steady_state" => false, "restart_cache" => true, "update_jacobian_every" => "solve", "test_dycore_consistency" => false, "add_isothermal_boundary_layer" => true, "use_itime" => true, "rad" => "allskywithclear", "binary_area_fraction" => true, "seaice_progress_interval" => "never", "cloud_model" => "quadrature", "initial_condition" => "WeatherModel", "vapor_relaxation" => "Joint", "krylov_rtol" => 0.1, "eisenstat_walker_forcing_alpha" => 2.0, "dt_cloud_fraction" => "1hours", "surface_setup" => "PrescribedSurface", "cloud_ice_snow_accretion" => "CloudIceSnowAccretion", "cloud_ice_terminal_velocity" => "Fixed", "update_constrain_state_every" => "step", "jvp_step_adjustment" => 1.0, "microphysics_n_substeps" => 3, "insolation" => "timevarying", "ocean_diagnostic_mode" => "average", "snow_melt" => "SnowMelt", "log_progress" => true, "site_latitude" => 17.0, "h_elem" => 16, "coupler_toml" => ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/toml/amip_progedmf_1m.toml"], "netcdf_interpolation_num_points" => nothing, "coupler_output_dir" => "output", "edmfx_updraft_picard_rounds" => 2, "z_max" => 60000.0, "cloud_liquid_terminal_velocity" => "Fixed", "diagnostics" => Any[], "edmfx_filter" => true, "debug_jacobian" => false, "job_id" => "amip_progedmf_1m_land_he16", "sst_adjustment" => 0.0, "log_to_file" => false, "orographic_gravity_wave" => "raw_topo_online", "dt_rad" => "1hours", "simple_ocean" => false, "edmfx_upwinding" => "first_order", "tracer_upwinding" => "vanleer_limiter", "nh_poly" => 3, "edmfx_sgs_diffusive_flux" => true, "y_max" => 300000.0, "non_orographic_gravity_wave" => true, "chemistry_model" => nothing, "print_config_dict" => true, "save_cache" => true, "microphysics_n_substeps_quadrature" => 2, "topography_damping_factor" => 5.0, "cloud_ice_rain_accretion" => "CloudIceRainAccretion", "config" => "sphere", "hyperdiffusion_prandtl_number" => 0.2, "reproducibility_test" => false, "component_dt_dict" => Dict("dt_atmos" => 120.0, "dt_land" => 120.0, "dt_seaice" => 120.0, "dt_ocean" => 120.0), "cloud_liquid_snow_accretion" => "CloudLiquidSnowAccretion", "check_conservation" => false, "rmse_check" => false, "land_spun_up_ic" => false, "cosp_n_subcolumns" => 100, "rain_terminal_velocity" => "Fixed", "vertical_water_borrowing_species" => nothing, "auto_jacobian_padding_bands" => nothing, "sgs_distribution" => "gaussian", "implicit_diffusion" => true, "walltime_dt" => nothing, "z_elem" => 63, "snow_autoconversion" => "NoSupersaturation", "ocean_model" => "prescribed", "use_auto_jacobian" => false, "cosp_overlap" => "maximum_random", "disable_surface_flux_tendency" => false, "cfsite_number" => "site23", "dt_ogw" => "1800secs", "turbconv" => "prognostic_edmfx", "x_elem" => 6, "idealized_clouds" => false, "edmfx_mse_q_tot_upwinding" => "first_order", "land_progress_interval" => "never", "check_nan_every" => 1024, "ice_model" => "prescribed", "use_dynamic_krylov_rtol" => false, "lai_source" => "modis_monthly", "reproducible_restart" => false, "strict_config" => false, "toml" => ["toml/prognostic_edmfx_1M.toml"], "mesh_warp_type" => "SLEVE", "edmfx_detr_model" => "Generalized", "cloud_ice_formation" => "TemperatureDependentIceNumber", "external_forcing_file" => nothing, "cloud_nn_architecture" => "arch_2layers_8nodes.jld2", "topo_smoothing" => true, "hyperdiff" => "Hyperdiffusion", "output_dir" => nothing, "use_intersection_grid" => true, "debug_tendency_diagnostics" => false, "rain_condensation_evaporation" => "RainEvaporation", "nogw_beres_detailed_diagnostics" => false, "constant_horizontal_diffusion" => false, "apply_sem_quasimonotone_limiter" => false, "bubble" => false, "cloud_ice_melt" => "CloudIceMelt", "ocean_3d_diagnostic_interval" => nothing, "ode_algo" => "ARS222", "max_newton_iters_ode" => 1, "start_date" => "20100101", "sgs_variance_curvature" => false, "time_varying_trace_gases" => ["CO2", "O3"], "ocean_diagnostic_interval" => "1days", "use_dense_jacobian" => false, "snow_terminal_velocity" => "Fixed", "snow_deposition_sublimation" => "DepositionAndSublimation", "detect_restart_file" => false, "prognostic_surface" => "PrescribedSST", "edmfx_vertical_diffusion" => true, "restart_file" => nothing, "unique_seed" => false, "rayleigh_sponge" => true, "nogw_beres_source" => false, "divergence_damping_factor" => 5.0, "edmfx_entr_model" => "Generalized", "edmfx_tracer_upwinding" => "first_order", "energy_check" => false, "land_model" => "integrated", "use_land_diagnostics" => true, "idealized_h2o" => false, "perturb_initstate" => true, "rain_autoconversion" => "Kessler1M", "edmfx_scale_blending" => "SmoothMinimum", "seaice_diagnostic_mode" => "average", "t_start" => "0secs", "land_fraction_source" => "etopo", "dz_bottom" => 30.0, "walltime_debug" => true, "dt_save_state_to_disk" => "30days", "restart_t" => nothing, "advection_test" => false, "tq_correlation_model" => "diagnosed", "dt_cpl" => "120secs", "checkpoint_dt" => "1months", "topography" => "Earth", "aerosol_radiation" => true, "reference_job_id" => nothing, "vorticity_hyperdiffusion_coefficient" => 0.1857, "viscous_sponge" => true, "strict_params" => true, "config_file" => "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml", "cloud_liquid_freezing" => "HomogeneousAndHeterogeneous", "ocean_grid" => "one_deg_tripolar", "bucket_initial_condition" => "", "domain_type" => "global", "approximate_linear_solve_iters" => 2, "land_diagnostics_reduction" => "average", "smagorinsky_lilly" => nothing, "rain_snow_accretion" => "RainSnowAccretion", "enable_diagnostics" => true, "tracer_nonnegativity_method" => nothing, "site_longitude" => -149.0, "evolving_ocean" => true, "cloud_liquid_formation" => "CloudLiquidFormation", "prescribe_clouds_in_radiation" => false, "albedo_model" => "CouplerAlbedo", "edmfx_sgs_horizontal_diffusive_flux" => false, "update_cache_every" => "step", "quadrature_order" => 3, "coupler_diagnostics_period" => nothing, "FLOAT_TYPE" => "Float32", "deep_atmosphere" => true, "updraft_number" => 1, "amd_les" => false, "restart_dir" => nothing, "detect_restart_files" => false, "column_latlon" => [0.0, 0.0], "energy_q_tot_upwinding" => "vanleer_limiter", "prescribed_aerosols" => ["CB1", "CB2", "DST01", "DST02", "DST03", "DST04", "DST05", "OC1", "OC2", "SO4", "SSLT01", "SSLT02", "SSLT03", "SSLT04", "SSLT05"], "dt_nogw" => "1800secs", "output_default_diagnostics" => true, "edmfx_sgs_mass_flux" => true, "x_max" => 300000.0, "radiation_reset_rng_seed" => true, "land_diagnostics_period" => "1months", "newton_rtol" => 1.0e-5, "atmos_config_file" => "config/atmos_configs/climaatmos_progedmf_1m.yml", "edmfx_sgsflux_upwinding" => "none", "mode_name" => "amip", "use_sgs_quadrature" => true, "bucket_albedo_type" => "map_static", "atmos_progress_interval" => "never", "vert_diff" => nothing, "use_krylov_method" => false, "sleve_s" => 10.0, "implicit_microphysics" => true, "seaice_diagnostic_interval" => "1days", "prescribed_flow" => nothing, "edmfx_horizontal_diffusion" => false, "coupler_diagnostics_reduction" => "average")
+[ Info: Output directories output/amip_progedmf_1m_land_he16/output_0024
 [ Info: Coupler artifacts directory output/amip_progedmf_1m_land_he16/artifacts
 [ Info: Coupler checkpoint directory output/amip_progedmf_1m_land_he16/checkpoints
 [ Info: Random seed set to 1234
@@ -1662,13 +1744,13 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 └                  `vapor_relaxation`::`JointVaporRelaxation`
 [ Info: Single-process ClimaAtmos run on CUDADevice
 [ Info: Using ODE config: `ClimaTimeSteppers.ARS222`
-┌ Warning: Removing output/amip_progedmf_1m_land_he16/output_0013/clima_atmos
+┌ Warning: Removing output/amip_progedmf_1m_land_he16/output_0024/clima_atmos
 └ @ ClimaUtilities.OutputPathGenerator ~/.julia/packages/ClimaUtilities/2GLZR/src/OutputPathGenerator.jl:157
 ┌ Info: Calling weather_model_data_path
 └   (start_date = setup.start_date, era5_dir = era5_dir) = (start_date = Dates.DateTime("2010-01-01T00:00:00"), era5_dir = nothing)
 [ Info: Overwriting initial conditions with data from file /net/sampo/data1/ClimaArtifacts/artifacts/wxquest_initial_conditions/era5_init_processed_internal_20100101_0000.nc
 [ Info: Adjusted surface pressure to account for ERA5/model surface-height differences.
-[ Info: Initialized state (82.993 s, 9.53 GiB)
+[ Info: Initialized state (96.759 s, 9.37 GiB)
 ┌ Info: Computing orographic gravity wave drag input at initialization (raw_topo_online)
 └   α_smoothing = 1.0f0
 ┌ Info: Grid-aware OGWD preprocessing
@@ -1682,825 +1764,825 @@ Info Packages marked with ⌃ and ⌅ have new versions available. Those with �
 [ Info: chi smoothing: length_scale=192086.0, n_cells=nothing
 [ Info: Computing velocity potential (Haversine arc, tiny=1e-12)...
 [ Info: Computing T tensor...
-[ Info: Built cache (516.448 s, 38.02 GiB)
-[ Info: Assembled callbacks (606.47 ms, 38.23 MiB)
+[ Info: Built cache (512.12 s, 36.87 GiB)
+[ Info: Assembled callbacks (543.605 ms, 38.21 MiB)
 ┌ Info: Jacobian algorithm: ManualSparseJacobian(
 │   approximate_solve_iters = 2,
 └ )
 [ Info: Jacobian derivative flags: topography_flag = UseDerivative, diffusion_flag = UseDerivative
-[ Info: Built tendency function (4.014 s, 259.04 MiB)
-[ Info: Initialized integrator (358.575 s, 18.97 GiB)
+[ Info: Built tendency function (3.439 s, 232.72 MiB)
+[ Info: Initialized integrator (309.463 s, 18.03 GiB)
 [ Info: Added 75 default ClimaAtmos diagnostics
 ┌ Warning: Disabling vertical interpolation, the provided number of points is ignored (using 37)
 └ @ ClimaDiagnostics.Writers ~/.julia/packages/ClimaDiagnostics/Q9hyU/src/netcdf_writer.jl:203
 [ Info: Added 3 user-provided YAML-style diagnostics
 [ Info: Saving accumulated diagnostics to disk with frequency: 1 month, 1 day
-[ Info: Set up diagnostics (68.345 s, 2.33 GiB)
+[ Info: Set up diagnostics (56.416 s, 2.27 GiB)
 [ Info: Initialized 78 total diagnostics
 ┌ Info: Simulation info
 │   job_id = "amip_progedmf_1m_land_he16"
-└   output_dir = "output/amip_progedmf_1m_land_he16/output_0013/clima_atmos"
-[ Info: ClimaAtmos: get_simulation (23 min 5.0 s, 94.772 GiB, compile 17 min 45.4 s)
-[ Info: ClimaAtmos: zeroed fluxes and applied DSS to the state (12.61 s, 397.907 MiB, compile 7.83 s)
-[ Info: Initialized atmosphere simulation (23 min 34.1 s, 96.050 GiB, compile 18 min 6.8 s)
-[ Info: Created boundary space and surface fields (7.02 s, 500.202 MiB, compile 5.7 s)
-[ Info: Computed land fraction (12.26 s, 3.245 GiB, compile 7.63 s)
+└   output_dir = "output/amip_progedmf_1m_land_he16/output_0024/clima_atmos"
+[ Info: ClimaAtmos: get_simulation (22 min 0.7 s, 91.674 GiB, compile 16 min 58.9 s)
+[ Info: ClimaAtmos: zeroed fluxes and applied DSS to the state (10.52 s, 396.135 MiB, compile 6.14 s)
+[ Info: Initialized atmosphere simulation (22 min 27.1 s, 92.947 GiB, compile 17 min 18.3 s)
+[ Info: Created boundary space and surface fields (7.03 s, 477.457 MiB, compile 5.79 s)
+[ Info: Computed land fraction (11.62 s, 3.241 GiB, compile 6.1 s)
 [ Info: ClimaCoupler.Interfacer.AMIPMode
-[ Info: ClimaLand: created domain (19.1 s, 926.834 MiB, compile 11.31 s)
-[ Info: ClimaLand: read MODIS LAI (1.02 s, 68.052 MiB, compile 1.01 s)
-[ Info: ClimaLand: constructed LandModel (59.17 s, 4.788 GiB, compile 35.55 s)
-[ Info: ClimaLand: set up diagnostics (3 min 28.5 s, 798.168 MiB, compile 3 min 28.4 s)
-[ Info: ClimaLand: initialized LandSimulation (2 min 4.0 s, 3.913 GiB, compile 1 min 47.2 s)
-[ Info: Initialized land simulation (7 min 4.3 s, 11.340 GiB, compile 6 min 14.2 s)
+[ Info: ClimaLand: created domain (13.9 s, 825.178 MiB, compile 6.8 s)
+[ Info: ClimaLand: read MODIS LAI (1.42 s, 51.489 MiB, compile 1.41 s)
+[ Info: ClimaLand: constructed LandModel (53.46 s, 4.749 GiB, compile 31.89 s)
+[ Info: ClimaLand: set up diagnostics (3 min 12.2 s, 797.906 MiB, compile 3 min 12.2 s)
+[ Info: ClimaLand: initialized LandSimulation (2 min 0.1 s, 3.580 GiB, compile 1 min 43.8 s)
+[ Info: Initialized land simulation (6 min 32.2 s, 10.829 GiB, compile 5 min 45.4 s)
 ┌ Info: PrescribedOcean: using SST file
 └   sst_data = "/net/sampo/data1/ClimaArtifacts/artifacts/historical_sst_sic/MODEL.SST.HAD187001-198110.OI198111-202206.nc"
-[ Info: Initialized ocean simulation (7.38 s, 349.309 MiB, compile 5.92 s)
+[ Info: Initialized ocean simulation (7.09 s, 325.241 MiB, compile 5.76 s)
 ┌ Info: PrescribedIce: using SIC file
 └   sic_data = "/net/sampo/data1/ClimaArtifacts/artifacts/historical_sst_sic/MODEL.ICE.HAD187001-198110.OI198111-202206.nc"
 ┌ Info: PrescribedIce: ISTL1 not in file, using constant initialization
 └   file = "/net/sampo/data1/ClimaArtifacts/artifacts/historical_sst_sic/MODEL.ICE.HAD187001-198110.OI198111-202206.nc"
-[ Info: Initialized sea ice simulation (13.07 s, 642.712 MiB, compile 10.38 s)
+[ Info: Initialized sea ice simulation (11.91 s, 608.499 MiB, compile 9.26 s)
 [ Info: Component models initialized: (:atmos_sim, :ice_sim, :land_sim, :ocean_sim)
 [ Info: Component model types: ("ClimaAtmosSimulation", "PrescribedIceSimulation", "ClimaLandSimulation", "PrescribedOceanSimulation")
-[ Info: Initialized coupler fields (86.4 ms, 6.217 MiB, compile 84.6 ms)
+[ Info: Initialized coupler fields (70.7 ms, 3.053 MiB, compile 69.0 ms)
 [ Info: Using default coupler diagnostics
-[ Info: Set up coupler diagnostics (7.73 s, 354.603 MiB, compile 5.22 s)
+[ Info: Set up coupler diagnostics (8.03 s, 333.960 MiB, compile 5.54 s)
 ┌ Warning: `update_field!` is not extended for the `liquid_precipitation` field of PrescribedIceSimulation: skipping update.
 └ @ ClimaCoupler.Interfacer ~/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/src/Interfacer.jl:376
-[ Info: Performed initial exchange and flux computation (5 min 30.9 s, 21.029 GiB, compile 3 min 58.9 s)
-[ Info: Memory in use: 11.162 GiB
-[ Info: Set up CoupledSimulation (37 min 32.7 s, 134.008 GiB, compile 29 min 25.9 s)
+[ Info: Performed initial exchange and flux computation (5 min 2.0 s, 20.205 GiB, compile 3 min 37.3 s)
+[ Info: Memory in use: 10.864 GiB
+[ Info: Set up CoupledSimulation (35 min 22.7 s, 129.444 GiB, compile 27 min 44.0 s)
 ┌ Info: Progress
 │   time = 2010-01-01T00:02:00 (2 m)
 └   step = 1 (0.0%)
 ┌ Info: Warmup step 1 / 3
-│   wall_ms = 820524.63
-│   gc_ms = 49748.51
-│   gc_pauses = 61
+│   wall_ms = 785878.47
+│   gc_ms = 45448.06
+│   gc_pauses = 57
 │   full_sweeps = 2
-└   alloc_MB = 57385.9
+└   alloc_MB = 53873.6
 ┌ Info: Progress
 │   time = 2010-01-01T00:04:00 (4 m)
 │   step = 2 (0.1%)
-│   walltime remaining ≈ 2 h 7 m (2026-10-21T18:56:11)
-└   sypd ≈ 0.1238
+│   walltime remaining ≈ 2 h 11 m (2026-10-26T17:41:27)
+└   sypd ≈ 0.1203
 ┌ Info: Warmup step 2 / 3
-│   wall_ms = 1994.95
+│   wall_ms = 2106.48
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 31.5
+└   alloc_MB = 32.5
 ┌ Info: Warmup step 3 / 3
-│   wall_ms = 720.64
+│   wall_ms = 874.49
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 [ Info: Using external CUDA profiler
 ┌ Info: Progress
 │   time = 2010-01-01T00:08:00 (8 m)
 │   step = 4 (0.1%)
-│   walltime remaining ≈ 1 h 46 m (2026-10-21T18:35:14)
-└   sypd ≈ 0.1482
+│   walltime remaining ≈ 1 h 49 m (2026-10-26T17:20:05)
+└   sypd ≈ 0.1436
 ┌ Info: Step 1 / 120
-│   wall_ms = 795.78
+│   wall_ms = 903.27
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 10.2
+└   alloc_MB = 10.5
 ┌ Info: Step 2 / 120
-│   wall_ms = 762.11
+│   wall_ms = 818.42
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 3 / 120
-│   wall_ms = 702.74
+│   wall_ms = 875.9
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 4 / 120
-│   wall_ms = 737.45
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Progress
-│   time = 2010-01-01T00:16:00 (16 m)
-│   step = 8 (0.3%)
-│   walltime remaining ≈ 1 h 10 m (2026-10-21T17:59:35)
-└   sypd ≈ 0.2229
-┌ Info: Step 5 / 120
-│   wall_ms = 721.49
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 6 / 120
-│   wall_ms = 707.83
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 7 / 120
-│   wall_ms = 707.42
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 8 / 120
-│   wall_ms = 720.37
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 9 / 120
-│   wall_ms = 739.35
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 10 / 120
-│   wall_ms = 737.41
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 11 / 120
-│   wall_ms = 747.48
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 12 / 120
-│   wall_ms = 746.77
+│   wall_ms = 881.93
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 8.6
 ┌ Info: Progress
+│   time = 2010-01-01T00:16:00 (16 m)
+│   step = 8 (0.3%)
+│   walltime remaining ≈ 1 h 15 m (2026-10-26T16:46:00)
+└   sypd ≈ 0.2083
+┌ Info: Step 5 / 120
+│   wall_ms = 890.35
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 6 / 120
+│   wall_ms = 906.98
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 7 / 120
+│   wall_ms = 918.5
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 11.4
+┌ Info: Step 8 / 120
+│   wall_ms = 836.85
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 9 / 120
+│   wall_ms = 856.0
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 10 / 120
+│   wall_ms = 947.71
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 11 / 120
+│   wall_ms = 848.62
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 12 / 120
+│   wall_ms = 846.56
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.8
+┌ Info: Progress
 │   time = 2010-01-01T00:32:00 (32 m)
 │   step = 16 (0.6%)
-│   walltime remaining ≈ 52 m 33 s (2026-10-21T17:41:41)
-└   sypd ≈ 0.2985
+│   walltime remaining ≈ 58 m 31 s (2026-10-26T16:29:09)
+└   sypd ≈ 0.268
 ┌ Info: Step 13 / 120
-│   wall_ms = 713.67
+│   wall_ms = 835.24
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 14 / 120
-│   wall_ms = 1656.04
-│   gc_ms = 879.58
-│   gc_pauses = 1
+│   wall_ms = 799.27
+│   gc_ms = 0.0
+│   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 15 / 120
-│   wall_ms = 720.3
+│   wall_ms = 779.33
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 16 / 120
-│   wall_ms = 721.08
+│   wall_ms = 817.87
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 17 / 120
-│   wall_ms = 731.39
+│   wall_ms = 799.48
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 18 / 120
-│   wall_ms = 736.04
+│   wall_ms = 773.2
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 19 / 120
-│   wall_ms = 697.58
+│   wall_ms = 802.57
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 20 / 120
-│   wall_ms = 735.83
+│   wall_ms = 870.55
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 21 / 120
-│   wall_ms = 724.15
+│   wall_ms = 846.31
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 22 / 120
-│   wall_ms = 668.71
+│   wall_ms = 1288.02
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 23 / 120
-│   wall_ms = 716.55
+│   wall_ms = 848.17
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 24 / 120
-│   wall_ms = 745.56
+│   wall_ms = 914.2
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 25 / 120
-│   wall_ms = 741.61
+│   wall_ms = 954.05
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 26 / 120
-│   wall_ms = 752.57
+│   wall_ms = 932.7
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 27 / 120
-│   wall_ms = 1883.9
+│   wall_ms = 2087.97
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 11.7
+└   alloc_MB = 9.1
 ┌ Info: Step 28 / 120
-│   wall_ms = 746.56
+│   wall_ms = 932.05
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Progress
 │   time = 2010-01-01T01:04:00 (1 h 4 m)
 │   step = 32 (1.1%)
-│   walltime remaining ≈ 46 m 30 s (2026-10-21T17:35:52)
-└   sypd ≈ 0.3354
+│   walltime remaining ≈ 51 m 47 s (2026-10-26T16:22:40)
+└   sypd ≈ 0.3012
 ┌ Info: Step 29 / 120
-│   wall_ms = 749.27
+│   wall_ms = 841.33
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 30 / 120
-│   wall_ms = 745.85
+│   wall_ms = 706.08
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 31 / 120
-│   wall_ms = 783.02
+│   wall_ms = 839.04
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 32 / 120
-│   wall_ms = 755.99
+│   wall_ms = 905.06
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 33 / 120
-│   wall_ms = 849.08
+│   wall_ms = 837.47
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 34 / 120
-│   wall_ms = 699.8
+│   wall_ms = 788.97
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 35 / 120
-│   wall_ms = 713.85
+│   wall_ms = 973.6
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 36 / 120
-│   wall_ms = 719.93
+│   wall_ms = 911.67
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 37 / 120
-│   wall_ms = 688.78
+│   wall_ms = 848.84
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 38 / 120
-│   wall_ms = 706.24
+│   wall_ms = 897.3
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 39 / 120
-│   wall_ms = 770.52
+│   wall_ms = 923.95
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 40 / 120
-│   wall_ms = 774.17
+│   wall_ms = 900.27
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 41 / 120
-│   wall_ms = 730.84
+│   wall_ms = 816.76
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 42 / 120
-│   wall_ms = 798.17
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.5
-┌ Info: Step 43 / 120
-│   wall_ms = 757.56
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 44 / 120
-│   wall_ms = 759.55
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 45 / 120
-│   wall_ms = 784.07
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 46 / 120
-│   wall_ms = 760.54
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 47 / 120
-│   wall_ms = 763.4
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 48 / 120
-│   wall_ms = 771.9
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 49 / 120
-│   wall_ms = 769.71
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 50 / 120
-│   wall_ms = 735.88
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 51 / 120
-│   wall_ms = 772.79
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 52 / 120
-│   wall_ms = 721.86
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 53 / 120
-│   wall_ms = 768.89
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 54 / 120
-│   wall_ms = 776.02
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 55 / 120
-│   wall_ms = 710.84
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 56 / 120
-│   wall_ms = 625.8
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 57 / 120
-│   wall_ms = 1997.19
-│   gc_ms = 0.0
-│   gc_pauses = 0
+│   wall_ms = 1860.15
+│   gc_ms = 801.84
+│   gc_pauses = 1
 │   full_sweeps = 0
 └   alloc_MB = 8.7
+┌ Info: Step 43 / 120
+│   wall_ms = 842.1
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 44 / 120
+│   wall_ms = 873.41
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 45 / 120
+│   wall_ms = 872.51
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 46 / 120
+│   wall_ms = 864.36
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 47 / 120
+│   wall_ms = 802.87
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 48 / 120
+│   wall_ms = 885.8
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 49 / 120
+│   wall_ms = 935.04
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 50 / 120
+│   wall_ms = 894.26
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 51 / 120
+│   wall_ms = 849.25
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 52 / 120
+│   wall_ms = 871.91
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 53 / 120
+│   wall_ms = 874.16
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 54 / 120
+│   wall_ms = 858.19
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 55 / 120
+│   wall_ms = 847.25
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 56 / 120
+│   wall_ms = 893.62
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 57 / 120
+│   wall_ms = 1962.38
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 9.0
 ┌ Info: Step 58 / 120
-│   wall_ms = 759.56
+│   wall_ms = 823.47
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 59 / 120
-│   wall_ms = 728.42
+│   wall_ms = 813.18
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 60 / 120
-│   wall_ms = 783.02
+│   wall_ms = 844.35
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Progress
 │   time = 2010-01-01T02:08:00 (2 h 8 m)
 │   step = 64 (2.2%)
-│   walltime remaining ≈ 41 m 29 s (2026-10-21T17:31:16)
-└   sypd ≈ 0.3717
+│   walltime remaining ≈ 47 m 24 s (2026-10-26T16:18:47)
+└   sypd ≈ 0.3253
 ┌ Info: Step 61 / 120
-│   wall_ms = 730.86
+│   wall_ms = 914.37
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 62 / 120
-│   wall_ms = 764.29
+│   wall_ms = 826.64
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 63 / 120
-│   wall_ms = 692.13
+│   wall_ms = 832.38
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 64 / 120
-│   wall_ms = 761.29
+│   wall_ms = 848.46
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 65 / 120
-│   wall_ms = 756.23
+│   wall_ms = 986.99
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 66 / 120
-│   wall_ms = 738.63
+│   wall_ms = 847.36
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 67 / 120
-│   wall_ms = 724.74
+│   wall_ms = 832.32
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 68 / 120
-│   wall_ms = 762.2
+│   wall_ms = 865.46
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 69 / 120
-│   wall_ms = 773.95
+│   wall_ms = 814.19
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 70 / 120
-│   wall_ms = 760.43
+│   wall_ms = 959.75
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 71 / 120
-│   wall_ms = 743.91
+│   wall_ms = 844.56
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 72 / 120
-│   wall_ms = 808.18
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.5
-┌ Info: Step 73 / 120
-│   wall_ms = 745.81
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 74 / 120
-│   wall_ms = 707.0
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 75 / 120
-│   wall_ms = 763.15
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 76 / 120
-│   wall_ms = 807.54
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 77 / 120
-│   wall_ms = 749.77
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 78 / 120
-│   wall_ms = 752.71
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 79 / 120
-│   wall_ms = 708.81
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 80 / 120
-│   wall_ms = 770.13
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 81 / 120
-│   wall_ms = 751.03
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 82 / 120
-│   wall_ms = 730.9
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 83 / 120
-│   wall_ms = 709.96
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 84 / 120
-│   wall_ms = 753.95
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 85 / 120
-│   wall_ms = 739.11
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 86 / 120
-│   wall_ms = 719.74
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 87 / 120
-│   wall_ms = 1848.64
+│   wall_ms = 935.19
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
 └   alloc_MB = 8.7
+┌ Info: Step 73 / 120
+│   wall_ms = 820.9
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 74 / 120
+│   wall_ms = 793.18
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 75 / 120
+│   wall_ms = 783.78
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 76 / 120
+│   wall_ms = 885.9
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 77 / 120
+│   wall_ms = 834.35
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 78 / 120
+│   wall_ms = 851.8
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 79 / 120
+│   wall_ms = 895.88
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 80 / 120
+│   wall_ms = 932.48
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 81 / 120
+│   wall_ms = 783.13
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 82 / 120
+│   wall_ms = 798.22
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 83 / 120
+│   wall_ms = 840.93
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 84 / 120
+│   wall_ms = 832.47
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 85 / 120
+│   wall_ms = 770.27
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 86 / 120
+│   wall_ms = 855.9
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 87 / 120
+│   wall_ms = 1957.41
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 9.0
 ┌ Info: Step 88 / 120
-│   wall_ms = 738.62
+│   wall_ms = 840.11
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 89 / 120
-│   wall_ms = 710.97
+│   wall_ms = 869.79
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 90 / 120
-│   wall_ms = 1598.16
-│   gc_ms = 635.46
+│   wall_ms = 861.93
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 91 / 120
+│   wall_ms = 795.91
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 92 / 120
+│   wall_ms = 862.84
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 93 / 120
+│   wall_ms = 897.3
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 94 / 120
+│   wall_ms = 844.1
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 95 / 120
+│   wall_ms = 878.42
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 96 / 120
+│   wall_ms = 767.6
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 97 / 120
+│   wall_ms = 785.79
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 98 / 120
+│   wall_ms = 956.71
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 99 / 120
+│   wall_ms = 923.93
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 100 / 120
+│   wall_ms = 789.79
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 101 / 120
+│   wall_ms = 895.98
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 102 / 120
+│   wall_ms = 889.65
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.7
+┌ Info: Step 103 / 120
+│   wall_ms = 861.87
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 104 / 120
+│   wall_ms = 825.96
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 105 / 120
+│   wall_ms = 869.72
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 106 / 120
+│   wall_ms = 823.94
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 107 / 120
+│   wall_ms = 807.92
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 108 / 120
+│   wall_ms = 783.63
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 109 / 120
+│   wall_ms = 806.37
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 110 / 120
+│   wall_ms = 815.55
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 111 / 120
+│   wall_ms = 828.89
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 112 / 120
+│   wall_ms = 852.98
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 113 / 120
+│   wall_ms = 860.66
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 114 / 120
+│   wall_ms = 823.41
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 115 / 120
+│   wall_ms = 821.35
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 116 / 120
+│   wall_ms = 836.81
+│   gc_ms = 0.0
+│   gc_pauses = 0
+│   full_sweeps = 0
+└   alloc_MB = 8.6
+┌ Info: Step 117 / 120
+│   wall_ms = 2706.92
+│   gc_ms = 486.59
 │   gc_pauses = 1
 │   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 91 / 120
-│   wall_ms = 708.05
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 92 / 120
-│   wall_ms = 702.62
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 93 / 120
-│   wall_ms = 698.7
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 94 / 120
-│   wall_ms = 666.6
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 95 / 120
-│   wall_ms = 677.43
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 96 / 120
-│   wall_ms = 696.12
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 97 / 120
-│   wall_ms = 726.04
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 98 / 120
-│   wall_ms = 741.38
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 99 / 120
-│   wall_ms = 709.07
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 100 / 120
-│   wall_ms = 703.64
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 101 / 120
-│   wall_ms = 722.89
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 102 / 120
-│   wall_ms = 749.92
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.5
-┌ Info: Step 103 / 120
-│   wall_ms = 717.37
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 104 / 120
-│   wall_ms = 714.48
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 105 / 120
-│   wall_ms = 746.55
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 106 / 120
-│   wall_ms = 801.48
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 107 / 120
-│   wall_ms = 697.05
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 108 / 120
-│   wall_ms = 685.29
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 109 / 120
-│   wall_ms = 708.16
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 110 / 120
-│   wall_ms = 739.96
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 111 / 120
-│   wall_ms = 695.9
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 112 / 120
-│   wall_ms = 695.1
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 113 / 120
-│   wall_ms = 719.16
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 114 / 120
-│   wall_ms = 710.47
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 115 / 120
-│   wall_ms = 742.35
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 116 / 120
-│   wall_ms = 751.98
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.3
-┌ Info: Step 117 / 120
-│   wall_ms = 1830.78
-│   gc_ms = 0.0
-│   gc_pauses = 0
-│   full_sweeps = 0
-└   alloc_MB = 8.7
+└   alloc_MB = 9.0
 ┌ Info: Step 118 / 120
-│   wall_ms = 796.46
+│   wall_ms = 842.09
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 119 / 120
-│   wall_ms = 710.71
+│   wall_ms = 782.65
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
+└   alloc_MB = 8.6
 ┌ Info: Step 120 / 120
-│   wall_ms = 757.08
+│   wall_ms = 797.24
 │   gc_ms = 0.0
 │   gc_pauses = 0
 │   full_sweeps = 0
-└   alloc_MB = 8.3
-==PROF== Disconnected from process 4070788
+└   alloc_MB = 8.6
+==PROF== Disconnected from process 707667
 ==PROF== Report: /home/pbachant/calkit/clima-gpu-profiling/results/ncu/pointwise.ncu-rep
