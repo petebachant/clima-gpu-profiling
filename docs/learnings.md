@@ -1774,15 +1774,28 @@ viable.
 > **THE CONCLUSION BELOW IS OVERTURNED (2026-09-22), THOUGH THE MEASUREMENT
 > STANDS.** The distances from the saturation kink are still what this section
 > reports, and the quadrature still looks idle by that criterion. But reducing
-> the rule to 2×2 changes 58% of cells on the current configuration, against
-> ~1% before ClimaAtmos main re-enabled cloud ice formation and liquid freezing
-> on 2026-09-21 — so the quadrature is integrating structure this section never
-> looked at. Those processes are nonlinear in temperature away from saturation,
-> and the quadrature integrates over temperature too. **Distance from one kink
-> is necessary but not sufficient evidence that a quadrature is degenerate.**
-> The order-reduction diff is the test that settles it, and it is now the
-> `quadrature-order-error` stage. Decision record with the current figures:
-> `docs/sgs-quadrature.md`. The SYPD costs below also predate the update.
+> the rule to 2×2 changes most of the cells on the current configuration against
+> about one percent of them before ClimaAtmos main re-enabled cloud ice
+> formation and liquid freezing on 2026-09-21 — a fifty-fold increase, in
+> `results/retired/sgs-quadrature-values.json` as `now.changed_pct` against
+> `before.changed_pct`. So the quadrature is integrating structure this section
+> never looked at. Those processes are nonlinear in temperature away from
+> saturation, and the quadrature integrates over temperature too. **Distance
+> from one kink is necessary but not sufficient evidence that a quadrature is
+> degenerate.**
+>
+> **The recommendation to reduce the order was therefore withdrawn, and that is
+> the current decision.** Do not reduce the quadrature order on this
+> configuration without new science sign-off. The order-reduction diff is the
+> test that settled it; its per-tendency errors are in the same file. The
+> decision record that held them, `docs/sgs-quadrature.md`, and the
+> `quadrature-order-error`, `sgs-degeneracy` and `kernel-shares` stages that fed
+> it were all deleted in `4934ef1` ("Cut the pipeline back to what bears on AMIP
+> SYPD"), so the figures were recovered into `results/retired/` rather than left
+> in git history alone — see that directory's README for how to regenerate them.
+> The SYPD costs below also predate the update, which is the other half of why
+> the trade cannot be struck: the saving is priced on the old stack and the error
+> on the new one.
 
 
 Measured by `scripts/measure-sgs-degeneracy.jl` on a settled AMIP state (three
