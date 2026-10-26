@@ -48,11 +48,21 @@ def main():
     base = radiation("results/nsys/baseline.sqlite")
     mod = radiation("results/nsys/mod.sqlite")
 
+    # The whole stack, not just the treated submodule: these points are only
+    # comparable to each other while the arms sit on one revision, and RRTMGP
+    # main moves the radiation hot path. A point measured after a pull belongs to
+    # a different curve, and without this nothing in the file would say so.
+    pointers = {}
+    for line in subprocess.check_output(["git", "ls-tree", "HEAD"], text=True).splitlines():
+        meta, _, path = line.partition("\t")
+        _, kind, sha = meta.split()
+        if kind == "commit":
+            pointers[path] = sha
+
     rec = {
         "groups": groups,
-        "mod_commit": subprocess.check_output(
-            ["git", "-C", "RRTMGP.jl-mod", "rev-parse", "HEAD"], text=True
-        ).strip(),
+        "mod_commit": pointers.get("RRTMGP.jl-mod"),
+        "stack": pointers,
         "baseline": base,
         "mod": mod,
         "lw_change_pct": round(100 * (mod["lw"]["total_ms"] - base["lw"]["total_ms"])
@@ -74,7 +84,11 @@ def main():
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=2) + "\n")
 
+    stacks = {json.dumps(p.get("stack"), sort_keys=True) for p in doc["points"]}
     print(f"recorded groups={groups}")
+    if len(stacks) > 1:
+        print("  WARNING: these points were measured on different stacks and are "
+              "not one curve; re-measure the older ones or read them separately")
     for p in doc["points"]:
         print(f"  groups {p['groups']:>3}: LW {p['baseline']['lw']['total_ms']:>7.1f} -> "
               f"{p['mod']['lw']['total_ms']:<7.1f} {p['lw_change_pct']:>+7.2f}%   "
