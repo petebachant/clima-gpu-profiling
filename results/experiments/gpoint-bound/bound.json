@@ -1,0 +1,42 @@
+{
+  "points": [
+    {
+      "groups": 4,
+      "mod_commit": "e391bd4aaf6453e04f67229d0cd57444bf4f50cf",
+      "baseline": {
+        "lw": {
+          "registers": 255,
+          "blocks": 96,
+          "launches": 4,
+          "total_ms": 2187.5
+        },
+        "sw": {
+          "registers": 255,
+          "blocks": 96,
+          "launches": 4,
+          "total_ms": 2048.1
+        },
+        "device_ms": 18155.4
+      },
+      "mod": {
+        "lw": {
+          "registers": 255,
+          "blocks": 384,
+          "launches": 4,
+          "total_ms": 1702.9
+        },
+        "sw": {
+          "registers": 255,
+          "blocks": 96,
+          "launches": 4,
+          "total_ms": 2026.5
+        },
+        "device_ms": 17640.5
+      },
+      "lw_change_pct": -22.15,
+      "sw_control_change_pct": -1.05,
+      "device_change_pct": -2.84
+    }
+  ],
+  "note": "Longwave g-point loop split across `groups` threads per column, shortwave untouched as the control. The fluxes are WRONG: no per-group scratch and no cross-group reduction, so a column's threads race. Prices the restructure described in docs/learnings.md section 4l; never a result."
+}
