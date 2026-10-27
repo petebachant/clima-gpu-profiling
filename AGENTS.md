@@ -41,6 +41,55 @@ One experiment, one document under `docs/experiments/`, registered as a
 `scripts/verify-evidence.py` checks it. `docs/learnings.md` keeps the reasoning
 and links to those documents; it should stop carrying figures of its own.
 
+### An answer is one or two sentences; the reasoning goes in a document
+
+A `calkit.yaml` answer is the claim and nothing else, with only the figures it
+actually quotes templated by name. The six answers here had grown to between
+400 and 1135 words each -- whole arguments folded into one paragraph, which is
+unreadable on the hub and impossible to check against, since a reader cannot
+tell which sentence the evidence is supposed to support.
+
+The reasoning belongs in a document under `docs/`, cited as `kind: document`
+evidence with a `section`:
+
+```yaml
+    evidence:
+      - kind: document
+        path: docs/wall-clock-conversion.md
+        section: "What kind of floor: repeats, run order and GPU assignment"
+```
+
+This is not a convention this project invented. calkit **enforces** it: a
+document evidence entry with no stage building it is reported by
+`calkit check questions` as
+
+    no pipeline stage builds this document, so nothing checks what it says
+    against the results; build it with a Markdown stage
+
+so a hand-written write-up is an error in the same way a typed-in number is.
+The chain runs answer -> document -> Markdown stage -> results file -> the
+stage that computed it, which is what makes a long-form explanation tie back to
+the pipeline instead of drifting from it. There is no separate `details:` field
+and there should not be; the reasoning is evidence.
+
+Two consequences worth knowing before shortening an answer:
+
+  * `scripts/verify-evidence.py` reports `NOT IN ANSWER` for every name in an
+    evidence `values:` map that the answer no longer uses, so trim the maps to
+    what the shortened answer templates. The figures that moved into the
+    document are carried by its own value markers, which is where the checking
+    moves too.
+  * Several questions may cite one document at different `section`s. The Val
+    questions do -- the occupancy gates and the dependency scope rest on the
+    same device budget, and splitting them would duplicate it. `section` is
+    free text, so write the heading as a reader would find it.
+
+A document whose figures all come from existing results files still needs one
+annotated code block, because a Markdown stage with no stage in it is an error.
+Give it a `values` block: it is what declares the `inputs`, so the document goes
+stale when the results do, and it is doing real work rather than copying
+whenever a source is TOML -- value markers read JSON only.
+
 ### Keep value markers inline, one sentence per line
 
 A `<!-- calkit value ... -->` that starts a line ends the paragraph and opens an

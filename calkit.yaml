@@ -5,53 +5,50 @@ description: Profiling GPU performance for CliMA.
 git_repo_url: https://github.com/petebachant/clima-gpu-profiling
 
 questions:
-  # Answers are one sentence pointing at reproducible evidence; the reasoning
-  # lives in docs/. Numbers are templated from value evidence by name rather
-  # than typed -- but ONLY where the cited file is the same artifact in the
-  # working tree as at the pin, because rendering reads the working tree and
-  # ignores git_ref. A pinned citation of a regenerated artifact such as
-  # results/summary.json must therefore NOT be templated: it would render
-  # whichever run wrote that file last. Those figures stay typed and pinned.
+  # An answer is the claim and nothing else: one or two sentences, with only the
+  # figures it actually quotes templated by name from a results file. The
+  # reasoning, the cautions and the rest of the numbers live in a document under
+  # docs/, cited as `kind: document` evidence -- which calkit requires a pipeline
+  # stage to build, so the prose cannot drift from the results any more than an
+  # answer can.
+  #
+  # Numbers are templated by name rather than typed -- but ONLY where the cited
+  # file is the same artifact in the working tree as at the pin, because
+  # rendering reads the working tree and ignores git_ref. A pinned citation of a
+  # regenerated artifact such as results/summary.json must therefore NOT be
+  # templated: it would render whichever run wrote that file last.
   - question: >-
       How much of a GPU kernel-time saving actually reaches SYPD?
     answer: >-
-      It depends on where the saving is, and the difference is large enough to change what is worth doing: radiation work converts at {radiation_mean:.0f}% ({radiation_min:.0f}-{radiation_max:.0f}% over {radiation_n} experiments), microphysics work at {microphysics_mean:.0f}% ({microphysics_min:.0f}-{microphysics_max:.0f}% over {microphysics_n}).
-      But subsystem is the wrong label for the split, and the parameter fold is what shows it: it is microphysics work that converted at {microphysics_max:.0f}%, inside the radiation range and nowhere near the {microphysics_min:.0f}% the two fusion experiments gave.
-      The two measurements of it are the third and fourth microphysics points, and between them they widened that band from a cluster to a spread, which is the signal that the band was never measuring a subsystem.
-      What it was measuring is kernel shape. The rule of thumb this project carried for months -- about a third of a kernel-time saving shows up end to end -- came from two experiments whose savings were spread over the hundreds of launches per step that the linearization and microphysics-cache paths each make, where whatever else is in flight can absorb them.
-      The fold's saving is not: it is concentrated in one kernel that runs {fold_quad_launches:.0f} times averaging {fold_quad_mean_ms:.0f} ms, a few long dense launches with nothing to overlap against, which is exactly the shape every radiation treatment had.
-      So the earlier hypothesis here -- that radiation converts better because it is a few long kernels rather than one of thousands -- is no longer just plausible; this is a test of it that did not have to come out this way, on a treatment in the subsystem that was supposed to convert badly.
-      Both halves of every ratio are read out of the tag that recorded them: kernel time from the profiled nsys stages, SYPD from the unprofiled AMIP ones, which is the only number that answers "is the model faster".
-      Two cautions. {microphysics_n} and {radiation_n} experiments are not many, and the ratios are quotients of two measured quantities, so the +-2% SYPD noise floor propagates into them -- read them as bands rather than to the point.
-      The microphysics mean in particular is now an average over two kernel shapes rather than a description of one, which is exactly the reading this answer argues against; the {microphysics_min:.0f}% and {microphysics_max:.0f}% ends of it are the figures that mean something.
-      And `pass_through_pct` divides the per-step walltime fraction by the kernel-time change, not the SYPD gain by it; the two differ by about three points at these magnitudes, so a figure computed the other way does not belong beside these.
+      Kernel shape decides it rather than subsystem: a saving concentrated in a few long dense launches converts at about {radiation_mean:.0f}% of its kernel time, one spread over hundreds of small launches per step at about {microphysics_min:.0f}%.
+      The parameter fold is the test that distinguishes them -- microphysics work whose saving sits in one kernel of a few long launches, converting at {microphysics_max:.0f}%, inside the radiation range.
     evidence:
+      - kind: document
+        path: docs/pass-through.md
+        section: Subsystem is the wrong label; kernel shape is the right one
+        explanation: >-
+          How the bands were built, why the fold's two measurements widened the
+          microphysics one from a cluster into a spread, and the cautions on
+          reading either of them to the point. Built by the pass-through-doc
+          stage from the same results files cited below, so its figures cannot
+          drift from them.
       - kind: result
         path: results/pass-through.json
         values:
           radiation_mean: by_subsystem.radiation.mean_pct
-          radiation_min: by_subsystem.radiation.min_pct
-          radiation_max: by_subsystem.radiation.max_pct
-          radiation_n: by_subsystem.radiation.n
-          microphysics_mean: by_subsystem.microphysics.mean_pct
           microphysics_min: by_subsystem.microphysics.min_pct
           microphysics_max: by_subsystem.microphysics.max_pct
-          microphysics_n: by_subsystem.microphysics.n
         explanation: >-
           Both subsystems' conversion ratios, as mean, range and sample count.
           Each ratio is an end-to-end SYPD gain divided by the GPU kernel-time
           reduction that produced it, and the pass-through stage reads both
           halves out of the experiment tags with git show rather than from the
-          working tree. The microphysics mean is where the "about a third" rule
-          came from; radiation converts at roughly twice that.
+          working tree.
       - kind: result
         path: results/fold-record/param-fold.json
-        values:
-          fold_quad_launches: kernels.microphysics_quadrature.baseline.launches
-          fold_quad_mean_ms: kernels.microphysics_quadrature.baseline.mean_ms
         explanation: >-
           The shape of the kernel the fold saved its time in, which is what the
-          reframing rests on. A few long dense launches behave like radiation;
+          reframing rests on: a few long dense launches behave like radiation,
           thousands of small ones per step behave like the two fusion
           experiments. The figures are the baseline arm's, i.e. the kernel
           without the fold -- which is no longer a stack anyone can run, since
@@ -63,37 +60,29 @@ questions:
           The experiments themselves, each reproducible from its tag. The
           pass-through stage reads both halves of every ratio out of those
           tags with git show rather than from the working tree.
+
   - question: >-
       Does putting the parameters in `Val` make pointwise kernels measurably faster across the board, as CliMA/ClimaCore.jl#2676 asks?
     answer: >-
-      Not across the board, and the bound is measured rather than argued: {mileage_ceiling:.2f}% of device time sits in kernels where a register saving could raise occupancy at all, {mileage_treated:.2f}% of that is the kernels this project has already folded, and what is left for anyone applying the pattern somewhere new is {mileage_untreated:.2f}% spread over {mileage_untreated_n:.0f} kernels.
-      Where it does bite it is large, so the useful form of the answer is which kernels and why.
-      Four kernels in ClimaAtmos have the fold, measured in the model rather than in isolation, and three of them cross an occupancy step: the SGS quadrature goes {fold_quad_regs_baseline:.0f} -> {fold_quad_regs_mod:.0f} registers, {fold_quad_warps_baseline:.0f} -> {fold_quad_warps_mod:.0f} warps per SM, {fold_quad_change:.1f}% on the kernel; the updraft path {fold_upd_regs_baseline:.0f} -> {fold_upd_regs_mod:.0f} registers, {fold_upd_warps_baseline:.0f} -> {fold_upd_warps_mod:.0f} warps, {fold_upd_change:.1f}%; the cloud-fraction kernel {fold_cf_regs_baseline:.0f} -> {fold_cf_regs_mod:.0f}, {fold_cf_warps_baseline:.0f} -> {fold_cf_warps_mod:.0f} warps, {fold_cf_change:.1f}%.
-      Crossing a step is necessary and not sufficient, and the cloud-fraction kernel is the demonstration: it crosses and returns {fold_cf_change:.1f}%, because {fold_cf_ms:.1f} ms of a {fold_dev_ms:.0f} ms device total has nothing in it to return.
-      The SGS-moments kernel is the control the other three need: the fold was applied to it the same way, it sheds {fold_sgs_regs_saved:.0f} registers, it stays at {fold_sgs_warps_mod:.0f} warps where the next step would need {fold_sgs_next_step:.0f}, and its {fold_sgs_change:.1f}% is noise rather than a payoff.
-      So there are two gates rather than one -- distance to the next occupancy step, and share of the device -- and both can be computed before any code is written, since ClimaCore sizes the launch block from the register count and warps per SM follow from the pair.
-      Register count predicts neither gate: the quadrature kernel starts at the {fold_quad_regs_baseline:.0f}-register cap and crosses, a {fold_cf_regs_baseline:.0f}-register one crosses as well, and the largest untreated candidate in the whole population is a {mileage_largest_pct:.2f}% ClimaCore broadcast kernel that would cross by shedding {mileage_largest_shed:.0f} registers and carries no parameter struct to fold in the first place.
-      Across the four kernels the fold is worth {fold_own_change:.2f}% of their own time, {fold_total_saved:.0f} ms on a 120-step window, {fold_total_change:.2f}% of the whole device -- and the quadrature kernel is most of that.
-      That subtotal and the whole-arm device saving now agree, {fold_total_saved:.0f} ms against {fold_dev_saved:.0f} ms, which is the arms differing by the fold and nothing else; earlier passes had a second treatment in the mod arm and the two figures could not be read as one.
-      One caution on durability: the same fold on the same kernels measured {fold_upd_prior_change:.1f}% on the updraft path and {fold_cf_prior_change:.1f}% on the cloud-fraction kernel one stack earlier, against {fold_upd_change:.1f}% and {fold_cf_change:.1f}% here, because the upstream rewrites in between changed the kernel bodies.
-      A payoff is a property of the body as it currently stands, not of the pattern.
-      The mechanism is settled: Val folds an isbits parameter set to literals and lands on the const-global register count exactly, taking an isolated microphysics evaluation body from {val_args:.0f} registers to {val_val:.0f}, {arg_warps:.0f} to {val_warps:.0f} warps per SM.
-      What defeats people applying it is the struct field boundary rather than inlining: an evaluator holding the parameters as FIELDS boxes the constant and reads it back per point, {eval_field_regs:.0f} registers and {eval_field_spill:.0f} bytes of spill against {eval_type_regs:.0f} and {eval_type_spill:.0f} for the same body with the parameters in the type.
-      That boundary is also why `Val` applied naively to the quadrature body buys nothing: unwrapped and stored it stays at {quad_val:.0f} registers and {quad_val_spill:.0f} bytes of spill, indistinguishable from runtime arguments ({quad_args:.0f} and {quad_spill:.0f}) and from compile-time const globals ({quad_const:.0f}), while carried through still wrapped it drops to {quad_val_carried:.0f} registers and {quad_val_carried_spill:.0f} bytes.
-      And it settles how much further this can be pushed on the one kernel big enough to matter: in the model that kernel now sits at {fold_quad_regs_mod:.0f} registers and needs {fold_quad_next_step:.0f} for a second block per SM, while the fully folded body floors at {quad_val_carried:.0f} in isolation with nothing else in it, so there is no second step to buy there by folding harder.
-      The population says the same thing by counting rather than timing: of {kernels:.0f} kernels profiled, {addressable:.0f} ({addressable_pct}%) are capped by registers alone AND below full occupancy, while {at_full_occupancy:.0f} are already at full occupancy and can gain nothing however well their parameters fold.
-      Read the {mileage_ceiling:.2f}% as a lower bound on the ceiling rather than the ceiling itself: the ncu population covers {mileage_matched:.1f}% of device time, so kernels it did not reach could add to it.
+      Not across the board: {mileage_ceiling:.2f}% of device time sits in kernels where a register saving could raise occupancy at all, and after the four kernels this project has already folded, {mileage_untreated:.2f}% over {mileage_untreated_n:.0f} kernels is what remains for anyone applying the pattern somewhere new.
+      Where it does bite it is large, and two gates decide it -- distance to the next occupancy step and share of the device -- both of which can be computed before any code is written.
     evidence:
+      - kind: document
+        path: docs/val-fold-scope.md
+        section: Two gates, both computable in advance
+        explanation: >-
+          The four kernels the pattern was applied to as the profiled runs
+          compiled them, the control among them that crossed no occupancy step,
+          why register count predicts neither gate, and the compile-only probes
+          that settle the mechanism. Built by the val-fold-scope-doc stage from
+          the results files cited below, two of which are TOML that a value
+          marker cannot read directly.
       - kind: result
         path: results/val-mileage.json
         values:
           mileage_ceiling: ceiling_pct_of_device
-          mileage_treated: treated_pct_of_device
           mileage_untreated: untreated_pct_of_device
           mileage_untreated_n: untreated_kernels
-          mileage_largest_pct: largest_untreated_pct_of_device
-          mileage_largest_shed: largest_untreated_registers_to_shed
-          mileage_matched: matched_pct_of_device
         explanation: >-
           The question asked in units of time rather than kernels, which is what
           SYPD is made of: a hundred addressable kernels holding 2% of the device
@@ -109,40 +98,16 @@ questions:
           sheds enough registers or that a block per SM is worth anything.
       - kind: result
         path: results/val-params-registers.toml
-        values:
-          val_args: runtime_arguments.registers
-          val_val: val_type_parameters.registers
-          arg_warps: runtime_arguments.warps_per_sm
-          val_warps: val_type_parameters.warps_per_sm
-          quad_args: quad_runtime_arguments.registers
-          quad_val: quad_val_type_parameters.registers
-          quad_spill: quad_runtime_arguments.local_bytes
-          quad_val_spill: quad_val_type_parameters.local_bytes
-          quad_const: quad_const_globals.registers
-          quad_val_carried: quad_val_carried_in.registers
-          quad_val_carried_spill: quad_val_carried_in.local_bytes
-          eval_field_regs: evaluator_params_as_fields.registers
-          eval_field_spill: evaluator_params_as_fields.local_bytes
-          eval_type_regs: evaluator_params_in_type.registers
-          eval_type_spill: evaluator_params_in_type.local_bytes
         explanation: >-
           One microphysics body compiled several ways -- parameters as runtime
           arguments, as const globals, and folded through Val -- for an isolated
           evaluation and for the quadrature path the model calls. The const-global
           column is the target, so Val matching it is the mechanism working rather
-          than a coincidence. The two quadrature Val columns are the ones to read
-          together: they look almost identical and measure opposite things, one
-          unwrapping the parameters and storing them, the other keeping them
-          wrapped across the struct boundary. Compile-only with
-          `CUDA.@cuda launch=false`, so nothing executes, and standalone, so it
-          needs no coupled simulation: the stage is minutes.
+          than a coincidence. Compile-only with `CUDA.@cuda launch=false`, so
+          nothing executes, and standalone, so it needs no coupled simulation:
+          the stage is minutes.
       - kind: result
         path: results/pointwise-registers.json
-        values:
-          kernels: kernels
-          addressable: addressable
-          addressable_pct: addressable_pct
-          at_full_occupancy: at_full_occupancy
         explanation: >-
           The population the question asks about, measured rather than
           extrapolated: for every kernel in a 120-step run, its registers and
@@ -153,35 +118,6 @@ questions:
           rows behind it, including which kernels sit at the cap.
       - kind: result
         path: results/fold-record/param-fold.json
-        values:
-          fold_quad_regs_baseline: kernels.microphysics_quadrature.baseline.registers
-          fold_quad_regs_mod: kernels.microphysics_quadrature.mod.registers
-          fold_quad_warps_baseline: kernels.microphysics_quadrature.baseline.warps_per_sm
-          fold_quad_warps_mod: kernels.microphysics_quadrature.mod.warps_per_sm
-          fold_quad_next_step: kernels.microphysics_quadrature.mod.registers_for_next_step
-          fold_quad_change: kernels.microphysics_quadrature.mean_change_pct
-          fold_upd_regs_baseline: kernels.microphysics_updraft.baseline.registers
-          fold_upd_regs_mod: kernels.microphysics_updraft.mod.registers
-          fold_upd_warps_baseline: kernels.microphysics_updraft.baseline.warps_per_sm
-          fold_upd_warps_mod: kernels.microphysics_updraft.mod.warps_per_sm
-          fold_upd_change: kernels.microphysics_updraft.mean_change_pct
-          fold_upd_prior_change: vs_prior_stack.kernels.microphysics_updraft.prior_change_pct
-          fold_cf_regs_baseline: kernels.cloud_fraction.baseline.registers
-          fold_cf_regs_mod: kernels.cloud_fraction.mod.registers
-          fold_cf_warps_baseline: kernels.cloud_fraction.baseline.warps_per_sm
-          fold_cf_warps_mod: kernels.cloud_fraction.mod.warps_per_sm
-          fold_cf_change: kernels.cloud_fraction.mean_change_pct
-          fold_cf_prior_change: vs_prior_stack.kernels.cloud_fraction.prior_change_pct
-          fold_cf_ms: kernels.cloud_fraction.baseline.total_ms
-          fold_sgs_warps_mod: kernels.sgs_moments.mod.warps_per_sm
-          fold_sgs_change: kernels.sgs_moments.mean_change_pct
-          fold_sgs_regs_saved: kernels.sgs_moments.registers_saved
-          fold_sgs_next_step: kernels.sgs_moments.mod.registers_for_next_step
-          fold_dev_ms: device_total.baseline_ms
-          fold_dev_saved: device_total.ms_saved
-          fold_total_change: fold_attributable.pct_of_device_total
-          fold_total_saved: fold_attributable.ms_saved
-          fold_own_change: fold_attributable.change_pct
         explanation: >-
           The four kernels the pattern was applied to, as the profiled runs
           compiled them: registers per thread, the block size ClimaCore chose
@@ -191,66 +127,52 @@ questions:
           had the fold applied the same way and did not cross a step. Read from
           the nsys databases rather than results/top-kernels.csv, which averages
           over a kernel name that here covers two kernels at different register
-          counts. The subtotal over these four kernels and the whole-arm device
-          total now agree, because the arms differ by the fold and nothing else;
-          the earlier run of this stage had to warn that they did not. Read out
-          of results/fold-record/, a verbatim copy of the measurement's tag that
-          scripts/snapshot-tag-records.py re-makes on every pass, since
-          ClimaAtmos main now carries the fold and the live file describes a null
-          test.
-      - kind: value
+          counts. Read out of results/fold-record/, a verbatim copy of the
+          measurement's tag that scripts/snapshot-tag-records.py re-makes on
+          every pass, since ClimaAtmos main now carries the fold and the live
+          file describes a null test.
+      - kind: result
         path: results/cm-registers.toml
-        key: layers.LinearizedAverage nsub=2.registers
+        git_ref: 64436aa
         explanation: >-
           Why a layer compiled on its own misleads: it has room for a payload
           saving to appear in its register count, where the broadcast the model
-          runs is split into several smaller kernels whose limits differ. Any
-          register experiment answers for the body it compiles.
+          runs is split into several smaller kernels whose limits differ. Pinned
+          because the stage is frozen -- the broadcast layers need
+          ClimaCore.jl-mod on `pb/launch-bounds` and a run without that branch
+          drops them silently -- so this is the revision where the figures were
+          measured rather than whatever main holds.
 
   - question: >-
       Is it worth spreading the `Val(params)` pattern into Thermodynamics and CloudMicrophysics, as CliMA/ClimaCore.jl#2694 asks?
     answer: >-
-      No, on the evidence so far, and the reason is that the pattern has already collected what there is to collect from the caller's side.
-      CloudMicrophysics is settled by measurement rather than argument: wrapping the parameters at the ClimaAtmos call site takes the isolated microphysics body from {val_args:.0f} registers to {val_val:.0f}, which is exactly the {val_const:.0f} a compile-time const global reaches.
-      Const globals are the ceiling of any constant-folding scheme, so no change inside CloudMicrophysics can beat what ClimaAtmos already gets by wrapping on its own side.
-      That matters practically as well as logically, because neither arm of this project devs CloudMicrophysics and a CM release is the slowest path available.
-      On the path the model actually runs, const globals buy nothing at all: the quadrature body compiles to {quad_args:.0f} registers with the parameters as runtime arguments and {quad_const:.0f} as const globals.
-      Whatever pins that kernel at the register cap, it is not the cost of getting parameters into it, so a deeper fold has no target there either.
-      The device budget bounds whatever is left. Of the {mileage_ceiling:.2f}% of device time where cheaper registers could raise occupancy at all, {mileage_treated:.2f}% is the kernels already folded, leaving {mileage_untreated:.2f}% over {mileage_untreated_n:.0f} kernels -- and the largest single piece of that, {mileage_largest_pct:.2f}% of the device, is a ClimaCore broadcast kernel with no parameter struct in it to fold.
-      So there is no kernel left that is both large enough to matter and shaped so that pushing the pattern into a dependency would reach it.
-      Thermodynamics was the half not yet measured, and the prediction was recorded before the run rather than after: at the pinned v1.3.0 both `q_vap_saturation` methods the folded kernels call are `@inline` and forward the parameter set straight down, so Thermodynamics has no struct field boundary of the kind that erased the fold inside ClimaAtmos's own evaluator, and const globals saving registers on that call would have falsified this answer.
-      It held, and more cleanly than predicted. The call compiles to {td_args:.0f} registers with the parameter set as a runtime argument, {td_const:.0f} as a const global and {td_val:.0f} through `Val` -- the same number three times, so its {td_bytes:.0f}-byte parameter struct costs nothing to pass however it is passed.
-      The prediction was that folding would not pay there; the measurement says the call never paid for its parameters in the first place, which closes the question rather than bounding it.
+      No: wrapping the parameters at the ClimaAtmos call site already takes the microphysics body to {val_const:.0f} registers, exactly what compile-time const globals reach, and const globals are the ceiling of any constant-folding scheme -- so no change inside CloudMicrophysics can beat what the caller already gets.
+      Thermodynamics never paid for its parameters in the first place: the call compiles to {td_args:.0f} registers as a runtime argument, as a const global and through `Val` alike.
     evidence:
+      - kind: document
+        path: docs/val-fold-scope.md
+        section: Pushing the pattern into the dependencies
+        explanation: >-
+          Why the const-global ceiling settles CloudMicrophysics by measurement
+          rather than argument, why the quadrature path has no target for a
+          deeper fold either, what device budget is left to aim at, and the
+          Thermodynamics prediction that was recorded before the run.
       - kind: result
         path: results/val-params-registers.toml
         values:
-          val_args: runtime_arguments.registers
-          val_val: val_type_parameters.registers
           val_const: const_globals.registers
-          quad_args: quad_runtime_arguments.registers
-          quad_const: quad_const_globals.registers
           td_args: td_runtime_arguments.registers
-          td_const: td_const_globals.registers
-          td_val: td_val_type_parameters.registers
-          td_bytes: tps_sizeof_bytes
         explanation: >-
           The three ways a parameter set can reach a kernel, compiled on the
           CloudMicrophysics body, on the quadrature path that calls it, and on
-          the Thermodynamics call that path makes. The
-          const-global column is what makes this an answer about the dependency
-          rather than about Val: it is the best any constant-folding scheme can
-          do, reachable only because the harness is standalone, and a dependency
-          change cannot go past it. Compile-only with
-          `CUDA.@cuda launch=false`, so nothing executes.
+          the Thermodynamics call that path makes. The const-global column is
+          what makes this an answer about the dependency rather than about Val:
+          it is the best any constant-folding scheme can do, reachable only
+          because the harness is standalone, and a dependency change cannot go
+          past it. Compile-only with `CUDA.@cuda launch=false`, so nothing
+          executes.
       - kind: result
         path: results/val-mileage.json
-        values:
-          mileage_ceiling: ceiling_pct_of_device
-          mileage_treated: treated_pct_of_device
-          mileage_untreated: untreated_pct_of_device
-          mileage_untreated_n: untreated_kernels
-          mileage_largest_pct: largest_untreated_pct_of_device
         explanation: >-
           What is left to aim at, in device time rather than kernel counts. A
           dependency-wide change has to pay for itself out of this, and the
@@ -261,120 +183,61 @@ questions:
   - question: >-
       A kernel optimization saves N ms of device time on every step. How much wall clock does it return?
     answer: >-
-      Essentially all of it, once the benchmark resembles the run you care about. On a benchmark that does not, most of it disappears -- and that is a property of the benchmark, not of the optimization.
-      The typical step converts the device saving completely: {typ_saved:.2f} ms measured against the {typ_device:.2f} ms the profiled device time predicts, {conversion:.0f}%, across {plain_steps:,.0f} ordinary steps. Nothing is lost between the kernel and the clock.
-      It also survives to the run total. The window reports {saved_pct:.2f}% against the {cf_pct:.2f}% that per-step rate would give, a shortfall of {shortfall:.2f} points -- nothing. So there is no conversion gap to explain.
-      The benchmark that does not is the one this project measured on first: a one-day window at a 30-second coupled timestep, which wrote diagnostics 24 times a simulated day instead of once and left ordinary steps about half the wall clock, so an every-step saving had half the budget to act on and reported a fraction of itself. See the window rationale in AGENTS.md.
-      Mirroring the nightly configuration instead -- `dt` 120secs, `dt_rad` 1hours, four simulated days -- leaves ordinary steps {plain_wall:.1f}% of the wall clock and the {diag_steps:.0f} daily diagnostics writes {diag_wall:.1f}%, still {diag_mult:.0f}x an ordinary step each and still absorbing almost none of the saving, {diag_saving_pct:.1f}% of it. The periodic ceiling did not go away; it stopped dominating.
-      Compilation shrank with it: {pen_steps:.0f} ordinary steps, {pen_pct:.1f}% of them, are slower in the specialized arm, {pen_s:.1f} s in total or {pen_per_step:.2f} ms averaged over every ordinary step, worst single step {pen_worst_ms:,.0f} ms and the last above 200 ms at step {pen_last:,.0f}. It is first-call compilation of the specialized methods rather than noise, which would be symmetric, but at {pen_s:.1f} s it no longer moves the headline.
-      The steady-state figure now agrees with the whole window rather than correcting it: {ss_pct:.2f}% over the final {ss_cycles:.0f} diagnostics cycles, {ss_exdiag_pct:.2f}% excluding the diagnostics steps, against {saved_pct:.2f}% for the window entire. It is flat wherever the cutoff is put -- {sens720:.2f}% from step 720, {sens1440:.2f}% from step 1440, {sens2400:.2f}% from step 2400 -- which is what a run with little compilation left in it looks like.
-      End to end, on the unprofiled AMIP pair rather than this step-breakdown pair, the treatment is worth {speedup_pct:.2f}% of wall clock, {sypd_base:.4f} to {sypd_mod:.4f} SYPD -- the figures CliMA/ClimaAtmos.jl#4879 quotes. Three measurements of one treatment on three pairs of runs will not agree to the last digit, and the SYPD pair is a throughput ratio while {saved_pct:.2f}% is a duration reduction, so the two must never be quoted as one number.
-      The null test prices that disagreement instead of conceding it. With CliMA/ClimaAtmos.jl#4879 merged both arms sit on one commit, so the same three measurements describe a treatment of nothing: {null_amip:.2f}% on the unprofiled AMIP pair, {null_step:.2f}% on the step-breakdown pair, {null_nsys:.2f}% profiled, and {null_ss:.2f}% in steady state. All four are zero, and two have the wrong sign. The device chain agrees it is zero where it should -- {null_device:.2f}% across the treated kernels, {null_arm:.2f}% over the whole arm -- which is the direct check that device-side nsys figures are the trustworthy ones.
-      So the floor is a few points of wall clock, and read against it this treatment's {speedup_pct:.2f}% is a small multiple of the spread rather than comfortably clear of it.
-      Repeating a pair says what kind of floor it is, and the answer is not the one this project assumed for months. The treatment measured in this pass -- the updraft cache, not the fold above -- has been run end to end {repeat_n:.0f} times on the same committed code, giving {repeat_min:.2f}% to {repeat_max:.2f}%: a mean of {repeat_mean:.2f}% and a spread of {repeat_spread:.2f} points.
-      Run-to-run repeatability is therefore about half a point, several times tighter than the {null_amip:.2f}% the null test found between two IDENTICAL arms, so those two figures cannot both be jitter -- one of them is a confound that repeats, and a confound that repeats is not reduced by averaging.
-      Two candidates were available and both are now measured. The arms run one after the other, so running second could be worth something; and SLURM hands out whichever device is free, so the arms need not even share a GPU.
-      Neither is the confound. Reversing the order -- mod first, baseline second, forced onto the same committed code -- was predicted to return {repeat_predicted:.2f}% if the null's {null_amip:.2f}% were entirely the advantage of running second, and it returned {repeat_reverse:.2f}%: running second is worth {repeat_order_effect:.2f} points, and the order-corrected figure is {repeat_corrected:.2f}%.
-      GPU assignment is ruled out the same way, from the record rather than by argument: the pairs span a matched assignment, a mismatched one, and a second matched one -- one of them with the baseline arm on the GPU this cluster used to blacklist -- and they agree inside {repeat_spread:.2f} points regardless.
-      So the null test's {null_amip:.2f}% is not explained by order and not by hardware, and it is several times the spread of three repeats. The history says the same: {census_n:.0f} passes in this repository have arms that `record-treatment` found identical in content and a measurement committed by the same pass, and the {census_earlier:.0f} run on earlier benchmark windows land within {census_earlier_max:.3f} points of zero -- the {null_amip:.2f}% is the only one at the window in use now.
-      The likeliest reading is therefore that this window's single null pair was an outlier draw rather than a bias, which would put the floor near the repeats' own {repeat_spread:.2f} points and leave this treatment's {repeat_mean:.2f}% comfortably clear of it.
-      That is a reading and not a measurement: it rests on one null pair at this configuration, and repeating the null test -- two unprofiled AMIP runs -- is still what would settle it. Until it is settled the conservative course is to quote the {repeat_margin:.2f}-point margin over the null alongside the headline, and to treat a candidate worth a percent or two as unresolved by a single pair.
-      So the lesson is not about conversion, which was never the problem. It is that a benchmark whose periodic work dominates its wall clock will report a fraction of any every-step saving, and will do so without any sign that it is doing it. Convert a kernel result through the step distribution before promising it as a speedup, and check what fraction of the window the ordinary steps actually hold.
-      Measure both arms. The one-arm version of this stage reported {mod_frac:.1f}% of wall in the mod arm's expensive steps against {base_frac:.1f}% in the baseline's, which reads as a treatment effect and is not one: the threshold is 1.25x each arm's OWN median, and the fold moved the median from {base_med:.1f} to {mod_med:.1f} ms, so an unchanged distribution crosses a lower bar. Those fields cannot be read across arms; a fixed periodic classification can.
+      Essentially all of it once the benchmark resembles the run you care about -- the typical step converts {conversion:.0f}% of the device saving and the window total shows no shortfall against it -- and a fraction of it on a benchmark whose periodic work dominates the wall clock, which is a property of the benchmark rather than of the optimization.
+      What limits the answer now is the floor rather than the conversion: three repeats of one pair agree within {repeat_spread:.2f} points while the null test between two identical arms read {null_amip:.2f}%, and neither run order nor GPU assignment explains the gap.
     evidence:
+      - kind: document
+        path: docs/wall-clock-conversion.md
+        section: "What kind of floor: repeats, run order and GPU assignment"
+        explanation: >-
+          The step-by-step conversion, the benchmark that hid it, the four
+          wall-clock measurements of the null test against the device chain's
+          agreement that it is zero, the pre-registered order test, the GPU
+          assignment recovered from the record, and the census of every null
+          test in this repository's history. Built by the
+          wall-clock-conversion-doc stage from the results files cited below.
       - kind: result
         path: results/fold-record/step-comparison.json
         values:
-          typ_saved: typical_step.saved_median_ms
-          typ_device: typical_step.device_predicted_ms
           conversion: typical_step.conversion_pct
-          plain_steps: classes.plain.steps
-          plain_wall: classes.plain.pct_of_baseline_wall
-          diag_steps: classes.diagnostics.steps
-          diag_wall: classes.diagnostics.pct_of_baseline_wall
-          diag_mult: classes.diagnostics.multiple_of_plain_step
-          diag_saving_pct: classes.diagnostics.pct_of_saving
-          saved_pct: saved_pct
-          cf_pct: counterfactual.saved_pct
-          shortfall: counterfactual.shortfall_points
-          pen_steps: compile_penalty.steps
-          pen_pct: compile_penalty.pct_of_plain_steps
-          pen_s: compile_penalty.total_s
-          pen_per_step: compile_penalty.ms_per_plain_step
-          pen_worst_ms: compile_penalty.worst_step_ms
-          pen_last: compile_penalty.last_step_over_200ms
-          mod_frac: own_threshold.mod_expensive_wall_frac
-          base_frac: own_threshold.baseline_expensive_wall_frac
-          base_med: own_threshold.baseline_median_ms
-          mod_med: own_threshold.mod_median_ms
-          ss_pct: steady_state.saved_pct
-          ss_exdiag_pct: steady_state.saved_pct_ex_diagnostics
-          ss_cycles: steady_state.cycles
-          sens720: steady_state.sensitivity.from_step_720
-          sens1440: steady_state.sensitivity.from_step_1440
-          sens2400: steady_state.sensitivity.from_step_2400
         explanation: >-
           Paired per-step wall clock from the two unprofiled arms on the same
           config, so step index i is the same work in both and the difference is
           a paired one rather than a comparison of aggregates. The typical-step
           figure is the MEDIAN paired difference, not the mean: the mean is
-          lower by exactly the compilation penalty this answer decomposes, so
+          lower by exactly the compilation penalty the document decomposes, so
           quoting the mean would hide the effect inside the headline. The device
-          prediction comes from results/fold-record/param-fold.json, the subtotal over the
-          four folded kernels divided by the profiled window, so the comparison
-          is device saving against wall-clock saving for one treatment.
-          The counterfactual holds every ordinary step at the median rate and
-          takes the periodic steps as measured; it is what this treatment would
-          return without its own compilation, not a claim about any other
-          change.
-          The steady-state window starts at the first hour boundary at or after
-          the last compilation spike, which is derived from the penalty rather
-          than chosen; `sensitivity` records the saving from five other start
-          points so the choice can be audited. It is a reanalysis of the same
-          one-day pair, not a longer run: it shows the fixed costs amortizing
-          within the window measured, and does not measure a regime where the
-          diagnostics cadence itself changes.
+          prediction comes from results/fold-record/param-fold.json, the
+          subtotal over the four folded kernels divided by the profiled window,
+          so the comparison is device saving against wall-clock saving for one
+          treatment.
       - kind: result
         path: results/fold-record/summary.json
-        values:
-          speedup_pct: speedup_pct
-          sypd_base: baseline.sypd
-          sypd_mod: mod.sypd
         explanation: >-
           The end-to-end figures, from the two unprofiled AMIP arms rather than
-          the step-breakdown pair the rest of this answer uses. They are cited
-          here because CliMA/ClimaAtmos.jl#4879 quotes them, and a figure a PR
-          body quotes has to be one the pipeline checks. `speedup_pct` is a
-          reduction in wall clock and the two `sypd` values are a throughput
-          ratio; they describe the same treatment and are not interchangeable.
-          Read out of results/fold-record/, which scripts/snapshot-tag-records.py
-          re-copies from the measurement's tag on every pass. The live
+          the step-breakdown pair. They are cited because
+          CliMA/ClimaAtmos.jl#4879 quotes them, and a figure a PR body quotes
+          has to be one the pipeline checks. `speedup_pct` is a reduction in
+          wall clock and the two `sypd` values are a throughput ratio; they
+          describe the same treatment and are not interchangeable. Read out of
+          results/fold-record/, which scripts/snapshot-tag-records.py re-copies
+          from the measurement's tag on every pass; the live
           results/summary.json describes whatever ran last, and what ran last is
-          now a null test: ClimaAtmos main carries the fold, so both arms are
-          identical and the live file would render ~0% under this prose.
+          a null test.
       - kind: result
         path: results/sypd-repeats.json
         values:
-          repeat_n: latest_treatment.n_pairs
-          repeat_mean: latest_treatment.mean_pct
-          repeat_min: latest_treatment.min_pct
-          repeat_max: latest_treatment.max_pct
           repeat_spread: latest_treatment.spread_points
-          repeat_margin: latest_treatment.margin_over_null_points
-          repeat_reverse: latest_treatment.by_order.mod_first.mean_pct
-          repeat_order_effect: latest_treatment.order_effect_points
-          repeat_corrected: latest_treatment.order_corrected_pct
-          repeat_predicted: latest_treatment.predicted_if_order_explains_null_pct
         explanation: >-
-          Independent repeats of one treatment, appended by
-          scripts/record-sypd-repeat.py rather than written by a stage: its
-          input is the AMIP stages' scheduler logs, which the next repeat
-          deletes and rewrites, so the record has to survive its own source.
-          Each entry carries the treatment's diff digest and the whole
-          submodule pointer map, and pairs are grouped by digest, so runs of
-          different code can never be averaged together; `latest_treatment` is
-          the group holding the most recent pair, which is what this answer
-          cites. Every pair records which arm ran second and which GPU each arm
+          Independent repeats of one treatment, appended by the
+          record-sypd-repeat stage. Its output carries
+          `delete_before_run: false` because its input is the AMIP stages'
+          scheduler logs, which the next repeat deletes and rewrites, so the
+          record has to survive its own source. Each entry carries the
+          treatment's diff digest and the whole submodule pointer map, and pairs
+          are grouped by digest, so runs of different code can never be averaged
+          together; `latest_treatment` is the group holding the most recent
+          pair. Every pair records which arm ran second and which GPU each arm
           was given, so the two confounds a single pair cannot see past are
           measurable across pairs rather than assumed away;
           `predicted_if_order_explains_null_pct` was committed before the
@@ -384,10 +247,6 @@ questions:
           otherwise harvests its own previous job and re-measures nothing.
       - kind: result
         path: results/null-census.json
-        values:
-          census_n: n_nulls
-          census_earlier: n_earlier_windows
-          census_earlier_max: earlier_abs_max_pct
         explanation: >-
           Every null test in the committed history, collected by walking it
           rather than remembered: a pass whose arms record-treatment found
@@ -404,8 +263,6 @@ questions:
         path: results/null-record/summary.json
         values:
           null_amip: speedup_pct
-          null_nsys: nsys_speedup_pct
-          null_ss: steady_state_pct
         explanation: >-
           The same pipeline run with both arms on one commit, so every figure it
           reports is a measurement of nothing. It is what the treatment's
@@ -413,8 +270,6 @@ questions:
           -- so it is pinned out of its tag by the same stage, not read live.
       - kind: result
         path: results/null-record/step-comparison.json
-        values:
-          null_step: saved_pct
         explanation: >-
           The step-breakdown pair's own verdict on the null test, which is the
           third of the three wall-clock measurements and disagrees in sign with
@@ -423,34 +278,32 @@ questions:
           it still found spikes, one of them late enough to empty the window.
       - kind: result
         path: results/null-record/param-fold.json
-        values:
-          null_device: fold_attributable.change_pct
-          null_arm: device_total.change_pct
         explanation: >-
           The device side of the null test. Unlike the wall clock it comes back
           flat, which is the evidence for treating kernel times as the solid
           measurement and wall clock as the noisy one rather than the reverse.
+
   - question: >-
       How much of the wall clock do diagnostics cost, and is it worth optimizing them?
     answer: >-
-      Diagnostics cost {total_pct:.1f}% of the wall clock on the benchmark window, so the whole of them is worth {sypd_headroom:.1f}% in SYPD -- that is the ceiling on any work to speed them up, and it is the number to compare an optimization's cost against before starting.
-      The split matters more than the total, because the two halves need different work. The {diag_steps:.0f} daily write events carry {write_pct:.1f}% of wall on their own, at {diag_mult:.0f}x an ordinary step each, which is I/O and reduction flushing concentrated in a handful of steps. The rest is the sampling that feeds them, spread thinly across every ordinary step, where it is invisible in the median and cannot be found by looking for expensive steps.
-      How much of the rest, this design cannot say, and that is now measured rather than hedged. The residual left after the write steps is {sampling_pct:.2f} points of wall clock, against a {repeat_spread:.2f}-point spread between independent repeats of one AMIP pair of identical code -- so the residual is smaller than the variation of the runs it is differenced from, and it bounds the sampling share without measuring it.
-      The demonstration is on the record: re-running the baseline arm alone, twice, with no code change at all, swung the residual from its original value to zero and most of the way back -- the three values are in the committed history of results/diagnostics-cost.json. So the write steps account for essentially the whole of the diagnostics cost this measurement can see, and pricing the sampling would take a separately instrumented run rather than another difference of two.
-      Nothing else in this pipeline can answer the question, which is why the measurement is a whole extra run. The 120-step nsys window is shorter than the 720-step daily write period, so it contains no write at all and its kernel table reports the sampling as ordinary every-step work. The step breakdown finds the writes precisely, because they are the most expensive steps in the window, and by construction cannot find the sampling for the same reason.
-      Read the total as an upper bound. It differences two whole runs, {wall_on:.0f} s against {wall_off:.0f} s over {n_steps:,.0f} steps, so it also contains the compilation the diagnostics-off run does not pay. The direction of that bias is known and its size is not, which is the honest limit of a difference-of-runs design and the reason the write-step share is cited from a separate measurement rather than derived from this one.
+      Diagnostics cost {total_pct:.1f}% of the wall clock on the benchmark window, so the whole of them is worth {sypd_headroom:.1f}% in SYPD -- that is the ceiling to compare an optimization's cost against before starting.
+      The {write_pct:.1f}% carried by the daily write events is where it is: the sampling that feeds them leaves a residual smaller than the spread between repeats of identical code, so this design bounds that half without measuring it.
     evidence:
+      - kind: document
+        path: docs/diagnostics-cost.md
+        section: The split matters more than the total
+        explanation: >-
+          Why the total is an upper bound, why the two halves need different
+          work, the demonstration that the sampling residual moves without any
+          code changing, and why answering this at all takes a whole extra run
+          rather than a reading off the profile. Built by the
+          diagnostics-cost-doc stage from the results files cited below.
       - kind: result
         path: results/diagnostics-cost.json
         values:
           total_pct: total_pct_of_wall
           sypd_headroom: sypd_headroom_pct
           write_pct: write_steps_pct_of_wall
-          sampling_pct: sampling_pct_of_wall
-          repeat_spread: repeat_spread_points
-          wall_on: with_diagnostics.wall_time_total_s
-          wall_off: without_diagnostics.wall_time_total_s
-          n_steps: n_steps_timed
         explanation: >-
           The baseline arm run twice on the same config, differing only in
           whether diagnostics are enabled, so the wall-clock difference is what
@@ -464,9 +317,6 @@ questions:
           pass, so the ratio cannot mix two configurations.
       - kind: result
         path: results/step-comparison.json
-        values:
-          diag_steps: classes.diagnostics.steps
-          diag_mult: classes.diagnostics.multiple_of_plain_step
         explanation: >-
           How many write events the window holds and how expensive each is
           relative to an ordinary step, measured independently of the run above
@@ -478,86 +328,43 @@ questions:
   - question: >-
       Is there a rule of thumb for when folding parameters into the type is worth it, or does it always take a profile to find out?
     answer: >-
-      There is a rule, it is not the one the question suggests, and a five-minute compile replaces the profile: counting the parameters predicts nothing, while compiling the body with its parameters as const globals settles whether a fold on that body can pay at all.
-      The parameter set ClimaAtmos folds is {payload_bytes:.0f} bytes, or {payload_registers:.0f} registers, and that one payload produced savings of {savings_list} registers at {payload_sites:.0f} sites in the same source -- a spread of {saving_spread:.0f} registers on identical parameters, so the size takes every value from nothing to everything.
-      The payload does bound them -- none of the {payload_sites:.0f} exceeded it and the largest landed exactly on it -- so the size prices the prize and orders nothing, which is the distinction worth keeping: a bound that outcomes from zero to all of it respect predicts none of them.
-      Read it as a tight bound rather than a hard one, since these are compile-only figures and they move when the stack moves, the same way the in-model payoffs do.
-      Nor does a small payload mean a small prize -- the Thermodynamics call carries a {td_payload_registers:.0f}-register payload into a {td_registers:.0f}-register kernel and saved nothing however the parameters arrived, which is a kernel that was never paying for them.
-      What the size does give is the scale once a fold is known to land: over the {landing_sites:.0f} sites where nothing boxed the parameters and the kernel was larger than the payload, the saving came to {recovered_min_pct:.1f}% to {recovered_max_pct:.0f}% of it, so `sizeof(params)/4` brackets the prize within {recovered_spread_pct:.1f} points of the payload and says nothing about the odds of collecting it.
-      The test that does predict is const globals, which are the ceiling of any constant-folding scheme -- a value the compiler already has, with no wrapper to lose it through -- so a body that does not move with them cannot be folded by any means.
-      It is compile-only: `CUDA.@cuda launch=false` compiles the kernel and `CUDA.registers` reads the count without executing it, so `val-params-registers` is minutes with no simulation and no coupled model, against hours for a profile pair.
-      It matched `Val` at {ceiling_agree:.0f} of {ceiling_sites:.0f} sites with a largest disagreement of {ceiling_disagreement:.0f} registers, and the part that makes it a decision rule rather than a correlation is that it flagged {ceiling_flagged:.0f} sites in advance which are exactly the two where a fold went on to return nothing, with {ceiling_false_alarms:.0f} sites condemned that would have paid.
-      Both failures this project actually hit were caught that way before any fold was written, and only one of them was final: a kernel not spending registers on its parameters is closed, while an evaluator holding them as struct FIELDS stores the constant and reads it back per point, which is a code shape to change rather than a verdict on the kernel -- the same body with the parameters moved into the evaluator's type goes {boxed_registers:.0f} -> {unboxed_registers:.0f} registers, {unboxed_saving:.0f} saved, and that is another compile-only probe.
-      So a `no` from the ceiling closes the fold as written and asks which of the two causes it is, rather than closing the kernel, and both answers cost a compile.
-      What the compile cannot tell you is the size, and for that the quantity is warps per SM rather than registers, since ClimaCore sizes the launch block from the register count.
-      Both payoffs started at {paid_warps} warps per SM, returning {best_change_pct:.2f}% ({best_warps_before:.0f} -> {best_warps_after:.0f} warps) and {biggest_change_pct:.2f}% ({biggest_warps_before:.0f} -> {biggest_warps_after:.0f}), while everything flat started at {flat_warps} warps, against a control kernel the fold left at the same register count whose own time still moved {noise_band_pct:.2f}%.
-      Crossing a step is necessary and nowhere near sufficient: the cloud-fraction kernel shed {crossed_flat_registers_saved:.0f} registers and crossed {crossed_flat_warps_before:.0f} -> {crossed_flat_warps_after:.0f} warps for {crossed_flat_change_pct:.2f}%, less than the control that crossed nothing.
-      So the procedure, cheapest first: confirm the parameter set is `isbits`, read the occupancy limiter and the distance to the next step off the static ncu pass the pipeline already holds, check the kernel holds enough device time to repay the work, then compile with const globals and stop there if nothing moves.
-      That is free or minutes, and it called every outcome on the record for the body it was handed -- including the ClimaAtmos change behind the largest payoff here, which was decided from the compile-only probes and only afterwards priced by a profile.
-      Which is the answer to the second half of the question: a profile prices a fold, it does not decide one.
-      Two limits travel with this. The threshold between {paid_warps} warps per SM, where folds paid, and {flat_warps}, where they did not, is bracketed rather than located; and in this record every flat kernel is also a small one, holding at most {largest_flat_pct_of_device:.1f}% of device time against {smallest_paying_pct_of_device:.1f}% for the smallest payoff, so occupancy headroom and device share cannot be separated from these four kernels alone.
-      Population-wide the screen is what keeps the rule cheap to apply: of {kernels_profiled:.0f} kernels in a 120-step run, {addressable:.0f} ({addressable_pct}%) are capped by registers alone and below full occupancy, {at_full_occupancy:.0f} are already at full occupancy and can gain nothing however well their parameters fold, and the largest untreated candidate -- {largest_untreated_pct:.2f}% of the device, {largest_untreated_shed:.0f} registers from its next step -- carries no parameter struct to fold in the first place.
+      There is a rule and it is not counting the parameters: one {payload_registers:.0f}-register payload produced savings of {savings_list} registers at {payload_sites:.0f} sites in the same source, so the size prices the prize and orders nothing.
+      What predicts is compiling the body with its parameters as const globals -- the ceiling of any constant-folding scheme -- which costs minutes rather than a profile and called every outcome on this record, so a profile prices a fold and does not decide one.
     evidence:
+      - kind: document
+        path: docs/fold-decision-rule.md
+        section: "The rule that works: compile the body with const globals"
+        explanation: >-
+          The three candidate rules tested against every fold attempt on the
+          record, the two failures the const-global probe caught before any code
+          was written, what sets the size of a payoff once one is known to land,
+          the procedure in cheapest-first order, and the two limits that travel
+          with it. Built by the fold-decision-doc stage, which declares its own
+          analysis of the four earlier stages' outputs and runs no GPU -- which
+          is also what it concludes.
       - kind: result
         path: results/fold-decision.json
         values:
-          payload_bytes: summary.payload_bytes
           payload_registers: summary.payload_registers
           payload_sites: summary.payload_sites
           savings_list: summary.savings_list
-          saving_spread: summary.saving_spread
-          landing_sites: summary.landing_sites
-          recovered_min_pct: summary.recovered_min_pct
-          recovered_max_pct: summary.recovered_max_pct
-          recovered_spread_pct: summary.recovered_spread_pct
-          td_payload_registers: summary.td_payload_registers
-          td_registers: summary.td_registers
-          ceiling_sites: summary.ceiling_sites
-          ceiling_agree: summary.ceiling_agree
-          ceiling_flagged: summary.ceiling_flagged
-          ceiling_false_alarms: summary.ceiling_false_alarms
-          ceiling_disagreement: summary.ceiling_disagreement
-          unboxed_saving: summary.unboxed_saving
-          unboxed_registers: summary.unboxed_registers
-          boxed_registers: summary.boxed_registers
-          noise_band_pct: summary.noise_band_pct
-          paid_warps: summary.paid_warps
-          flat_warps: summary.flat_warps
-          best_change_pct: summary.best_change_pct
-          best_warps_before: summary.best_warps_before
-          best_warps_after: summary.best_warps_after
-          biggest_change_pct: summary.biggest_change_pct
-          biggest_warps_before: summary.biggest_warps_before
-          biggest_warps_after: summary.biggest_warps_after
-          crossed_flat_change_pct: summary.crossed_flat_change_pct
-          crossed_flat_warps_before: summary.crossed_flat_warps_before
-          crossed_flat_warps_after: summary.crossed_flat_warps_after
-          crossed_flat_registers_saved: summary.crossed_flat_registers_saved
-          largest_flat_pct_of_device: summary.largest_flat_pct_of_device
-          smallest_paying_pct_of_device: summary.smallest_paying_pct_of_device
-          kernels_profiled: summary.kernels_profiled
-          addressable: summary.addressable
-          addressable_pct: summary.addressable_pct
-          at_full_occupancy: summary.at_full_occupancy
-          largest_untreated_pct: summary.largest_untreated_pct
-          largest_untreated_shed: summary.largest_untreated_shed
         explanation: >-
           Every parameter-fold attempt the project has measured -- five
           compile-only probes and the four kernels folded in the model -- put
-          against three candidate predictors, with the reasoning in
-          docs/fold-decision-rule.md. It is assembled from earlier stages'
-          outputs and runs no GPU, which is the point: if the decision needed a
-          profile this file could not exist. Two cross-checks are what make it
-          a test rather than a summary. `ceiling_test` records whether the
-          const-global probe's zeros coincide with the sites where a fold
-          returned nothing, in both directions, so a probe that condemned a
-          site that would have paid would show up. And `magnitude_test` reports
-          that its flat sites are also its smallest, so the file states the
-          confound rather than letting the occupancy reading take credit for
-          both gates. The control is the fourth folded kernel, whose register
-          count the fold did not move: its change is the per-kernel noise the
-          measurement resolves, and one kernel that crossed an occupancy step
-          came in under it.
+          against three candidate predictors. It is assembled from earlier
+          stages' outputs and runs no GPU, which is the point: if the decision
+          needed a profile this file could not exist. Two cross-checks are what
+          make it a test rather than a summary. `ceiling_test` records whether
+          the const-global probe's zeros coincide with the sites where a fold
+          returned nothing, in both directions, so a probe that condemned a site
+          that would have paid would show up. And `magnitude_test` reports that
+          its flat sites are also its smallest, so the file states the confound
+          rather than letting the occupancy reading take credit for both gates.
+          The control is the fourth folded kernel, whose register count the fold
+          did not move: its change is the per-kernel noise the measurement
+          resolves, and one kernel that crossed an occupancy step came in under
+          it.
+
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod
@@ -1048,6 +855,42 @@ pipeline:
       # committed results/compile-time/compile-time.toml, which the frozen
       # compile-time-study stage does not regenerate here, so re-running this
       # cannot restate the experiment against a different run.
+    pass-through-doc:
+      kind: markdown
+      target_path: docs/pass-through.md
+      environment: py
+      # Live on main. It declares a values stage that reads the two results
+      # files its prose quotes, which is what makes the document a pipeline node
+      # rather than hand-written text: it goes stale when they do, and `calkit
+      # run` restates it. One of those files is a snapshot of a measurement's
+      # tag, so the figures do not move when a later pass measures something
+      # else.
+    val-fold-scope-doc:
+      kind: markdown
+      target_path: docs/val-fold-scope.md
+      environment: py
+      # Live on main, and cited by two questions at different sections -- the
+      # occupancy gates and the dependency scope are one argument, and splitting
+      # them across two documents would duplicate the device budget both rest
+      # on. Its values stage is also doing real work rather than copying: two of
+      # its inputs are TOML, which a value marker cannot read.
+    wall-clock-conversion-doc:
+      kind: markdown
+      target_path: docs/wall-clock-conversion.md
+      environment: py
+      # Live on main. Every figure it quotes comes from the snapshot copies
+      # under results/fold-record/ and results/null-record/ rather than the live
+      # results files, because the live ones describe whatever ran last -- and
+      # what ran last is a null test, which would render this prose at roughly
+      # zero.
+    diagnostics-cost-doc:
+      kind: markdown
+      target_path: docs/diagnostics-cost.md
+      environment: py
+      # Live on main, and unpinned on purpose: it describes the current
+      # benchmark, and both halves of the difference it reports are regenerated
+      # together by the same pass, so the ratio cannot come to mix two
+      # configurations.
     fold-decision-doc:
       kind: markdown
       target_path: docs/fold-decision-rule.md
