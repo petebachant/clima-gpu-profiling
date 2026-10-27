@@ -773,6 +773,70 @@ stages:
           persist: false
     desc: Automatically generated from the 'compile-time-doc/values' stage in
       calkit.yaml. Changes made here will be overwritten.
+  pass-through-doc/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/pass-through.md/values.py
+    deps:
+      - .calkit/markdown/docs/pass-through.md/values.py
+      - results/pass-through.json
+      - results/fold-record/param-fold.json
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/pass-through.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'pass-through-doc/values' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  val-fold-scope-doc/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/val-fold-scope.md/values.py
+    deps:
+      - .calkit/markdown/docs/val-fold-scope.md/values.py
+      - results/val-mileage.json
+      - results/val-params-registers.toml
+      - results/pointwise-registers.json
+      - results/fold-record/param-fold.json
+      - results/cm-registers.toml
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/val-fold-scope.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'val-fold-scope-doc/values' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  wall-clock-conversion-doc/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/wall-clock-conversion.md/values.py
+    deps:
+      - .calkit/markdown/docs/wall-clock-conversion.md/values.py
+      - results/fold-record/step-comparison.json
+      - results/fold-record/summary.json
+      - results/null-record/summary.json
+      - results/null-record/step-comparison.json
+      - results/null-record/param-fold.json
+      - results/sypd-repeats.json
+      - results/null-census.json
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/wall-clock-conversion.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'wall-clock-conversion-doc/values'
+      stage in calkit.yaml. Changes made here will be overwritten.
+  diagnostics-cost-doc/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/diagnostics-cost.md/values.py
+    deps:
+      - .calkit/markdown/docs/diagnostics-cost.md/values.py
+      - results/diagnostics-cost.json
+      - results/step-comparison.json
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/diagnostics-cost.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'diagnostics-cost-doc/values' stage
+      in calkit.yaml. Changes made here will be overwritten.
   fold-decision-doc/analyze:
     cmd: calkit xenv -n py --no-check -- python
       .calkit/markdown/docs/fold-decision-rule.md/analyze.py

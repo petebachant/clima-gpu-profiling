@@ -25,7 +25,11 @@ summary = load("results/fold-record/summary.json")
 null = load("results/null-record/summary.json")
 null_step = load("results/null-record/step-comparison.json")
 null_fold = load("results/null-record/param-fold.json")
-repeats = load("results/sypd-repeats.json")["latest_treatment"]
+repeat_record = load("results/sypd-repeats.json")
+current = repeat_record["latest_treatment"]
+# Order and GPU assignment can only be read off a group with several pairs, and
+# the re-baselined stack has one, so take the richest group of this treatment.
+repeats = max(repeat_record["by_treatment"].values(), key=lambda g: g["n_pairs"])
 census = load("results/null-census.json")
 
 plain, diag = step["classes"]["plain"], step["classes"]["diagnostics"]
@@ -77,6 +81,12 @@ out = {
         "step_pct": round(null_step["saved_pct"], 2),
         "device_pct": round(null_fold["fold_attributable"]["change_pct"], 2),
         "arm_pct": round(null_fold["device_total"]["change_pct"], 2),
+    },
+    "current": {
+        "n": current["n_pairs"],
+        "mean_pct": current["mean_pct"],
+        "margin_points": current["margin_over_null_points"],
+        "predicted_pct": current["predicted_if_order_explains_null_pct"],
     },
     "repeats": {
         "n": repeats["n_pairs"],
@@ -154,7 +164,8 @@ The device chain agrees it is zero where it should --- <!-- calkit value key=nul
 ## What kind of floor: repeats, run order and GPU assignment
 
 Repeating a pair says what kind of floor this is, and the answer is not the one this project assumed for months.
-The treatment measured in the current pass --- the updraft cache, not the fold above --- has been run end to end <!-- calkit value key=repeats.n -->3<!-- /calkit value --> times on the same committed code, giving <!-- calkit value key=repeats.min_pct -->4.847<!-- /calkit value -->% to <!-- calkit value key=repeats.max_pct -->5.354<!-- /calkit value -->%: a mean of <!-- calkit value key=repeats.mean_pct -->5.086<!-- /calkit value -->% and a spread of <!-- calkit value key=repeats.spread_points -->0.507<!-- /calkit value --> points.
+The treatment measured here --- the updraft cache, not the fold above --- has been run end to end <!-- calkit value key=repeats.n -->3<!-- /calkit value --> times on one stack and one set of committed code, giving <!-- calkit value key=repeats.min_pct -->4.847<!-- /calkit value -->% to <!-- calkit value key=repeats.max_pct -->5.354<!-- /calkit value -->%: a mean of <!-- calkit value key=repeats.mean_pct -->5.086<!-- /calkit value -->% and a spread of <!-- calkit value key=repeats.spread_points -->0.507<!-- /calkit value --> points.
+Re-baselining onto a newer upstream main changes the code of both arms, so `record-treatment` files the result as a new group rather than a fourth repeat; the current group holds <!-- calkit value key=current.n -->1<!-- /calkit value --> pair at <!-- calkit value key=current.mean_pct -->3.745<!-- /calkit value -->%, and the spread below is the only estimate of its floor.
 
 Run-to-run repeatability is therefore about half a point, several times tighter than the <!-- calkit value key=null.amip_pct -->2.47<!-- /calkit value -->% the null test found between two IDENTICAL arms.
 Those two figures cannot both be jitter.
@@ -183,11 +194,11 @@ In all, <!-- calkit value key=census.skipped_unpaired -->12<!-- /calkit value --
 
 ## Where that leaves the floor
 
-The likeliest reading is that this window's single null pair was an outlier draw rather than a bias, which would put the floor near the repeats' own <!-- calkit value key=repeats.spread_points -->0.507<!-- /calkit value --> points and leave this treatment's <!-- calkit value key=repeats.mean_pct -->5.086<!-- /calkit value -->% comfortably clear of it.
+The likeliest reading is that this window's single null pair was an outlier draw rather than a bias, which would put the floor near the repeats' own <!-- calkit value key=repeats.spread_points -->0.507<!-- /calkit value --> points and leave the current <!-- calkit value key=current.mean_pct -->3.745<!-- /calkit value -->% clear of it.
 
 That is a reading and not a measurement.
 It rests on one null pair at this configuration, and repeating the null test --- two unprofiled AMIP runs --- is still what would settle it.
-Until it is settled the conservative course is to quote the <!-- calkit value key=repeats.margin_points -->2.619<!-- /calkit value -->-point margin over the null alongside the headline, and to treat a candidate worth a percent or two as unresolved by a single pair.
+Until it is settled the conservative course is to quote the <!-- calkit value key=current.margin_points -->1.278<!-- /calkit value -->-point margin over the null alongside the headline, and to treat a candidate worth a percent or two as unresolved by a single pair.
 
 ## Measure both arms
 

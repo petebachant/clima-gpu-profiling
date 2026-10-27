@@ -35,23 +35,23 @@ json.dump(out, open("results/docs/diagnostics-cost.json", "w"), indent=2)
 
 ## The ceiling
 
-Diagnostics cost <!-- calkit value key=total_pct -->12.3<!-- /calkit value -->% of the wall clock on the benchmark window, so the whole of them is worth <!-- calkit value key=sypd_headroom_pct -->14.0<!-- /calkit value -->% in SYPD: <!-- calkit value key=sypd_with -->1.4604<!-- /calkit value --> SYPD with them against <!-- calkit value key=sypd_without -->1.6645<!-- /calkit value --> without.
+Diagnostics cost <!-- calkit value key=total_pct -->10.5<!-- /calkit value -->% of the wall clock on the benchmark window, so the whole of them is worth <!-- calkit value key=sypd_headroom_pct -->11.7<!-- /calkit value -->% in SYPD: <!-- calkit value key=sypd_with -->1.4252<!-- /calkit value --> SYPD with them against <!-- calkit value key=sypd_without -->1.5923<!-- /calkit value --> without.
 That is the number to compare an optimization's cost against before starting.
 
 Read it as an upper bound.
-It differences two whole runs, <!-- calkit value key=wall_on_s -->647<!-- /calkit value --> s against <!-- calkit value key=wall_off_s -->568<!-- /calkit value --> s over <!-- calkit value key=n_steps -->2878<!-- /calkit value --> steps, so it also contains the compilation the diagnostics-off run does not pay.
+It differences two whole runs, <!-- calkit value key=wall_on_s -->663<!-- /calkit value --> s against <!-- calkit value key=wall_off_s -->594<!-- /calkit value --> s over <!-- calkit value key=n_steps -->2878<!-- /calkit value --> steps, so it also contains the compilation the diagnostics-off run does not pay.
 The direction of that bias is known and its size is not, which is the honest limit of a difference-of-runs design and the reason the write-step share below is cited from a separate measurement rather than derived from this one.
 
 ## The split matters more than the total
 
 The two halves need different work.
-The <!-- calkit value key=diag_steps -->4<!-- /calkit value --> daily write events carry <!-- calkit value key=write_pct -->11.9<!-- /calkit value -->% of wall on their own, at <!-- calkit value key=diag_multiple -->118<!-- /calkit value -->x an ordinary step each, which is I/O and reduction flushing concentrated in a handful of steps.
+The <!-- calkit value key=diag_steps -->4<!-- /calkit value --> daily write events carry <!-- calkit value key=write_pct -->11.7<!-- /calkit value -->% of wall on their own, at <!-- calkit value key=diag_multiple -->115<!-- /calkit value -->x an ordinary step each, which is I/O and reduction flushing concentrated in a handful of steps.
 The rest is the sampling that feeds them, spread thinly across every ordinary step, where it is invisible in the median and cannot be found by looking for expensive steps.
 
 ## How much the sampling costs is bounded, not measured
 
-The residual left after the write steps is <!-- calkit value key=sampling_pct -->0.31<!-- /calkit value --> points of wall clock, against a <!-- calkit value key=repeat_spread_points -->0.507<!-- /calkit value -->-point spread between independent repeats of one AMIP pair of identical code.
-So the residual is smaller than the variation of the runs it is differenced from, and it bounds the sampling share without measuring it --- which is what `sampling_resolvable` records, currently <!-- calkit value key=sampling_resolvable -->false<!-- /calkit value -->.
+The residual left after the write steps is <!-- calkit value key=sampling_pct -->-1.24<!-- /calkit value --> points of wall clock, against a <!-- calkit value key=repeat_spread_points -->0.0<!-- /calkit value -->-point spread between independent repeats of one AMIP pair of identical code.
+So the residual is smaller than the variation of the runs it is differenced from, and it bounds the sampling share without measuring it --- which is what `sampling_resolvable` records, currently <!-- calkit value key=sampling_resolvable -->true<!-- /calkit value -->.
 
 The demonstration is on the record rather than in the argument.
 Re-running the baseline arm alone, twice, with no code change at all, swung the residual from its original value to zero and most of the way back; the three values are in the committed history of `results/diagnostics-cost.json`, and the spread they move inside is measured in [the wall-clock conversion document](wall-clock-conversion.md).
