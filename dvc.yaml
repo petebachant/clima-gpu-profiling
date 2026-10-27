@@ -367,6 +367,22 @@ stages:
     always_changed: true
     desc: Automatically generated from the 'pass-through' stage in calkit.yaml.
       Changes made here will be overwritten.
+  record-sypd-repeat:
+    cmd: calkit xenv -n py --no-check -- python scripts/record-sypd-repeat.py
+    deps:
+      - scripts/record-sypd-repeat.py
+      - results/null-record/summary.json
+      - .calkit/env-locks/py
+      - results/treatment.json
+      - .calkit/scheduler/logs/amip-baseline.out
+      - .calkit/scheduler/logs/amip-mod.out
+    outs:
+      - results/sypd-repeats.json:
+          cache: false
+          persist: true
+    always_changed: true
+    desc: Automatically generated from the 'record-sypd-repeat' stage in
+      calkit.yaml. Changes made here will be overwritten.
   census-null-tests:
     cmd: calkit xenv -n py --no-check -- python scripts/census-null-tests.py
     deps:

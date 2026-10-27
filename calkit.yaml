@@ -971,6 +971,26 @@ pipeline:
         - path: results/pass-through.json
           storage: git
 
+    record-sypd-repeat:
+      kind: python-script
+      script_path: scripts/record-sypd-repeat.py
+      environment: py
+      # Appends one AMIP pair per pass to an accumulating record, keyed on a
+      # hash of both logs so re-running without a new measurement cannot
+      # inflate the count. `delete_before_run: false` is load-bearing: DVC
+      # deletes a stage's outputs before running it, which for an append-only
+      # record would destroy every earlier pair. Always runs because what makes
+      # a pair new is the logs being rewritten, which the dedupe guard checks.
+      always_run: true
+      inputs:
+        - results/null-record/summary.json
+        - from_stage_outputs: record-treatment
+        - from_stage_outputs: amip-baseline
+        - from_stage_outputs: amip-mod
+      outputs:
+        - path: results/sypd-repeats.json
+          storage: git
+          delete_before_run: false
     census-null-tests:
       kind: python-script
       script_path: scripts/census-null-tests.py

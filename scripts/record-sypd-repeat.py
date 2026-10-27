@@ -11,9 +11,12 @@ without a new measurement cannot inflate the count, and stamped with the
 treatment digest and the whole submodule pointer map so pairs from different
 code are never averaged together.
 
-Not a pipeline stage: its input is a stage output that the next repeat erases,
-and its own output has to survive that (AGENTS.md, "a transient artifact cannot
-be a stage dependency").
+A stage, but only safely so because its output is declared
+`delete_before_run: false`. DVC deletes a stage's outputs before running it,
+which for an append-only record would mean losing every earlier pair on the
+first re-run; persisting it is what lets the accumulation and the pipeline
+coexist. It also always runs, since a new pair exists whenever the logs are
+newer and nothing about the file contents says so.
 """
 
 import hashlib
