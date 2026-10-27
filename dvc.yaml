@@ -367,6 +367,18 @@ stages:
     always_changed: true
     desc: Automatically generated from the 'pass-through' stage in calkit.yaml.
       Changes made here will be overwritten.
+  census-null-tests:
+    cmd: calkit xenv -n py --no-check -- python scripts/census-null-tests.py
+    deps:
+      - scripts/census-null-tests.py
+      - .calkit/env-locks/py
+    outs:
+      - results/null-census.json:
+          cache: false
+          persist: false
+    always_changed: true
+    desc: Automatically generated from the 'census-null-tests' stage in
+      calkit.yaml. Changes made here will be overwritten.
   snapshot-tag-records:
     cmd: calkit xenv -n py --no-check -- python scripts/snapshot-tag-records.py
     deps:

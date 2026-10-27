@@ -1,0 +1,52 @@
+{
+  "nulls": [
+    {
+      "commit": "a479c9c9f",
+      "date": "2026-08-20",
+      "unix_time": 1787275163,
+      "speedup_pct": 0.207,
+      "baseline_sypd": 0.26968802380936235,
+      "mod_sypd": 0.2702483239957542,
+      "n_steps_total": null,
+      "dt_cpl_s": null,
+      "current_window": false
+    },
+    {
+      "commit": "b94b38e71",
+      "date": "2026-09-22",
+      "unix_time": 1790071814,
+      "speedup_pct": 0.087,
+      "baseline_sypd": 0.22750030601449844,
+      "mod_sypd": 0.22769825881543068,
+      "n_steps_total": null,
+      "dt_cpl_s": null,
+      "current_window": false
+    },
+    {
+      "commit": "7cad53282",
+      "date": "2026-10-22",
+      "unix_time": 1792701498,
+      "speedup_pct": 2.467,
+      "baseline_sypd": 1.7127841610563717,
+      "mod_sypd": 1.7560991093987746,
+      "n_steps_total": 2880,
+      "dt_cpl_s": 119.99999905324638,
+      "current_window": true
+    }
+  ],
+  "n_nulls": 3,
+  "speedups_pct": [
+    0.207,
+    0.087,
+    2.467
+  ],
+  "abs_max_pct": 2.467,
+  "n_current_window": 1,
+  "current_window_pct": [
+    2.467
+  ],
+  "n_earlier_windows": 2,
+  "earlier_abs_max_pct": 0.207,
+  "skipped_unpaired": 12,
+  "note": "A null test is a pass whose arms record-treatment found identical in content, so its speedup is a measurement of nothing. Counted only where one pass wrote both results/treatment.json and results/summary.json, since before record-treatment carried always_run a commit could pair a stale treatment record with a real measurement; skipped_unpaired counts the commits rejected on that test, which includes the harmless case of a later commit re-committing an already counted pass. earlier_abs_max_pct covers the passes run on shorter windows and coarser timesteps than the current benchmark, whose noise is not interchangeable with this one's -- n_current_window says how many nulls exist at the window in use now."
+}

@@ -790,12 +790,12 @@ stages:
       nfiles: 2
     - path: .calkit/scheduler/logs/amip-baseline.out
       hash: md5
-      md5: f332f6f9692f9e6eec95da2c52d4f47c
-      size: 49697
+      md5: f88733df080d39e196a57581ee367cb6
+      size: 49703
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: 66b8e03af4f043f6f9407b34f67edcad
-      size: 50889
+      md5: 6876024cbd7ca6dd32b4cb2f403a91c3
+      size: 49695
     - path: results/nsys/baseline.sqlite
       hash: md5
       md5: 2d4e97dbf15553386c8fb23416a2d804
@@ -815,8 +815,8 @@ stages:
     outs:
     - path: results/summary.json
       hash: md5
-      md5: aebc779a3187486e81c1a8b56c2ff74a
-      size: 2212
+      md5: 393c5de545b80398f75a3dbff5b7ebcf
+      size: 2205
   mod-ncu:
     cmd: calkit scheduler batch --name mod-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -1004,8 +1004,8 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/amip-baseline.out
       hash: md5
-      md5: f332f6f9692f9e6eec95da2c52d4f47c
-      size: 49697
+      md5: f88733df080d39e196a57581ee367cb6
+      size: 49703
   amip-mod:
     cmd: calkit scheduler batch --name amip-mod --environment clima --dep 
       RRTMGP.jl-mod/src --dep RRTMGP.jl-mod/ext --dep 
@@ -1102,8 +1102,8 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: 66b8e03af4f043f6f9407b34f67edcad
-      size: 50889
+      md5: 6876024cbd7ca6dd32b4cb2f403a91c3
+      size: 49695
   make-diffs:
     cmd: bash --noprofile --norc scripts/make-diffs.sh
     deps:
@@ -1379,8 +1379,8 @@ stages:
       nfiles: 2
     - path: calkit.yaml
       hash: md5
-      md5: 5f4a930e9e22a3b1d8039995188dc0d7
-      size: 88987
+      md5: dd61e73c19f0c00fcb55b1b9759dd069
+      size: 92348
     - path: diffs
       hash: md5
       md5: 6633b712ae0958067852d781c01a9fbb.dir
@@ -1393,7 +1393,7 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: 1a8cad60247f7fa2575dc57b4691348a
+      md5: b4db0d8b40ed6e3b2895a71ea205de1c
       size: 31543
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
@@ -1406,8 +1406,8 @@ stages:
       nfiles: 2
     - path: results/summary.json
       hash: md5
-      md5: aebc779a3187486e81c1a8b56c2ff74a
-      size: 2212
+      md5: 393c5de545b80398f75a3dbff5b7ebcf
+      size: 2205
     - path: scripts/build-experiment-index.py
       hash: md5
       md5: 6ecee83a0c8f1cc405ebcd60efab8df0
@@ -3536,8 +3536,8 @@ stages:
       nfiles: 2
     - path: .calkit/scheduler/logs/amip-baseline.out
       hash: md5
-      md5: f332f6f9692f9e6eec95da2c52d4f47c
-      size: 49697
+      md5: f88733df080d39e196a57581ee367cb6
+      size: 49703
     - path: .calkit/scheduler/logs/amip-nodiag.out
       hash: md5
       md5: f3b039275fa90a0b42fdbb00e31c9f88
@@ -3548,8 +3548,8 @@ stages:
       size: 3237
     - path: results/sypd-repeats.json
       hash: md5
-      md5: 7a57b2850bd8b1b44b482a9392a7c3e4
-      size: 5517
+      md5: 028ec355b0d793297a371e321fc54461
+      size: 7691
     - path: scripts/diagnostics-cost.py
       hash: md5
       md5: 5a66f8609476cfd6498efa4bba7c6cdb
@@ -3557,8 +3557,8 @@ stages:
     outs:
     - path: results/diagnostics-cost.json
       hash: md5
-      md5: 77a75077758e8f34a2dec6a63e45c186
-      size: 1534
+      md5: fea8c1462acbea6ef635df62a1c662cc
+      size: 1529
   val-mileage:
     cmd: calkit xenv -n py --no-check -- python scripts/val-mileage.py
     deps:
@@ -3708,3 +3708,20 @@ stages:
       hash: md5
       md5: 351bf4b9ba2f386e6b9f249b13860657
       size: 12462
+  census-null-tests:
+    cmd: calkit xenv -n py --no-check -- python scripts/census-null-tests.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: scripts/census-null-tests.py
+      hash: md5
+      md5: fb68f5bab4ea20e6be9a4cfbc3a3914e
+      size: 5588
+    outs:
+    - path: results/null-census.json
+      hash: md5
+      md5: 147f8246f8f43520883f1637feea59b0
+      size: 1887

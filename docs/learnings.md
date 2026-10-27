@@ -2929,39 +2929,66 @@ result. But a window chosen by jitter is a window chosen by nothing, and the
 pinned record keeps the figure that was actually published rather than drifting
 to the new one.
 
-## 8f. Two pairs of the same code agree far more closely than the null test, so its spread is not jitter (2026-10-26)
+## 8f. Three pairs of the same code agree far more closely than the null test, and neither order nor hardware explains the gap (2026-10-26)
 
 Section 8e concluded that a wall-clock result of a few percent on one pair of
 runs is not a result, and read the null test's several points as the noise floor.
 That conclusion was reached without ever running the same pair twice. This pass
-did: the updraft-cache treatment was measured end to end, then `amip-baseline`
-and `amip-mod` were forced to resubmit and it was measured again on the same
-committed code. The two pairs agree to a fraction of a point. Figures are in
-`results/sypd-repeats.json` and injected into the conversion question in
-`calkit.yaml`.
+did: the updraft-cache treatment was measured end to end, then the two AMIP
+stages were forced to resubmit and it was measured again on the same committed
+code, twice, the second time with the arms in the opposite order. The three
+pairs agree to half a point. Figures are in `results/sypd-repeats.json` and
+injected into the conversion question in `calkit.yaml`.
 
-That is an order of magnitude tighter than the null test's apparent speedup
-between two *identical* arms, and both cannot be run-to-run variation. Either
-the null figure is a systematic asymmetry between the arms --- which every
-treatment's headline then sits on top of, making the honest effect the margin
-over it rather than the headline --- or that one null pair was unlucky. Two
-pairs of one treatment cannot separate those, and by construction do not try:
-both ran baseline first and mod second on the same machine, so an asymmetry
-repeats instead of averaging out, which is exactly why they agree so closely.
-What separates them is a second null pair, which is two unprofiled AMIP runs.
+That is several times tighter than the null test's apparent speedup between two
+*identical* arms, and both cannot be run-to-run variation. Either the null
+figure is a systematic asymmetry between the arms --- which every treatment's
+headline would then sit on top of, making the honest effect the margin over it
+rather than the headline --- or that one null pair was unlucky. The two
+candidate asymmetries are both testable, and both have now been tested.
 
-The practical change is in the remedy, not the caution. The caution stands ---
-a candidate worth a percent or two is not resolved by one pair --- but if the
-floor is asymmetry rather than noise, it is removed by subtracting a null test
-rather than by averaging runs, and averaging was the thing 8e ruled out.
+**Run order is not it.** The arms run one after the other, so running second
+could be worth something; if it were worth all of the null's figure, one order
+would measure T + A and the other T - A, so reversing the arms would move the
+headline by twice the null. That prediction was computed and committed *before*
+the reversed pair ran, which is what makes it a test --- `b30fb5c`, as
+`predicted_if_order_explains_null_pct` in `results/sypd-repeats.json`. The
+reversed pair came back near the other two instead: running second is worth a
+tenth of a point, and the order-corrected figure is within the repeats' own
+spread of the raw mean.
+
+**Nor is the GPU.** SLURM hands out whichever device is free, so the arms need
+not share one. `run_id` in the repeat record is a hash of both scheduler logs,
+which makes the commit holding any past pair's logs findable from the record
+itself --- so each pair's device assignment was recovered from history rather
+than assumed. The three pairs span a matched assignment, a mismatched one, and a
+second matched one, one of them with the baseline arm on the device this cluster
+used to blacklist, and they agree inside half a point regardless.
+
+The history agrees with the repeats rather than with the null. `census-null-tests`
+walks the committed record for passes whose arms `record-treatment` found
+identical in content, and the ones at earlier benchmark windows sit within a
+fifth of a point of zero; the figure in question is the only null at the window
+in use now. That census needed a guard worth keeping: before `record-treatment`
+carried `always_run` it could be skipped while the pass went ahead, so one
+commit pairs a null treatment record with a +12.6% measurement. A commit counts
+only where one pass wrote both files.
+
+So the caution stands --- a candidate worth a percent or two is not resolved by
+one pair --- but its reason is back to noise, with the floor near the repeats'
+own spread rather than the null's. What would settle it is a second null pair at
+this window, two unprofiled AMIP runs. Until then the margin over the null is
+worth quoting beside the headline, because the one reading this cannot exclude
+is the one where the margin is the whole result.
 
 It also cost a figure, which is the honest part. `diagnostics-cost` differences
 a diagnostics-on run against a diagnostics-off one and subtracts the write-step
 share measured separately, leaving a residual read as the sampling spread across
-ordinary steps. Re-running the baseline arm alone, with no code change at all,
-all but erased that residual --- the earlier value is in the committed history
-of `results/diagnostics-cost.json`. It is smaller than the spread between
-repeats, so it never measured the sampling share; it bounds it. The stage now reads the spread out of the repeat record and says which of the
+ordinary steps. Re-running the baseline arm alone, twice, with no code change at
+all, swung that residual from its original value to zero and most of the way
+back --- the three values are in the committed history of
+`results/diagnostics-cost.json`. It is smaller than the spread between repeats,
+so it never measured the sampling share; it bounds it. The stage now reads the spread out of the repeat record and says which of the
 two it is, so the next pair restates the verdict instead of the prose carrying a
 number that a re-run can erase.
 
