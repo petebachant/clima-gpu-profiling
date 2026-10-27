@@ -481,6 +481,35 @@ calkit dvc repro --single-item --force <stage>
 `--single-item` is the part that matters: it runs the stage without its
 dependencies.
 
+### A scheduler stage needs `CALKIT_FORCE=1` as well, or it measures nothing
+
+`--force` makes DVC re-run the stage *command*, and for a SLURM stage that
+command is a submission wrapper, not the model. It looks for its own previous
+job first, finds a completed one whose deps and command are unchanged and whose
+exit code was 0, and harvests that result instead of submitting:
+
+```
+Job 'amip-baseline' already left the queue; using its result
+```
+
+The stage then "succeeds" in seconds and `dvc.lock` updates, so nothing in the
+output says the measurement did not happen. That is the failure mode to
+recognize: a forced GPU stage that finishes before a GPU could have started.
+
+The branch is guarded by `elif not os.environ.get("CALKIT_FORCE")` in calkit's
+`cli/scheduler.py`, so set it in the environment for a re-measurement:
+
+```sh
+CALKIT_FORCE=1 calkit dvc repro --single-item --force <stage>
+```
+
+This is how an independent repeat of an AMIP pair is taken --- the two pairs in
+`results/sypd-repeats.json` ran the same committed code, and the second needed
+both flags. Note the ordering constraint: a repeat **deletes and rewrites** the
+scheduler logs, which are the stage's declared outputs, so record the previous
+pair with `scripts/record-sypd-repeat.py` and commit it *before* forcing the
+next one.
+
 The cleanup is worse than the waste, because the cancelled job takes the
 pipeline with it. A GPU stage declares its scheduler log
 (`.calkit/scheduler/logs/<stage>.out`) as an OUTPUT, and DVC deletes a stage's

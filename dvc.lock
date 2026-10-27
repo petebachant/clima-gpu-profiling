@@ -790,12 +790,12 @@ stages:
       nfiles: 2
     - path: .calkit/scheduler/logs/amip-baseline.out
       hash: md5
-      md5: 44b56daf17eec9f816f4d0d8a52e8a19
-      size: 50886
+      md5: f332f6f9692f9e6eec95da2c52d4f47c
+      size: 49697
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: 44923d2e6bf4420e16d9168694bfc82c
-      size: 50890
+      md5: 66b8e03af4f043f6f9407b34f67edcad
+      size: 50889
     - path: results/nsys/baseline.sqlite
       hash: md5
       md5: 2d4e97dbf15553386c8fb23416a2d804
@@ -815,8 +815,8 @@ stages:
     outs:
     - path: results/summary.json
       hash: md5
-      md5: c2d224cfb979e915b48cd9c56f2647ee
-      size: 2211
+      md5: aebc779a3187486e81c1a8b56c2ff74a
+      size: 2212
   mod-ncu:
     cmd: calkit scheduler batch --name mod-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -1004,8 +1004,8 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/amip-baseline.out
       hash: md5
-      md5: 44b56daf17eec9f816f4d0d8a52e8a19
-      size: 50886
+      md5: f332f6f9692f9e6eec95da2c52d4f47c
+      size: 49697
   amip-mod:
     cmd: calkit scheduler batch --name amip-mod --environment clima --dep 
       RRTMGP.jl-mod/src --dep RRTMGP.jl-mod/ext --dep 
@@ -1102,8 +1102,8 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/amip-mod.out
       hash: md5
-      md5: 44923d2e6bf4420e16d9168694bfc82c
-      size: 50890
+      md5: 66b8e03af4f043f6f9407b34f67edcad
+      size: 50889
   make-diffs:
     cmd: bash --noprofile --norc scripts/make-diffs.sh
     deps:
@@ -1379,8 +1379,8 @@ stages:
       nfiles: 2
     - path: calkit.yaml
       hash: md5
-      md5: 115e41797377363a4564d33023fa9686
-      size: 85181
+      md5: 5f4a930e9e22a3b1d8039995188dc0d7
+      size: 88987
     - path: diffs
       hash: md5
       md5: 6633b712ae0958067852d781c01a9fbb.dir
@@ -1393,7 +1393,7 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: 9f27963a05544b9f86cf2e2153a2dc06
+      md5: 9ac109971e32c5ba1de6a4e1a4aa88c4
       size: 31543
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
@@ -1406,8 +1406,8 @@ stages:
       nfiles: 2
     - path: results/summary.json
       hash: md5
-      md5: c2d224cfb979e915b48cd9c56f2647ee
-      size: 2211
+      md5: aebc779a3187486e81c1a8b56c2ff74a
+      size: 2212
     - path: scripts/build-experiment-index.py
       hash: md5
       md5: 6ecee83a0c8f1cc405ebcd60efab8df0
@@ -3536,8 +3536,8 @@ stages:
       nfiles: 2
     - path: .calkit/scheduler/logs/amip-baseline.out
       hash: md5
-      md5: 44b56daf17eec9f816f4d0d8a52e8a19
-      size: 50886
+      md5: f332f6f9692f9e6eec95da2c52d4f47c
+      size: 49697
     - path: .calkit/scheduler/logs/amip-nodiag.out
       hash: md5
       md5: f3b039275fa90a0b42fdbb00e31c9f88
@@ -3546,15 +3546,19 @@ stages:
       hash: md5
       md5: cc45f1a427707052ddd572540d490948
       size: 3237
+    - path: results/sypd-repeats.json
+      hash: md5
+      md5: d86f2bdb1ded711a80aef8a0f1c6bda3
+      size: 3954
     - path: scripts/diagnostics-cost.py
       hash: md5
-      md5: 94602a4db73355a4becc95bdf9aac9b6
-      size: 4129
+      md5: 5a66f8609476cfd6498efa4bba7c6cdb
+      size: 5282
     outs:
     - path: results/diagnostics-cost.json
       hash: md5
-      md5: d8a8892ea2e0044c8dc4d37a647b7320
-      size: 1202
+      md5: 77a75077758e8f34a2dec6a63e45c186
+      size: 1534
   val-mileage:
     cmd: calkit xenv -n py --no-check -- python scripts/val-mileage.py
     deps:

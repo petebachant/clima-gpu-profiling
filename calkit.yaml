@@ -270,7 +270,13 @@ questions:
       The steady-state figure now agrees with the whole window rather than correcting it: {ss_pct:.2f}% over the final {ss_cycles:.0f} diagnostics cycles, {ss_exdiag_pct:.2f}% excluding the diagnostics steps, against {saved_pct:.2f}% for the window entire. It is flat wherever the cutoff is put -- {sens720:.2f}% from step 720, {sens1440:.2f}% from step 1440, {sens2400:.2f}% from step 2400 -- which is what a run with little compilation left in it looks like.
       End to end, on the unprofiled AMIP pair rather than this step-breakdown pair, the treatment is worth {speedup_pct:.2f}% of wall clock, {sypd_base:.4f} to {sypd_mod:.4f} SYPD -- the figures CliMA/ClimaAtmos.jl#4879 quotes. Three measurements of one treatment on three pairs of runs will not agree to the last digit, and the SYPD pair is a throughput ratio while {saved_pct:.2f}% is a duration reduction, so the two must never be quoted as one number.
       The null test prices that disagreement instead of conceding it. With CliMA/ClimaAtmos.jl#4879 merged both arms sit on one commit, so the same three measurements describe a treatment of nothing: {null_amip:.2f}% on the unprofiled AMIP pair, {null_step:.2f}% on the step-breakdown pair, {null_nsys:.2f}% profiled, and {null_ss:.2f}% in steady state. All four are zero, and two have the wrong sign. The device chain agrees it is zero where it should -- {null_device:.2f}% across the treated kernels, {null_arm:.2f}% over the whole arm -- which is the direct check that device-side nsys figures are the trustworthy ones.
-      So the floor is a few points of wall clock, and it is not reduced by averaging runs that disagree this much. Read against it, this treatment's {speedup_pct:.2f}% is a small multiple of the spread rather than comfortably clear of it, and a candidate worth a percent or two is below the resolution of a single pair of runs however carefully the pair is run.
+      So the floor is a few points of wall clock, and read against it this treatment's {speedup_pct:.2f}% is a small multiple of the spread rather than comfortably clear of it.
+      Repeating a pair says what kind of floor it is, and the answer is not the one this project assumed for months. The treatment measured in this pass -- the updraft cache, not the fold above -- has now been run twice end to end on the same committed code, {repeat_n:.0f} independent pairs giving {repeat_min:.2f}% and {repeat_max:.2f}%: a mean of {repeat_mean:.2f}% and a spread of {repeat_spread:.2f} points.
+      Run-to-run repeatability is therefore {repeat_spread:.2f} points, nearly an order of magnitude tighter than the {null_amip:.2f}% the null test found between two IDENTICAL arms, so those two figures cannot both be jitter.
+      Either that {null_amip:.2f}% is a systematic asymmetry between the arms which every treatment's headline then carries on top of it -- in which case this one's own effect is the {repeat_margin:.2f}-point margin over it rather than its {repeat_mean:.2f}% -- or that single null pair was atypical and the floor really is this tight.
+      The repeats cannot tell those apart, and by construction do not try: both ran baseline first and mod second on the same machine, so an asymmetry repeats rather than averages out, which is exactly why they agree so closely.
+      Repeating the null test is what would settle it, and it is two unprofiled AMIP runs -- the cheapest decisive measurement left on this question.
+      Until then the conservative reading stands, a candidate worth a percent or two is not resolved by a single pair, but the reason has moved from run-to-run noise to arm asymmetry, and the remedy differs: an asymmetry is removed by subtracting a null test, noise only by averaging.
       So the lesson is not about conversion, which was never the problem. It is that a benchmark whose periodic work dominates its wall clock will report a fraction of any every-step saving, and will do so without any sign that it is doing it. Convert a kernel result through the step distribution before promising it as a speedup, and check what fraction of the window the ordinary steps actually hold.
       Measure both arms. The one-arm version of this stage reported {mod_frac:.1f}% of wall in the mod arm's expensive steps against {base_frac:.1f}% in the baseline's, which reads as a treatment effect and is not one: the threshold is 1.25x each arm's OWN median, and the fold moved the median from {base_med:.1f} to {mod_med:.1f} ms, so an unchanged distribution crosses a lower bar. Those fields cannot be read across arms; a fixed periodic classification can.
     evidence:
@@ -345,6 +351,27 @@ questions:
           now a null test: ClimaAtmos main carries the fold, so both arms are
           identical and the live file would render ~0% under this prose.
       - kind: result
+        path: results/sypd-repeats.json
+        values:
+          repeat_n: latest_treatment.n_pairs
+          repeat_mean: latest_treatment.mean_pct
+          repeat_min: latest_treatment.min_pct
+          repeat_max: latest_treatment.max_pct
+          repeat_spread: latest_treatment.spread_points
+          repeat_margin: latest_treatment.margin_over_null_points
+        explanation: >-
+          Independent repeats of one treatment, appended by
+          scripts/record-sypd-repeat.py rather than written by a stage: its
+          input is the AMIP stages' scheduler logs, which the next repeat
+          deletes and rewrites, so the record has to survive its own source.
+          Each entry carries the treatment's diff digest and the whole
+          submodule pointer map, and pairs are grouped by digest, so runs of
+          different code can never be averaged together; `latest_treatment` is
+          the group holding the most recent pair, which is what this answer
+          cites. The second pair needed CALKIT_FORCE=1 to resubmit at all -- a
+          forced scheduler stage otherwise harvests its own previous job and
+          re-measures nothing.
+      - kind: result
         path: results/null-record/summary.json
         values:
           null_amip: speedup_pct
@@ -378,7 +405,9 @@ questions:
       How much of the wall clock do diagnostics cost, and is it worth optimizing them?
     answer: >-
       Diagnostics cost {total_pct:.1f}% of the wall clock on the benchmark window, so the whole of them is worth {sypd_headroom:.1f}% in SYPD -- that is the ceiling on any work to speed them up, and it is the number to compare an optimization's cost against before starting.
-      The split matters more than the total, because the two halves need different work. The {diag_steps:.0f} daily write events carry {write_pct:.1f}% of wall on their own, at {diag_mult:.0f}x an ordinary step each, which is I/O and reduction flushing concentrated in a handful of steps. The remaining ~{sampling_pct:.1f}% is the sampling that feeds them, spread thinly across every ordinary step, where it is invisible in the median and cannot be found by looking for expensive steps.
+      The split matters more than the total, because the two halves need different work. The {diag_steps:.0f} daily write events carry {write_pct:.1f}% of wall on their own, at {diag_mult:.0f}x an ordinary step each, which is I/O and reduction flushing concentrated in a handful of steps. The rest is the sampling that feeds them, spread thinly across every ordinary step, where it is invisible in the median and cannot be found by looking for expensive steps.
+      How much of the rest, this design cannot say, and that is now measured rather than hedged. The residual left after the write steps is {sampling_pct:.2f} points of wall clock, against a {repeat_spread:.2f}-point spread between independent repeats of one AMIP pair of identical code -- so the residual is smaller than the variation of the runs it is differenced from, and it bounds the sampling share without measuring it.
+      The demonstration is on the record: re-running the baseline arm alone on 2026-10-26, with no code change at all, all but erased the residual -- the value the previous pass reported is in the committed history of results/diagnostics-cost.json. So the write steps account for essentially the whole of the diagnostics cost this measurement can see, and pricing the sampling would take a separately instrumented run rather than another difference of two.
       Nothing else in this pipeline can answer the question, which is why the measurement is a whole extra run. The 120-step nsys window is shorter than the 720-step daily write period, so it contains no write at all and its kernel table reports the sampling as ordinary every-step work. The step breakdown finds the writes precisely, because they are the most expensive steps in the window, and by construction cannot find the sampling for the same reason.
       Read the total as an upper bound. It differences two whole runs, {wall_on:.0f} s against {wall_off:.0f} s over {n_steps:,.0f} steps, so it also contains the compilation the diagnostics-off run does not pay. The direction of that bias is known and its size is not, which is the honest limit of a difference-of-runs design and the reason the write-step share is cited from a separate measurement rather than derived from this one.
     evidence:
@@ -389,6 +418,7 @@ questions:
           sypd_headroom: sypd_headroom_pct
           write_pct: write_steps_pct_of_wall
           sampling_pct: sampling_pct_of_wall
+          repeat_spread: repeat_spread_points
           wall_on: with_diagnostics.wall_time_total_s
           wall_off: without_diagnostics.wall_time_total_s
           n_steps: n_steps_timed
@@ -867,6 +897,10 @@ pipeline:
       script_path: scripts/diagnostics-cost.py
       inputs:
         - results/step-comparison.json
+        # Not a stage output: appended by scripts/record-sypd-repeat.py. It
+        # supplies the spread the sampling residual has to clear to be a
+        # measurement, so a new pair should restate whether it clears it.
+        - results/sypd-repeats.json
         - from_stage_outputs: amip-baseline
         - from_stage_outputs: amip-nodiag
       outputs:

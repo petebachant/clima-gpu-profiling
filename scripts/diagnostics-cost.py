@@ -12,6 +12,7 @@ import re
 
 DAYS_PER_YEAR = 365.25
 STEP_CMP = "results/step-comparison.json"
+REPEATS = "results/sypd-repeats.json"
 OUT = "results/diagnostics-cost.json"
 
 
@@ -52,6 +53,14 @@ def main():
     step_cmp = json.load(open(STEP_CMP))
     write_pct = step_cmp["classes"]["diagnostics"]["pct_of_baseline_wall"]
 
+    # The residual is a difference across two runs, so it is only a measurement
+    # if it is bigger than the spread between two runs of the same code. That
+    # spread is now measured, and it is not. Forcing a repeat of amip-baseline
+    # on 2026-10-26 moved the residual from 0.32 to 0.00 points without any code
+    # changing, which is the demonstration rather than the argument.
+    spread = json.load(open(REPEATS))["latest_treatment"]["spread_points"]
+    sampling_pct = total_pct - write_pct
+
     out = {
         "with_diagnostics": on,
         "without_diagnostics": off,
@@ -62,15 +71,21 @@ def main():
         "sypd_without": off["sypd"],
         "sypd_headroom_pct": 100 * (off["sypd"] / on["sypd"] - 1),
         "write_steps_pct_of_wall": write_pct,
-        "sampling_pct_of_wall": total_pct - write_pct,
+        "sampling_pct_of_wall": sampling_pct,
+        "repeat_spread_points": spread,
+        "sampling_resolvable": abs(sampling_pct) > spread,
         "note": (
             "total_pct_of_wall is a difference of two whole runs, so it carries each "
             "run's deferred compilation as well as the diagnostics themselves, and the "
             "diagnostics-off run compiles less -- read it as an upper bound. "
             "write_steps_pct_of_wall comes from a separate step-breakdown run on the "
             "same arm and config, so sampling_pct_of_wall is a difference across two "
-            "measurements rather than one decomposition, and only its sign and rough "
-            "size are meaningful. The 120-step nsys window cannot answer this at all: "
+            "measurements rather than one decomposition. `sampling_resolvable` "
+            "compares it against repeat_spread_points, the spread between independent "
+            "pairs of the same code in results/sypd-repeats.json: when it is false the "
+            "residual is smaller than the run-to-run variation of the runs it is "
+            "differenced from, so it bounds the sampling share and does not measure it. "
+            "The 120-step nsys window cannot answer this at all: "
             "it is shorter than the 720-step daily write period."
         ),
     }
@@ -88,8 +103,11 @@ def main():
         f"{out['sypd_headroom_pct']:.1f}% headroom if diagnostics were free"
     )
     print(
-        f"write steps carry {write_pct:.1f}% of wall, leaving ~{out['sampling_pct_of_wall']:.1f}% "
-        f"in the sampling spread across ordinary steps"
+        f"write steps carry {write_pct:.1f}% of wall, leaving {sampling_pct:.2f} points "
+        f"as the sampling residual -- "
+        + ("above" if out["sampling_resolvable"] else "below")
+        + f" the {spread:.2f}-point spread between repeats of one pair, so it is "
+        + ("a measurement" if out["sampling_resolvable"] else "a bound only")
     )
 
 

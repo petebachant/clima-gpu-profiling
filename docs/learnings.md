@@ -2928,3 +2928,44 @@ doing its job, which is why this is a correction to a criterion and not to a
 result. But a window chosen by jitter is a window chosen by nothing, and the
 pinned record keeps the figure that was actually published rather than drifting
 to the new one.
+
+## 8f. Two pairs of the same code agree far more closely than the null test, so its spread is not jitter (2026-10-26)
+
+Section 8e concluded that a wall-clock result of a few percent on one pair of
+runs is not a result, and read the null test's several points as the noise floor.
+That conclusion was reached without ever running the same pair twice. This pass
+did: the updraft-cache treatment was measured end to end, then `amip-baseline`
+and `amip-mod` were forced to resubmit and it was measured again on the same
+committed code. The two pairs agree to a fraction of a point. Figures are in
+`results/sypd-repeats.json` and injected into the conversion question in
+`calkit.yaml`.
+
+That is an order of magnitude tighter than the null test's apparent speedup
+between two *identical* arms, and both cannot be run-to-run variation. Either
+the null figure is a systematic asymmetry between the arms --- which every
+treatment's headline then sits on top of, making the honest effect the margin
+over it rather than the headline --- or that one null pair was unlucky. Two
+pairs of one treatment cannot separate those, and by construction do not try:
+both ran baseline first and mod second on the same machine, so an asymmetry
+repeats instead of averaging out, which is exactly why they agree so closely.
+What separates them is a second null pair, which is two unprofiled AMIP runs.
+
+The practical change is in the remedy, not the caution. The caution stands ---
+a candidate worth a percent or two is not resolved by one pair --- but if the
+floor is asymmetry rather than noise, it is removed by subtracting a null test
+rather than by averaging runs, and averaging was the thing 8e ruled out.
+
+It also cost a figure, which is the honest part. `diagnostics-cost` differences
+a diagnostics-on run against a diagnostics-off one and subtracts the write-step
+share measured separately, leaving a residual read as the sampling spread across
+ordinary steps. Re-running the baseline arm alone, with no code change at all,
+all but erased that residual --- the earlier value is in the committed history
+of `results/diagnostics-cost.json`. It is smaller than the spread between
+repeats, so it never measured the sampling share; it bounds it. The stage now reads the spread out of the repeat record and says which of the
+two it is, so the next pair restates the verdict instead of the prose carrying a
+number that a re-run can erase.
+
+Forcing the repeat needed a flag worth knowing: a scheduler stage under
+`calkit dvc repro --single-item --force` harvests its own completed job instead
+of submitting a new one, so it finishes in seconds and measures nothing.
+`CALKIT_FORCE=1` in the environment is what reaches the scheduler. See AGENTS.md.
