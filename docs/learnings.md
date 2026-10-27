@@ -3009,3 +3009,64 @@ Forcing the repeat needed a flag worth knowing: a scheduler stage under
 `calkit dvc repro --single-item --force` harvests its own completed job instead
 of submitting a new one, so it finishes in seconds and measures nothing.
 `CALKIT_FORCE=1` in the environment is what reaches the scheduler. See AGENTS.md.
+
+## 8g. A re-baseline moves where a fold pays, and three derived figures read the move as a loss (2026-10-27)
+
+Pulling upstream `main` into both arms and re-measuring the implicit updraft
+cache fold kept the end-to-end result (the pair is in
+`results/sypd-repeats.json`, filed as its own treatment group because the diff
+digest changed) but moved the mechanism entirely. On the prior stack the fold
+took registers off the SGS quadrature closure and crossed an occupancy step
+there. On this one that kernel saves no registers and moves by a fraction of a
+percent, while a separate high-register specialization of the updraft tendency
+cache disappears from the mod arm altogether: its work merges into the shared
+pointwise closure at the lower register count. The device saving is intact and
+is almost entirely that merge.
+
+The lesson is not about the fold. Three different derived figures reported the
+move as a collapse, each for its own reason, and all three had been correct on
+the stack they were written against:
+
+  * **`fold_attributable` is name-paired, so it drops exactly the kernel a fold
+    merges.** It sums the targeted kernels that have a counterpart name in both
+    arms, which is sound until the treatment changes the kernel *inventory* ---
+    and changing the inventory is what a parameter fold does when it collapses
+    two specializations into one. It reported the fold's saving two orders of
+    magnitude low. `results/param-fold.json` now also carries `device_saving`,
+    which takes the family total wherever a target is unpaired and records the
+    `basis` it used; the exporter refuses outright if an unpaired target belongs
+    to no declared family, rather than quietly omitting it.
+  * **The consumer divided by it.** `compare-step-breakdowns.py` turns the
+    device saving into a per-step prediction and compares the measured median
+    step against it, and with the wrong numerator it wrote a conversion of tens
+    of thousands of percent into `results/step-comparison.json` --- a number
+    nothing could have meant, sitting in a committed results file, because no
+    check asserts that a conversion is near unity. With `device_saving` it lands
+    just above 100%, agreeing with the fold record's own figure.
+  * **`vs_prior_stack` cannot see a merged kernel at all.** It compares each
+    target across the two stacks by name, so the kernel the payoff moved *into*
+    has no row, and the table reads as the fold losing two occupancy steps and
+    most of its payoff. It now lists `unpairable_now` and says in its own note
+    to be read against `device_saving`.
+
+The shape worth recognizing: a subtotal that pairs by name is a measurement of
+the treatment only while the treatment leaves the names alone. When the point of
+the treatment is to change them, the aggregate that survives is the family total
+over every matching name, which is why `FAMILIES` exists --- the mistake was
+computing both and then dividing by the wrong one. Two of the three figures were
+published, and the third was committed, before anyone looked at a kernel table.
+
+The same pass turned up two instances of a related trap, where a re-baseline
+makes a field *unavailable* rather than wrong. `results/sypd-repeats.json`
+groups pairs by diff digest, so a re-baseline starts a fresh group whose spread
+between repeats is zero until it is repeated. Reading `latest_treatment` for the
+floor therefore returns zero, which flipped `diagnostics-cost`'s verdict on the
+sampling residual from "a bound only" to "a measurement", and broke the
+conversion document outright when it asked the new group which arm ran first.
+Both now read `most_repeated_treatment`. And the same residual test took the
+magnitude of a signed quantity: a sampling cost cannot be negative, so a
+residual past minus the floor is not a small share but two differently-sourced
+runs disagreeing by more than the quantity between them, which
+`sources_inconsistent` now records. Taking `abs()` of it published a sign error
+as a resolved measurement. The reasoning is in
+[the diagnostics cost document](diagnostics-cost.md).

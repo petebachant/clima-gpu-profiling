@@ -127,10 +127,10 @@ def main():
     }
 
     fold = json.load(open(FOLD))
-    # One launch per step in the profiled window, so its launch count is the
-    # window length and the device saving converts to a per-step figure.
-    profiled_steps = fold["kernels"]["microphysics_quadrature"]["baseline"]["launches"]
-    device_per_step = fold["fold_attributable"]["ms_saved"] / profiled_steps
+    # `device_saving`, not `fold_attributable`: the latter is name-paired and so
+    # drops a kernel whose name the fold merged, which is the case the fold is
+    # applied for. Dividing by it once published a 47483% conversion.
+    device_per_step = fold["device_saving"]["per_profiled_step_ms"]
 
     out = {
         "steps": n,

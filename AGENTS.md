@@ -166,6 +166,51 @@ been committed.
 When an experiment's artifact is transient, commit its derived statistics as
 their own small results file (`results/launch-probe.json`) and depend on that.
 
+### A name-paired subtotal is not the treatment's effect
+
+`results/param-fold.json` carries two totals over the treated kernels.
+`fold_attributable` sums the ones with a counterpart NAME in both arms;
+`device_saving` falls back to the family total wherever a target is unpaired,
+and records the `basis` it used. Divide by `device_saving`.
+
+The distinction is not pedantic. A parameter fold can collapse two
+specializations into one, so an arm's name covers work the other arm splits in
+two and there is nothing to pair --- which is the case the fold is applied for.
+On 2026-10-27 that put the fold's whole saving outside `fold_attributable`,
+which reported it two orders of magnitude low, and
+`compare-step-breakdowns.py` divided the measured per-step saving by it and
+wrote a conversion of tens of thousands of percent into
+`results/step-comparison.json`. Nothing complained: no check asserts that a
+conversion is near unity.
+
+`vs_prior_stack` has the same blind spot by construction --- it compares each
+target across stacks by name, so a kernel the fold merged has no row and a
+payoff that moved INTO it reads as a payoff lost. It lists `unpairable_now` for
+that reason. Read it against `device_saving`, not instead of it.
+
+The general rule: when the point of a treatment is to change the kernel
+inventory, the aggregate that survives is the sum over every matching name.
+Section 8g of `docs/learnings.md` has the three figures that got it wrong.
+
+### A re-baseline makes fields unavailable, not just stale
+
+`results/sypd-repeats.json` groups pairs by diff digest, so pulling upstream
+`main` into both arms starts a FRESH group --- correctly, since it is different
+code. Its spread between repeats is then 0 and its `by_order` map has one entry,
+so anything reading `latest_treatment` for the noise floor gets zero and
+anything reading it for run order raises `KeyError`.
+
+Zero is the dangerous one. It flipped `diagnostics-cost`'s verdict on the
+sampling residual from "a bound only" to "a measurement", because a residual
+clears a 0-point floor trivially. Read `most_repeated_treatment` for the floor
+and `latest_treatment` only for the headline.
+
+While there: that same test compared `abs(residual)` against the floor. A
+sampling cost cannot be negative, so a residual past MINUS the floor is not a
+small share --- it is two differently-sourced runs disagreeing by more than the
+quantity between them, which `sources_inconsistent` now records. Taking the
+magnitude of a signed quantity reads a sign error as a resolved measurement.
+
 ## Assert that every scripted edit matched
 
 `str.replace()` returns the string unchanged when the pattern is absent, so a

@@ -53,6 +53,17 @@ DEEPEST_RANK = {p: max(r for q, r in TARGETS.values() if q == p)
 # either way, which the launch counts verify.
 FAMILIES = {"microphysics_cache": "%microphysics_tendency_cache%"}
 
+# Which family covers each target. It matters when the fold merges names and a
+# target stops pairing: the family total is then the only sound measure of that
+# kernel's work, and every target the family covers has to come out of the
+# name-paired subtotal so the same kernel is not counted twice. A target with
+# no family here cannot be recovered that way, and the script refuses rather
+# than report a saving that silently omits it.
+FAMILY_OF = {
+    "microphysics_quadrature": "microphysics_cache",
+    "microphysics_updraft": "microphysics_cache",
+}
+
 Q = """
 SELECT s.value, k.registersPerThread, k.blockX * k.blockY * k.blockZ,
        k.localMemoryPerThread, COUNT(*), SUM(k.end - k.start)
@@ -192,12 +203,20 @@ def compare_to_prior(kernels):
                for v in out["kernels"].values() if not v["prior_crossed_step"]]
     out["without_a_step"] = [
         {"registers_saved": r, "payoff_pct": c} for r, c in sorted(nostep)]
+    # A kernel the fold merged has no name to compare across stacks, so it drops
+    # out of this table entirely -- and on the 2026-10-27 stack that is where
+    # the whole payoff went. Without this the table reads as the fold losing
+    # everything while `device_saving` says it lost nothing.
+    out["unpairable_now"] = sorted(k for k, v in kernels.items() if "pairing" in v)
     out["note"] = (
         "Not a controlled A/B on the step alone: the upstream change that "
         "moved the step also changed the kernel bodies (an argument was added "
         "to the microphysics path). The evidence is that both switchers moved "
         "the way the step predicts, in opposite directions, by a similar "
-        "number of points."
+        "number of points. `unpairable_now` lists the targets the fold merged "
+        "into another name on the current stack: they carry no entry here at "
+        "all, so a payoff that moved into one of them looks like a payoff lost "
+        "-- read this table against `device_saving`, which does count them."
     )
     return out
 
@@ -293,6 +312,42 @@ def main():
         "pct_of_device_total": pct(bt / 1e6, bt / 1e6 - (fb - fm)),
     }
 
+    # fold_attributable sums NAME-PAIRED kernels only, so it drops the fold's
+    # whole effect whenever the fold merges a name -- which is the case it was
+    # applied for. On the 2026-10-27 stack it reported 3.1 ms against the
+    # family's 1390, and the consumer dividing by it published a 47483%
+    # conversion. device_saving is the figure to divide: the family total
+    # wherever a target is unpaired, the name-paired delta everywhere else.
+    unpaired = [k for k, v in out["kernels"].items() if "pairing" in v]
+    missing = sorted(k for k in unpaired if k not in FAMILY_OF)
+    if missing:
+        sys.exit(
+            f"{', '.join(missing)}: unpaired and covered by no family, so the "
+            "fold's device saving cannot be totaled; add the family to "
+            "FAMILIES and FAMILY_OF"
+        )
+    fallback = sorted({FAMILY_OF[k] for k in unpaired})
+    covered = {k for k, fam in FAMILY_OF.items() if fam in fallback}
+    outside = [v for k, v in out["kernels"].items()
+               if "pairing" not in v and k not in covered]
+    ms_saved = sum(v["baseline"]["total_ms"] - v["mod"]["total_ms"] for v in outside)
+    ms_saved += sum(out["families"][fam]["ms_saved"] for fam in fallback)
+    # One launch per step for the quadrature closure, so its baseline launch
+    # count is the length of the profiled window.
+    profiled_steps = out["kernels"]["microphysics_quadrature"]["baseline"]["launches"]
+    out["device_saving"] = {
+        "ms_saved": round(ms_saved, 1),
+        "change_pct": pct(bt / 1e6, bt / 1e6 - ms_saved),
+        "per_profiled_step_ms": round(ms_saved / profiled_steps, 3),
+        "profiled_steps": profiled_steps,
+        "basis": "families+paired_kernels" if fallback else "paired_kernels",
+        "from_families": fallback,
+        "paired_kernels": sorted(
+            k for k, v in out["kernels"].items()
+            if "pairing" not in v and k not in covered
+        ),
+    }
+
     crossed = [k for k, v in out["kernels"].items() if v["crossed_occupancy_step"]]
     out["kernels_crossing_a_step"] = len(crossed)
     out["crossed"] = sorted(crossed)
@@ -306,7 +361,10 @@ def main():
         "one more block per SM, which is the gap a fold has to close to pay. "
         "`device_total` is every kernel in the arm and so includes any other "
         "treatment the mod arm carries; `fold_attributable` is the subtotal "
-        "over the kernels listed here, which is the fold's own share."
+        "over the kernels listed here, which is the fold's own share. It is "
+        "name-paired, so it drops any kernel whose name the fold merged --- "
+        "`device_saving` is the one to divide by, since it takes the family "
+        "total wherever a target is unpaired and names the basis it used."
     )
     OUT.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
 
@@ -330,6 +388,14 @@ def main():
     f = out["fold_attributable"]
     print(f"these {f['kernels']} kernels: {f['baseline_ms']} -> {f['mod_ms']} ms "
           f"({f['change_pct']:+.2f}%), {f['pct_of_device_total']:+.2f}% of the device")
+    g = out["device_saving"]
+    print(f"fold saving: {g['ms_saved']:+.1f} ms ({g['change_pct']:+.2f}% of the "
+          f"device) = {g['per_profiled_step_ms']:.3f} ms per profiled step, "
+          f"basis {g['basis']}")
+    if abs(g["ms_saved"] - f["ms_saved"]) > 0.1:
+        print(f"  name pairing alone would have said {f['ms_saved']:+.1f} ms: "
+              f"{', '.join(sorted(unpaired))} merged a name, so "
+              f"{', '.join(g['from_families'])} is taken as a family total")
     d = out["device_total"]
     print(f"whole arm:   {d['baseline_ms']} -> {d['mod_ms']} ms "
           f"({d['change_pct']:+.2f}%)  [all treatments]")

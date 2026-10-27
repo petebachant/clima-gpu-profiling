@@ -1,5 +1,19 @@
 {
   "crossed": [],
+  "device_saving": {
+    "basis": "families+paired_kernels",
+    "change_pct": -5.98,
+    "from_families": [
+      "microphysics_cache"
+    ],
+    "ms_saved": 1390.2,
+    "paired_kernels": [
+      "cloud_fraction",
+      "sgs_moments"
+    ],
+    "per_profiled_step_ms": 11.585,
+    "profiled_steps": 120
+  },
   "device_total": {
     "baseline_launches": 415820,
     "baseline_ms": 23228.8,
@@ -183,7 +197,7 @@
     }
   },
   "kernels_crossing_a_step": 0,
-  "note": "Registers per thread and block size as the profiled run chose them; ClimaCore sizes the block from the register count, so both move together and occupancy is derived from the pair. A kernel's mean is over its own launches, and `name_covers_variants` > 1 means the reported figures are the heaviest variant of a shared name. `registers_for_next_step` is what the kernel would have to reach for one more block per SM, which is the gap a fold has to close to pay. `device_total` is every kernel in the arm and so includes any other treatment the mod arm carries; `fold_attributable` is the subtotal over the kernels listed here, which is the fold's own share.",
+  "note": "Registers per thread and block size as the profiled run chose them; ClimaCore sizes the block from the register count, so both move together and occupancy is derived from the pair. A kernel's mean is over its own launches, and `name_covers_variants` > 1 means the reported figures are the heaviest variant of a shared name. `registers_for_next_step` is what the kernel would have to reach for one more block per SM, which is the gap a fold has to close to pay. `device_total` is every kernel in the arm and so includes any other treatment the mod arm carries; `fold_attributable` is the subtotal over the kernels listed here, which is the fold's own share. It is name-paired, so it drops any kernel whose name the fold merged --- `device_saving` is the one to divide by, since it takes the family total wherever a target is unpaired and names the basis it used.",
   "vs_prior_stack": {
     "kernels": {
       "cloud_fraction": {
@@ -218,7 +232,7 @@
       }
     },
     "n_switched": 2,
-    "note": "Not a controlled A/B on the step alone: the upstream change that moved the step also changed the kernel bodies (an argument was added to the microphysics path). The evidence is that both switchers moved the way the step predicts, in opposite directions, by a similar number of points.",
+    "note": "Not a controlled A/B on the step alone: the upstream change that moved the step also changed the kernel bodies (an argument was added to the microphysics path). The evidence is that both switchers moved the way the step predicts, in opposite directions, by a similar number of points. `unpairable_now` lists the targets the fold merged into another name on the current stack: they carry no entry here at all, so a payoff that moved into one of them looks like a payoff lost -- read this table against `device_saving`, which does count them.",
     "points_gained_gaining_a_step": null,
     "points_lost_losing_a_step": 28.9,
     "prior_commit": "bcd24381abe670ce3c3c8e4b88ca2d0f5b0e7f22",
@@ -232,6 +246,9 @@
         "payoff_points": 47.82
       }
     },
+    "unpairable_now": [
+      "microphysics_updraft"
+    ],
     "without_a_step": [
       {
         "payoff_pct": 0.11,
