@@ -37,6 +37,17 @@ single measurement rather than a reproduced one, it says so.
 > (reasonable on its own merits, since the path already identifies the artifact
 > and the kind is derivable, but it does not fix the evidence-versus-explanation
 > confusion).
+>
+> **That rejection was wrong, and the reason is worth keeping (2026-10-27).**
+> `kind: document` evidence exists in Calkit and is what the long-form
+> per-question documents now use. What the objection missed is the condition
+> Calkit attaches to it: a cited document must be *built by a pipeline stage*,
+> or `calkit check questions` reports it as an error. That is precisely the
+> evidence-versus-explanation line this note was reaching for. A document whose
+> numbers are injected from the results files is data supporting the claim and
+> goes stale with them; hand-written prose is not, which is why *this* file is
+> still a question-level `explanation` rather than an evidence entry. The
+> distinction is not the file type, it is whether a stage produces it.
 
 ## 1. How to read a result here
 
@@ -2412,8 +2423,8 @@ separate occupancy headroom from device share.
 
 `results/param-fold.json` for the current stack and
 `results/param-fold-prior.json` for the stack before the 2026-10-07
-re-baseline; the figures are in the `calkit.yaml` answer on
-CliMA/ClimaCore.jl#2676, injected from both. Read from the nsys databases
+re-baseline; the figures are injected into `docs/val-fold-scope.md`, which
+the CliMA/ClimaCore.jl#2676 answer cites as its document evidence. Read from the nsys databases
 rather than `results/top-kernels.csv` --- that table averages over a kernel
 name, and `set_sgs_moments_and_cloud_fraction` covers two kernels at different
 register counts.
@@ -2882,8 +2893,9 @@ one commit. `record-treatment` prints `arms differ in: NOTHING (null test)`,
 which makes this pass a measurement of the pipeline rather than of a treatment,
 and the first one that can say how large a difference has to be to mean
 anything. The figures are injected into the question that uses them rather than
-written here, per the rule at the top of AGENTS.md: see the conversion question
-in `calkit.yaml` and `results/null-record/`.
+written here, per the rule at the top of AGENTS.md: see
+`docs/wall-clock-conversion.md`, which the conversion question cites, and
+`results/null-record/`.
 `exp/2026-10-21-fold-same-revision` holds the fold's figures; this pass holds
 the floor they should be read against.
 
@@ -2937,8 +2949,9 @@ That conclusion was reached without ever running the same pair twice. This pass
 did: the updraft-cache treatment was measured end to end, then the two AMIP
 stages were forced to resubmit and it was measured again on the same committed
 code, twice, the second time with the arms in the opposite order. The three
-pairs agree to half a point. Figures are in `results/sypd-repeats.json` and
-injected into the conversion question in `calkit.yaml`.
+pairs agree to half a point. Figures are in `results/sypd-repeats.json`,
+injected into `docs/wall-clock-conversion.md`, which the conversion question
+cites as its document evidence.
 
 That is several times tighter than the null test's apparent speedup between two
 *identical* arms, and both cannot be run-to-run variation. Either the null
