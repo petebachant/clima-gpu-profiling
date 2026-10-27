@@ -29,7 +29,7 @@ repeat_record = load("results/sypd-repeats.json")
 current = repeat_record["latest_treatment"]
 # Order and GPU assignment can only be read off a group with several pairs, and
 # the re-baselined stack has one, so take the richest group of this treatment.
-repeats = max(repeat_record["by_treatment"].values(), key=lambda g: g["n_pairs"])
+repeats = repeat_record["most_repeated_treatment"]
 census = load("results/null-census.json")
 
 plain, diag = step["classes"]["plain"], step["classes"]["diagnostics"]

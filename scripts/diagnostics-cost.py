@@ -58,7 +58,10 @@ def main():
     # spread is now measured, and it is not. Forcing a repeat of amip-baseline
     # on 2026-10-26 moved the residual from 0.32 to 0.00 points without any code
     # changing, which is the demonstration rather than the argument.
-    spread = json.load(open(REPEATS))["latest_treatment"]["spread_points"]
+    # The most-repeated group, not the latest: a re-baseline starts a fresh
+    # group whose spread is 0 until it is repeated, and a 0-point spread would
+    # make any residual look resolvable.
+    spread = json.load(open(REPEATS))["most_repeated_treatment"]["spread_points"]
     sampling_pct = total_pct - write_pct
 
     out = {
@@ -73,7 +76,11 @@ def main():
         "write_steps_pct_of_wall": write_pct,
         "sampling_pct_of_wall": sampling_pct,
         "repeat_spread_points": spread,
-        "sampling_resolvable": abs(sampling_pct) > spread,
+        # A sampling cost cannot be negative, so taking the magnitude here would
+        # read a sign error as a resolved quantity: the residual must clear the
+        # floor on the positive side to be a measurement of anything.
+        "sampling_resolvable": sampling_pct > spread,
+        "sources_inconsistent": sampling_pct < -spread,
         "note": (
             "total_pct_of_wall is a difference of two whole runs, so it carries each "
             "run's deferred compilation as well as the diagnostics themselves, and the "
@@ -82,9 +89,14 @@ def main():
             "same arm and config, so sampling_pct_of_wall is a difference across two "
             "measurements rather than one decomposition. `sampling_resolvable` "
             "compares it against repeat_spread_points, the spread between independent "
-            "pairs of the same code in results/sypd-repeats.json: when it is false the "
-            "residual is smaller than the run-to-run variation of the runs it is "
-            "differenced from, so it bounds the sampling share and does not measure it. "
+            "pairs of the same code in results/sypd-repeats.json (the most-repeated "
+            "group, since a re-baselined group's spread is 0 until it is repeated): "
+            "when it is false the residual does not clear that floor upward, so it "
+            "bounds the sampling share and does not measure it. A sampling cost cannot "
+            "be negative, so a residual below MINUS the spread is not a small sampling "
+            "share but two sources disagreeing by more than the quantity between them, "
+            "which `sources_inconsistent` records; the split cannot be read at all "
+            "while it is true. "
             "The 120-step nsys window cannot answer this at all: "
             "it is shorter than the 720-step daily write period."
         ),
@@ -105,9 +117,14 @@ def main():
     print(
         f"write steps carry {write_pct:.1f}% of wall, leaving {sampling_pct:.2f} points "
         f"as the sampling residual -- "
-        + ("above" if out["sampling_resolvable"] else "below")
-        + f" the {spread:.2f}-point spread between repeats of one pair, so it is "
-        + ("a measurement" if out["sampling_resolvable"] else "a bound only")
+        + f"against the {spread:.2f}-point spread between repeats of one pair, so it is "
+        + (
+            "a measurement"
+            if out["sampling_resolvable"]
+            else "two sources disagreeing by more than the quantity between them"
+            if out["sources_inconsistent"]
+            else "a bound only"
+        )
     )
 
 

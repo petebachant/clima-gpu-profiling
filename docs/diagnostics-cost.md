@@ -19,6 +19,7 @@ out = {
     "write_pct": round(cost["write_steps_pct_of_wall"], 1),
     "sampling_pct": round(cost["sampling_pct_of_wall"], 2),
     "sampling_resolvable": cost["sampling_resolvable"],
+    "sources_inconsistent": cost["sources_inconsistent"],
     "repeat_spread_points": cost["repeat_spread_points"],
     "wall_on_s": round(cost["with_diagnostics"]["wall_time_total_s"]),
     "wall_off_s": round(cost["without_diagnostics"]["wall_time_total_s"]),
@@ -48,10 +49,11 @@ The two halves need different work.
 The <!-- calkit value key=diag_steps -->4<!-- /calkit value --> daily write events carry <!-- calkit value key=write_pct -->11.7<!-- /calkit value -->% of wall on their own, at <!-- calkit value key=diag_multiple -->115<!-- /calkit value -->x an ordinary step each, which is I/O and reduction flushing concentrated in a handful of steps.
 The rest is the sampling that feeds them, spread thinly across every ordinary step, where it is invisible in the median and cannot be found by looking for expensive steps.
 
-## How much the sampling costs is bounded, not measured
+## The sampling share cannot be priced by this difference
 
-The residual left after the write steps is <!-- calkit value key=sampling_pct -->-1.24<!-- /calkit value --> points of wall clock, against a <!-- calkit value key=repeat_spread_points -->0.0<!-- /calkit value -->-point spread between independent repeats of one AMIP pair of identical code.
-So the residual is smaller than the variation of the runs it is differenced from, and it bounds the sampling share without measuring it --- which is what `sampling_resolvable` records, currently <!-- calkit value key=sampling_resolvable -->true<!-- /calkit value -->.
+The residual left after the write steps is <!-- calkit value key=sampling_pct -->-1.24<!-- /calkit value --> points of wall clock, against a <!-- calkit value key=repeat_spread_points -->0.507<!-- /calkit value -->-point spread between independent repeats of one AMIP pair of identical code.
+A sampling cost cannot be negative, so that is not a small sampling share: it is the two differently-sourced measurements disagreeing by more than the quantity between them, which is what `sources_inconsistent` records, currently <!-- calkit value key=sources_inconsistent -->true<!-- /calkit value --> while `sampling_resolvable` is <!-- calkit value key=sampling_resolvable -->false<!-- /calkit value -->.
+Taking the magnitude of the residual instead would have reported it as resolved, which is how a sign error gets published as a measurement.
 
 The demonstration is on the record rather than in the argument.
 Re-running the baseline arm alone, twice, with no code change at all, swung the residual from its original value to zero and most of the way back; the three values are in the committed history of `results/diagnostics-cost.json`, and the spread they move inside is measured in [the wall-clock conversion document](wall-clock-conversion.md).

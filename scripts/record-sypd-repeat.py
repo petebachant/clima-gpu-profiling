@@ -245,6 +245,13 @@ def main():
 
     newest = doc["pairs"][-1]["diff_digest"]
     doc["latest_treatment"] = dict(doc["by_treatment"][newest], diff_digest=newest)
+    # Run order, GPU assignment and the spread between repeats can only be read
+    # off a group with several pairs, and a re-baseline starts a fresh group, so
+    # the richest group is named separately from the current one. Reversed so a
+    # tie goes to the later group, since by_treatment is in pair order.
+    best = max(reversed(list(doc["by_treatment"])),
+               key=lambda k: doc["by_treatment"][k]["n_pairs"])
+    doc["most_repeated_treatment"] = dict(doc["by_treatment"][best], diff_digest=best)
     OUT.write_text(json.dumps(doc, indent=2) + "\n")
 
     verb = "re-read" if already else "recorded"

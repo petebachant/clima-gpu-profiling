@@ -70,6 +70,9 @@ questions:
       - kind: document
         path: docs/val-fold-scope.md
         section: Two gates, both computable in advance
+        # Downstream of the frozen register stages, so it cannot be rebuilt on
+        # main; pinned to the commit where it last matched them.
+        git_ref: 1061496
         explanation: >-
           The four kernels the pattern was applied to as the profiled runs
           compiled them, the control among them that crossed no occupancy step,
@@ -152,6 +155,9 @@ questions:
       - kind: document
         path: docs/val-fold-scope.md
         section: Pushing the pattern into the dependencies
+        # Downstream of the frozen register stages, so it cannot be rebuilt on
+        # main; pinned to the commit where it last matched them.
+        git_ref: 1061496
         explanation: >-
           Why the const-global ceiling settles CloudMicrophysics by measurement
           rather than argument, why the quadrature path has no target for a
@@ -184,7 +190,7 @@ questions:
       A kernel optimization saves N ms of device time on every step. How much wall clock does it return?
     answer: >-
       Essentially all of it once the benchmark resembles the run you care about -- the typical step converts {conversion:.0f}% of the device saving and the window total shows no shortfall against it -- and a fraction of it on a benchmark whose periodic work dominates the wall clock, which is a property of the benchmark rather than of the optimization.
-      What limits the answer now is the floor rather than the conversion: three repeats of one pair agree within {repeat_spread:.2f} points while the null test between two identical arms read {null_amip:.2f}%, and neither run order nor GPU assignment explains the gap.
+      What limits the answer now is the floor rather than the conversion: {repeat_n} repeats of one pair agree within {repeat_spread:.2f} points while the null test between two identical arms read {null_amip:.2f}%, and neither run order nor GPU assignment explains the gap.
     evidence:
       - kind: document
         path: docs/wall-clock-conversion.md
@@ -227,7 +233,10 @@ questions:
       - kind: result
         path: results/sypd-repeats.json
         values:
-          repeat_spread: latest_treatment.spread_points
+          # The most-repeated group, not the latest: a re-baseline starts a
+          # fresh group, whose spread is 0 until it is repeated.
+          repeat_n: most_repeated_treatment.n_pairs
+          repeat_spread: most_repeated_treatment.spread_points
         explanation: >-
           Independent repeats of one treatment, appended by the
           record-sypd-repeat stage. Its output carries
@@ -237,7 +246,10 @@ questions:
           treatment's diff digest and the whole submodule pointer map, and pairs
           are grouped by digest, so runs of different code can never be averaged
           together; `latest_treatment` is the group holding the most recent
-          pair. Every pair records which arm ran second and which GPU each arm
+          pair and `most_repeated_treatment` the one holding the most pairs,
+          which are not the same group after a re-baseline -- a fresh group's
+          spread is 0 until it is repeated, so anything asking what the floor
+          is must read the latter. Every pair records which arm ran second and which GPU each arm
           was given, so the two confounds a single pair cannot see past are
           measurable across pairs rather than assumed away;
           `predicted_if_order_explains_null_pct` was committed before the
@@ -287,7 +299,7 @@ questions:
       How much of the wall clock do diagnostics cost, and is it worth optimizing them?
     answer: >-
       Diagnostics cost {total_pct:.1f}% of the wall clock on the benchmark window, so the whole of them is worth {sypd_headroom:.1f}% in SYPD -- that is the ceiling to compare an optimization's cost against before starting.
-      The {write_pct:.1f}% carried by the daily write events is where it is: the sampling that feeds them leaves a residual smaller than the spread between repeats of identical code, so this design bounds that half without measuring it.
+      The {write_pct:.1f}% carried by the daily write events accounts for the whole of what this measurement can see, and the sampling that feeds them cannot be priced by the same difference: the residual left for it is {sampling_pct:.2f} points, and a negative sampling cost means the two differently-sourced runs disagree by more than the quantity between them.
     evidence:
       - kind: document
         path: docs/diagnostics-cost.md
@@ -304,6 +316,7 @@ questions:
           total_pct: total_pct_of_wall
           sypd_headroom: sypd_headroom_pct
           write_pct: write_steps_pct_of_wall
+          sampling_pct: sampling_pct_of_wall
         explanation: >-
           The baseline arm run twice on the same config, differing only in
           whether diagnostics are enabled, so the wall-clock difference is what
