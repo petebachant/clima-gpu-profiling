@@ -190,7 +190,7 @@ questions:
       A kernel optimization saves N ms of device time on every step. How much wall clock does it return?
     answer: >-
       Essentially all of it once the benchmark resembles the run you care about -- the typical step converts {conversion:.0f}% of the device saving and the window total shows no shortfall against it -- and a fraction of it on a benchmark whose periodic work dominates the wall clock, which is a property of the benchmark rather than of the optimization.
-      What limits the answer now is the floor rather than the conversion: {repeat_n} repeats of one pair agree within {repeat_spread:.2f} points while the null test between two identical arms read {null_amip:.2f}%, and neither run order nor GPU assignment explains the gap.
+      What limits the answer now is the floor rather than the conversion: {repeat_n} repeats of one pair agree within {repeat_spread:.2f} points while the {null_n:.0f} null tests between identical arms average {null_mean:.2f}% and never change sign, and neither run order nor GPU assignment explains the gap.
     evidence:
       - kind: document
         path: docs/wall-clock-conversion.md
@@ -259,6 +259,9 @@ questions:
           otherwise harvests its own previous job and re-measures nothing.
       - kind: result
         path: results/null-census.json
+        values:
+          null_n: n_current_window
+          null_mean: current_window_mean_pct
         explanation: >-
           Every null test in the committed history, collected by walking it
           rather than remembered: a pass whose arms record-treatment found
@@ -268,13 +271,14 @@ questions:
           the summary, because before record-treatment carried `always_run` it
           could be skipped while the pass went ahead -- one such commit claims
           identical arms beside a +12.6% speedup. The split by benchmark window
-          matters as much as the count: all but one null predates the current
-          window, and a shorter window at a coarser timestep does not measure
-          this one's noise.
+          matters as much as the count: the nulls on earlier windows land within
+          a fifth of a point of zero and do not measure this window's noise, so
+          the floor quoted in the answer is the mean over the current-window
+          ones alone. They have not changed sign, which is what separates a
+          jitter around zero from a confound that repeats -- averaging reduces
+          the first and not the second.
       - kind: result
         path: results/null-record/summary.json
-        values:
-          null_amip: speedup_pct
         explanation: >-
           The same pipeline run with both arms on one commit, so every figure it
           reports is a measurement of nothing. It is what the treatment's

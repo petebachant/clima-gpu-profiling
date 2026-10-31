@@ -31,6 +31,10 @@ current = repeat_record["latest_treatment"]
 # the re-baselined stack has one, so take the richest group of this treatment.
 repeats = repeat_record["most_repeated_treatment"]
 census = load("results/null-census.json")
+# The nulls at the window in use now are the floor under every headline in
+# this document; the ones on earlier windows measure a different noise.
+cw = census["current_window_pct"]
+cw_mean = census["current_window_mean_pct"]
 
 plain, diag = step["classes"]["plain"], step["classes"]["diagnostics"]
 typ, pen, ss = step["typical_step"], step["compile_penalty"], step["steady_state"]
@@ -87,6 +91,10 @@ out = {
         "mean_pct": current["mean_pct"],
         "margin_points": current["margin_over_null_points"],
         "predicted_pct": current["predicted_if_order_explains_null_pct"],
+        # The latest group is a null whenever upstream has taken the treatment,
+        # and its percentage is then a draw from the floor rather than a
+        # measurement of a change.
+        "is_null": current["treatment"] == [],
     },
     "repeats": {
         "n": repeats["n_pairs"],
@@ -107,6 +115,15 @@ out = {
         "n_earlier": census["n_earlier_windows"],
         "earlier_abs_max_pct": census["earlier_abs_max_pct"],
         "skipped_unpaired": census["skipped_unpaired"],
+        "current_min_pct": min(cw),
+        "current_max_pct": max(cw),
+        "current_mean_pct": round(cw_mean, 2),
+        "current_spread_points": census["current_window_spread_points"],
+        "current_all_same_sign": census["current_window_all_same_sign"],
+    },
+    "floor": {
+        "mean_null_pct": cw_mean,
+        "repeats_margin_points": round(repeats["mean_pct"] - cw_mean, 2),
     },
     "own_threshold": {
         "mod_frac": round(own["mod_expensive_wall_frac"], 1),
@@ -165,9 +182,10 @@ The device chain agrees it is zero where it should --- <!-- calkit value key=nul
 
 Repeating a pair says what kind of floor this is, and the answer is not the one this project assumed for months.
 The treatment measured here --- the updraft cache, not the fold above --- has been run end to end <!-- calkit value key=repeats.n -->3<!-- /calkit value --> times on one stack and one set of committed code, giving <!-- calkit value key=repeats.min_pct -->4.847<!-- /calkit value -->% to <!-- calkit value key=repeats.max_pct -->5.354<!-- /calkit value -->%: a mean of <!-- calkit value key=repeats.mean_pct -->5.086<!-- /calkit value -->% and a spread of <!-- calkit value key=repeats.spread_points -->0.507<!-- /calkit value --> points.
-Re-baselining onto a newer upstream main changes the code of both arms, so `record-treatment` files the result as a new group rather than a fourth repeat; the current group holds <!-- calkit value key=current.n -->1<!-- /calkit value --> pair at <!-- calkit value key=current.mean_pct -->1.271<!-- /calkit value -->%, and the spread below is the only estimate of its floor.
+Re-baselining onto a newer upstream main changes the code of both arms, so `record-treatment` files the result as a new group rather than a fourth repeat, and the current group holds <!-- calkit value key=current.n -->1<!-- /calkit value --> pair at <!-- calkit value key=current.mean_pct -->1.271<!-- /calkit value -->%.
+That group is a null test, which `is_null` records as <!-- calkit value key=current.is_null -->true<!-- /calkit value -->: upstream merged the treatment, so both arms are identical and the figure is a second draw from this window's floor rather than a measurement of anything.
 
-Run-to-run repeatability is therefore about half a point, several times tighter than the <!-- calkit value key=null.amip_pct -->2.47<!-- /calkit value -->% the null test found between two IDENTICAL arms.
+Run-to-run repeatability is therefore about half a point, several times tighter than the <!-- calkit value key=census.current_mean_pct -->1.87<!-- /calkit value -->% the null tests find between two IDENTICAL arms.
 Those two figures cannot both be jitter.
 One of them is a confound that repeats, and a confound that repeats is not reduced by averaging.
 
@@ -185,8 +203,8 @@ It is ruled out from the record rather than by spending GPU time: the pairs span
 ## The null-test census
 
 The history says the same thing by counting.
-There are <!-- calkit value key=census.n -->3<!-- /calkit value --> passes in this repository whose arms `record-treatment` found identical in content and whose measurement was committed by the same pass, and the <!-- calkit value key=census.n_earlier -->2<!-- /calkit value --> run on earlier benchmark windows land within <!-- calkit value key=census.earlier_abs_max_pct -->0.207<!-- /calkit value --> points of zero.
-The <!-- calkit value key=null.amip_pct -->2.47<!-- /calkit value -->% is the only null at the window in use now.
+There are <!-- calkit value key=census.n -->4<!-- /calkit value --> passes in this repository whose arms `record-treatment` found identical in content and whose measurement was committed by the same pass, and the <!-- calkit value key=census.n_earlier -->2<!-- /calkit value --> run on earlier benchmark windows land within <!-- calkit value key=census.earlier_abs_max_pct -->0.207<!-- /calkit value --> points of zero.
+<!-- calkit value key=census.n_current_window -->2<!-- /calkit value --> of them ran at the window in use now, returning <!-- calkit value key=census.current_min_pct -->1.271<!-- /calkit value -->% and <!-- calkit value key=census.current_max_pct -->2.467<!-- /calkit value -->%.
 
 The pairing test is what makes that count trustworthy.
 A commit counts only where one pass wrote both `results/treatment.json` and `results/summary.json`, because before `record-treatment` carried `always_run` it could be skipped while the pass it was supposed to describe went ahead --- one such commit claims identical arms beside a +12.6% speedup.
@@ -194,11 +212,13 @@ In all, <!-- calkit value key=census.skipped_unpaired -->12<!-- /calkit value --
 
 ## Where that leaves the floor
 
-The likeliest reading is that this window's single null pair was an outlier draw rather than a bias, which would put the floor near the repeats' own <!-- calkit value key=repeats.spread_points -->0.507<!-- /calkit value --> points and leave the current <!-- calkit value key=current.mean_pct -->1.271<!-- /calkit value -->% clear of it.
+The second null pair has now run, and it settled this the other way.
+The reading here used to be that the window's single null was an outlier draw rather than a bias, which would have put the floor near the repeats' own <!-- calkit value key=repeats.spread_points -->0.507<!-- /calkit value --> points.
+Instead both nulls at this window come back positive and both exceed that spread, at <!-- calkit value key=census.current_min_pct -->1.271<!-- /calkit value -->% and <!-- calkit value key=census.current_max_pct -->2.467<!-- /calkit value -->%, a mean of <!-- calkit value key=census.current_mean_pct -->1.87<!-- /calkit value -->% between identical arms, against <!-- calkit value key=census.earlier_abs_max_pct -->0.207<!-- /calkit value --> points for every null on an earlier window.
 
-That is a reading and not a measurement.
-It rests on one null pair at this configuration, and repeating the null test --- two unprofiled AMIP runs --- is still what would settle it.
-Until it is settled the conservative course is to quote the <!-- calkit value key=current.margin_points -->-1.196<!-- /calkit value -->-point margin over the null alongside the headline, and to treat a candidate worth a percent or two as unresolved by a single pair.
+So the floor at this window is around <!-- calkit value key=floor.mean_null_pct -->1.869<!-- /calkit value --> points rather than half a point, and jitter of the repeats' width does not account for it.
+What two draws cannot separate is whether the remainder is a bias favoring the mod arm or a jitter that is simply wider across stacks than within one --- the repeats share a stack and the nulls do not --- and the distinction can wait, because both readings cost a headline the same thing.
+The conservative course is to subtract that mean: the margin for the treatment measured here is <!-- calkit value key=floor.repeats_margin_points -->3.22<!-- /calkit value --> points, and a candidate worth a percent or two stays unresolved however many times it is repeated, since a confound that repeats is not reduced by averaging.
 
 ## Measure both arms
 

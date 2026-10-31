@@ -32,21 +32,37 @@
       "n_steps_total": 2880,
       "dt_cpl_s": 119.99999905324638,
       "current_window": true
+    },
+    {
+      "commit": "a9a83e4e5",
+      "date": "2026-10-31",
+      "unix_time": 1793448177,
+      "speedup_pct": 1.271,
+      "baseline_sypd": 1.2967162661004705,
+      "mod_sypd": 1.3134121926545743,
+      "n_steps_total": 2880,
+      "dt_cpl_s": 119.99999955322461,
+      "current_window": true
     }
   ],
-  "n_nulls": 3,
+  "n_nulls": 4,
   "speedups_pct": [
     0.207,
     0.087,
-    2.467
+    2.467,
+    1.271
   ],
   "abs_max_pct": 2.467,
-  "n_current_window": 1,
+  "n_current_window": 2,
   "current_window_pct": [
-    2.467
+    2.467,
+    1.271
   ],
+  "current_window_mean_pct": 1.869,
+  "current_window_spread_points": 1.196,
+  "current_window_all_same_sign": true,
   "n_earlier_windows": 2,
   "earlier_abs_max_pct": 0.207,
   "skipped_unpaired": 12,
-  "note": "A null test is a pass whose arms record-treatment found identical in content, so its speedup is a measurement of nothing. Counted only where one pass wrote both results/treatment.json and results/summary.json, since before record-treatment carried always_run a commit could pair a stale treatment record with a real measurement; skipped_unpaired counts the commits rejected on that test, which includes the harmless case of a later commit re-committing an already counted pass. earlier_abs_max_pct covers the passes run on shorter windows and coarser timesteps than the current benchmark, whose noise is not interchangeable with this one's -- n_current_window says how many nulls exist at the window in use now."
+  "note": "A null test is a pass whose arms record-treatment found identical in content, so its speedup is a measurement of nothing. Counted only where one pass wrote both results/treatment.json and results/summary.json, since before record-treatment carried always_run a commit could pair a stale treatment record with a real measurement; skipped_unpaired counts the commits rejected on that test, which includes the harmless case of a later commit re-committing an already counted pass. earlier_abs_max_pct covers the passes run on shorter windows and coarser timesteps than the current benchmark, whose noise is not interchangeable with this one's -- n_current_window says how many nulls exist at the window in use now, and current_window_mean_pct is the floor to subtract from a headline measured there. current_window_all_same_sign distinguishes a jitter straddling zero from a confound that repeats, which averaging does not reduce."
 }

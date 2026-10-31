@@ -3070,3 +3070,53 @@ runs disagreeing by more than the quantity between them, which
 `sources_inconsistent` now records. Taking `abs()` of it published a sign error
 as a resolved measurement. The reasoning is in
 [the diagnostics cost document](diagnostics-cost.md).
+
+## 8h. The second null says the floor at this window is a confound, not jitter (2026-10-31)
+
+The fold merged upstream, so re-baselining both arms onto current ClimaAtmos
+made them byte-identical and the pass became a null test for free. That was the
+measurement [the wall-clock conversion document](wall-clock-conversion.md) had
+been asking for, and it came out against the reading that document carried.
+Figures are in `results/null-census.json`, injected into that document, which
+the conversion question cites as its document evidence.
+
+Section 8f left two readings open: either the one null at this window was an
+unlucky draw, which would put the floor near the three repeats' own half point,
+or it is a systematic asymmetry every headline sits on top of. The second null
+decides it. Both nulls at this window are positive, both are several times the
+repeat spread, and the census now reports `current_window_all_same_sign`. Jitter
+of the repeats' width cannot produce two draws that far out, so the floor here
+is the mean of the two --- near two points, not half a point.
+
+What two draws cannot separate is *why*. Either the mod arm is favored by
+something that survives a re-baseline, or the jitter is simply wider across
+stacks than within one, since the three repeats share a stack and the two nulls
+do not. The distinction does not change what to do, because both readings say
+subtract the same amount, so the census publishes `current_window_mean_pct` and
+every consumer quotes a margin over that rather than over whichever null ran
+last.
+
+The reason this matters more than a wider error bar: a confound that repeats is
+not reduced by averaging. Three repeats agreeing inside half a point looked like
+a tight measurement and was a tight measurement *of the wrong thing* --- of how
+repeatable one arm pair is on one stack, which is not the quantity a headline
+needs.
+
+### The values were re-injected; the sentences around them were not
+
+The same pass flipped `sampling_resolvable` from false to true and
+`sources_inconsistent` from true to false, because the diagnostics residual
+crossed from negative to positive. Every value marker in [the diagnostics cost
+document](diagnostics-cost.md) rewrote itself correctly, as designed. The prose
+between the markers still read "a sampling cost cannot be negative, so that is
+not a small sampling share: it is the two differently-sourced measurements
+disagreeing" --- immediately after a marker rendering a positive residual and a
+marker rendering `false`.
+
+So the injection mechanism keeps numbers from drifting and does nothing about
+the claims built on their signs. A document explaining *why* a number means what
+it means holds a second, uncheckable copy of that number's sign in its
+sentences. Section 8g's rule was to read the right field; this one is narrower
+and has no mechanical fix: when a value marker's sign or boolean flips, re-read
+every sentence touching it, because the pipeline reports the stage as up to date
+either way.

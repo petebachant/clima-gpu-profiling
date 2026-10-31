@@ -99,6 +99,21 @@ def main():
         "abs_max_pct": extreme(nulls),
         "n_current_window": len(current),
         "current_window_pct": [n["speedup_pct"] for n in current],
+        # The mean over the nulls at this window is the floor to subtract from a
+        # headline. It is published here rather than computed by each consumer
+        # because a single null is a draw and quoting whichever ran last reads
+        # one draw as the floor.
+        "current_window_mean_pct": round(
+            sum(n["speedup_pct"] for n in current) / len(current), 3
+        ) if current else None,
+        "current_window_spread_points": round(
+            max(n["speedup_pct"] for n in current)
+            - min(n["speedup_pct"] for n in current), 3
+        ) if current else None,
+        "current_window_all_same_sign": bool(current) and (
+            all(n["speedup_pct"] > 0 for n in current)
+            or all(n["speedup_pct"] < 0 for n in current)
+        ),
         "n_earlier_windows": len(earlier),
         "earlier_abs_max_pct": extreme(earlier),
         "skipped_unpaired": skipped_unpaired,
@@ -112,7 +127,10 @@ def main():
             "later commit re-committing an already counted pass. earlier_abs_max_pct "
             "covers the passes run on shorter windows and coarser timesteps than the "
             "current benchmark, whose noise is not interchangeable with this one's -- "
-            "n_current_window says how many nulls exist at the window in use now."
+            "n_current_window says how many nulls exist at the window in use now, and "
+            "current_window_mean_pct is the floor to subtract from a headline measured "
+            "there. current_window_all_same_sign distinguishes a jitter straddling "
+            "zero from a confound that repeats, which averaging does not reduce."
         ),
     }
     OUT.write_text(json.dumps(out, indent=2) + "\n")
@@ -126,6 +144,13 @@ def main():
         f"{len(current)} at the current window, "
         f"largest elsewhere {out['earlier_abs_max_pct']:.3f}%"
     )
+    if current:
+        print(
+            f"current-window floor {out['current_window_mean_pct']:+.3f}% "
+            f"over {len(current)} null(s), spread "
+            f"{out['current_window_spread_points']:.3f} points, "
+            + ("all one sign" if out["current_window_all_same_sign"] else "straddling zero")
+        )
 
 
 main()

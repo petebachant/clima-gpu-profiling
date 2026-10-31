@@ -211,6 +211,38 @@ small share --- it is two differently-sourced runs disagreeing by more than the
 quantity between them, which `sources_inconsistent` now records. Taking the
 magnitude of a signed quantity reads a sign error as a resolved measurement.
 
+### Quote the margin over the null census, not over the last null
+
+`results/null-census.json` collects every pass whose arms `record-treatment`
+found identical, split by benchmark window because an earlier window's noise is
+not this one's. Read `current_window_mean_pct` as the floor and quote a headline's
+margin over it. Never quote the margin over whichever null ran most recently: a
+single null is one draw, and on 2026-10-22 that draw was the larger of the two
+this window has produced.
+
+`current_window_all_same_sign` is the field that says what kind of floor it is.
+Both nulls here are positive, which is a confound that repeats rather than
+jitter around zero --- and a confound that repeats is not reduced by averaging,
+so repeating a pair tightens the wrong quantity. Three repeats of one pair agree
+inside half a point while the nulls disagree by over a point; the repeats
+measure repeatability of one arm pair on one stack, which is not what a headline
+needs. Section 8h of `docs/learnings.md` has it.
+
+### When a value marker's sign or boolean flips, re-read the sentences
+
+A Markdown stage re-injects its values on every run, so the numbers in a
+document cannot drift. The claims built on them can. On 2026-10-31 the
+diagnostics residual crossed from negative to positive, `sources_inconsistent`
+went true to false, every marker rewrote itself, and the prose between them
+still explained at length that a negative residual means the two sources
+disagree --- directly after a marker rendering `false`.
+
+A document that says *why* a figure means something holds a second, uncheckable
+copy of that figure's sign in its sentences, and the pipeline reports the stage
+as up to date either way. There is no mechanical guard. After a pass that moves
+a sign or a boolean, grep the document and the `calkit.yaml` answer for the
+field name and read what surrounds it.
+
 ## Assert that every scripted edit matched
 
 `str.replace()` returns the string unchanged when the pattern is absent, so a
