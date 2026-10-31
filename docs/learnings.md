@@ -3217,3 +3217,49 @@ treatment below the floor cannot be measured end to end, but it can still be
 measured, against untreated kernels in the same launch block on the same stack.
 Choosing the comparison is what decides whether a small effect is a result or a
 rounding error.
+
+## 8k. A one-sided sum of per-step differences is not a measurement of asymmetry (2026-10-31)
+
+`compare-step-breakdowns.py` reported a field named `compile_penalty`: the sum,
+over ordinary steps, of how much slower the mod arm was wherever it was slower.
+`summarize.py` printed it as "the mod arm pays N s more compilation", and
+`docs/wall-clock-conversion.md` explained that it must be first-call
+compilation "rather than noise, which would be symmetric".
+
+The statistic discards the steps where the mod arm was faster, so noise does not
+cancel in it. It is positive for two identical arms by construction, and the
+project had already measured how positive: the null test's own snapshot, in a
+file the document loads on the line above the sentence, reports a **larger**
+total over most of the run's ordinary steps than the real treatment reports over
+a small fraction of them.
+
+So the total seconds is the half of the figure that carries no information. What
+separates compilation from noise is the **count** of slower steps and how early
+the spikes stop -- a treatment that is genuinely faster is slower on very few
+steps, all of them early, while two identical arms are slower on most steps and
+keep spiking to the end of the run. The conclusion in the document was right and
+its stated reason was wrong, which is the more dangerous combination, because
+the number it quoted was the one that did not support it.
+
+Two general points. A statistic that takes only one side of a signed difference
+needs its null before any sentence is built on it, and `abs()` has the same
+defect -- section 8f has the case where taking the magnitude of a signed
+residual read a sign error as a resolved measurement. And a field name is an
+assertion: `compile_penalty` named a hypothesis about the cause, and every
+reader downstream, including the print in `summarize.py` and the prose in the
+write-up, inherited it as though it had been measured.
+
+### It is also why the sedimentation fold's compile cost is unknown
+
+Folding parameters into the type creates more specializations, so it ought to
+cost compile time, and that is worth knowing because compile is the large
+majority of a profiling job's wall clock (section 2b). The AMIP logs do report
+compile time directly, per setup phase, which is the right instrument -- but in
+that pair the baseline arm additionally precompiled dependencies that the mod
+arm found cached, and the phases that compiled faster in the mod arm include a
+ClimaLand phase whose code is byte-identical between the arms. A treatment in
+ClimaAtmos microphysics cannot speed that up, so the difference is machine
+state. The fold's compile cost is not resolvable from the runs taken, and the
+one-sided field is not a substitute for it; measuring it needs both arms run
+back to back with the same package cache, which is what `compile-time-study`
+does.

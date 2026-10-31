@@ -123,6 +123,7 @@ print(
 )
 print(
     f"   typical ordinary step saves {results['typical_step_saved_ms']:.1f} ms;"
-    f" the mod arm pays {results['compile_penalty_s']:.1f} s more compilation"
-    f" over {results['compile_penalty_steps']} steps"
+    f" the mod arm is slower on {results['compile_penalty_steps']} ordinary"
+    f" steps totalling {results['compile_penalty_s']:.1f} s -- one-sided, so"
+    f" read the count, not the total"
 )

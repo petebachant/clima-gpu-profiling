@@ -72,6 +72,12 @@ def main():
 
     pen = [(i, mw[i] - bw[i]) for i in plain if mw[i] > bw[i]]
     pen_total = sum(v for _, v in pen)
+    # The other side of the same comparison. `pen` alone is one-sided, so it is
+    # positive even when the arms are identical -- the null test reports 8.41 s
+    # of it over 79.3% of plain steps -- and its total carries no information
+    # without this one to read it against.
+    gain = [(i, bw[i] - mw[i]) for i in plain if bw[i] > mw[i]]
+    gain_total = sum(v for _, v in gain)
 
     # Steady state: the window after the last compilation spike, started on a
     # diagnostics-cycle boundary so it holds whole periodic cycles. The cutoff is derived
@@ -154,6 +160,15 @@ def main():
             "shortfall_points": 100 * cf / tb - 100 * saved / tb,
         },
         "compile_penalty": {
+            # Named for what it was introduced to detect, not for what it
+            # measures: these are the plain steps where the mod arm was slower,
+            # whatever the cause. What distinguishes first-call compilation from
+            # noise is the step COUNT and how early the spikes stop, not
+            # `total_s`. See section 8k of docs/learnings.md.
+            "mod_slower_is_one_sided": True,
+            "base_slower_steps": len(gain),
+            "base_slower_total_s": gain_total / 1000,
+            "net_plain_saving_s": (gain_total - pen_total) / 1000,
             "steps": len(pen),
             "pct_of_plain_steps": 100 * len(pen) / len(plain),
             "total_s": pen_total / 1000,

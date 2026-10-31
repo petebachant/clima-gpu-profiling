@@ -38,6 +38,10 @@ cw_mean = census["current_window_mean_pct"]
 
 plain, diag = step["classes"]["plain"], step["classes"]["diagnostics"]
 typ, pen, ss = step["typical_step"], step["compile_penalty"], step["steady_state"]
+# The same field for two identical arms. It is one-sided -- only the steps where
+# the mod arm was slower -- so it is positive with no treatment at all, and the
+# null is the only thing that says which part of it means anything.
+null_pen = null_step["compile_penalty"]
 own = step["own_threshold"]
 
 out = {
@@ -64,6 +68,10 @@ out = {
         "ms_per_plain_step": round(pen["ms_per_plain_step"], 2),
         "worst_step_ms": round(pen["worst_step_ms"]),
         "last_step_over_200ms": pen["last_step_over_200ms"],
+        "null_steps": null_pen["steps"],
+        "null_pct_of_plain_steps": round(null_pen["pct_of_plain_steps"], 1),
+        "null_total_s": round(null_pen["total_s"], 1),
+        "null_last_step_over_200ms": null_pen["last_step_over_200ms"],
     },
     "steady_state": {
         "saved_pct": round(ss["saved_pct"], 2),
@@ -162,7 +170,11 @@ Convert a kernel result through the step distribution before promising it as a s
 
 Compilation shrank with the window.
 There are <!-- calkit value key=penalty.steps -->35<!-- /calkit value --> ordinary steps, <!-- calkit value key=penalty.pct_of_plain_steps -->1.3<!-- /calkit value -->% of them, that are slower in the specialized arm: <!-- calkit value key=penalty.total_s -->4.5<!-- /calkit value --> s in total, or <!-- calkit value key=penalty.ms_per_plain_step -->1.61<!-- /calkit value --> ms averaged over every ordinary step, worst single step <!-- calkit value key=penalty.worst_step_ms -->277<!-- /calkit value --> ms and the last above 200 ms at step <!-- calkit value key=penalty.last_step_over_200ms -->799<!-- /calkit value -->.
-It is first-call compilation of the specialized methods rather than noise, which would be symmetric, but at that size it no longer moves the headline.
+It is first-call compilation of the specialized methods rather than noise, but not for the reason that sentence used to give here, which was that noise would be symmetric.
+This figure is one-sided: it sums only the steps where the specialized arm was slower, so noise cannot cancel in it and arrives as a positive total like any real penalty.
+The null test is what separates them, and it is emphatic -- two identical arms report <!-- calkit value key=penalty.null_total_s -->8.4<!-- /calkit value --> s over <!-- calkit value key=penalty.null_steps -->2207<!-- /calkit value --> steps, <!-- calkit value key=penalty.null_pct_of_plain_steps -->79.3<!-- /calkit value -->% of the ordinary ones, with the last above 200 ms as late as step <!-- calkit value key=penalty.null_last_step_over_200ms -->2613<!-- /calkit value -->.
+So the seconds are the half of this figure that carries no information, being larger with no treatment than with one; the step count and how early the spikes stop are the half that does, and at <!-- calkit value key=penalty.pct_of_plain_steps -->1.3<!-- /calkit value -->% of steps ending by step <!-- calkit value key=penalty.last_step_over_200ms -->799<!-- /calkit value --> this one is compilation.
+At that size it no longer moves the headline either way.
 
 The steady-state figure now agrees with the whole window rather than correcting it: <!-- calkit value key=steady_state.saved_pct -->9.66<!-- /calkit value -->% over the final <!-- calkit value key=steady_state.cycles -->2<!-- /calkit value --> diagnostics cycles, <!-- calkit value key=steady_state.saved_pct_ex_diagnostics -->10.67<!-- /calkit value -->% excluding the diagnostics steps, against <!-- calkit value key=window.saved_pct -->10.57<!-- /calkit value -->% for the window entire.
 It is flat wherever the cutoff is put --- <!-- calkit value key=steady_state.from_step_720 -->9.91<!-- /calkit value -->% from step 720, <!-- calkit value key=steady_state.from_step_1440 -->9.66<!-- /calkit value -->% from step 1440, <!-- calkit value key=steady_state.from_step_2400 -->8.76<!-- /calkit value -->% from step 2400 --- which is what a run with little compilation left in it looks like.
