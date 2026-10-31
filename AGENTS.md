@@ -650,6 +650,25 @@ committed snapshots --- but note it does **not** recompile the Markdown stages,
 so a `calkit run` is still needed after editing a document's code block, and
 that is exactly the command that reaches the chain above.
 
+### Never wrap `calkit run` in a timeout
+
+Twice on 2026-10-31: `timeout 540 calkit run summarize` and `timeout 900 calkit
+run wall-clock-conversion-doc`, both killed mid-pass with exit 143. A pipeline
+pass that submits a GPU stage takes as long as the model takes, which is tens of
+minutes, and no useful timeout is shorter than that.
+
+What survives the kill is worth knowing, because it is not symmetric. The SLURM
+job does **not** die with the wrapper --- it was submitted to the scheduler, so
+it keeps running and keeps writing its log, and a later `calkit run` finds it
+finished and harvests it. What dies is calkit's bookkeeping: the pass stops
+before the downstream stages, and `dvc.lock` and the scheduler log are left
+mid-write. So the right response to a killed wrapper is to check `calkit sch q`
+first and, if the job is still running, change nothing and wait --- the recovery
+procedure below is for a cancelled *job*, and running it against a live one
+would clobber the log the job is still appending to.
+
+Run it in the background instead of timing it out, and poll the queue.
+
 ### A scheduler stage needs `CALKIT_FORCE=1` as well, or it measures nothing
 
 `--force` makes DVC re-run the stage *command*, and for a SLURM stage that
