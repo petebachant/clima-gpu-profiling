@@ -97,13 +97,13 @@ json.dump(out, open("results/docs/val-fold-scope.json", "w"), indent=2)
 ## What the pattern is worth across the device
 
 Not across the board, and the bound is measured rather than argued.
-Only <!-- calkit value key=device.ceiling_pct -->23.27<!-- /calkit value -->% of device time sits in kernels where a register saving could raise occupancy at all, <!-- calkit value key=device.treated_pct -->21.42<!-- /calkit value -->% of that is the kernels this project has already folded, and what is left for anyone applying the pattern somewhere new is <!-- calkit value key=device.untreated_pct -->1.85<!-- /calkit value -->% spread over <!-- calkit value key=device.untreated_kernels -->13<!-- /calkit value --> kernels.
+Only <!-- calkit value key=device.ceiling_pct -->19.95<!-- /calkit value -->% of device time sits in kernels where a register saving could raise occupancy at all, <!-- calkit value key=device.treated_pct -->18.36<!-- /calkit value -->% of that is the kernels this project has already folded, and what is left for anyone applying the pattern somewhere new is <!-- calkit value key=device.untreated_pct -->1.59<!-- /calkit value -->% spread over <!-- calkit value key=device.untreated_kernels -->13<!-- /calkit value --> kernels.
 
 The question is asked in units of time rather than kernels because that is what SYPD is made of: a hundred addressable kernels holding 2% of the device are worth less than one unaddressable kernel holding 20%.
-Read the ceiling as a lower bound on itself: the ncu population covers <!-- calkit value key=device.matched_pct -->30.0<!-- /calkit value -->% of device time, so kernels it did not reach could add to it.
+Read the ceiling as a lower bound on itself: the ncu population covers <!-- calkit value key=device.matched_pct -->30.4<!-- /calkit value -->% of device time, so kernels it did not reach could add to it.
 
 The population says the same thing by counting rather than timing.
-Of <!-- calkit value key=population.kernels -->215<!-- /calkit value --> kernels profiled, <!-- calkit value key=population.addressable -->36<!-- /calkit value --> (<!-- calkit value key=population.addressable_pct -->16.74<!-- /calkit value -->%) are capped by registers alone AND below full occupancy, while <!-- calkit value key=population.at_full_occupancy -->110<!-- /calkit value --> are already at full occupancy and can gain nothing however well their parameters fold.
+Of <!-- calkit value key=population.kernels -->197<!-- /calkit value --> kernels profiled, <!-- calkit value key=population.addressable -->33<!-- /calkit value --> (<!-- calkit value key=population.addressable_pct -->16.75<!-- /calkit value -->%) are capped by registers alone AND below full occupancy, while <!-- calkit value key=population.at_full_occupancy -->99<!-- /calkit value --> are already at full occupancy and can gain nothing however well their parameters fold.
 
 ## Two gates, both computable in advance
 
@@ -126,7 +126,7 @@ That subtotal and the whole-arm device saving now agree, <!-- calkit value key=f
 
 ## Register count predicts neither gate
 
-The quadrature kernel starts at the <!-- calkit value key=fold.quadrature.registers_baseline -->255<!-- /calkit value -->-register cap and crosses, a <!-- calkit value key=fold.cloud_fraction.registers_baseline -->64<!-- /calkit value -->-register one crosses as well, and the largest untreated candidate in the whole population is a <!-- calkit value key=device.largest_untreated_pct -->0.9<!-- /calkit value -->% ClimaCore broadcast kernel that would cross by shedding <!-- calkit value key=device.largest_untreated_shed -->47<!-- /calkit value --> registers and carries no parameter struct to fold in the first place.
+The quadrature kernel starts at the <!-- calkit value key=fold.quadrature.registers_baseline -->255<!-- /calkit value -->-register cap and crosses, a <!-- calkit value key=fold.cloud_fraction.registers_baseline -->64<!-- /calkit value -->-register one crosses as well, and the largest untreated candidate in the whole population is a <!-- calkit value key=device.largest_untreated_pct -->0.78<!-- /calkit value -->% ClimaCore broadcast kernel that would cross by shedding <!-- calkit value key=device.largest_untreated_shed -->47<!-- /calkit value --> registers and carries no parameter struct to fold in the first place.
 
 A layer compiled on its own misleads for the same reason: the model's broadcast is split into several smaller kernels whose limits differ, while the standalone layer sits at <!-- calkit value key=layer_registers -->218<!-- /calkit value --> registers with room for a payload saving to show.
 Any register experiment answers for the body it compiles.
@@ -162,7 +162,7 @@ On the path the model actually runs, const globals buy nothing at all: the quadr
 Whatever pins that kernel at the register cap, it is not the cost of getting parameters into it, so a deeper fold has no target there either.
 
 The device budget bounds whatever is left.
-Of the <!-- calkit value key=device.ceiling_pct -->23.27<!-- /calkit value -->% of device time where cheaper registers could raise occupancy at all, <!-- calkit value key=device.treated_pct -->21.42<!-- /calkit value -->% is the kernels already folded, leaving <!-- calkit value key=device.untreated_pct -->1.85<!-- /calkit value -->% over <!-- calkit value key=device.untreated_kernels -->13<!-- /calkit value --> kernels --- and the largest single piece of that, <!-- calkit value key=device.largest_untreated_pct -->0.9<!-- /calkit value -->% of the device, is a ClimaCore broadcast kernel with no parameter struct in it to fold.
+Of the <!-- calkit value key=device.ceiling_pct -->19.95<!-- /calkit value -->% of device time where cheaper registers could raise occupancy at all, <!-- calkit value key=device.treated_pct -->18.36<!-- /calkit value -->% is the kernels already folded, leaving <!-- calkit value key=device.untreated_pct -->1.59<!-- /calkit value -->% over <!-- calkit value key=device.untreated_kernels -->13<!-- /calkit value --> kernels --- and the largest single piece of that, <!-- calkit value key=device.largest_untreated_pct -->0.78<!-- /calkit value -->% of the device, is a ClimaCore broadcast kernel with no parameter struct in it to fold.
 So there is no kernel left that is both large enough to matter and shaped so that pushing the pattern into a dependency would reach it.
 
 ### Thermodynamics, predicted before it was measured

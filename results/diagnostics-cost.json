@@ -2,25 +2,25 @@
   "n_steps_timed": 2878,
   "note": "total_pct_of_wall is a difference of two whole runs, so it carries each run's deferred compilation as well as the diagnostics themselves, and the diagnostics-off run compiles less -- read it as an upper bound. write_steps_pct_of_wall comes from a separate step-breakdown run on the same arm and config, so sampling_pct_of_wall is a difference across two measurements rather than one decomposition. `sampling_resolvable` compares it against repeat_spread_points, the spread between independent pairs of the same code in results/sypd-repeats.json (the most-repeated group, since a re-baselined group's spread is 0 until it is repeated): when it is false the residual does not clear that floor upward, so it bounds the sampling share and does not measure it. A sampling cost cannot be negative, so a residual below MINUS the spread is not a small sampling share but two sources disagreeing by more than the quantity between them, which `sources_inconsistent` records; the split cannot be read at all while it is true. The 120-step nsys window cannot answer this at all: it is shorter than the 720-step daily write period.",
   "repeat_spread_points": 0.507,
-  "sampling_pct_of_wall": -1.2359290819747866,
-  "sampling_resolvable": false,
-  "saved_s": 69.61680000000001,
-  "sources_inconsistent": true,
-  "sypd_headroom_pct": 11.723577083685166,
-  "sypd_with": 1.4252246118415128,
-  "sypd_without": 1.5923119178264054,
-  "total_pct_of_wall": 10.493383528640026,
+  "sampling_pct_of_wall": 0.6311842395197029,
+  "sampling_resolvable": true,
+  "saved_s": 83.06893000000002,
+  "sources_inconsistent": false,
+  "sypd_headroom_pct": 12.856682948007837,
+  "sypd_with": 1.2967162661004705,
+  "sypd_without": 1.4634309651682538,
+  "total_pct_of_wall": 11.392046937757907,
   "with_diagnostics": {
     "n_steps_timed": 2878,
-    "sypd": 1.4252246118415128,
-    "wall_time_total_s": 663.4352,
-    "walltime_per_step_s": 0.23051952
+    "sypd": 1.2967162661004705,
+    "wall_time_total_s": 729.18353,
+    "walltime_per_step_s": 0.25336468
   },
   "without_diagnostics": {
     "n_steps_timed": 2878,
-    "sypd": 1.5923119178264054,
-    "wall_time_total_s": 593.8184,
-    "walltime_per_step_s": 0.20633024
+    "sypd": 1.4634309651682538,
+    "wall_time_total_s": 646.1146,
+    "walltime_per_step_s": 0.22450125
   },
-  "write_steps_pct_of_wall": 11.729312610614812
+  "write_steps_pct_of_wall": 10.760862698238205
 }

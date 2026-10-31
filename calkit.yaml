@@ -299,7 +299,7 @@ questions:
       How much of the wall clock do diagnostics cost, and is it worth optimizing them?
     answer: >-
       Diagnostics cost {total_pct:.1f}% of the wall clock on the benchmark window, so the whole of them is worth {sypd_headroom:.1f}% in SYPD -- that is the ceiling to compare an optimization's cost against before starting.
-      The {write_pct:.1f}% carried by the daily write events accounts for the whole of what this measurement can see, and the sampling that feeds them cannot be priced by the same difference: the residual left for it is {sampling_pct:.2f} points, and a negative sampling cost means the two differently-sourced runs disagree by more than the quantity between them.
+      The {write_pct:.1f}% carried by the daily write events is the great majority of it, leaving the sampling that feeds them a residual of {sampling_pct:.2f} points -- just enough to clear the spread between repeats of identical code and read the split at all, and not enough to price the sampling more precisely than under a point.
     evidence:
       - kind: document
         path: docs/diagnostics-cost.md
