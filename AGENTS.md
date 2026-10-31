@@ -630,6 +630,26 @@ The accident was not costly in that case: both stages genuinely needed to re-run
 against the arm being measured, and the AMIP pair they produced tested a
 prediction the experiment had already written down. That is luck, not a defense.
 
+Reading the stale list is not enough, and on 2026-10-31 it failed a second time
+in the same session. `calkit run wall-clock-conversion-doc` --- a Markdown stage
+whose own inputs are all committed snapshots --- submitted `amip-mod`. The stale
+list was checked, `amip-mod` was in it, and it was dismissed because it is not an
+input of the document. It is an input of an input: the document reads
+`results/sypd-repeats.json`, which `record-sypd-repeat` builds from
+`.calkit/scheduler/logs/amip-*.out`, and those logs are **declared outputs of the
+AMIP stages**. The chain is three deep and invisible from either end.
+
+So the check is on the transitive closure, not the stage's own `inputs`, and the
+shape to recognize is this one: the scheduler logs are stage outputs, so
+**anything that reads a file derived from a run's log depends on that run**.
+`results/sypd-repeats.json` and `results/null-census.json` are both in that
+category, which puts most of the analysis documents one hop from a GPU
+submission. `calkit dvc repro --single-item <stage>` remains the way to run one
+stage, and it is the right default for a Markdown stage whose values come from
+committed snapshots --- but note it does **not** recompile the Markdown stages,
+so a `calkit run` is still needed after editing a document's code block, and
+that is exactly the command that reaches the chain above.
+
 ### A scheduler stage needs `CALKIT_FORCE=1` as well, or it measures nothing
 
 `--force` makes DVC re-run the stage *command*, and for a SLURM stage that
