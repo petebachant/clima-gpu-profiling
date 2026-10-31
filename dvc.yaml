@@ -372,6 +372,7 @@ stages:
     deps:
       - scripts/record-sypd-repeat.py
       - results/null-record/summary.json
+      - results/null-census.json
       - .calkit/env-locks/py
       - results/treatment.json
       - .calkit/scheduler/logs/amip-baseline.out
@@ -574,6 +575,22 @@ stages:
           cache: false
           persist: false
     desc: Automatically generated from the 'export-pointwise-registers' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  export-sedimentation-fold:
+    cmd: calkit xenv -n py --no-check -- python
+      scripts/export-sedimentation-fold.py
+    deps:
+      - scripts/export-sedimentation-fold.py
+      - results/nsys/baseline.sqlite
+      - results/nsys/mod.sqlite
+      - results/summary.json
+      - results/null-census.json
+      - .calkit/env-locks/py
+    outs:
+      - results/sedimentation-fold.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'export-sedimentation-fold' stage in
       calkit.yaml. Changes made here will be overwritten.
   val-mileage:
     cmd: calkit xenv -n py --no-check -- python scripts/val-mileage.py
@@ -837,6 +854,21 @@ stages:
           persist: false
     desc: Automatically generated from the 'diagnostics-cost-doc/values' stage
       in calkit.yaml. Changes made here will be overwritten.
+  sedimentation-velocity-fold-doc/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/sedimentation-velocity-fold.md/values.py
+    deps:
+      - .calkit/markdown/docs/experiments/sedimentation-velocity-fold.md/values.py
+      - results/sedimentation-fold.json
+      - results/fold-decision.json
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/sedimentation-velocity-fold.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the
+      'sedimentation-velocity-fold-doc/values' stage in calkit.yaml. Changes
+      made here will be overwritten.
   fold-decision-doc/analyze:
     cmd: calkit xenv -n py --no-check -- python
       .calkit/markdown/docs/fold-decision-rule.md/analyze.py

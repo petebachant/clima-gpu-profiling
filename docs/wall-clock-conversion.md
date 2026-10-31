@@ -182,8 +182,9 @@ The device chain agrees it is zero where it should --- <!-- calkit value key=nul
 
 Repeating a pair says what kind of floor this is, and the answer is not the one this project assumed for months.
 The treatment measured here --- the updraft cache, not the fold above --- has been run end to end <!-- calkit value key=repeats.n -->3<!-- /calkit value --> times on one stack and one set of committed code, giving <!-- calkit value key=repeats.min_pct -->4.847<!-- /calkit value -->% to <!-- calkit value key=repeats.max_pct -->5.354<!-- /calkit value -->%: a mean of <!-- calkit value key=repeats.mean_pct -->5.086<!-- /calkit value -->% and a spread of <!-- calkit value key=repeats.spread_points -->0.507<!-- /calkit value --> points.
-Re-baselining onto a newer upstream main changes the code of both arms, so `record-treatment` files the result as a new group rather than a fourth repeat, and the current group holds <!-- calkit value key=current.n -->1<!-- /calkit value --> pair at <!-- calkit value key=current.mean_pct -->1.271<!-- /calkit value -->%.
-That group is a null test, which `is_null` records as <!-- calkit value key=current.is_null -->true<!-- /calkit value -->: upstream merged the treatment, so both arms are identical and the figure is a second draw from this window's floor rather than a measurement of anything.
+Re-baselining onto a newer upstream main changes the code of both arms, so `record-treatment` files the result as a new group rather than a fourth repeat; the re-baseline's own pair was a null test, because upstream had merged the treatment and the two arms were identical, and it is the second of the two draws that set this window's floor below.
+The current group is the one after it, the sedimentation velocity fold, holding <!-- calkit value key=current.n -->1<!-- /calkit value --> pair at <!-- calkit value key=current.mean_pct -->1.928<!-- /calkit value -->%, with `is_null` recording <!-- calkit value key=current.is_null -->false<!-- /calkit value -->.
+It clears the floor by <!-- calkit value key=current.margin_points -->0.059<!-- /calkit value --> points, which is the worked example of a headline this window cannot resolve: the margin is a twentieth of the spread between the nulls it is being read against, and [the experiment that produced it](experiments/sedimentation-velocity-fold.md) had predicted as much from the device side before the pair was run.
 
 Run-to-run repeatability is therefore about half a point, several times tighter than the <!-- calkit value key=census.current_mean_pct -->1.87<!-- /calkit value -->% the null tests find between two IDENTICAL arms.
 Those two figures cannot both be jitter.
@@ -204,11 +205,11 @@ It is ruled out from the record rather than by spending GPU time: the pairs span
 
 The history says the same thing by counting.
 There are <!-- calkit value key=census.n -->4<!-- /calkit value --> passes in this repository whose arms `record-treatment` found identical in content and whose measurement was committed by the same pass, and the <!-- calkit value key=census.n_earlier -->2<!-- /calkit value --> run on earlier benchmark windows land within <!-- calkit value key=census.earlier_abs_max_pct -->0.207<!-- /calkit value --> points of zero.
-<!-- calkit value key=census.n_current_window -->2<!-- /calkit value --> of them ran at the window in use now, returning <!-- calkit value key=census.current_min_pct -->1.271<!-- /calkit value -->% and <!-- calkit value key=census.current_max_pct -->2.467<!-- /calkit value -->%.
+At the window in use now there are <!-- calkit value key=census.n_current_window -->2<!-- /calkit value -->, returning <!-- calkit value key=census.current_min_pct -->1.271<!-- /calkit value -->% and <!-- calkit value key=census.current_max_pct -->2.467<!-- /calkit value -->%.
 
 The pairing test is what makes that count trustworthy.
 A commit counts only where one pass wrote both `results/treatment.json` and `results/summary.json`, because before `record-treatment` carried `always_run` it could be skipped while the pass it was supposed to describe went ahead --- one such commit claims identical arms beside a +12.6% speedup.
-In all, <!-- calkit value key=census.skipped_unpaired -->12<!-- /calkit value --> commits are rejected on that test, which includes the harmless case of a later commit re-committing an already counted pass.
+In all, <!-- calkit value key=census.skipped_unpaired -->13<!-- /calkit value --> commits are rejected on that test, which includes the harmless case of a later commit re-committing an already counted pass.
 
 ## Where that leaves the floor
 

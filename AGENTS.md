@@ -607,6 +607,29 @@ calkit dvc repro --single-item --force <stage>
 `--single-item` is the part that matters: it runs the stage without its
 dependencies.
 
+### Naming a CPU stage does not bound the run to the CPU
+
+`calkit run <stage>` runs the stage's stale **dependencies** too, and for the
+analysis stages here those dependencies are the GPU ones. On 2026-10-31
+`calkit run summarize` --- chosen deliberately as the CPU-only alternative to
+`calkit run` --- submitted `step-breakdown` and then `amip-mod`, because both
+were stale on a submodule edit, and took about two hours of reservations on a
+shared machine that nothing in the command named.
+
+The tell is that a CPU stage takes longer than a CPU stage can take. There is no
+output saying a GPU job was submitted until it has been.
+
+Check the stale list before naming a stage: `calkit status` prints each stale
+stage with its `modified inputs`, and any `clima`-environment stage in that list
+is a GPU submission waiting for something downstream of it to be asked for. To
+run one stage and nothing else, use DVC's own flag --- `calkit dvc repro
+--single-item <stage>` --- which is the same escape hatch as for `--force` above
+and for the same reason.
+
+The accident was not costly in that case: both stages genuinely needed to re-run
+against the arm being measured, and the AMIP pair they produced tested a
+prediction the experiment had already written down. That is luck, not a defense.
+
 ### A scheduler stage needs `CALKIT_FORCE=1` as well, or it measures nothing
 
 `--force` makes DVC re-run the stage *command*, and for a SLURM stage that

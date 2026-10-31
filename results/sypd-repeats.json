@@ -253,6 +253,60 @@
         "RRTMGP.jl-mod": "a7ffdc7e10051620379c07126222aa1cea1a8df3"
       },
       "same_gpu": false
+    },
+    {
+      "run_id": "fefe90c73ad3",
+      "order": "baseline_first",
+      "order_source": "log mtimes",
+      "ran_second": "mod",
+      "gpus_by_arm": {
+        "baseline": [
+          3
+        ],
+        "mod": [
+          1
+        ]
+      },
+      "baseline": {
+        "gpus": [
+          3
+        ],
+        "sypd": 1.2967162661004705,
+        "wall_s": 729.18353,
+        "step_s": 0.25336468,
+        "n_steps_timed": 2878,
+        "dt_cpl_s": 120.0
+      },
+      "mod": {
+        "gpus": [
+          1
+        ],
+        "sypd": 1.3222065195982797,
+        "wall_s": 715.1259,
+        "step_s": 0.24848017,
+        "n_steps_timed": 2878,
+        "dt_cpl_s": 120.0
+      },
+      "speedup_pct": 1.928,
+      "step_change_pct": -1.928,
+      "treatment": [
+        "ClimaAtmos.jl-mod"
+      ],
+      "diff_digest": "509b73244170c920",
+      "reproducible": true,
+      "dirty_trees": [],
+      "stack": {
+        "ClimaAtmos.jl": "f11850f4ae3a60f7390dd6592a08bd84e8d17a55",
+        "ClimaAtmos.jl-mod": "f11850f4ae3a60f7390dd6592a08bd84e8d17a55",
+        "ClimaCore.jl": "6ff1f568577b53950799d1ded5d44dfb8a08503b",
+        "ClimaCore.jl-mod": "6ff1f568577b53950799d1ded5d44dfb8a08503b",
+        "ClimaCoupler.jl": "ee6bccb0f67edea13ae2907495452eb6bedef542",
+        "ClimaCoupler.jl-mod": "4b955eddeab04ddbc90d6ad5d163aaa3cb8d3e7e",
+        "CloudMicrophysics.jl-mod": "33c29981b3e75bfe6e3cc68dbd9989ed771fb244",
+        "RRTMGP.jl": "a7ffdc7e10051620379c07126222aa1cea1a8df3",
+        "RRTMGP.jl-mod": "a7ffdc7e10051620379c07126222aa1cea1a8df3"
+      },
+      "same_gpu": false
     }
   ],
   "note": "One entry per unprofiled AMIP pair, each an independent pair of runs of the same committed code. `speedup_pct` follows results/summary.json: 1 - baseline_sypd/mod_sypd. `spread_points` across pairs of one treatment is this measurement's own repeatability, to be read against the null test's noise floor in results/null-record/.",
@@ -320,8 +374,9 @@
       },
       "order_effect_points": 0.105,
       "order_corrected_pct": 4.952,
-      "margin_over_null_points": 2.619,
+      "margin_over_null_points": 3.217,
       "margin_exceeds_repeat_spread": true,
+      "margin_exceeds_floor_spread": true,
       "predicted_if_order_explains_null_pct": 0.123
     },
     "1708a21cb5d7a6b2": {
@@ -357,8 +412,9 @@
           "mean_pct": 3.745
         }
       },
-      "margin_over_null_points": 1.278,
+      "margin_over_null_points": 1.876,
       "margin_exceeds_repeat_spread": true,
+      "margin_exceeds_floor_spread": true,
       "predicted_if_order_explains_null_pct": -1.189
     },
     "75539f86a429b1d3": {
@@ -392,9 +448,48 @@
           "mean_pct": 1.271
         }
       },
-      "margin_over_null_points": -1.196,
+      "margin_over_null_points": -0.598,
       "margin_exceeds_repeat_spread": false,
+      "margin_exceeds_floor_spread": false,
       "predicted_if_order_explains_null_pct": -3.663
+    },
+    "509b73244170c920": {
+      "n_pairs": 1,
+      "treatment": [
+        "ClimaAtmos.jl-mod"
+      ],
+      "speedups_pct": [
+        1.928
+      ],
+      "mean_pct": 1.928,
+      "min_pct": 1.928,
+      "max_pct": 1.928,
+      "spread_points": 0.0,
+      "stacks": 1,
+      "orders": [
+        "baseline_first"
+      ],
+      "gpu_assignments": [
+        {
+          "baseline": [
+            3
+          ],
+          "mod": [
+            1
+          ]
+        }
+      ],
+      "same_gpu_pairs": 0,
+      "by_order": {
+        "baseline_first": {
+          "n": 1,
+          "mean_pct": 1.928
+        }
+      },
+      "margin_over_null_points": 0.059,
+      "margin_exceeds_repeat_spread": true,
+      "margin_exceeds_floor_spread": false,
+      "predicted_if_order_explains_null_pct": -3.006
     }
   },
   "null_test": {
@@ -404,13 +499,15 @@
   },
   "latest_treatment": {
     "n_pairs": 1,
-    "treatment": [],
-    "speedups_pct": [
-      1.271
+    "treatment": [
+      "ClimaAtmos.jl-mod"
     ],
-    "mean_pct": 1.271,
-    "min_pct": 1.271,
-    "max_pct": 1.271,
+    "speedups_pct": [
+      1.928
+    ],
+    "mean_pct": 1.928,
+    "min_pct": 1.928,
+    "max_pct": 1.928,
     "spread_points": 0.0,
     "stacks": 1,
     "orders": [
@@ -422,7 +519,7 @@
           3
         ],
         "mod": [
-          0
+          1
         ]
       }
     ],
@@ -430,13 +527,14 @@
     "by_order": {
       "baseline_first": {
         "n": 1,
-        "mean_pct": 1.271
+        "mean_pct": 1.928
       }
     },
-    "margin_over_null_points": -1.196,
-    "margin_exceeds_repeat_spread": false,
-    "predicted_if_order_explains_null_pct": -3.663,
-    "diff_digest": "75539f86a429b1d3"
+    "margin_over_null_points": 0.059,
+    "margin_exceeds_repeat_spread": true,
+    "margin_exceeds_floor_spread": false,
+    "predicted_if_order_explains_null_pct": -3.006,
+    "diff_digest": "509b73244170c920"
   },
   "most_repeated_treatment": {
     "n_pairs": 3,
@@ -501,9 +599,17 @@
     },
     "order_effect_points": 0.105,
     "order_corrected_pct": 4.952,
-    "margin_over_null_points": 2.619,
+    "margin_over_null_points": 3.217,
     "margin_exceeds_repeat_spread": true,
+    "margin_exceeds_floor_spread": true,
     "predicted_if_order_explains_null_pct": 0.123,
     "diff_digest": "595891e9ab5ea0b1"
+  },
+  "null_floor": {
+    "mean_pct": 1.869,
+    "nulls": 2,
+    "spread_points": 1.196,
+    "all_same_sign": true,
+    "note": "The mean over every null test at the benchmark window in use now, from results/null-census.json. All one sign means a confound that repeats rather than jitter around zero, and a confound that repeats is not reduced by repeating a pair -- so margin_exceeds_floor_spread, not the repeat spread, is what says a headline cleared it."
   }
 }

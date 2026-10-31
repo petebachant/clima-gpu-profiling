@@ -347,6 +347,7 @@ questions:
     answer: >-
       There is a rule and it is not counting the parameters: one {payload_registers:.0f}-register payload produced savings of {savings_list} registers at {payload_sites:.0f} sites in the same source, so the size prices the prize and orders nothing.
       What predicts is compiling the body with its parameters as const globals -- the ceiling of any constant-folding scheme -- which costs minutes rather than a profile and called every outcome on this record, so a profile prices a fold and does not decide one.
+      That leaves two gates rather than one: the ceiling test says whether a fold will land, device share says whether it will matter, and a site with the occupancy headroom of a flat one and a smaller share than any before it still returned {sed_change_pct:.2f}% on its own kernels.
     evidence:
       - kind: document
         path: docs/fold-decision-rule.md
@@ -381,6 +382,32 @@ questions:
           did not move: its change is the per-kernel noise the measurement
           resolves, and one kernel that crossed an occupancy step came in under
           it.
+      - kind: document
+        path: docs/experiments/sedimentation-velocity-fold.md
+        section: "Why it is worth recording anyway: headroom and share come apart"
+        explanation: >-
+          The experiment that separates the two gates the file above reports as
+          confounded. The sedimentation velocity kernels have the occupancy
+          headroom of a flat site and a smaller share of the device than any
+          site on the record, and the fold still crossed a step on both and took
+          a sixth off their time -- so occupancy headroom predicts the change in
+          the kernel, and device share decides whether it reaches anything.
+          Built by the sedimentation-velocity-fold-doc stage off a frozen
+          snapshot, because the profiles it was derived from are overwritten by
+          the next experiment.
+      - kind: result
+        path: results/sedimentation-fold.json
+        values:
+          sed_change_pct: treated_change_pct
+        explanation: >-
+          The frozen snapshot behind that document: both treated kernels'
+          registers, occupancy and time, the untreated broadcasts of the same
+          block as controls, and the two verdicts kept apart --
+          `saving_resolved_against_controls`, which is true, and
+          `arm_total_resolved`, which is false because the untreated kernels
+          drifted further than the treatment saved. It carries both arms' refs
+          and both nsys databases' hashes, so a stale freeze is visible in the
+          file.
 
 tables:
   - path: results/top-kernels.csv
@@ -808,6 +835,9 @@ pipeline:
       always_run: true
       inputs:
         - results/null-record/summary.json
+        # Declared so the census runs first: the floor a pair is read against is
+        # the mean over every null at this window, not the one pinned above it.
+        - results/null-census.json
         - from_stage_outputs: record-treatment
         - from_stage_outputs: amip-baseline
         - from_stage_outputs: amip-mod
@@ -908,6 +938,16 @@ pipeline:
       # benchmark, and both halves of the difference it reports are regenerated
       # together by the same pass, so the ratio cannot come to mix two
       # configurations.
+    sedimentation-velocity-fold-doc:
+      kind: markdown
+      target_path: docs/experiments/sedimentation-velocity-fold.md
+      environment: py
+      # Live on main although it is an experiment document. Its figures come
+      # from the frozen results/sedimentation-fold.json, and the four it takes
+      # from the live results/fold-decision.json are that file's record of the
+      # prior fold sites, which is read out of results/fold-record rather than
+      # off a profile. So nothing it quotes moves when the next experiment
+      # overwrites results/nsys.
     fold-decision-doc:
       kind: markdown
       target_path: docs/fold-decision-rule.md
@@ -1098,6 +1138,31 @@ pipeline:
           storage: git
         - path: results/pointwise-registers.json
           storage: git
+
+    export-sedimentation-fold:
+      kind: python-script
+      environment: py
+      script_path: scripts/export-sedimentation-fold.py
+      inputs:
+        - scripts/export-sedimentation-fold.py
+        - results/nsys/baseline.sqlite
+        - results/nsys/mod.sqlite
+        # The wall-clock side, through summarize rather than from the amip
+        # stages directly: this stage must never be able to trigger a GPU run.
+        - results/summary.json
+        - results/null-census.json
+      outputs:
+        - path: results/sedimentation-fold.json
+          storage: git
+      # Frozen, like every snapshot taken off the shared nsys paths. Those hold
+      # whichever experiment profiled last, so leaving this live would restate
+      # the file against a different treatment on the next pass. The snapshot
+      # records the two arms' refs, both database hashes and both AMIP log
+      # hashes so a stale freeze is visible in the file rather than only in
+      # the pipeline. Frozen on main and live at
+      # exp/2026-10-31-sedimentation-velocity-fold, so the snapshot regenerates
+      # from the tag rather than only from whatever main last profiled.
+      frozen: false
 
     val-mileage:
       kind: python-script

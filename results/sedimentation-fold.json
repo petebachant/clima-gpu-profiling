@@ -1,0 +1,170 @@
+{
+  "arm_total_resolved": false,
+  "control_kernels": [
+    {
+      "baseline_line": 220,
+      "baseline_ms": 143.6,
+      "delta_ms": 0.8,
+      "launches": 4320,
+      "mod_ms": 144.4
+    },
+    {
+      "baseline_line": 232,
+      "baseline_ms": 66.3,
+      "delta_ms": -0.9,
+      "launches": 4320,
+      "mod_ms": 65.4
+    },
+    {
+      "baseline_line": 234,
+      "baseline_ms": 64.6,
+      "delta_ms": -0.5,
+      "launches": 4320,
+      "mod_ms": 64.2
+    },
+    {
+      "baseline_line": 235,
+      "baseline_ms": 57.2,
+      "delta_ms": 0.5,
+      "launches": 4320,
+      "mod_ms": 57.7
+    },
+    {
+      "baseline_line": 239,
+      "baseline_ms": 379.4,
+      "delta_ms": -1.4,
+      "launches": 4320,
+      "mod_ms": 377.9
+    },
+    {
+      "baseline_line": 246,
+      "baseline_ms": 16.8,
+      "delta_ms": 0.5,
+      "launches": 3240,
+      "mod_ms": 17.4
+    },
+    {
+      "baseline_line": 246,
+      "baseline_ms": 15.3,
+      "delta_ms": 0.1,
+      "launches": 1080,
+      "mod_ms": 15.3
+    },
+    {
+      "baseline_line": 254,
+      "baseline_ms": 54.7,
+      "delta_ms": 0.0,
+      "launches": 4320,
+      "mod_ms": 54.8
+    },
+    {
+      "baseline_line": 256,
+      "baseline_ms": 344.6,
+      "delta_ms": 1.0,
+      "launches": 4320,
+      "mod_ms": 345.6
+    },
+    {
+      "baseline_line": 261,
+      "baseline_ms": 15.7,
+      "delta_ms": 0.1,
+      "launches": 1080,
+      "mod_ms": 15.8
+    }
+  ],
+  "device_total_change_pct": 0.01,
+  "device_total_ms": {
+    "baseline": 25479.7,
+    "mod": 25482.1
+  },
+  "end_to_end": {
+    "floor_n_nulls": 2,
+    "floor_pct": 1.869,
+    "floor_spread_points": 1.196,
+    "margin_over_floor_points": 0.059,
+    "max_points_if_fully_converted": 0.192,
+    "n_steps_timed": 2878,
+    "speedup_pct": 1.928,
+    "sypd": {
+      "baseline": 1.2967162661004705,
+      "mod": 1.3222065195982797
+    },
+    "wall_clock_resolved": false
+  },
+  "kernels": {
+    "env_terminal_velocity": {
+      "baseline_line": 221,
+      "block_size": {
+        "baseline": 768,
+        "mod": 640
+      },
+      "change_pct": -15.47,
+      "crossed_occupancy_step": true,
+      "launches": 1080,
+      "mod_line": 237,
+      "pct_of_device": 0.73,
+      "registers": {
+        "baseline": 78,
+        "mod": 48
+      },
+      "registers_saved": 30,
+      "total_ms": {
+        "baseline": 185.9,
+        "mod": 157.2
+      },
+      "warps_per_sm": {
+        "baseline": 24,
+        "mod": 40
+      }
+    },
+    "updraft_terminal_velocity": {
+      "baseline_line": 233,
+      "block_size": {
+        "baseline": 640,
+        "mod": 576
+      },
+      "change_pct": -16.08,
+      "crossed_occupancy_step": true,
+      "launches": 1080,
+      "mod_line": 249,
+      "pct_of_device": 0.491,
+      "registers": {
+        "baseline": 92,
+        "mod": 56
+      },
+      "registers_saved": 36,
+      "total_ms": {
+        "baseline": 125.1,
+        "mod": 104.9
+      },
+      "warps_per_sm": {
+        "baseline": 20,
+        "mod": 36
+      }
+    }
+  },
+  "note": "Registers and warps per SM come from the nsys launch records, not a model: each population is split by register count because one short name covers four tracers here and only the Chen 2022 snow one is register-heavy. The treated saving is resolved against the untreated broadcasts of the same block (worst_control_delta_ms), which bound run-to-run noise at the same scale. It is NOT resolved in the arm total: untreated_drift_ms is the sum of every other kernel's change, and it is the larger number, which is why arm_total_resolved is false and no end-to-end claim is made here. end_to_end prices the same treatment on the unprofiled AMIP pair. It does not resolve: the margin over the floor between identical arms is a fraction of the spread between the nulls that set the floor, and max_points_if_fully_converted shows that even a perfect conversion of the device saving could not have cleared it. Read the per-kernel figures, not this one.",
+  "provenance": {
+    "baseline_amip_log_sha256_16": "b20c41162df1e398",
+    "baseline_ref": "f11850f4ae3a60f7390dd6592a08bd84e8d17a55",
+    "baseline_sqlite_sha256_16": "7d08e9cda845930e",
+    "mod_amip_log_sha256_16": "4df2b7f2892a2a02",
+    "mod_branch": "pb/fold-sedimentation-velocity",
+    "mod_ref": "d86251d452ab41a22c22d9020e634aa31c211b2e",
+    "mod_sqlite_sha256_16": "9d24baf7ffdda359",
+    "profiled_steps": 120,
+    "superproject_commit": "e6710ca4c1543df1296dee870c9dce34aa6c7ba3",
+    "treatment": "Val-fold the terminal-velocity parameters at both set_precipitation_velocities! call sites"
+  },
+  "saved_pct_of_device": 0.192,
+  "saving_resolved_against_controls": true,
+  "treated_change_pct": -15.71,
+  "treated_pct_of_device": 1.22,
+  "treated_saved_ms": 48.9,
+  "treated_total_ms": {
+    "baseline": 311.0,
+    "mod": 262.1
+  },
+  "untreated_drift_ms": 51.0,
+  "worst_control_delta_ms": 1.4
+}

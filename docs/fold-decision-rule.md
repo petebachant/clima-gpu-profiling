@@ -100,12 +100,18 @@ cloud-fraction kernel shed <!-- calkit value key=summary.crossed_flat_registers_
 
 One honest limit: in this record the high-occupancy kernels are also the small
 ones. Every flat site holds at most <!-- calkit value key=summary.largest_flat_pct_of_device -->0.4<!-- /calkit value -->% of device time while the smallest payoff holds <!-- calkit value key=summary.smallest_paying_pct_of_device -->3.4<!-- /calkit value -->%, so occupancy headroom and device share cannot be separated from these four
-kernels alone. Operationally it does not matter, because both are free to check.
+kernels alone. Both are free to check, so the confound cost nothing in what got
+measured; what it cost was the order to check them in.
+
+A fifth site has since separated them, and it splits the rule in two.
+[The sedimentation velocity fold](experiments/sedimentation-velocity-fold.md) has the occupancy headroom of a flat site here and a smaller share of the device than any of the four, and it still crossed a step on both its kernels and took a sixth off their time.
+So occupancy headroom is what predicts the change in the kernel, and device share is what decides whether the change reaches anything; the flat sites above were flat because they were small, not because their occupancy was already adequate.
+Screen on device share first -- it is free off a profile and it rejects the most candidates -- then run the const-global probe on what survives.
 
 ## How many kernels get past the screen
 
 Of <!-- calkit value key=summary.kernels_profiled -->197<!-- /calkit value --> kernels in a 120-step run, <!-- calkit value key=summary.addressable -->33<!-- /calkit value --> (<!-- calkit value key=summary.addressable_pct -->16.75<!-- /calkit value -->%) are capped by registers alone and below full occupancy, and <!-- calkit value key=summary.at_full_occupancy -->99<!-- /calkit value --> are already at full occupancy and can gain nothing however well their parameters fold.
-By time rather than count that is <!-- calkit value key=summary.ceiling_pct_of_device -->19.95<!-- /calkit value -->% of the device, of which <!-- calkit value key=summary.untreated_pct_of_device -->1.59<!-- /calkit value -->% over <!-- calkit value key=summary.untreated_kernels -->13<!-- /calkit value --> kernels is untreated -- and the largest single piece of it, <!-- calkit value key=summary.largest_untreated_pct -->0.775<!-- /calkit value -->% of the device needing <!-- calkit value key=summary.largest_untreated_shed -->47<!-- /calkit value --> registers to cross its step, is a ClimaCore broadcast kernel with no parameter struct in it to fold.
+By time rather than count that is <!-- calkit value key=summary.ceiling_pct_of_device -->20.0<!-- /calkit value -->% of the device, of which <!-- calkit value key=summary.untreated_pct_of_device -->1.59<!-- /calkit value -->% over <!-- calkit value key=summary.untreated_kernels -->13<!-- /calkit value --> kernels is untreated -- and the largest single piece of it, <!-- calkit value key=summary.largest_untreated_pct -->0.777<!-- /calkit value -->% of the device needing <!-- calkit value key=summary.largest_untreated_shed -->47<!-- /calkit value --> registers to cross its step, is a ClimaCore broadcast kernel with no parameter struct in it to fold.
 
 Both halves of that screen come from measurements the pipeline already holds:
 the occupancy limiter from one static ncu pass over the whole run, the device

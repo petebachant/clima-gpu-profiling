@@ -2,9 +2,10 @@
 
 The two AMIP stages declare their scheduler logs as outputs, so a repeat run
 deletes and rewrites them: the working tree only ever holds the latest pair, and
-a single pair cannot be told apart from noise. The null test on 2026-10-22
-measured that noise at a few points of wall clock, so a claimed speedup near
-that size is only a result once it has repeated.
+a single pair cannot be told apart from noise. The null tests at this benchmark
+window measure that noise at a couple of points of wall clock and disagree with
+each other by more than a point, so a claimed speedup near that size is only a
+result once it clears the mean of them by more than they differ.
 
 Each run appends here, keyed on a hash of the two logs so re-running the script
 without a new measurement cannot inflate the count, and stamped with the
@@ -29,6 +30,7 @@ from pathlib import Path
 OUT = Path("results/sypd-repeats.json")
 LOGS = {arm: Path(f".calkit/scheduler/logs/amip-{arm}.out") for arm in ("baseline", "mod")}
 NULL = Path("results/null-record/summary.json")
+CENSUS = Path("results/null-census.json")
 DAYS_PER_YEAR = 365.25
 
 PATTERNS = {
@@ -216,9 +218,10 @@ def main():
             # is the treatment with it removed.
             g["order_effect_points"] = round((fwd["mean_pct"] - rev["mean_pct"]) / 2, 3)
             g["order_corrected_pct"] = round((fwd["mean_pct"] + rev["mean_pct"]) / 2, 3)
-    # The floor a repeat is read against: two IDENTICAL arms, measured once, came
-    # out 2.5 points apart. So a margin over that is what makes a pair a result,
-    # and the spread between repeats is what makes it a measurement.
+    # The floor a repeat is read against is every null at THIS benchmark window,
+    # not whichever one is pinned below: a single null is one draw, and the two
+    # here disagree by more than a point. `null_test` stays as the pinned draw
+    # because the order prediction further down was written against it.
     null = json.loads(NULL.read_text())
     doc["null_test"] = {
         "speedup_pct": round(null["speedup_pct"], 3),
@@ -227,9 +230,26 @@ def main():
                 "exp/2026-10-22-null-test-on-main. One pair, so this is a single "
                 "draw from the wall-clock noise and not an estimate of its width.",
     }
+    census = json.loads(CENSUS.read_text())
+    doc["null_floor"] = {
+        "mean_pct": census["current_window_mean_pct"],
+        "nulls": census["n_current_window"],
+        "spread_points": census["current_window_spread_points"],
+        "all_same_sign": census["current_window_all_same_sign"],
+        "note": "The mean over every null test at the benchmark window in use "
+                "now, from results/null-census.json. All one sign means a "
+                "confound that repeats rather than jitter around zero, and a "
+                "confound that repeats is not reduced by repeating a pair -- so "
+                "margin_exceeds_floor_spread, not the repeat spread, is what "
+                "says a headline cleared it.",
+    }
+    floor = doc["null_floor"]["mean_pct"]
     for g in doc["by_treatment"].values():
-        g["margin_over_null_points"] = round(g["mean_pct"] - doc["null_test"]["speedup_pct"], 3)
+        g["margin_over_null_points"] = round(g["mean_pct"] - floor, 3)
         g["margin_exceeds_repeat_spread"] = g["margin_over_null_points"] > g["spread_points"]
+        g["margin_exceeds_floor_spread"] = (
+            g["margin_over_null_points"] > doc["null_floor"]["spread_points"]
+        )
     # A citation cannot name a treatment by its digest without going stale the
     # next time the arms differ in something else, so the group holding the most
     # recent pair is also published under a fixed key.
@@ -278,10 +298,12 @@ def main():
         elif "predicted_if_order_explains_null_pct" in g:
             print(f"    if order explains the null, the reverse order gives "
                   f"{g['predicted_if_order_explains_null_pct']:+.2f}%")
-        print(f"    {g['margin_over_null_points']:+.2f} points over the null test's "
-              f"{doc['null_test']['speedup_pct']:+.2f}%, "
-              f"{'wider' if g['margin_exceeds_repeat_spread'] else 'NOT wider'} "
-              "than the spread between repeats")
+        print(f"    {g['margin_over_null_points']:+.2f} points over the "
+              f"{doc['null_floor']['nulls']}-null floor of "
+              f"{doc['null_floor']['mean_pct']:+.2f}%, "
+              f"{'wider' if g['margin_exceeds_floor_spread'] else 'NOT wider'} "
+              f"than the {doc['null_floor']['spread_points']:.2f}-point spread "
+              "between the nulls that set it")
 
 
 if __name__ == "__main__":

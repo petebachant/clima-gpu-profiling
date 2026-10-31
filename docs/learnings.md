@@ -3120,3 +3120,100 @@ sentences. Section 8g's rule was to read the right field; this one is narrower
 and has no mechanical fix: when a value marker's sign or boolean flips, re-read
 every sentence touching it, because the pipeline reports the stage as up to date
 either way.
+
+## 8i. The regression in the re-baseline is new physics, and it is attributable kernel by kernel (2026-10-31)
+
+The pass that produced the second null also moved the baseline, and SYPD fell by
+about nine percent against the previous stack. Three things had to be ruled out
+before that could be read as a real slowdown, and all three are cheap:
+
+  * **The timestep trap.** SYPD fell *and* per-step walltime rose. The
+    `--config_file` failure moves both the same direction, so it is excluded by
+    the sign alone --- this is the test from the benchmark-window section of
+    `AGENTS.md` doing its job. Both arms and both stacks timed the same number of
+    steps at the same `dt`, which is the confirmation.
+  * **The arm asymmetry.** Both arms were identical in this pass, so it is a
+    null test, and the regression is between *stacks* rather than between arms.
+  * **A global slowdown.** The copyto mean per launch rose, which would be the
+    signature of one. It is arithmetic rather than a hypothesis: the added
+    launches alone, at their own mean, account for the whole rise in the mean, so
+    no pre-existing launch got slower.
+
+What is left is device kernel time, which rose by about a tenth and matches both
+the SYPD fall and the per-step rise. The largest single contributor is
+`copyto_by_slices`, carrying about four fifths of it in added launches rather
+than slower ones; the new microphysics cache broadcasts carry most of the rest,
+and the fold that landed upstream subtracts from it. ClimaCore's range held only
+Buildkite-config commits, so it is cleared explicitly, and the cause is the three
+ClimaAtmos physics changes that merged in the window: mass- and
+energy-consistent updraft sedimentation, implicit cloud-liquid condensation, and
+the KK2000 scheme.
+
+So this is a correctness change being paid for, not a performance bug. The
+figures are in `results/summary.json` and `results/top-kernels.csv` at this
+commit and at the previous stack's, which is the only place they survive --- the
+per-kernel comparison was made off the shared `results/nsys/*.sqlite`, and those
+hold whichever experiment profiled last. If the split matters later it has to be
+re-derived from the two tags, not recovered from the workspace.
+
+One query bug is worth carrying forward, because it is what the useful finding
+came out of. Taking `MAX(registersPerThread)` beside `MAX(blockSize)` over a
+shared kernel short name invents a launch that cannot exist: on an A100 the two
+maxima came from different launch variants and reported a register count at a
+block size whose product exceeds the register file. Group by
+`(shortName, registersPerThread, blockSize)` instead. Doing that is what exposed
+two real populations per source line, and the expensive one was the new default
+snow fall speed.
+
+## 8j. Occupancy headroom and device share are two gates, and the record had them confounded (2026-10-31)
+
+[The fold decision rule](fold-decision-rule.md) stated an honest limit: across
+the four sites it had measured, every site that paid had low occupancy *and* a
+large share of the device, and every flat site had high occupancy *and* a small
+one. Two predictors moving together, so the record could not say which one was
+doing the work, and the document said as much rather than letting the occupancy
+reading take credit for both.
+
+[The sedimentation velocity fold](experiments/sedimentation-velocity-fold.md)
+separates them. Its kernels have the occupancy headroom of a flat site and a
+smaller share of the device than any site on the record, and the fold crossed an
+occupancy step on both and took a sixth off their time --- an order of magnitude
+more than the one earlier site that crossed a step and stayed flat.
+
+So the rule is two rules. Occupancy headroom predicts the change *in the
+kernel*, and there is more than enough of it at the high-occupancy end to get a
+large one. Device share predicts whether the change reaches anything at all. The
+earlier flat results were flat because their kernels were small, not because
+their occupancy was already adequate.
+
+The practical consequence is an ordering, and it is the opposite of the one that
+produced this experiment: screen on device share first, because it is free to
+read off a profile and it rejects the most candidates, and run the const-global
+probe only on what survives. This fold was worth doing as a control and is not
+worth a tagged pass as a speedup --- its saving is a fifth of a point of device
+time, well under the floor between two identical arms, which is what section 8h
+is about.
+
+### The wall clock priced it anyway, and agreed
+
+Naming a CPU stage does not bound the work to the CPU: `calkit run summarize`
+re-ran the stale GPU stages it depends on, so the AMIP pair this experiment had
+decided not to spend was spent, and it is a test of the prediction rather than a
+measurement anyone chose to take. (That trap is now in `AGENTS.md`; the way to
+avoid it is `calkit dvc repro --single-item`, and the way to see it coming is the
+`modified inputs` list in `calkit status`.)
+
+The pair clears the floor between identical arms by a twentieth of the spread
+between the nulls that set the floor, so `wall_clock_resolved` is false. The
+stronger half of that does not depend on the pair at all: the device saving is a
+fifth of a point of device time, so even a perfect conversion to wall clock
+could not have cleared a floor whose own two draws disagree by more than a
+point. The experiment was unresolvable end to end before it ran, which is what
+made it worth running only as a control --- and it is why the per-kernel
+controls, not the SYPD, are the record.
+
+The general form, and it is the reason to write the prediction down first: a
+treatment below the floor cannot be measured end to end, but it can still be
+measured, against untreated kernels in the same launch block on the same stack.
+Choosing the comparison is what decides whether a small effect is a result or a
+rounding error.

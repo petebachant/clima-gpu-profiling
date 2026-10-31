@@ -1,0 +1,132 @@
+diff --git a/ClimaAtmos.jl/src/cache/microphysics_cache.jl b/ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl
+index b33338e..1042e43 100644
+--- a/ClimaAtmos.jl/src/cache/microphysics_cache.jl
++++ b/ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl
+@@ -114,6 +114,14 @@ function set_precipitation_velocities!(
+     cmc = CAP.microphysics_cloud_params(params)
+     cmp = CAP.microphysics_1m_params(params)
+     thp = CAP.thermodynamics_params(params)
++    # Carried into the terminal-velocity kernels in the type, so the Chen 2022
++    # coefficients fold to literals instead of being read from a struct per point.
++    # Only the velocity members: `aml` and `activation` are not needed here and
++    # a type parameter has to be isbits.
++    vcmc, vcmp = let dev = ClimaComms.device(Y.c)
++        tv = (; cmc.liquid, cmc.ice, cmc.stokes, cmc.Ch2022)
++        _fold(dev, tv), _fold(dev, cmp)
++    end
+ 
+     # scratch for adding energy fluxes over subdomains
+     ᶜρwₕhₜ = p.scratch.ᶜtemp_scalar
+@@ -124,8 +132,8 @@ function set_precipitation_velocities!(
+         velocity_mode(atmos, name),
+         name,
+         params,
+-        cmc,
+-        cmp,
++        vcmc,
++        vcmp,
+         ρ,
+         q,
+     )
+@@ -169,6 +177,14 @@ function set_precipitation_velocities!(
+     cmc = CAP.microphysics_cloud_params(params)
+     cmp = CAP.microphysics_1m_params(params)
+     thp = CAP.thermodynamics_params(params)
++    # Carried into the terminal-velocity kernels in the type, so the Chen 2022
++    # coefficients fold to literals instead of being read from a struct per point.
++    # Only the velocity members: `aml` and `activation` are not needed here and
++    # a type parameter has to be isbits.
++    vcmc, vcmp = let dev = ClimaComms.device(Y.c)
++        tv = (; cmc.liquid, cmc.ice, cmc.stokes, cmc.Ch2022)
++        _fold(dev, tv), _fold(dev, cmp)
++    end
+ 
+     ᶜρ⁰ = @. lazy(
+         TD.air_density(thp, ᶜT⁰, ᶜp, ᶜq_tot_nonneg⁰, ᶜq_liq⁰, ᶜq_ice⁰),
+@@ -196,8 +212,8 @@ function set_precipitation_velocities!(
+         velocity_mode(atmos, name),
+         name,
+         params,
+-        cmc,
+-        cmp,
++        vcmc,
++        vcmp,
+         ρ,
+         q,
+     )
+diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/terminal_velocity_utils.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/terminal_velocity_utils.jl
+index 0ebd57e..4ab4084 100644
+--- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/terminal_velocity_utils.jl
++++ b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/terminal_velocity_utils.jl
+@@ -119,7 +119,9 @@ terminal_velocity(
+     cmp,
+     ρ,
+     q,
+-) = CMNe.terminal_velocity(cmc.liquid, cmc.stokes, ρ, q)
++) = let cmc = _unwrapped(cmc)
++    CMNe.terminal_velocity(cmc.liquid, cmc.stokes, ρ, q)
++end
+ 
+ # Ice, 1M
+ terminal_velocity(
+@@ -139,7 +141,9 @@ terminal_velocity(
+     cmp,
+     ρ,
+     q,
+-) = CMNe.terminal_velocity(cmc.ice, cmc.Ch2022.small_ice, ρ, q)
++) = let cmc = _unwrapped(cmc)
++    CMNe.terminal_velocity(cmc.ice, cmc.Ch2022.small_ice, ρ, q)
++end
+ 
+ # Rain, 1M
+ terminal_velocity(
+@@ -163,8 +167,8 @@ terminal_velocity(
+     ρ,
+     q::FT,
+ ) where {FT} = CM1.terminal_velocity(
+-    cmp.precip.rain,
+-    cmp.terminal_velocity.rain,
++    _unwrapped(cmp).precip.rain,
++    _unwrapped(cmp).terminal_velocity.rain,
+     ρ,
+     max(q, FT(1e-8)),
+ )
+@@ -179,7 +183,12 @@ terminal_velocity(
+     ρ,
+     q::FT,
+ ) where {FT} =
+-    CM1.terminal_velocity(cmp.precip.rain, cmc.Ch2022.rain, ρ, max(q, FT(1e-8)))
++    CM1.terminal_velocity(
++        _unwrapped(cmp).precip.rain,
++        _unwrapped(cmc).Ch2022.rain,
++        ρ,
++        max(q, FT(1e-8)),
++    )
+ 
+ # Snow, 1M
+ terminal_velocity(
+@@ -199,7 +208,9 @@ terminal_velocity(
+     cmp,
+     ρ,
+     q,
+-) = CM1.terminal_velocity(cmp.precip.snow, cmp.terminal_velocity.snow, ρ, q)
++) = let cmp = _unwrapped(cmp)
++    CM1.terminal_velocity(cmp.precip.snow, cmp.terminal_velocity.snow, ρ, q)
++end
+ 
+ terminal_velocity(
+     ::NonEquilibriumMicrophysics1M,
+@@ -210,7 +221,12 @@ terminal_velocity(
+     cmp,
+     ρ,
+     q,
+-) = CM1.terminal_velocity(cmp.precip.snow, cmc.Ch2022.large_ice, ρ, q)
++) = CM1.terminal_velocity(
++    _unwrapped(cmp).precip.snow,
++    _unwrapped(cmc).Ch2022.large_ice,
++    ρ,
++    q,
++)
+ 
+ """
+     gs_terminal_velocity(
