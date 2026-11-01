@@ -1,0 +1,729 @@
+diff --git a/RRTMGP.jl/ext/RRTMGPCUDAExt.jl b/RRTMGP.jl-mod/ext/RRTMGPCUDAExt.jl
+index 727d93b..7e676f7 100644
+--- a/RRTMGP.jl/ext/RRTMGPCUDAExt.jl
++++ b/RRTMGP.jl-mod/ext/RRTMGPCUDAExt.jl
+@@ -43,9 +43,11 @@ import RRTMGP.RTESolver: lw_noscat_gpt_col!, lw_2stream_gpt_col!
+ import RRTMGP.RTESolver: sw_noscat_gpt_col!, sw_2stream_gpt_col!
+ import RRTMGP.RTESolver: _compute_aero_mask!, _build_cloud_mask!
+ import RRTMGP.RTESolver: rte_lw_2stream_solve_both_skies!
++import RRTMGP.RTE: LWGptGroups, n_gpt_groups
+ import RRTMGP.RTESolver: lw_2stream_gpt_col_both_skies!
+ import RRTMGP.RTESolver: rte_sw_2stream_solve_both_skies!
+ import RRTMGP.RTESolver: sw_2stream_gpt_col_both_skies!
++import CUDA
+ import CUDA: threadIdx, blockIdx, blockDim, @cuda
+ 
+ _max_threads_cuda() = 256
+diff --git a/RRTMGP.jl/ext/cuda/rte_longwave_2stream.jl b/RRTMGP.jl-mod/ext/cuda/rte_longwave_2stream.jl
+index 4142ca4..f86cbad 100644
+--- a/RRTMGP.jl/ext/cuda/rte_longwave_2stream.jl
++++ b/RRTMGP.jl-mod/ext/cuda/rte_longwave_2stream.jl
+@@ -161,10 +161,27 @@ function rte_lw_2stream_solve_both_skies!(
+     lookup_lw::LookUpLW,
+     lookup_lw_cld::Union{LookUpCld, Nothing},
+     lookup_lw_aero::Union{LookUpAerosolMerra, Nothing},
++    gpt_groups = nothing,
+ )
+     nlay, ncol = AtmosphericStates.get_dims(as)
+     tx, bx = _configure_threadblock(ncol)
+     set_band_flux_to_zero!(band_flux)
++    # The g-point loop splits only when no per-band fluxes are being kept: those
++    # accumulate per g-point too, so they would need per-group partials of their
++    # own and a wider reduction.
++    if !isnothing(gpt_groups) && isnothing(band_flux)
++        return _solve_lw_both_skies_grouped!(
++            gpt_groups,
++            flux_lw,
++            flux_lw_clear,
++            bcs_lw,
++            as,
++            state_cache,
++            lookup_lw,
++            lookup_lw_cld,
++            lookup_lw_aero,
++        )
++    end
+     args = (
+         flux,
+         flux_lw,
+@@ -256,3 +273,246 @@ function rte_lw_2stream_solve_both_skies_CUDA!(
+     end
+     return nothing
+ end
++
++#####
++##### The g-point-grouped fused longwave solve.
++#####
++
++# One stream per group plus the events that fork and join them, created on first
++# use and kept, since the solve runs at every radiation step. The cache is tied
++# to whatever context was current when it was filled, which is why it assumes
++# what the rest of this driver assumes: one device, one solve in flight.
++const _GPT_STREAMS = CUDA.CuStream[]
++const _GPT_JOINS = CUDA.CuEvent[]
++const _GPT_FORK = CUDA.CuEvent[]
++
++function _gpt_concurrency(ngroups)
++    while length(_GPT_STREAMS) < ngroups
++        push!(_GPT_STREAMS, CUDA.CuStream())
++        push!(_GPT_JOINS, CUDA.CuEvent())
++    end
++    isempty(_GPT_FORK) &&
++        push!(_GPT_FORK, CUDA.CuEvent())
++    return _GPT_STREAMS, _GPT_JOINS, _GPT_FORK[1]
++end
++
++"""
++    _solve_lw_both_skies_grouped!(groups, flux_lw, flux_lw_clear, bcs_lw, as, ...)
++
++Run the fused longwave solve as `n_gpt_groups(groups)` concurrent kernels, each
++taking every `ngroups`-th g-point, and reduce their partial fluxes.
++
++The point is resident parallelism: one thread per column is 96 blocks on 108
++SMs, a single wave with no second wave to hide its latency behind. The groups
++are separate launches on separate streams rather than one wider grid because
++that way each group's workspaces arrive as kernel arguments already pointing at
++its own memory, so the solve kernel compiles to exactly what the ungrouped one
++does -- a kernel this close to the register ceiling cannot afford to compute
++workspace offsets per thread.
++
++Fork and join through events rather than `synchronize`: the host must not block
++here, since it is otherwise free to queue the next steps' work.
++
++The fluxes are **not** bit-for-bit with the ungrouped solve. Summing a column's
++g-points in 16 interleaved partials and then adding the partials is a different
++order of the same floating-point sum. Everything else is unchanged, including
++which mask each g-point draws -- the McICA key indexes a stateless draw in
++`(key, column, g-point, layer)`, so splitting the loop cannot shift it.
++"""
++function _solve_lw_both_skies_grouped!(
++    groups::LWGptGroups,
++    flux_lw::FluxLW,
++    flux_lw_clear::FluxLW,
++    bcs_lw::LwBCs,
++    as::AtmosphericState,
++    state_cache::Union{TransposedStateCache, Nothing},
++    lookup_lw::LookUpLW,
++    lookup_lw_cld::Union{LookUpCld, Nothing},
++    lookup_lw_aero::Union{LookUpAerosolMerra, Nothing},
++)
++    nlay, ncol = AtmosphericStates.get_dims(as)
++    nlev = nlay + 1
++    n_gpt = length(lookup_lw.band_data.major_gpt2bnd)
++    ngroups = n_gpt_groups(groups)
++    tx, bx = _configure_threadblock(ncol)
++    (; aerosol_state, cloud_state) = as
++
++    # The aerosol mask depends on the column alone, so it is computed once here
++    # instead of identically by every group.
++    if aerosol_state isa AerosolState
++        @cuda always_inline = true threads = (tx) blocks = (bx) _lw_aero_mask_CUDA!(
++            aerosol_state,
++            ncol,
++        )
++    end
++
++    streams, joins, fork = _gpt_concurrency(ngroups)
++    CUDA.record(fork)
++    for g in 1:ngroups
++        s = streams[g]
++        CUDA.wait(fork, s)
++        args = (
++            groups.fluxb[g],
++            groups.acc[g],
++            groups.acc_clear[g],
++            groups.src[g],
++            bcs_lw,
++            groups.op[g],
++            groups.mask[g],
++            view(groups.cloudy, :, g),
++            nlay,
++            ncol,
++            as,
++            state_cache,
++            lookup_lw,
++            lookup_lw_cld,
++            lookup_lw_aero,
++            g,
++            ngroups,
++        )
++        @cuda always_inline = true threads = (tx) blocks = (bx) stream = s rte_lw_2stream_solve_group_CUDA!(
++            args...,
++        )
++        CUDA.record(joins[g], s)
++    end
++    for g in 1:ngroups
++        CUDA.wait(joins[g])
++    end
++
++    rtx, rbx = _configure_threadblock(ncol * nlev)
++    @cuda always_inline = true threads = (rtx) blocks = (rbx) _reduce_lw_groups_CUDA!(
++        flux_lw,
++        flux_lw_clear,
++        groups.acc_data,
++        groups.acc_clear_data,
++        groups.cloudy,
++        cloud_state isa CloudState ? cloud_state.cld_cover_lw : nothing,
++        ngroups,
++        n_gpt,
++        ncol,
++        nlev,
++    )
++    return nothing
++end
++
++# Aerosol mask for every column, hoisted out of the group kernels.
++function _lw_aero_mask_CUDA!(aerosol_state::AerosolState, ncol)
++    gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
++    gcol ≤ ncol && _compute_aero_mask!(aerosol_state, gcol)
++    return nothing
++end
++
++# One group's share of the fused longwave g-point loop. The per-column body is
++# the same `lw_2stream_gpt_col_both_skies!` the ungrouped kernel calls, handed
++# this group's workspaces and told which g-point starts its stride, so the
++# accumulators are assigned on the first one and added to afterwards.
++function rte_lw_2stream_solve_group_CUDA!(
++    flux::FluxLW,
++    acc::FluxLW,
++    acc_clear::FluxLW,
++    src_lw::SourceLW2Str,
++    bcs_lw::LwBCs,
++    op::TwoStream,
++    mask,
++    cloudy_count,
++    nlay,
++    ncol,
++    as::AtmosphericState,
++    state_cache::Union{TransposedStateCache, Nothing},
++    lookup_lw::LookUpLW,
++    lookup_lw_cld::Union{LookUpCld, Nothing},
++    lookup_lw_aero::Union{LookUpAerosolMerra, Nothing},
++    grp,
++    ngroups,
++)
++    gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
++    nlev = nlay + 1
++    (; major_gpt2bnd) = lookup_lw.band_data
++    n_gpt = length(major_gpt2bnd)
++    if gcol ≤ ncol
++        FT = eltype(acc.flux_up)
++        n_cloudy_gpts = 0
++        if grp > n_gpt
++            # More groups than g-points: this one has no work, and the reduction
++            # reads its slice regardless.
++            @inbounds for ilev in 1:nlev
++                acc.flux_up[gcol, ilev] = FT(0)
++                acc.flux_dn[gcol, ilev] = FT(0)
++                acc_clear.flux_up[gcol, ilev] = FT(0)
++                acc_clear.flux_dn[gcol, ilev] = FT(0)
++            end
++        else
++            @inbounds for igpt in grp:ngroups:n_gpt
++                cloudy = lw_2stream_gpt_col_both_skies!(
++                    igpt,
++                    gcol,
++                    flux,
++                    acc,
++                    acc_clear,
++                    nothing,
++                    src_lw,
++                    bcs_lw,
++                    op,
++                    as,
++                    state_cache,
++                    lookup_lw,
++                    lookup_lw_cld,
++                    lookup_lw_aero,
++                    major_gpt2bnd[igpt],
++                    nlev,
++                    ncol,
++                    mask,
++                    grp,
++                )
++                n_cloudy_gpts += cloudy ? 1 : 0
++            end
++        end
++        @inbounds cloudy_count[gcol] = Int32(n_cloudy_gpts)
++    end
++    return nothing
++end
++
++# Sum the groups' partial fluxes into the broadband ones, finish the net flux,
++# and total the cloud-cover tally. One thread per (column, level).
++function _reduce_lw_groups_CUDA!(
++    flux_lw::FluxLW,
++    flux_lw_clear::FluxLW,
++    acc_data,
++    acc_clear_data,
++    cloudy_count,
++    cld_cover_lw,
++    ngroups,
++    n_gpt,
++    ncol,
++    nlev,
++)
++    i = threadIdx().x + (blockIdx().x - 1) * blockDim().x
++    if i ≤ ncol * nlev
++        gcol = (i - 1) % ncol + 1
++        ilev = (i - 1) ÷ ncol + 1
++        FT = eltype(flux_lw.flux_up)
++        up, dn, cup, cdn = FT(0), FT(0), FT(0), FT(0)
++        @inbounds for g in 1:ngroups
++            up += acc_data[gcol, ilev, 1, g]
++            dn += acc_data[gcol, ilev, 2, g]
++            cup += acc_clear_data[gcol, ilev, 1, g]
++            cdn += acc_clear_data[gcol, ilev, 2, g]
++        end
++        @inbounds begin
++            flux_lw.flux_up[gcol, ilev] = up
++            flux_lw.flux_dn[gcol, ilev] = dn
++            flux_lw.flux_net[gcol, ilev] = up - dn
++            flux_lw_clear.flux_up[gcol, ilev] = cup
++            flux_lw_clear.flux_dn[gcol, ilev] = cdn
++            flux_lw_clear.flux_net[gcol, ilev] = cup - cdn
++            if ilev == 1 && !isnothing(cld_cover_lw)
++                n = 0
++                for g in 1:ngroups
++                    n += cloudy_count[gcol, g]
++                end
++                cld_cover_lw[gcol] = FT(n) / n_gpt
++            end
++        end
++    end
++    return nothing
++end
+diff --git a/RRTMGP.jl/src/api/solver.jl b/RRTMGP.jl-mod/src/api/solver.jl
+index b60492a..1344561 100644
+--- a/RRTMGP.jl/src/api/solver.jl
++++ b/RRTMGP.jl-mod/src/api/solver.jl
+@@ -159,6 +159,7 @@ function RRTMGPSolver(
+     lookups = nothing,
+     spectral_fluxes = false,
+     n_gauss_angles::Int = 1,
++    ngpt_groups::Int = RTE.DEFAULT_NGPT_GROUPS,
+ )
+     (; context) = grid_params
+ 
+@@ -297,6 +298,17 @@ function RRTMGPSolver(
+             band_flux_sw, # optional per-band fluxes (or `nothing`)
+             state_cache,
+         )
++    # Workspaces for the g-point-grouped fused longwave solve. Only that solve
++    # reads them, so they are allocated only where it can run: two-stream
++    # spectral longwave with no per-band fluxes to accumulate per g-point.
++    gpt_groups_lw =
++        (
++            !(op_lw isa OneScalar) &&
++            !(radiation_method isa GrayRadiation) &&
++            isnothing(band_flux_lw) &&
++            ngpt_groups > 1
++        ) ? RTE.LWGptGroups(grid_params, ngpt_groups; params) :
++        nothing
+     lws =
+         op_lw isa OneScalar ?
+         RTE.NoScatLWRTE(
+@@ -321,6 +333,7 @@ function RRTMGPSolver(
+             flux_lw, # views attached
+             band_flux_lw, # optional per-band fluxes (or `nothing`)
+             state_cache,
++            gpt_groups_lw, # per-group workspaces, or `nothing` for one group
+         )
+     return RRTMGPSolver(
+         grid_params,
+diff --git a/RRTMGP.jl/src/optics/compute_optical_props.jl b/RRTMGP.jl-mod/src/optics/compute_optical_props.jl
+index d9614af..95c399b 100644
+--- a/RRTMGP.jl/src/optics/compute_optical_props.jl
++++ b/RRTMGP.jl-mod/src/optics/compute_optical_props.jl
+@@ -381,6 +381,7 @@ could drift apart without anything noticing.
+     gcol::Int,
+     lkp_cld::LookUpCld,
+     ibnd::Int,
++    mask_store = as.cloud_state.mask_lw,
+ )
+     cloud_state = as.cloud_state
+     @inbounds begin
+@@ -388,7 +389,7 @@ could drift apart without anything noticing.
+             view(op.τ, gcol, :),
+             view(op.ssa, gcol, :),
+             view(op.g, gcol, :),
+-            view(cloud_state.mask_lw, :, gcol),
++            view(mask_store, :, gcol),
+             view(cloud_state.cld_r_eff_liq, :, gcol),
+             view(cloud_state.cld_r_eff_ice, :, gcol),
+             view(cloud_state.cld_path_liq, :, gcol),
+diff --git a/RRTMGP.jl/src/rte/RTE.jl b/RRTMGP.jl-mod/src/rte/RTE.jl
+index 44d5712..8dce321 100644
+--- a/RRTMGP.jl/src/rte/RTE.jl
++++ b/RRTMGP.jl-mod/src/rte/RTE.jl
+@@ -12,6 +12,7 @@ using ..BCs
+ import ..Parameters as RP
+ 
+ export NoScatLWRTE, TwoStreamLWRTE, NoScatSWRTE, TwoStreamSWRTE
++export LWGptGroups, n_gpt_groups
+ 
+ # Device-dependent default for the workspaces' `state_cache` keyword. On the
+ # GPU, a `TransposedStateCache` gives the g-point loop coalesced state reads
+@@ -26,6 +27,14 @@ _default_state_cache(::ClimaComms.AbstractCPUDevice, gp::RRTMGPGridParams) =
+ _default_state_cache(::ClimaComms.AbstractDevice, gp::RRTMGPGridParams) =
+     TransposedStateCache(gp)
+ 
++# How many pieces the fused longwave g-point loop is split into. One is the
++# serial loop every other solver uses; above one the solve runs that many
++# concurrent kernels per spectral solve, trading the memory for the per-group
++# workspaces against resident parallelism the single wave cannot otherwise get.
++const DEFAULT_NGPT_GROUPS = 16
++
++include("gpt_groups.jl")
++
+ """
+     NoScatLWRTE(grid_params::RRTMGPGridParams; params, sfc_emis, inc_flux,
+                 n_gauss_angles = 1)
+@@ -117,6 +126,7 @@ struct TwoStreamLWRTE{
+     FXL <: FluxLW,
+     FXBND,
+     TSC,
++    GG,
+ }
+     context::C
+     op::OP
+@@ -126,11 +136,25 @@ struct TwoStreamLWRTE{
+     flux::FXL
+     band_flux::FXBND
+     state_cache::TSC
++    gpt_groups::GG
+ end
+ Adapt.@adapt_structure TwoStreamLWRTE
+-# By default no per-band (spectrally-resolved) fluxes are retained.
++# By default no per-band (spectrally-resolved) fluxes are retained, and the
++# g-point loop is not split.
+ TwoStreamLWRTE(context, op, src, bcs, fluxb, flux, band_flux) =
+     TwoStreamLWRTE(context, op, src, bcs, fluxb, flux, band_flux, nothing)
++TwoStreamLWRTE(context, op, src, bcs, fluxb, flux, band_flux, state_cache) =
++    TwoStreamLWRTE(
++        context,
++        op,
++        src,
++        bcs,
++        fluxb,
++        flux,
++        band_flux,
++        state_cache,
++        nothing,
++    )
+ 
+ function TwoStreamLWRTE(
+     grid_params::RRTMGPGridParams;
+@@ -138,6 +162,7 @@ function TwoStreamLWRTE(
+     sfc_emis,
+     inc_flux,
+     state_cache = _default_state_cache(grid_params),
++    ngpt_groups::Int = DEFAULT_NGPT_GROUPS,
+ )
+     (; context) = grid_params
+     op = TwoStream(grid_params)
+@@ -145,6 +170,10 @@ function TwoStreamLWRTE(
+     bcs = LwBCs(sfc_emis, inc_flux)
+     fluxb = FluxLW(grid_params)
+     flux = FluxLW(grid_params)
++    # Only the fused both-skies solve reads these; the others ignore them.
++    gpt_groups =
++        ngpt_groups > 1 ? LWGptGroups(grid_params, ngpt_groups; params) :
++        nothing
+     return TwoStreamLWRTE(
+         context,
+         op,
+@@ -154,6 +183,7 @@ function TwoStreamLWRTE(
+         flux,
+         nothing,
+         state_cache,
++        gpt_groups,
+     )
+ end
+ 
+diff --git a/RRTMGP.jl/src/rte/driver_utils.jl b/RRTMGP.jl-mod/src/rte/driver_utils.jl
+index 31e416f..4f23912 100644
+--- a/RRTMGP.jl/src/rte/driver_utils.jl
++++ b/RRTMGP.jl-mod/src/rte/driver_utils.jl
+@@ -14,14 +14,16 @@
+ 
+ # McICA cloud mask for one column and g-point; returns whether any layer is
+ # cloudy (for the cloud-cover diagnostic). `S` selects `:mask_lw`/`:mask_sw`.
+-@inline _build_cloud_mask!(::Nothing, ::Val, gcol, igpt) = false
++@inline _build_cloud_mask!(::Nothing, ::Val, gcol, igpt, mask_store = nothing) =
++    false
+ @inline function _build_cloud_mask!(
+     cloud_state::CloudState,
+     ::Val{S},
+     gcol,
+     igpt,
++    mask_store = getproperty(cloud_state, S),
+ ) where {S}
+-    mask = view(getproperty(cloud_state, S), :, gcol)
++    mask = view(mask_store, :, gcol)
+     # The band is part of the key: the two bands sample independently, and
+     # without this they would draw the same mask for a given column and g-point.
+     band_key =
+@@ -50,10 +52,11 @@ end
+     gcol,
+     nlev,
+     igpt,
++    first_igpt = 1,
+ )
+     acc_up, acc_dn = flux_acc.flux_up, flux_acc.flux_dn
+     up, dn = flux.flux_up, flux.flux_dn
+-    if igpt == 1
++    if igpt == first_igpt
+         @inbounds for ilev in 1:nlev
+             acc_up[gcol, ilev] = up[gcol, ilev]
+             acc_dn[gcol, ilev] = dn[gcol, ilev]
+@@ -73,11 +76,12 @@ end
+     gcol,
+     nlev,
+     igpt,
++    first_igpt = 1,
+ )
+     acc_up, acc_dn, acc_dir =
+         flux_acc.flux_up, flux_acc.flux_dn, flux_acc.flux_dn_dir
+     up, dn, dir = flux.flux_up, flux.flux_dn, flux.flux_dn_dir
+-    if igpt == 1
++    if igpt == first_igpt
+         @inbounds for ilev in 1:nlev
+             acc_up[gcol, ilev] = up[gcol, ilev]
+             acc_dn[gcol, ilev] = dn[gcol, ilev]
+diff --git a/RRTMGP.jl-mod/src/rte/gpt_groups.jl b/RRTMGP.jl-mod/src/rte/gpt_groups.jl
+new file mode 100644
+index 0000000..d1add95
+--- /dev/null
++++ b/RRTMGP.jl-mod/src/rte/gpt_groups.jl
+@@ -0,0 +1,72 @@
++#####
++##### Per-group workspaces for a g-point-parallel solve.
++#####
++
++"""
++    LWGptGroups(grid_params::RRTMGPGridParams, ngroups; params)
++
++Workspaces for solving a column's longwave g-point loop in `ngroups`
++independent pieces, one kernel each.
++
++At one thread per column the whole grid is a single wave -- 96 blocks of 256
++threads against 108 SMs, 8 resident warps apiece -- so there is no second wave
++to hide the latency behind and removing work from a thread buys almost nothing.
++Splitting the g-point loop multiplies the resident parallelism instead, which
++is the restructure priced in section 4l of the profiling study.
++
++Each group needs its own `op`, `src`, `fluxb` and cloud mask, because those are
++per-thread workspaces that the drivers index by column, and its own flux
++accumulators for a reduction to sum afterwards. The scratch is allocated per
++group rather than sliced out of one wide array so the solve kernel sees exactly
++the types the ungrouped one does and pays no extra registers for the split; the
++accumulators do carry a trailing group dimension, because the reduction has to
++walk it.
++
++`ngroups > 1` is implemented for CUDA. The CPU driver ignores these workspaces
++and solves the whole g-point loop per column, which is correct either way.
++"""
++struct LWGptGroups{N, OP, SL, FB, FX, A4, MK, CT}
++    op::NTuple{N, OP}
++    src::NTuple{N, SL}
++    fluxb::NTuple{N, FB}
++    mask::NTuple{N, MK}
++    "all-sky partial accumulators, views into `acc_data`"
++    acc::NTuple{N, FX}
++    "clear-sky partial accumulators, views into `acc_clear_data`"
++    acc_clear::NTuple{N, FX}
++    "`(ncol, nlev, 3, ngroups)`; the field axis is up, down, net as in `FluxLW`"
++    acc_data::A4
++    acc_clear_data::A4
++    "`(ncol, ngroups)`: cloudy g-points seen by each group, summed for the cover"
++    cloudy::CT
++end
++Adapt.@adapt_structure LWGptGroups
++
++function LWGptGroups(grid_params::RRTMGPGridParams, ngroups::Int; params)
++    ngroups ≥ 1 || error("ngroups must be at least 1, got $ngroups")
++    (; ncol, nlay) = grid_params
++    DA = ClimaComms.array_type(grid_params)
++    FT = eltype(grid_params)
++    nlev = nlay + 1
++    acc_data = DA{FT}(undef, ncol, nlev, 3, ngroups)
++    acc_clear_data = DA{FT}(undef, ncol, nlev, 3, ngroups)
++    # `view(d, :, :, k, g)` is a contiguous block, so the accumulators index as
++    # cheaply as the plain arrays the ungrouped path uses.
++    fluxes(d) = ntuple(ngroups) do g
++        FluxLW(view(d, :, :, 1, g), view(d, :, :, 2, g), view(d, :, :, 3, g))
++    end
++    return LWGptGroups(
++        ntuple(_ -> TwoStream(grid_params), ngroups),
++        ntuple(_ -> SourceLW2Str(grid_params; params), ngroups),
++        ntuple(_ -> FluxLW(grid_params), ngroups),
++        ntuple(_ -> DA{Bool}(undef, nlay, ncol), ngroups),
++        fluxes(acc_data),
++        fluxes(acc_clear_data),
++        acc_data,
++        acc_clear_data,
++        DA{Int32}(undef, ncol, ngroups),
++    )
++end
++
++n_gpt_groups(::Nothing) = 1
++n_gpt_groups(::LWGptGroups{N}) where {N} = N
+diff --git a/RRTMGP.jl/src/rte/longwave_2stream.jl b/RRTMGP.jl-mod/src/rte/longwave_2stream.jl
+index e9deced..0b3a39b 100644
+--- a/RRTMGP.jl/src/rte/longwave_2stream.jl
++++ b/RRTMGP.jl-mod/src/rte/longwave_2stream.jl
+@@ -365,8 +365,11 @@ function rte_lw_2stream_solve_both_skies! end
+     ibnd,
+     nlev,
+     ncol,
++    mask_store = as.cloud_state isa CloudState ? as.cloud_state.mask_lw : nothing,
++    first_igpt = 1,
+ )
+-    cloudy = _build_cloud_mask!(as.cloud_state, Val(:mask_lw), gcol, igpt)
++    cloudy =
++        _build_cloud_mask!(as.cloud_state, Val(:mask_lw), gcol, igpt, mask_store)
+     # Gas and aerosol only: this is the clear sky, and the shared half
+     compute_optical_props!(
+         op,
+@@ -380,13 +383,13 @@ function rte_lw_2stream_solve_both_skies! end
+         lookup_lw_aero,
+     )
+     rte_lw_2stream!(op, flux, src_lw, bcs_lw, gcol, igpt, ibnd, nlev, ncol)
+-    _accumulate_fluxes!(flux_lw_clear, flux, gcol, nlev, igpt)
++    _accumulate_fluxes!(flux_lw_clear, flux, gcol, nlev, igpt, first_igpt)
+     # Add the cloud increment on top of the same optics and sweep again
+     if !isnothing(lookup_lw_cld)
+-        add_cloud_optics_lw!(op, as, gcol, lookup_lw_cld, ibnd)
++        add_cloud_optics_lw!(op, as, gcol, lookup_lw_cld, ibnd, mask_store)
+     end
+     rte_lw_2stream!(op, flux, src_lw, bcs_lw, gcol, igpt, ibnd, nlev, ncol)
+-    _accumulate_fluxes!(flux_lw, flux, gcol, nlev, igpt)
++    _accumulate_fluxes!(flux_lw, flux, gcol, nlev, igpt, first_igpt)
+     accumulate_band_flux!(band_flux, flux.flux_up, flux.flux_dn, gcol, ibnd, nlev)
+     return cloudy
+ end
+@@ -410,7 +413,17 @@ after the cloud one would mean recomputing it, which is the saving this
+ exists for.
+ """
+ function solve_lw_both_skies!(
+-    (; context, fluxb, flux, band_flux, src, bcs, op, state_cache)::TwoStreamLWRTE,
++    (;
++        context,
++        fluxb,
++        flux,
++        band_flux,
++        src,
++        bcs,
++        op,
++        state_cache,
++        gpt_groups,
++    )::TwoStreamLWRTE,
+     flux_lw_clear::FluxLW,
+     as::AtmosphericState,
+     lookup_lw::LookUpLW,
+@@ -433,6 +446,7 @@ function solve_lw_both_skies!(
+         lookup_lw,
+         lookup_lw_cld,
+         lookup_lw_aero,
++        gpt_groups,
+     )
+     apply_metric_scaling!(flux, metric_scaling)
+     apply_metric_scaling!(flux_lw_clear, metric_scaling)
+@@ -458,6 +472,7 @@ function rte_lw_2stream_solve_both_skies!(
+     lookup_lw::LookUpLW,
+     lookup_lw_cld::Union{LookUpCld, Nothing},
+     lookup_lw_aero::Union{LookUpAerosolMerra, Nothing},
++    gpt_groups = nothing,
+ )
+     nlay, ncol = AtmosphericStates.get_dims(as)
+     nlev = nlay + 1
+diff --git a/RRTMGP.jl/test/all_sky_with_aerosols_utils.jl b/RRTMGP.jl-mod/test/all_sky_with_aerosols_utils.jl
+index 996c555..8cd00c5 100644
+--- a/RRTMGP.jl/test/all_sky_with_aerosols_utils.jl
++++ b/RRTMGP.jl-mod/test/all_sky_with_aerosols_utils.jl
+@@ -153,6 +153,7 @@ function all_sky_with_aerosols(
+         as;
+         op_lw,
+         op_sw,
++        ngpt_groups = 1,
+     )
+     # Passing prebuilt `lookups` reuses them (no second NetCDF read); they are stored as-is.
+     prebuilt_lookups = RRTMGP.lookup_tables(grid_params, radiation_method)
+@@ -166,6 +167,7 @@ function all_sky_with_aerosols(
+         op_lw,
+         op_sw,
+         lookups = prebuilt_lookups,
++        ngpt_groups = 1,
+     )
+     @test solver_reused.lookups === prebuilt_lookups
+     # One explicit key for both bands, so the standalone solves below sample the
+@@ -245,6 +247,56 @@ function all_sky_with_aerosols(
+     RRTMGP.update_sw_fluxes!(solver)
+     RRTMGP.update_lw_fluxes!(solver)
+ 
++    # --- the g-point-grouped longwave solve, against the serial one ----------
++    # Grouping splits a column's g-point loop across concurrent kernels, each
++    # accumulating its own partial flux for a reduction to sum, so the result is
++    # a different summation order of the same 256 terms -- close, but not the
++    # exact equality the clear-sky assertion above demands, which is why the
++    # solver it uses is pinned to one group. Anything else that went wrong with
++    # the split -- a dropped g-point, groups racing on shared scratch, a mask
++    # drawn for the wrong g-point -- moves the fluxes far more than roundoff,
++    # and 3 groups is deliberately not a divisor of the g-point count.
++    if SLVLW == TwoStreamLWRTE
++        # Both arms must draw from the same key, and the cover lives on the
++        # shared `as`, so each arm's results are read before the next solve.
++        track_cover = !isnothing(as.cloud_state.cld_cover_lw)
++        RRTMGP.update_lw_fluxes!(solver, fused_key)
++        serial_all = copy(Array(parent(solver.lws.flux.flux_net)))
++        serial_clear = copy(Array(parent(solver.clear_flux_acc_lw.flux_net)))
++        serial_cover =
++            track_cover ? copy(Array(as.cloud_state.cld_cover_lw)) : nothing
++        for ng in (3, 16)
++            grouped = RRTMGPSolver(
++                grid_params,
++                radiation_method,
++                param_set,
++                bcs_lw,
++                bcs_sw,
++                as;
++                op_lw = Optics.TwoStream(grid_params),
++                op_sw = Optics.TwoStream(grid_params),
++                lookups = prebuilt_lookups,
++                ngpt_groups = ng,
++            )
++            @test n_gpt_groups(grouped.lws.gpt_groups) == ng
++            RRTMGP.update_lw_fluxes!(grouped, fused_key)
++            grouped_all = Array(parent(grouped.lws.flux.flux_net))
++            grouped_clear = Array(parent(grouped.clear_flux_acc_lw.flux_net))
++            grouped_cover =
++                track_cover ? Array(as.cloud_state.cld_cover_lw) : nothing
++            for (g, ser) in (
++                (grouped_all, serial_all),
++                (grouped_clear, serial_clear),
++            )
++                @test maximum(abs, g .- ser) <= 1e-5 * maximum(abs, ser)
++            end
++            # The cover is a count of cloudy g-points summed over the groups, so
++            # splitting the loop must not change it at all.
++            track_cover && @test grouped_cover == serial_cover
++        end
++        RRTMGP.update_lw_fluxes!(solver)
++    end
++
+     # --- the fallback and the key, asserted without reference fluxes ---------
+     # Reproducibility and clear-sky equality are self-consistency properties, so
+     # they can be checked on solver configurations this file has no reference
+@@ -274,6 +326,11 @@ function all_sky_with_aerosols(
+             op_lw = op_lw_t,
+             op_sw = op_sw_t,
+             lookups = prebuilt_lookups,
++            # The clear-sky assertion below is bit-for-bit against a standalone
++            # solve, which a split g-point loop cannot match: it sums the same
++            # terms in a different order. The reproducibility assertion above
++            # holds either way, and the grouped path has its own comparison.
++            ngpt_groups = 1,
+         )
+         RRTMGP.update_fluxes!(slv, UInt32(42))
+         lw_a = copy(Array(parent(slv.lws.flux.flux_net)))

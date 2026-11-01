@@ -593,6 +593,19 @@ stages:
     frozen: true
     desc: Automatically generated from the 'export-sedimentation-fold' stage in
       calkit.yaml. Changes made here will be overwritten.
+  export-gpoint-groups:
+    cmd: calkit xenv -n py --no-check -- python scripts/export-gpoint-groups.py
+    deps:
+      - scripts/export-gpoint-groups.py
+      - results/nsys/baseline.sqlite
+      - results/nsys/mod.sqlite
+      - .calkit/env-locks/py
+    outs:
+      - results/gpoint-groups.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'export-gpoint-groups' stage in
+      calkit.yaml. Changes made here will be overwritten.
   val-mileage:
     cmd: calkit xenv -n py --no-check -- python scripts/val-mileage.py
     deps:
