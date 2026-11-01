@@ -1164,6 +1164,26 @@ pipeline:
       # from the tag rather than only from whatever main last profiled.
       frozen: true
 
+    export-gpoint-groups:
+      kind: python-script
+      environment: py
+      script_path: scripts/export-gpoint-groups.py
+      # Only the two profiles. The wall-clock side is deliberately absent: a
+      # stage that reads anything derived from a scheduler log depends on the
+      # AMIP runs through three hops, which is how a Markdown stage submitted
+      # amip-mod on 2026-10-31.
+      inputs:
+        - scripts/export-gpoint-groups.py
+        - results/nsys/baseline.sqlite
+        - results/nsys/mod.sqlite
+      outputs:
+        - path: results/gpoint-groups.json
+          storage: git
+      # Live until this pass is tagged, then frozen on main like every snapshot
+      # taken off the shared nsys paths, which hold whichever experiment
+      # profiled last. The file carries both arms' refs and both database
+      # hashes so a stale freeze shows up in the snapshot itself.
+
     val-mileage:
       kind: python-script
       environment: py
