@@ -60,10 +60,37 @@ def connect(path):
     return sqlite3.connect(f"file:{path}?mode=ro", uri=True)
 
 
+def union_ms(rows):
+    """Elapsed time covered by a set of [start, end] intervals, merged.
+
+    `SUM(end-start)` is elapsed GPU time only while kernels do not overlap,
+    which held for every measurement in this project until a treatment started
+    launching concurrent kernels. It then counts a moment twice for every kernel
+    resident in it: for the longwave split, summing reported +78% where the
+    merged intervals say -9%, the opposite sign. Every device share here is
+    merged, and the summed figure is kept beside it only to show the gap.
+    """
+    rows = sorted(rows)
+    total, cur_s, cur_e = 0, None, None
+    for st, en in rows:
+        if cur_s is None:
+            cur_s, cur_e = st, en
+        elif st <= cur_e:
+            cur_e = max(cur_e, en)
+        else:
+            total += cur_e - cur_s
+            cur_s, cur_e = st, en
+    if cur_s is not None:
+        total += cur_e - cur_s
+    return total / 1e6
+
+
 def device_total(con):
-    return con.execute(
-        "SELECT SUM(end-start)/1e6 FROM CUPTI_ACTIVITY_KIND_KERNEL"
-    ).fetchone()[0]
+    rows = con.execute(
+        "SELECT start, end FROM CUPTI_ACTIVITY_KIND_KERNEL"
+    ).fetchall()
+    summed = sum(e - s for s, e in rows) / 1e6
+    return union_ms(rows), summed
 
 
 def family(con, like):
@@ -78,7 +105,8 @@ def family(con, like):
     """, (like,)).fetchall()
     if not rows:
         return None
-    ms = sum(e - s for *_, s, e in rows) / 1e6
+    summed = sum(e - s for *_, s, e in rows) / 1e6
+    ms = union_ms([(s, e) for *_, s, e in rows])
     # One name must not stand for two launch shapes: reporting one launch's
     # registers beside another's grid invents a kernel that never ran, which is
     # the error section 8g of docs/learnings.md was written for.
@@ -89,7 +117,11 @@ def family(con, like):
     return {
         "name": rows[0][0],
         "launches": len(rows),
-        "total_ms": round(ms, 1),
+        "elapsed_ms": round(ms, 1),
+        "summed_ms": round(summed, 1),
+        # Above one means launches of this family overlapped each other, so the
+        # summed figure is not elapsed time.
+        "summed_over_elapsed": round(summed / ms, 2) if ms else None,
         "registers": regs,
         "block": block,
         "grid": grid,
@@ -157,7 +189,8 @@ def digest(path):
 
 def main():
     bcon, mcon = connect(BASE), connect(MOD)
-    btotal, mtotal = device_total(bcon), device_total(mcon)
+    btotal, bsummed = device_total(bcon)
+    mtotal, msummed = device_total(mcon)
 
     b_lw, m_lw = family(bcon, LW_SOLVE), family(mcon, LW_SOLVE)
     b_sw, m_sw = family(bcon, SW_SOLVE), family(mcon, SW_SOLVE)
@@ -168,10 +201,10 @@ def main():
 
     reduce_k = family(mcon, LW_REDUCE)
     aero_k = family(mcon, LW_AERO)
-    overhead_ms = sum(k["total_ms"] for k in (reduce_k, aero_k) if k)
+    overhead_ms = sum(k["elapsed_ms"] for k in (reduce_k, aero_k) if k)
     # The split is only worth what it nets after its own reduction.
-    lw_mod_charged = m_lw["total_ms"] + overhead_ms
-    lw_saved = b_lw["total_ms"] - lw_mod_charged
+    lw_mod_charged = m_lw["elapsed_ms"] + overhead_ms
+    lw_saved = b_lw["elapsed_ms"] - lw_mod_charged
 
     ngroups = m_lw["launches"] // b_lw["launches"]
     conc = concurrency(m_lw["_rows"], ngroups) if ngroups > 1 else {
@@ -180,7 +213,7 @@ def main():
 
     # Shortwave is untouched, so its movement is the noise band the longwave
     # change has to clear.
-    sw_delta = m_sw["total_ms"] - b_sw["total_ms"]
+    sw_delta = m_sw["elapsed_ms"] - b_sw["elapsed_ms"]
     bc, mc = controls(bcon, ("rte_lw", "rte_sw")), controls(mcon, ("rte_lw", "rte_sw"))
     shared = sorted(set(bc) & set(mc))
     worst_control = max((abs(mc[k] - bc[k]) for k in shared), default=0.0)
@@ -192,8 +225,11 @@ def main():
             "mod_overhead_ms": round(overhead_ms, 1),
             "mod_charged_ms": round(lw_mod_charged, 1),
             "saved_ms": round(lw_saved, 1),
-            "change_pct": round(100 * -lw_saved / b_lw["total_ms"], 2),
-            "pct_of_device_baseline": round(100 * b_lw["total_ms"] / btotal, 2),
+            "change_pct": round(100 * -lw_saved / b_lw["elapsed_ms"], 2),
+            "change_pct_if_summed": round(
+                100 * (m_lw["summed_ms"] + overhead_ms - b_lw["summed_ms"])
+                / b_lw["summed_ms"], 2),
+            "pct_of_device_baseline": round(100 * b_lw["elapsed_ms"] / btotal, 2),
             "saved_pct_of_device": round(100 * lw_saved / btotal, 3),
         },
         "overhead": {
@@ -202,10 +238,10 @@ def main():
         },
         "concurrency": conc,
         "shortwave_control": {
-            "baseline_ms": b_sw["total_ms"],
-            "mod_ms": m_sw["total_ms"],
+            "baseline_ms": b_sw["elapsed_ms"],
+            "mod_ms": m_sw["elapsed_ms"],
             "delta_ms": round(sw_delta, 1),
-            "change_pct": round(100 * sw_delta / b_sw["total_ms"], 2),
+            "change_pct": round(100 * sw_delta / b_sw["elapsed_ms"], 2),
             "untouched": True,
         },
         "noise": {
@@ -219,9 +255,17 @@ def main():
         "saving_resolved_against_controls":
             abs(lw_saved) > max(worst_control, abs(sw_delta)),
         "device_total": {
-            "baseline_ms": round(btotal, 1),
-            "mod_ms": round(mtotal, 1),
+            "baseline_elapsed_ms": round(btotal, 1),
+            "mod_elapsed_ms": round(mtotal, 1),
             "change_pct": round(100 * (mtotal - btotal) / btotal, 2),
+            "baseline_summed_ms": round(bsummed, 1),
+            "mod_summed_ms": round(msummed, 1),
+            "change_pct_if_summed": round(100 * (msummed - bsummed) / bsummed, 2),
+            # The baseline launches nothing concurrently, so its two figures
+            # agree; the gap in the mod arm is the treatment's own overlap.
+            "baseline_summed_equals_elapsed":
+                round(bsummed, 1) == round(btotal, 1),
+            "mod_concurrency_inflation_ms": round(msummed - mtotal, 1),
             "carries_other_treatments": True,
         },
         "provenance": {
@@ -232,7 +276,12 @@ def main():
             "mod_db_sha256_16": digest(MOD),
         },
         "note": (
-            "Longwave only; shortwave is the untouched in-arm control. The mod "
+            "All device shares are ELAPSED time -- the union of the kernel "
+            "intervals -- not `SUM(end-start)`, which counts a moment once per "
+            "resident kernel and so is not elapsed time once a treatment "
+            "launches concurrently. `change_pct_if_summed` is what the summed "
+            "figure would have claimed, and for longwave it has the opposite "
+            "sign. Longwave only; shortwave is the untouched in-arm control. The mod "
             "arm's longwave kernel is a different kernel, so the arms are "
             "paired by role and the mod side is charged for its own reduction "
             "and hoisted aerosol mask. `concurrency.overlap_factor_mean` is the "
@@ -247,7 +296,7 @@ def main():
     OUT.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
     lw = doc["longwave"]
     print(f"wrote {OUT}")
-    print(f"  longwave {lw['baseline']['total_ms']} -> {lw['mod_charged_ms']} ms "
+    print(f"  longwave {lw['baseline']['elapsed_ms']} -> {lw['mod_charged_ms']} ms elapsed "
           f"({lw['change_pct']:+.2f}%, {lw['saved_pct_of_device']:+.3f} points of device)")
     print(f"  overlap {conc.get('overlap_factor_mean')}x over "
           f"{conc.get('groups_per_solve')} groups; serialized={conc.get('serialized')}")

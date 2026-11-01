@@ -3263,3 +3263,62 @@ state. The fold's compile cost is not resolvable from the runs taken, and the
 one-sided field is not a substitute for it; measuring it needs both arms run
 back to back with the same package cache, which is what `compile-time-study`
 does.
+
+## 8l. Summed kernel time is not elapsed GPU time once kernels overlap (2026-10-31)
+
+Every device-time figure in this project comes from `SUM(end-start)` over
+`CUPTI_ACTIVITY_KIND_KERNEL`. That is elapsed GPU time only while one kernel
+runs at a time, which was true of every measurement taken here until a
+treatment launched concurrent kernels. It then counts a moment once per
+resident kernel.
+
+The longwave g-point split launches its groups on separate streams. Summed, its
+longwave time rose by most of its own size; merged into a union of intervals, it
+**fell**. The two metrics disagreed in sign, not in magnitude, and the summed
+one is the one the project's own tooling reports. The arithmetic closes against
+three independent checks once the union is used: the baseline arm's summed and
+merged totals agree exactly, because it launches nothing concurrently; the
+untouched shortwave control reads the same either way; and the merged device
+total matches the unprofiled AMIP pair's change in walltime per step through the
+usual conversion, which the summed total does not.
+
+So any treatment that changes kernel *concurrency* has to be measured on merged
+intervals, and the two figures are worth reporting side by side -- the gap
+between them is the overlap, which is a quantity of interest in its own right.
+`scripts/export-gpoint-groups.py` keeps both and records
+`change_pct_if_summed` so the trap is visible in the snapshot.
+
+The general shape is familiar from section 8g and section 8k: an aggregate that
+was correct under an assumption nobody restated, used on the first treatment
+that broke the assumption. Summed kernel time assumes serial execution; a
+name-paired subtotal assumes the kernel inventory is unchanged; a one-sided
+difference assumes the arms are not identical.
+
+## 8m. Concurrent kernels are not a substitute for blocks in one grid (2026-10-31)
+
+Section 4l established that radiation is one resident wave and that the fix is
+to split the g-point loop. The split was first built as concurrent kernels, one
+per g-point group on its own stream, because that needs no change to how any
+device function indexes its workspace: each group's scratch arrives as a kernel
+argument already pointing at its own memory.
+
+It barely overlapped, and the reason is arithmetic that should have been done
+first. The solve carries the maximum register count, and registers alone decide
+how many of its threads an SM can hold -- enough for a quarter of a block of
+256, so one block per SM and eight resident warps, and that number does not move
+with block size, which is why section 4l's smaller-block experiment bought so
+little. One thread per column is then slightly **under** one wave: a single
+grid already claims almost every SM on the device. Sixteen such grids cannot
+co-reside, so they ran nearly in sequence, and the measured saving was a small
+fraction of the bound.
+
+What the bound actually measured was not occupancy at all. It put every group's
+blocks in ONE grid, where the total is many times the resident capacity, so the
+scheduler backfills an SM the instant a block retires -- the gain is tail and
+load-imbalance absorption across many waves, not more resident warps. Occupancy
+per SM is identical in both arrangements.
+
+The rule: before splitting work across concurrent kernels to raise parallelism,
+check whether one kernel's grid already fills the device. If it does,
+concurrency buys nothing and the split has to go inside a single grid, however
+much more plumbing that costs.

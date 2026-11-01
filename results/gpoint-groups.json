@@ -1,0 +1,100 @@
+{
+  "concurrency": {
+    "groups_per_solve": 16,
+    "overlap_factor_mean": 1.97,
+    "overlap_factor_min": 1.96,
+    "serialized": false,
+    "solves": 4,
+    "wall_span_per_solve_ms": 490.9
+  },
+  "device_total": {
+    "baseline_elapsed_ms": 25479.7,
+    "baseline_summed_equals_elapsed": true,
+    "baseline_summed_ms": 25479.7,
+    "carries_other_treatments": true,
+    "change_pct": -0.75,
+    "change_pct_if_summed": 6.7,
+    "mod_concurrency_inflation_ms": 1897.5,
+    "mod_elapsed_ms": 25288.3,
+    "mod_summed_ms": 27185.8
+  },
+  "longwave": {
+    "baseline": {
+      "block": 256,
+      "blocks_per_sm": 0.89,
+      "elapsed_ms": 2166.2,
+      "grid": 96,
+      "launches": 4,
+      "name": "rte_lw_2stream_solve_both_skies_CUDA_",
+      "registers": 255,
+      "summed_ms": 2166.2,
+      "summed_over_elapsed": 1.0,
+      "warps_per_sm": 8
+    },
+    "change_pct": -9.28,
+    "change_pct_if_summed": 78.32,
+    "mod": {
+      "block": 256,
+      "blocks_per_sm": 0.89,
+      "elapsed_ms": 1963.6,
+      "grid": 96,
+      "launches": 64,
+      "name": "rte_lw_2stream_solve_group_CUDA_",
+      "registers": 255,
+      "summed_ms": 3861.1,
+      "summed_over_elapsed": 1.97,
+      "warps_per_sm": 8
+    },
+    "mod_charged_ms": 1965.2,
+    "mod_overhead_ms": 1.6,
+    "pct_of_device_baseline": 8.5,
+    "saved_ms": 201.0,
+    "saved_pct_of_device": 0.789
+  },
+  "noise": {
+    "untreated_kernels_compared": 16,
+    "worst_untreated_kernel_delta_ms": 5.2
+  },
+  "note": "All device shares are ELAPSED time -- the union of the kernel intervals -- not `SUM(end-start)`, which counts a moment once per resident kernel and so is not elapsed time once a treatment launches concurrently. `change_pct_if_summed` is what the summed figure would have claimed, and for longwave it has the opposite sign. Longwave only; shortwave is the untouched in-arm control. The mod arm's longwave kernel is a different kernel, so the arms are paired by role and the mod side is charged for its own reduction and hoisted aerosol mask. `concurrency.overlap_factor_mean` is the load-bearing field: the split can only pay if the group kernels run together, and serialized launches would leave the solve's device time unchanged. The device total carries the sedimentation fold as well and is not this treatment's figure.",
+  "overhead": {
+    "aero_mask": {
+      "block": 256,
+      "blocks_per_sm": 0.89,
+      "elapsed_ms": 0.5,
+      "grid": 96,
+      "launches": 4,
+      "name": "_lw_aero_mask_CUDA_",
+      "registers": 32,
+      "summed_ms": 0.5,
+      "summed_over_elapsed": 1.0,
+      "warps_per_sm": 64
+    },
+    "reduction": {
+      "block": 256,
+      "blocks_per_sm": 57.78,
+      "elapsed_ms": 1.1,
+      "grid": 6240,
+      "launches": 4,
+      "name": "_reduce_lw_groups_CUDA_",
+      "registers": 32,
+      "summed_ms": 1.1,
+      "summed_over_elapsed": 1.0,
+      "warps_per_sm": 64
+    }
+  },
+  "provenance": {
+    "baseline_db_sha256_16": "7d08e9cda845930e",
+    "baseline_ref": "a7ffdc7e10051620379c07126222aa1cea1a8df3",
+    "mod_db_sha256_16": "8afb500e22831bfc",
+    "mod_ref": "761200ed7a0905433eb1c4145fff51bd43217755",
+    "source_commit": "ec18f33f588ec7cb561ed80a37781ca1a96db7be"
+  },
+  "saving_resolved_against_controls": true,
+  "shortwave_control": {
+    "baseline_ms": 2027.4,
+    "change_pct": 0.58,
+    "delta_ms": 11.7,
+    "mod_ms": 2039.1,
+    "untouched": true
+  }
+}
