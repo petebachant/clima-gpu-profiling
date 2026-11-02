@@ -6,10 +6,14 @@ That combination is the point of the experiment: [the fold decision rule](../fol
 
 Numbers come from `results/sedimentation-fold.json`, which is a frozen snapshot: it is derived from the shared `results/nsys/*.sqlite`, which the next experiment overwrites, so it carries both arms' refs and both database hashes.
 
-```python calkit stage name=values environment=py outputs=[{path: results/docs/sedimentation-velocity-fold.json, storage: git}] inputs=[results/sedimentation-fold.json, results/fold-decision.json]
+```python calkit stage name=values environment=py outputs=[{path: results/docs/sedimentation-velocity-fold.json, storage: git}] inputs=[results/sedimentation-fold.json, results/fold-decision.json, results/fold-compile-cost.json, results/compile-time/compile-time.toml]
 import json
+import tomllib
 
 fold = json.load(open("results/sedimentation-fold.json"))
+cc = json.load(open("results/fold-compile-cost.json"))
+# TOML, which a value marker cannot read, so the derivation happens here.
+ct = tomllib.load(open("results/compile-time/compile-time.toml", "rb"))
 rule = json.load(open("results/fold-decision.json"))["summary"]
 e2e = fold["end_to_end"]
 
@@ -59,6 +63,33 @@ out = {
     "largest_flat_pct": rule["largest_flat_pct_of_device"],
     "crossed_flat_change_pct": rule["crossed_flat_change_pct"],
 }
+
+# The compile-time price. `first` is the body compiled first in each process;
+# `rest` is the three that follow it, which is where a per-call-site cost would
+# have to show up if there were one.
+paths = cc["paths"]
+first = next(k for k, v in paths.items() if v["measured_first"])
+rest = [v for k, v in paths.items() if not v["measured_first"]]
+host_jit_s = ct["warmup_off"]["totals"]["host_compile_s"]
+out.update({
+    "cc_unfolded_s": cc["unfolded_total_compile_s"],
+    "cc_folded_s": cc["folded_total_compile_s"],
+    "cc_cost_s": cc["fold_total_cost_s"],
+    "cc_cost_pct": cc["fold_total_cost_pct"],
+    "cc_floor_s": cc["repeat_spread_floor_s"],
+    "cc_resolved": cc["resolved"],
+    "cc_first_path": first,
+    "cc_first_cost_s": paths[first]["compile_cost_s"],
+    "cc_rest_cost_s": round(sum(v["compile_cost_s"] for v in rest), 3),
+    "cc_rest_n": len(rest),
+    "cc_regs_min": min(v["unfolded_registers"] for v in paths.values()),
+    "cc_regs_max": max(v["unfolded_registers"] for v in paths.values()),
+    "cc_warps": max(v["unfolded_warps_per_sm"] for v in paths.values()),
+    "cc_paths_n": len(paths),
+    "cc_in_benchmark_n": len(cc["fold_relevant_in_benchmark"]),
+    "cc_host_jit_s": round(host_jit_s, 1),
+    "cc_share_of_jit_pct": round(100.0 * cc["fold_total_cost_s"] / host_jit_s, 3),
+})
 json.dump(out, open("results/docs/sedimentation-velocity-fold.json", "w"), indent=2)
 ```
 
@@ -121,6 +152,27 @@ Device share predicts whether anyone notices, and it is the gate that decides wh
 
 The practical form: screen on device share first, because it is free to read off a profile and it rejects the most candidates, then run the register ceiling test on what survives.
 Screening in the other order is what produced this experiment.
+
+## What it costs in compile time
+
+The fold's price is structural: a runtime value in a type parameter makes a specialization no pkgimage can hold, so whatever it costs to infer and codegen is paid at run time, on every start.
+The `fold-compile-cost` stage measures that directly, compiling the <!-- calkit value key=cc_paths_n -->4<!-- /calkit value --> terminal-velocity bodies that read the folded parameters, one arm per process so the second arm cannot reuse the first's inference of every shared callee.
+Only the modes that read the parameters are measured, because the `Fixed` modes take `args...` and ignore both payloads by signature, so there is nothing for a fold to change in them.
+
+The four paths cost <!-- calkit value key=cc_unfolded_s -->1.475<!-- /calkit value --> s to compile unfolded and <!-- calkit value key=cc_folded_s -->4.614<!-- /calkit value --> s folded, so the fold costs <!-- calkit value key=cc_cost_s -->3.139<!-- /calkit value --> s, against a repeat spread of <!-- calkit value key=cc_floor_s -->0.054<!-- /calkit value --> s between the two runs of each arm.
+In relative terms that is <!-- calkit value key=cc_cost_pct -->212.81<!-- /calkit value -->%, which is worth stating plainly and is also the least useful way to read it: it more than triples a quantity whose absolute size is seconds.
+
+**It is a one-time cost, not a per-call-site one.** Almost all of it lands on whichever body is compiled first — <!-- calkit value key=cc_first_cost_s -->3.149<!-- /calkit value --> s on `<!-- calkit value key=cc_first_path -->liquid_stokes<!-- /calkit value -->` — while the <!-- calkit value key=cc_rest_n -->3<!-- /calkit value --> bodies that follow it come to <!-- calkit value key=cc_rest_cost_s -->-0.01<!-- /calkit value --> s between them.
+That is the shape of specializing once on the payload types and reusing it: the first body pays to infer and codegen through the two parameter structs embedded in type parameters, and nothing after it pays again.
+The harness compiles the paths in a fixed order, so it does not separate "the body compiled first" from "that particular body" — but a cost that was genuinely per-call-site would have to appear in the three that follow, and it does not.
+
+Set against the startup it is part of, the figure is small. Host-side Julia JIT is <!-- calkit value key=cc_host_jit_s -->1628.0<!-- /calkit value --> s of a profiling job ([compile time](../compile-time.md)), so the fold adds <!-- calkit value key=cc_share_of_jit_pct -->0.193<!-- /calkit value -->% to it.
+
+One caution on the register columns the results file also carries, which this section deliberately does not quote as a benefit: in isolation these bodies are <!-- calkit value key=cc_regs_min -->32<!-- /calkit value -->-<!-- calkit value key=cc_regs_max -->40<!-- /calkit value --> registers and already at <!-- calkit value key=cc_warps -->16<!-- /calkit value --> warps/SM, so the fold has no occupancy to buy there.
+The benefit is the one measured above, in the fused kernels where these calls are inlined alongside everything else and the register pressure is a kernel's worth rather than a call's.
+
+The last figure is the one that decides whether the cost buys anything in this configuration at all: of the <!-- calkit value key=cc_paths_n -->4<!-- /calkit value --> fold-relevant paths, the benchmark selects <!-- calkit value key=cc_in_benchmark_n -->1<!-- /calkit value --> — snow, at `Chen2022`, with liquid, ice and rain all left at `Fixed`.
+So three quarters of the folded call sites compile the fold and then discard it, and the register saving measured above comes from the one that does not.
 
 ## Status
 

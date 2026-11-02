@@ -1,0 +1,89 @@
+{
+  "float_type": "Float32",
+  "gpu": "NVIDIA A100-SXM4-80GB",
+  "julia": "1.11.5",
+  "repeats_per_arm": {
+    "unfolded": 2,
+    "folded": 2
+  },
+  "benchmark_modes": {
+    "cloud_ice": "Fixed",
+    "cloud_liquid": "Fixed",
+    "rain": "Fixed",
+    "snow": "Chen2022"
+  },
+  "fold_relevant_in_benchmark": [
+    "snow_chen2022"
+  ],
+  "paths": {
+    "liquid_stokes": {
+      "unfolded_compile_s": 0.666,
+      "unfolded_spread_s": 0.032,
+      "unfolded_registers": 32,
+      "unfolded_warps_per_sm": 16,
+      "folded_compile_s": 3.815,
+      "folded_spread_s": 0.055,
+      "folded_registers": 32,
+      "folded_warps_per_sm": 16,
+      "compile_cost_s": 3.149,
+      "registers_saved": 0,
+      "gains_occupancy_step": false,
+      "in_benchmark": false,
+      "measured_first": true
+    },
+    "ice_chen2022": {
+      "unfolded_compile_s": 0.275,
+      "unfolded_spread_s": 0.001,
+      "unfolded_registers": 40,
+      "unfolded_warps_per_sm": 16,
+      "folded_compile_s": 0.217,
+      "folded_spread_s": 0.009,
+      "folded_registers": 32,
+      "folded_warps_per_sm": 16,
+      "compile_cost_s": -0.058,
+      "registers_saved": 8,
+      "gains_occupancy_step": false,
+      "in_benchmark": false,
+      "measured_first": false
+    },
+    "rain_chen2022": {
+      "unfolded_compile_s": 0.282,
+      "unfolded_spread_s": 0.021,
+      "unfolded_registers": 40,
+      "unfolded_warps_per_sm": 16,
+      "folded_compile_s": 0.323,
+      "folded_spread_s": 0.011,
+      "folded_registers": 40,
+      "folded_warps_per_sm": 16,
+      "compile_cost_s": 0.041,
+      "registers_saved": 0,
+      "gains_occupancy_step": false,
+      "in_benchmark": false,
+      "measured_first": false
+    },
+    "snow_chen2022": {
+      "unfolded_compile_s": 0.253,
+      "unfolded_spread_s": 0.001,
+      "unfolded_registers": 40,
+      "unfolded_warps_per_sm": 16,
+      "folded_compile_s": 0.26,
+      "folded_spread_s": 0.005,
+      "folded_registers": 40,
+      "folded_warps_per_sm": 16,
+      "compile_cost_s": 0.007,
+      "registers_saved": 0,
+      "gains_occupancy_step": false,
+      "in_benchmark": true,
+      "measured_first": false
+    }
+  },
+  "note": "Compile wall time and registers for the terminal-velocity bodies #4947 folds, one arm per process so every compile is cold. Only modes that read cmc/cmp are measured; the Fixed modes ignore both by signature. `params` is passed as nothing because no measured method reads it. The 1M payload is the\ndefault process selection rather than the benchmark's pruned one; both arms carry the identical payload, so the difference is\nunaffected and only the per-path absolute is a proxy.",
+  "unfolded_total_compile_s": 1.475,
+  "unfolded_total_spread_s": 0.054,
+  "folded_total_compile_s": 4.614,
+  "folded_total_spread_s": 0.047,
+  "fold_total_cost_s": 3.139,
+  "fold_total_cost_pct": 212.81,
+  "repeat_spread_floor_s": 0.054,
+  "resolved": true
+}
