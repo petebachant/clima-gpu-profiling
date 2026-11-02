@@ -662,6 +662,58 @@ stages:
           persist: true
     desc: Automatically generated from the 'val-params-registers' stage in
       calkit.yaml. Changes made here will be overwritten.
+  fold-compile-cost:
+    cmd: calkit scheduler batch --name fold-compile-cost --environment clima
+      --dep scripts/measure-fold-compile-cost.jl --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaAtmos.jl-mod/src --dep .calkit/env-locks/clima --out
+      results/fold-compile-cost/unfolded-1.toml --out
+      results/fold-compile-cost/folded-1.toml --out
+      results/fold-compile-cost/folded-2.toml --out
+      results/fold-compile-cost/unfolded-2.toml --option --gpus=1 --option
+      --time=40 -- scripts/run-fold-compile-cost.sh
+      ClimaCoupler.jl-mod/experiments/AMIP results/fold-compile-cost
+    deps:
+      - scripts/run-fold-compile-cost.sh
+      - scripts/measure-fold-compile-cost.jl
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaAtmos.jl-mod/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/fold-compile-cost/unfolded-1.toml:
+          cache: false
+          persist: true
+      - results/fold-compile-cost/folded-1.toml:
+          cache: false
+          persist: true
+      - results/fold-compile-cost/folded-2.toml:
+          cache: false
+          persist: true
+      - results/fold-compile-cost/unfolded-2.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/fold-compile-cost.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'fold-compile-cost' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  export-fold-compile-cost:
+    cmd: calkit xenv -n py --no-check -- python
+      scripts/export-fold-compile-cost.py --in-dir results/fold-compile-cost
+      --out results/fold-compile-cost.json
+    deps:
+      - scripts/export-fold-compile-cost.py
+      - results/fold-compile-cost/unfolded-1.toml
+      - results/fold-compile-cost/folded-1.toml
+      - results/fold-compile-cost/folded-2.toml
+      - results/fold-compile-cost/unfolded-2.toml
+      - .calkit/env-locks/py
+    outs:
+      - results/fold-compile-cost.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'export-fold-compile-cost' stage in
+      calkit.yaml. Changes made here will be overwritten.
   cm-registers:
     cmd: calkit scheduler batch --name cm-registers --environment clima --dep
       scripts/measure-cm-registers.jl --dep

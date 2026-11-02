@@ -1242,6 +1242,73 @@ pipeline:
         - path: results/val-params-registers.toml
           storage: git
 
+    fold-compile-cost:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-fold-compile-cost.sh
+      # What CliMA/ClimaAtmos.jl#4947's parameter fold costs in compile time.
+      # The fold's benefit is registers; its price is that a runtime value in a
+      # type parameter makes a specialization no pkgimage can hold, so its
+      # inference and codegen are paid at every start rather than once at
+      # precompile.
+      #
+      # One arm per process, because a compile time is only a compile time the
+      # first time: two arms in one session would let the second reuse the
+      # first's inference of every shared callee, which is most of the work.
+      # Two repeats per arm in reversed order, so the delta can be quoted
+      # against a spread rather than bare.
+      #
+      # Compile-only and standalone -- `cloud_parameters` and
+      # `microphys_1m_parameters` both construct from a default TOML dict -- so
+      # this is minutes and needs no coupled simulation.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=40
+      args:
+        - ClimaCoupler.jl-mod/experiments/AMIP
+        - results/fold-compile-cost
+      inputs:
+        - scripts/measure-fold-compile-cost.jl
+        - scripts/run-fold-compile-cost.sh
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaAtmos.jl-mod/src
+      outputs:
+        # Four small TOMLs, one per process. Kept in Git so the arms stay
+        # readable without a `calkit pull`, and so the per-repeat numbers the
+        # spread is computed from are visible rather than only their mean.
+        - path: results/fold-compile-cost/unfolded-1.toml
+          storage: git
+        - path: results/fold-compile-cost/folded-1.toml
+          storage: git
+        - path: results/fold-compile-cost/folded-2.toml
+          storage: git
+        - path: results/fold-compile-cost/unfolded-2.toml
+          storage: git
+
+    export-fold-compile-cost:
+      kind: python-script
+      environment: py
+      script_path: scripts/export-fold-compile-cost.py
+      # Joins the four processes into one record and tests the fold's delta
+      # against the larger of the two arms' own repeat spreads. `resolved` is
+      # false when it does not clear it, which is the same rule a SYPD headline
+      # is held to against its null census.
+      args:
+        - --in-dir
+        - results/fold-compile-cost
+        - --out
+        - results/fold-compile-cost.json
+      inputs:
+        - scripts/export-fold-compile-cost.py
+        - results/fold-compile-cost/unfolded-1.toml
+        - results/fold-compile-cost/folded-1.toml
+        - results/fold-compile-cost/folded-2.toml
+        - results/fold-compile-cost/unfolded-2.toml
+      outputs:
+        - path: results/fold-compile-cost.json
+          storage: git
+
     cm-registers:
       # Frozen because this file cannot be regenerated on the current checkout:
       # the broadcast layers need ClimaCore.jl-mod on `pb/launch-bounds`, and
