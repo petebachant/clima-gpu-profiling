@@ -86,7 +86,7 @@ const PATHS = (
     return nothing
 end
 
-out = CUDA.zeros(FT, 1)
+const out = CUDA.zeros(FT, 1)
 
 # Pay GPUCompiler's one-time costs -- loading the PTX toolchain, the first
 # device code generation -- before anything is timed, so they do not land on
@@ -99,7 +99,9 @@ CUDA.@cuda launch = false always_inline = true warmup_body(out)
 
 payload(::Val{:unfolded}) = (CMC, CMP1M)
 payload(::Val{:folded}) = (Val(TV), Val(CMP1M))
-const A, B = payload(Val(Symbol(VARIANT)))
+const PAYLOAD = payload(Val(Symbol(VARIANT)))
+const A = PAYLOAD[1]
+const B = PAYLOAD[2]
 
 results = Dict{String, Any}(
     "variant" => VARIANT,
@@ -161,15 +163,24 @@ function measure(path)
     )
 end
 
-total = 0.0
-for path in PATHS
-    row = measure(path)
-    results[path.name] = row
-    total += row["compile_s"]
-    @printf("%-16s compile=%7.3f s  regs=%3d  local=%4d B  warps/SM=%2d\n",
-            path.name, row["compile_s"], row["registers"],
-            row["local_bytes"], row["warps_per_sm"])
+# In a function, not a top-level loop: `total += ...` at top level creates a
+# new local and dies with UndefVarError on the first iteration.
+function measure_all()
+    rows = Pair{String, Any}[]
+    total = 0.0
+    for path in PATHS
+        row = measure(path)
+        push!(rows, path.name => row)
+        total += row["compile_s"]
+        @printf("%-16s compile=%7.3f s  regs=%3d  local=%4d B  warps/SM=%2d\n",
+                path.name, row["compile_s"], row["registers"],
+                row["local_bytes"], row["warps_per_sm"])
+    end
+    return (; rows, total)
 end
+
+(; rows, total) = measure_all()
+merge!(results, Dict(rows))
 results["total_compile_s"] = total
 results["paths_measured"] = [p.name for p in PATHS]
 @printf("\n%s rep %d: %.3f s over %d paths\n", VARIANT, REP, total, length(PATHS))
