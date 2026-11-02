@@ -1286,6 +1286,32 @@ pipeline:
         - path: results/fold-compile-cost/unfolded-2.toml
           storage: git
 
+    export-fold-arch-portability:
+      kind: python-script
+      environment: py
+      script_path: scripts/export-fold-arch-portability.py
+      # Does the fold still pay on a GPU that is not an A100? The cost is
+      # architecture-independent; the benefit is registers buying a resident
+      # block, which depends on per-architecture limits.
+      #
+      # The occupancy arithmetic is checked rather than trusted: the stage
+      # refuses to emit predictions unless its model reproduces every
+      # warps/SM this project has measured on sm_80. It also shells out to
+      # nvcc and ptxas to measure how far register allocation moves between
+      # targets for identical PTX, which is the scale a fold's headroom has
+      # to be compared against; that part records null if the CUDA
+      # toolchain is absent rather than failing the stage.
+      args:
+        - --out
+        - results/fold-arch-portability.json
+      inputs:
+        - scripts/export-fold-arch-portability.py
+        - results/sedimentation-fold.json
+        - results/val-mileage.json
+      outputs:
+        - path: results/fold-arch-portability.json
+          storage: git
+
     export-fold-compile-cost:
       kind: python-script
       environment: py

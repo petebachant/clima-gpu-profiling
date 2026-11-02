@@ -697,6 +697,21 @@ stages:
           persist: true
     desc: Automatically generated from the 'fold-compile-cost' stage in
       calkit.yaml. Changes made here will be overwritten.
+  export-fold-arch-portability:
+    cmd: calkit xenv -n py --no-check -- python
+      scripts/export-fold-arch-portability.py --out
+      results/fold-arch-portability.json
+    deps:
+      - scripts/export-fold-arch-portability.py
+      - results/sedimentation-fold.json
+      - results/val-mileage.json
+      - .calkit/env-locks/py
+    outs:
+      - results/fold-arch-portability.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'export-fold-arch-portability' stage
+      in calkit.yaml. Changes made here will be overwritten.
   export-fold-compile-cost:
     cmd: calkit xenv -n py --no-check -- python
       scripts/export-fold-compile-cost.py --in-dir results/fold-compile-cost
