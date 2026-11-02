@@ -1,9 +1,13 @@
-"""Price splitting the longwave g-point loop across concurrent kernels.
+"""Price splitting the longwave g-point loop across the threads of one grid.
 
 Section 4l of `docs/learnings.md` established that radiation is a single
 resident wave -- 96 blocks of 256 threads on 108 SMs, 8 warps each -- so there
 is no second wave to hide its latency behind, every tuning lever was tried and
 rejected, and the only remaining change was to restructure the g-point loop.
+A first attempt ran the groups as concurrent launches instead, which cannot
+work for exactly the reason 4l gives: one grid already claims 0.89 of the
+device, so a second has nowhere to go. That version is priced in the history
+of this file at an overlap of 1.97x against sixteen groups.
 `results/experiments/gpoint-bound/bound.json` priced that restructure with a
 deliberately incorrect kernel (the threads of a column raced). This measures the
 correct one.
@@ -133,32 +137,31 @@ def family(con, like):
     }
 
 
-def concurrency(rows, ngroups):
-    """Do a solve's group kernels overlap, or did they serialize?
+def waves(fam):
+    """How many grid-fulls of blocks the device holds, and how many there are.
 
-    Summed kernel time divided by the wall span from the first launch's start to
-    the last one's end. Near `ngroups` means they ran together; near 1 means
-    they ran one after another, in which case the split bought nothing however
-    correct it is. Launches are chunked in order, `ngroups` to a solve, because
-    radiation fires every thirty steps and a solve completes long before the
-    next begins.
+    This is the quantity the split is for. Registers decide how many blocks fit
+    on an SM at once, and that number does not change when the grid grows, so
+    occupancy per SM is identical grouped or not. What changes is whether there
+    are blocks left over: at one block per SM the whole grid is resident at
+    once, every SM waits for its own column to finish, and the launch is as
+    long as its slowest column. Past one wave the scheduler hands a finished SM
+    another block, which is what absorbs the tail.
+
+    A `waves` below 1 is the diagnosis that concurrency cannot help -- a second
+    grid has nowhere to go -- and is why the sixteen-stream version of this
+    treatment overlapped 1.97x rather than 16x.
     """
-    if len(rows) % ngroups != 0:
-        return {"error": f"{len(rows)} launches is not a multiple of {ngroups}"}
-    factors, spans = [], []
-    for i in range(0, len(rows), ngroups):
-        chunk = rows[i:i + ngroups]
-        span = (max(e for *_, e in chunk) - min(s for *_, s, _ in chunk)) / 1e6
-        total = sum(e - s for *_, s, e in chunk) / 1e6
-        spans.append(span)
-        factors.append(total / span if span > 0 else float("nan"))
+    regs, block, grid = fam["registers"], fam["block"], fam["grid"]
+    per_sm = min(A100_REGS_PER_SM // max(regs * block, 1),
+                 A100_THREADS_PER_SM // max(block, 1), A100_BLOCKS_PER_SM)
+    resident = A100_SMS * per_sm
     return {
-        "solves": len(factors),
-        "groups_per_solve": ngroups,
-        "overlap_factor_mean": round(sum(factors) / len(factors), 2),
-        "overlap_factor_min": round(min(factors), 2),
-        "wall_span_per_solve_ms": round(sum(spans) / len(spans), 1),
-        "serialized": max(factors) < 1.5,
+        "blocks": grid,
+        "blocks_resident_per_sm": per_sm,
+        "blocks_resident": resident,
+        "waves": round(grid / resident, 2) if resident else None,
+        "launches_per_radiation_step": fam["launches"],
     }
 
 
@@ -206,10 +209,10 @@ def main():
     lw_mod_charged = m_lw["elapsed_ms"] + overhead_ms
     lw_saved = b_lw["elapsed_ms"] - lw_mod_charged
 
-    ngroups = m_lw["launches"] // b_lw["launches"]
-    conc = concurrency(m_lw["_rows"], ngroups) if ngroups > 1 else {
-        "groups_per_solve": 1, "serialized": True,
-    }
+    # The split is one launch over a wider grid now, so the group count comes
+    # from the grid ratio; launch counts are equal in both arms.
+    ngroups = m_lw["grid"] // b_lw["grid"]
+    w_base, w_mod = waves(b_lw), waves(m_lw)
 
     # Shortwave is untouched, so its movement is the noise band the longwave
     # change has to clear.
@@ -236,7 +239,11 @@ def main():
             "reduction": {k: v for k, v in (reduce_k or {}).items() if k != "_rows"},
             "aero_mask": {k: v for k, v in (aero_k or {}).items() if k != "_rows"},
         },
-        "concurrency": conc,
+        "waves": {
+            "groups": ngroups,
+            "baseline": w_base,
+            "mod": w_mod,
+        },
         "shortwave_control": {
             "baseline_ms": b_sw["elapsed_ms"],
             "mod_ms": m_sw["elapsed_ms"],
@@ -284,10 +291,11 @@ def main():
             "sign. Longwave only; shortwave is the untouched in-arm control. The mod "
             "arm's longwave kernel is a different kernel, so the arms are "
             "paired by role and the mod side is charged for its own reduction "
-            "and hoisted aerosol mask. `concurrency.overlap_factor_mean` is the "
-            "load-bearing field: the split can only pay if the group kernels "
-            "run together, and serialized launches would leave the solve's "
-            "device time unchanged. The device total carries the sedimentation "
+            "and hoisted aerosol mask. `waves` is the load-bearing field: "
+            "both arms hold the same number of blocks per SM, so the split pays "
+            "only through having more blocks than fit at once, and a baseline "
+            "below one wave is why sixteen concurrent launches of it could not. "
+            "The device total carries the sedimentation "
             "fold as well and is not this treatment's figure."
         ),
     }
@@ -298,8 +306,8 @@ def main():
     print(f"wrote {OUT}")
     print(f"  longwave {lw['baseline']['elapsed_ms']} -> {lw['mod_charged_ms']} ms elapsed "
           f"({lw['change_pct']:+.2f}%, {lw['saved_pct_of_device']:+.3f} points of device)")
-    print(f"  overlap {conc.get('overlap_factor_mean')}x over "
-          f"{conc.get('groups_per_solve')} groups; serialized={conc.get('serialized')}")
+    print(f"  waves {w_base['waves']} -> {w_mod['waves']} over {ngroups} groups "
+          f"at {w_mod['blocks_resident_per_sm']} block(s)/SM either way")
     print(f"  shortwave control {doc['shortwave_control']['change_pct']:+.2f}%; "
           f"resolved={doc['saving_resolved_against_controls']}")
 
