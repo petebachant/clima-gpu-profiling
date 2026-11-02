@@ -3683,6 +3683,10 @@ stages:
       hash: md5
       md5: 24f0a4bba78725ea05dfb0899e441766
       size: 88
+    - path: results/fold-arch-portability.json
+      hash: md5
+      md5: 4928bc4647bf8231540418dd9dad3f8f
+      size: 7524
     - path: results/fold-record/param-fold.json
       hash: md5
       md5: af85a0d8b0c5b6e4bf2954188c0833e4
@@ -4083,3 +4087,30 @@ stages:
       hash: md5
       md5: b8b2e597fd9fd94026ab5b777224f2eb
       size: 2896
+  export-fold-arch-portability:
+    cmd: calkit xenv -n py --no-check -- python 
+      scripts/export-fold-arch-portability.py --out 
+      results/fold-arch-portability.json
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: results/sedimentation-fold.json
+      hash: md5
+      md5: 4cb102fb8dafff31fe297b8fd39daa64
+      size: 4866
+    - path: results/val-mileage.json
+      hash: md5
+      md5: e56a2906cd84e6dfa0b31b16862aaa94
+      size: 7240
+    - path: scripts/export-fold-arch-portability.py
+      hash: md5
+      md5: e7d70564718119724095b0fdaaf4e5c4
+      size: 12869
+    outs:
+    - path: results/fold-arch-portability.json
+      hash: md5
+      md5: 4928bc4647bf8231540418dd9dad3f8f
+      size: 7524

@@ -1,0 +1,300 @@
+{
+  "architectures": {
+    "sm_80": {
+      "name": "A100",
+      "threads_sm": 2048,
+      "max_blocks": 32,
+      "regs_per_sm": 65536
+    },
+    "sm_86": {
+      "name": "GA10x",
+      "threads_sm": 1536,
+      "max_blocks": 16,
+      "regs_per_sm": 65536
+    },
+    "sm_89": {
+      "name": "Ada/L40S",
+      "threads_sm": 1536,
+      "max_blocks": 24,
+      "regs_per_sm": 65536
+    },
+    "sm_90": {
+      "name": "H100",
+      "threads_sm": 2048,
+      "max_blocks": 32,
+      "regs_per_sm": 65536
+    }
+  },
+  "model_validation": {
+    "points": [
+      {
+        "kernel": "env_baseline",
+        "registers": 78,
+        "block": 768,
+        "measured_warps_per_sm": 24,
+        "model_warps_per_sm": 24,
+        "agrees": true
+      },
+      {
+        "kernel": "env_mod",
+        "registers": 48,
+        "block": 640,
+        "measured_warps_per_sm": 40,
+        "model_warps_per_sm": 40,
+        "agrees": true
+      },
+      {
+        "kernel": "updraft_baseline",
+        "registers": 92,
+        "block": 640,
+        "measured_warps_per_sm": 20,
+        "model_warps_per_sm": 20,
+        "agrees": true
+      },
+      {
+        "kernel": "updraft_mod",
+        "registers": 56,
+        "block": 576,
+        "measured_warps_per_sm": 36,
+        "model_warps_per_sm": 36,
+        "agrees": true
+      },
+      {
+        "kernel": "set_microphysics_tendency_cache__FILE_ClimaAtmos",
+        "registers": 150,
+        "block": 384,
+        "measured_warps_per_sm": 12,
+        "model_warps_per_sm": 12,
+        "agrees": true
+      },
+      {
+        "kernel": "set_microphysics_tendency_cache__FILE_ClimaAtmos",
+        "registers": 118,
+        "block": 512,
+        "measured_warps_per_sm": 16,
+        "model_warps_per_sm": 16,
+        "agrees": true
+      }
+    ],
+    "all_agree": true,
+    "note": "Resident warps/SM from registers, block size and the per-architecture limits, checked against every value measured on sm_80 in this project."
+  },
+  "ptxas_drift": {
+    "probes": [
+      {
+        "live_values": 8,
+        "registers": {
+          "sm_80": 30,
+          "sm_86": 29,
+          "sm_89": 29,
+          "sm_90": 29
+        },
+        "delta_vs_sm_80": {
+          "sm_80": 0,
+          "sm_86": -1,
+          "sm_89": -1,
+          "sm_90": -1
+        }
+      },
+      {
+        "live_values": 16,
+        "registers": {
+          "sm_80": 32,
+          "sm_86": 39,
+          "sm_89": 39,
+          "sm_90": 32
+        },
+        "delta_vs_sm_80": {
+          "sm_80": 0,
+          "sm_86": 7,
+          "sm_89": 7,
+          "sm_90": 0
+        }
+      },
+      {
+        "live_values": 24,
+        "registers": {
+          "sm_80": 32,
+          "sm_86": 39,
+          "sm_89": 39,
+          "sm_90": 32
+        },
+        "delta_vs_sm_80": {
+          "sm_80": 0,
+          "sm_86": 7,
+          "sm_89": 7,
+          "sm_90": 0
+        }
+      },
+      {
+        "live_values": 32,
+        "registers": {
+          "sm_80": 40,
+          "sm_86": 40,
+          "sm_89": 40,
+          "sm_90": 40
+        },
+        "delta_vs_sm_80": {
+          "sm_80": 0,
+          "sm_86": 0,
+          "sm_89": 0,
+          "sm_90": 0
+        }
+      }
+    ],
+    "max_positive_delta_registers": {
+      "sm_80": 0,
+      "sm_86": 7,
+      "sm_89": 7,
+      "sm_90": 0
+    },
+    "max_abs_delta_registers": 7
+  },
+  "folds": {
+    "env_terminal_velocity": {
+      "registers": {
+        "unfolded": 78,
+        "folded": 48
+      },
+      "block_size": {
+        "unfolded": 768,
+        "folded": 640
+      },
+      "pct_of_device_sm_80": 0.73,
+      "per_architecture": {
+        "sm_80": {
+          "unfolded_warps_per_sm": 24,
+          "folded_warps_per_sm": 40,
+          "warps_gained": 16,
+          "gains_a_step": true,
+          "headroom_registers": 0,
+          "registers_to_next_step": 15,
+          "measured_upward_drift_registers": 0,
+          "survives_drift": true
+        },
+        "sm_86": {
+          "unfolded_warps_per_sm": 24,
+          "folded_warps_per_sm": 40,
+          "warps_gained": 16,
+          "gains_a_step": true,
+          "headroom_registers": 0,
+          "registers_to_next_step": 47,
+          "measured_upward_drift_registers": 7,
+          "survives_drift": false
+        },
+        "sm_89": {
+          "unfolded_warps_per_sm": 24,
+          "folded_warps_per_sm": 40,
+          "warps_gained": 16,
+          "gains_a_step": true,
+          "headroom_registers": 0,
+          "registers_to_next_step": 47,
+          "measured_upward_drift_registers": 7,
+          "survives_drift": false
+        },
+        "sm_90": {
+          "unfolded_warps_per_sm": 24,
+          "folded_warps_per_sm": 40,
+          "warps_gained": 16,
+          "gains_a_step": true,
+          "headroom_registers": 0,
+          "registers_to_next_step": 15,
+          "measured_upward_drift_registers": 0,
+          "survives_drift": true
+        }
+      },
+      "gain_is_architecture_independent": true,
+      "min_headroom_registers": 0,
+      "survives_drift_by_architecture": {
+        "sm_80": true,
+        "sm_86": false,
+        "sm_89": false,
+        "sm_90": true
+      },
+      "at_risk_architectures": [
+        "sm_86",
+        "sm_89"
+      ]
+    },
+    "updraft_terminal_velocity": {
+      "registers": {
+        "unfolded": 92,
+        "folded": 56
+      },
+      "block_size": {
+        "unfolded": 640,
+        "folded": 576
+      },
+      "pct_of_device_sm_80": 0.491,
+      "per_architecture": {
+        "sm_80": {
+          "unfolded_warps_per_sm": 20,
+          "folded_warps_per_sm": 36,
+          "warps_gained": 16,
+          "gains_a_step": true,
+          "headroom_registers": 0,
+          "registers_to_next_step": 23,
+          "measured_upward_drift_registers": 0,
+          "survives_drift": true
+        },
+        "sm_86": {
+          "unfolded_warps_per_sm": 20,
+          "folded_warps_per_sm": 36,
+          "warps_gained": 16,
+          "gains_a_step": true,
+          "headroom_registers": 0,
+          "registers_to_next_step": 55,
+          "measured_upward_drift_registers": 7,
+          "survives_drift": false
+        },
+        "sm_89": {
+          "unfolded_warps_per_sm": 20,
+          "folded_warps_per_sm": 36,
+          "warps_gained": 16,
+          "gains_a_step": true,
+          "headroom_registers": 0,
+          "registers_to_next_step": 55,
+          "measured_upward_drift_registers": 7,
+          "survives_drift": false
+        },
+        "sm_90": {
+          "unfolded_warps_per_sm": 20,
+          "folded_warps_per_sm": 36,
+          "warps_gained": 16,
+          "gains_a_step": true,
+          "headroom_registers": 0,
+          "registers_to_next_step": 23,
+          "measured_upward_drift_registers": 0,
+          "survives_drift": true
+        }
+      },
+      "gain_is_architecture_independent": true,
+      "min_headroom_registers": 0,
+      "survives_drift_by_architecture": {
+        "sm_80": true,
+        "sm_86": false,
+        "sm_89": false,
+        "sm_90": true
+      },
+      "at_risk_architectures": [
+        "sm_86",
+        "sm_89"
+      ]
+    }
+  },
+  "note": "Does the parameter fold still pay on a GPU that is not an A100?",
+  "summary": {
+    "n_validation_points": 6,
+    "architectures_considered": 4,
+    "warps_gained_everywhere": 16,
+    "gain_identical_across_architectures": true,
+    "min_headroom_registers": 0,
+    "max_upward_drift_registers": 7,
+    "drift_on_sm_90_registers": 0,
+    "at_risk_architectures": [
+      "sm_86",
+      "sm_89"
+    ],
+    "n_at_risk": 2
+  }
+}

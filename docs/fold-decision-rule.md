@@ -17,7 +17,7 @@ this file freezes the whole thing. Its inputs are four files earlier stages
 wrote and it runs no GPU, which is also what it concludes: if deciding a fold
 needed a profile, this document could not exist.
 
-```python calkit stage name=analyze environment=py outputs=[{path: results/fold-decision.json, storage: git}] inputs=[scripts/export_fold_decision.py, results/val-params-registers.toml, results/pointwise-registers.json, results/val-mileage.json, results/fold-record/param-fold.json]
+```python calkit stage name=analyze environment=py outputs=[{path: results/fold-decision.json, storage: git}] inputs=[scripts/export_fold_decision.py, results/val-params-registers.toml, results/pointwise-registers.json, results/val-mileage.json, results/fold-record/param-fold.json, results/fold-arch-portability.json]
 import sys
 
 sys.path.insert(0, "scripts")
@@ -138,6 +138,27 @@ share from an existing nsys profile.
 Steps 1 through 5 are free or minutes, and they called every outcome on the
 record for the body they were handed. Step 7 is hours, and it is about the size
 of the answer rather than its sign.
+
+## Moving to another GPU
+
+Everything above is an A100 measurement, and the two halves of a fold do not travel together: the compile-time price is paid on every device, while the benefit is registers buying another resident block, which depends on limits that differ per architecture.
+`export-fold-arch-portability` works out the second half for the targets `ptxas` can assemble for, over <!-- calkit value key=summary.architectures_considered path=results/fold-arch-portability.json -->4<!-- /calkit value --> architectures.
+The occupancy arithmetic is checked rather than trusted --- it reproduces all <!-- calkit value key=summary.n_validation_points path=results/fold-arch-portability.json -->6<!-- /calkit value --> of the warps/SM figures this project has measured on sm_80, and the stage refuses to print a prediction otherwise.
+
+**The gain ports unchanged.** Both sedimentation kernels gain <!-- calkit value key=summary.warps_gained_everywhere path=results/fold-arch-portability.json -->16<!-- /calkit value --> warps/SM on every architecture considered, including the parts with lower ceilings than an A100: sm_86 allows 1536 threads and 16 blocks per SM against the A100's 2048 and 32.
+Those ceilings never bite, because at these register counts **registers bind first**, and registers per SM and the allocation granule are the same on all of them.
+The arch-specific ceilings only decide anything for kernels that are not register-limited --- which are exactly the kernels this rule already rejects.
+
+**What does not port is the margin.** `ptxas` allocates per target, so identical PTX does not get an identical register count: compiling one body for each target moves the count by up to <!-- calkit value key=summary.max_upward_drift_registers path=results/fold-arch-portability.json -->7<!-- /calkit value --> registers upward, though on sm_90 it moves <!-- calkit value key=summary.drift_on_sm_90_registers path=results/fold-arch-portability.json -->0<!-- /calkit value -->.
+Both folded kernels sit at <!-- calkit value key=summary.min_headroom_registers path=results/fold-arch-portability.json -->0<!-- /calkit value --> registers of headroom --- one more register and the step they bought is gone.
+So the fold is at risk on <!-- calkit value key=summary.n_at_risk path=results/fold-arch-portability.json -->2<!-- /calkit value --> of the four, <!-- calkit value key=summary.at_risk_architectures path=results/fold-arch-portability.json -->["sm_86", "sm_89"]<!-- /calkit value -->, and not on an H100.
+
+That is the rule this adds: **record a fold's distance to the next occupancy step, not just that it crossed one.** A fold landing exactly on a boundary is indistinguishable from a comfortable one in a single profile, and only the second survives a recompile for different hardware.
+Only an upward drift can cost a step, which is why the comparison is against the largest positive move rather than the magnitude.
+
+The limit on all of this is the same one [section 8m](learnings.md) is about: it predicts where work is *placed* on another device, never how long it takes there.
+Whether these kernels are still latency-bound on an H100 --- more SMs, more bandwidth --- needs the hardware.
+So this can establish that a fold stops paying on sm_86, which is a usable negative result, and cannot establish that one still pays on sm_90.
 
 ## What this does not settle
 

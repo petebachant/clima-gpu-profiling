@@ -269,6 +269,37 @@ def main():
             ],
         }
 
+    # Scalars the write-up quotes, so the prose needs no arithmetic of its own.
+    all_gains = {
+        f["per_architecture"][a]["warps_gained"]
+        for f in out["folds"].values()
+        for a in ARCHS
+    }
+    at_risk = sorted(
+        {a for f in out["folds"].values() for a in f["at_risk_architectures"]}
+    )
+    out["summary"] = {
+        "n_validation_points": len(checks),
+        "architectures_considered": len(ARCHS),
+        "warps_gained_everywhere": (
+            all_gains.pop() if len(all_gains) == 1 else None
+        ),
+        "gain_identical_across_architectures": len(all_gains) == 0,
+        "min_headroom_registers": min(
+            f["min_headroom_registers"] for f in out["folds"].values()
+        ),
+        "max_upward_drift_registers": (
+            None if drift is None
+            else max(drift["max_positive_delta_registers"].values())
+        ),
+        "drift_on_sm_90_registers": (
+            None if drift is None
+            else drift["max_positive_delta_registers"].get("sm_90")
+        ),
+        "at_risk_architectures": at_risk,
+        "n_at_risk": len(at_risk),
+    }
+
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     with open(args.out, "w") as f:
         json.dump(out, f, indent=2)
