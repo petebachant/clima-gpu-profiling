@@ -4,10 +4,11 @@ Section 4l of `docs/learnings.md` established that radiation is a single
 resident wave -- 96 blocks of 256 threads on 108 SMs, 8 warps each -- so there
 is no second wave to hide its latency behind, every tuning lever was tried and
 rejected, and the only remaining change was to restructure the g-point loop.
-A first attempt ran the groups as concurrent launches instead, which cannot
-work for exactly the reason 4l gives: one grid already claims 0.89 of the
-device, so a second has nowhere to go. That version is priced in the history
-of this file at an overlap of 1.97x against sixteen groups.
+A first attempt ran the groups as concurrent launches instead. It measures the
+SAME saving as this one, to inside the control's noise, because independent
+blocks do not care which grid they were launched in: the scheduler backfills an
+SM across a stream boundary as readily as within a grid. Its low overlap factor
+counted resident grids, not idle SMs. Section 8m of docs/learnings.md has it.
 `results/experiments/gpoint-bound/bound.json` priced that restructure with a
 deliberately incorrect kernel (the threads of a column raced). This measures the
 correct one.
@@ -148,9 +149,10 @@ def waves(fam):
     long as its slowest column. Past one wave the scheduler hands a finished SM
     another block, which is what absorbs the tail.
 
-    A `waves` below 1 is the diagnosis that concurrency cannot help -- a second
-    grid has nowhere to go -- and is why the sixteen-stream version of this
-    treatment overlapped 1.97x rather than 16x.
+    Read it as a prediction to test, not a reason. This treatment moved waves
+    from below one to many, with registers and blocks per SM unchanged, and the
+    kernel time did not move -- so placement was never the limiter here. A wave
+    count explains where work goes, never how long it takes.
     """
     regs, block, grid = fam["registers"], fam["block"], fam["grid"]
     per_sm = min(A100_REGS_PER_SM // max(regs * block, 1),
@@ -291,11 +293,11 @@ def main():
             "sign. Longwave only; shortwave is the untouched in-arm control. The mod "
             "arm's longwave kernel is a different kernel, so the arms are "
             "paired by role and the mod side is charged for its own reduction "
-            "and hoisted aerosol mask. `waves` is the load-bearing field: "
-            "both arms hold the same number of blocks per SM, so the split pays "
-            "only through having more blocks than fit at once, and a baseline "
-            "below one wave is why sixteen concurrent launches of it could not. "
-            "The device total carries the sedimentation "
+            "and hoisted aerosol mask. `waves` is a tested prediction, not an "
+            "explanation: it rose from below one to many at unchanged blocks per "
+            "SM and the longwave time did not move, and a concurrent-launch "
+            "build of the same split measured the same saving at a low overlap "
+            "factor. The device total carries the sedimentation "
             "fold as well and is not this treatment's figure."
         ),
     }

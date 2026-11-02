@@ -3294,31 +3294,54 @@ that broke the assumption. Summed kernel time assumes serial execution; a
 name-paired subtotal assumes the kernel inventory is unchanged; a one-sided
 difference assumes the arms are not identical.
 
-## 8m. Concurrent kernels are not a substitute for blocks in one grid (2026-10-31)
+## 8m. Grid boundaries are not a scheduling barrier, and the bound was unreachable (2026-10-31, corrected 2026-11-02)
 
 Section 4l established that radiation is one resident wave and that the fix is
-to split the g-point loop. The split was first built as concurrent kernels, one
-per g-point group on its own stream, because that needs no change to how any
-device function indexes its workspace: each group's scratch arrives as a kernel
-argument already pointing at its own memory.
+to split the g-point loop. The split was built twice, by deliberately opposite
+means, and **both returned the same saving** -- which is the finding, and which
+refutes the explanation this section first gave.
 
-It barely overlapped, and the reason is arithmetic that should have been done
-first. The solve carries the maximum register count, and registers alone decide
-how many of its threads an SM can hold -- enough for a quarter of a block of
-256, so one block per SM and eight resident warps, and that number does not move
-with block size, which is why section 4l's smaller-block experiment bought so
-little. One thread per column is then slightly **under** one wave: a single
-grid already claims almost every SM on the device. Sixteen such grids cannot
-co-reside, so they ran nearly in sequence, and the measured saving was a small
-fraction of the bound.
+The first build ran one kernel per g-point group, each on its own stream. Its
+measured overlap factor was far below the group count, and that was read as the
+groups failing to co-reside: the solve carries the maximum register count, and
+registers alone decide how many of its threads an SM can hold -- one block per
+SM, eight resident warps, a number that does not move with block size, which is
+why 4l's smaller-block experiment bought so little. One thread per column is
+then slightly **under** one wave, so a single grid already claims almost every
+SM, and sixteen such grids plainly cannot be resident at once.
 
-What the bound actually measured was not occupancy at all. It put every group's
-blocks in ONE grid, where the total is many times the resident capacity, so the
-scheduler backfills an SM the instant a block retires -- the gain is tail and
-load-imbalance absorption across many waves, not more resident warps. Occupancy
-per SM is identical in both arrangements.
+All of that is true, and the conclusion drawn from it was still wrong. The
+second build put every group in ONE grid, which multiplied the block count by
+the group count and took the launch from under one wave to many. Registers,
+warps per SM and blocks per SM were unchanged, exactly as predicted. The
+longwave saving did not move: the two arrangements agree to well inside the
+noise of the untouched control.
 
-The rule: before splitting work across concurrent kernels to raise parallelism,
-check whether one kernel's grid already fills the device. If it does,
-concurrency buys nothing and the split has to go inside a single grid, however
-much more plumbing that costs.
+The reason is that nothing was serializing in the first place. When blocks are
+independent and occupancy pins one block per SM, N concurrent grids of M blocks
+and one grid of N*M blocks present the scheduler with the same N*M independent
+blocks, and it backfills an SM across a stream boundary exactly as it does
+inside a grid. A low overlap factor measures how many *grids* have blocks
+resident at once, which near one wave per grid can only ever be about two. It
+is not a measure of utilization, and reading it as one invented a serialization
+that the hardware was not doing.
+
+So the saving both builds found is real, resolved against its control, and
+reproduced by independent means -- and it is a small fraction of what section
+4l's parked bound priced. The bound is the thing to distrust, not either build:
+it was measured on a knowingly incorrect kernel in which the threads of a
+column raced, so it never performed the serialized sweep that any correct split
+must still perform per g-point. A bound measured on a kernel that skips the
+work is not a bound on doing the work.
+
+Two rules. First, an occupancy or wave argument predicts how work is *placed*,
+never how long it takes; when the placement changes exactly as predicted and
+the time does not, the limiter was never placement. Second, a performance bound
+taken from a deliberately incorrect kernel bounds nothing until someone
+establishes that the incorrectness did not remove work -- and racing threads of
+a column remove precisely the dependent sweep that dominates this kernel.
+
+The in-kernel build is the one kept, on simplicity rather than speed: no
+streams, no events, one scratch allocation instead of one per group, and its
+summed kernel time equals its elapsed time again, which removes the trap
+section 8l is about.
