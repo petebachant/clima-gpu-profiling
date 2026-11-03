@@ -176,18 +176,18 @@ def main() -> int:
                     # which is the one the answer claims to rest on. That is
                     # the failure this branch exists to catch.
                     try:
-                        live = dig(open(path).read(), path, key)
+                        rendered = dig(open(path).read(), path, key)
                     except Exception:
-                        live = None
-                    if live is None:
+                        rendered = None
+                    if rendered is None:
                         mark, note = "NO LIVE VALUE", " (renders blank)"
-                    elif isinstance(value, float) and isinstance(live, float):
-                        drifted = abs(live - value) > 1e-9 * max(1.0, abs(value))
+                    elif isinstance(value, float) and isinstance(rendered, float):
+                        drifted = abs(rendered - value) > 1e-9 * max(1.0, abs(value))
                         mark = "DRIFT" if drifted else "ok"
-                        note = f" renders {live}" if drifted else ""
+                        note = f" renders {rendered}" if drifted else ""
                     else:
-                        mark = "ok" if live == value else "DRIFT"
-                        note = f" renders {live}" if mark == "DRIFT" else ""
+                        mark = "ok" if rendered == value else "DRIFT"
+                        note = f" renders {rendered}" if mark == "DRIFT" else ""
                 elif name:
                     # Declares a name the answer never uses: either a figure
                     # meant to be injected and left typed, or a promise to
@@ -211,6 +211,11 @@ def main() -> int:
                 pct = radiation_pct(blob)
                 extra = "" if pct is None else f" radiation={pct:+.2f}%"
                 print(f"{'table':14s} {ref}:{path}{extra}")
+    # A local named for one of these counters once shadowed it, so the summary
+    # reported a measured value where a count belongs.
+    assert isinstance(pinned, int) and isinstance(live, int), (
+        f"counters were shadowed: pinned={pinned!r} live={live!r}"
+    )
     # Printed unconditionally: this script was silent and passing for a while
     # because every citation had lost its `git_ref` and nothing was examined.
     print(
