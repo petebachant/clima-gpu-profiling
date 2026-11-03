@@ -1,5 +1,5 @@
 diff --git a/ClimaAtmos.jl/src/cache/microphysics_cache.jl b/ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl
-index b33338e..1042e43 100644
+index 08a4bc1..1ba4845 100644
 --- a/ClimaAtmos.jl/src/cache/microphysics_cache.jl
 +++ b/ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl
 @@ -114,6 +114,14 @@ function set_precipitation_velocities!(
@@ -28,7 +28,7 @@ index b33338e..1042e43 100644
          ρ,
          q,
      )
-@@ -169,6 +177,14 @@ function set_precipitation_velocities!(
+@@ -171,6 +179,14 @@ function set_precipitation_velocities!(
      cmc = CAP.microphysics_cloud_params(params)
      cmp = CAP.microphysics_1m_params(params)
      thp = CAP.thermodynamics_params(params)
@@ -40,11 +40,11 @@ index b33338e..1042e43 100644
 +        tv = (; cmc.liquid, cmc.ice, cmc.stokes, cmc.Ch2022)
 +        _fold(dev, tv), _fold(dev, cmp)
 +    end
+     draft_indices = StaticOneTo(n_mass_flux_subdomains(turbconv_model))
  
-     ᶜρ⁰ = @. lazy(
-         TD.air_density(thp, ᶜT⁰, ᶜp, ᶜq_tot_nonneg⁰, ᶜq_liq⁰, ᶜq_ice⁰),
-@@ -196,8 +212,8 @@ function set_precipitation_velocities!(
-         velocity_mode(atmos, name),
+     terminal_velocity_function(name, ρ, q) = terminal_velocity(
+@@ -178,8 +194,8 @@ function set_precipitation_velocities!(
+         velocity_mode(water, name),
          name,
          params,
 -        cmc,
