@@ -82,6 +82,9 @@ questions:
           marker cannot read directly.
       - kind: result
         path: results/val-mileage.json
+        # Downstream of the frozen val-mileage stage, which cannot be rebuilt on
+        # main; pinned to the pass where it was last measured against its own arms.
+        git_ref: meas/2026-11-03-two-prs-rebaselined
         values:
           mileage_ceiling: ceiling_pct_of_device
           mileage_untreated: untreated_pct_of_device
@@ -111,6 +114,9 @@ questions:
           the stage is minutes.
       - kind: result
         path: results/pointwise-registers.json
+        # Output of the frozen export-pointwise-registers stage; pinned to the pass
+        # whose device time its population was surveyed against.
+        git_ref: meas/2026-11-03-two-prs-rebaselined
         explanation: >-
           The population the question asks about, measured rather than
           extrapolated: for every kernel in a 120-step run, its registers and
@@ -179,6 +185,8 @@ questions:
           executes.
       - kind: result
         path: results/val-mileage.json
+        # Same frozen stage as above, cited here for the untreated remainder.
+        git_ref: meas/2026-11-03-two-prs-rebaselined
         explanation: >-
           What is left to aim at, in device time rather than kernel counts. A
           dependency-wide change has to pay for itself out of this, and the
@@ -352,6 +360,9 @@ questions:
       - kind: document
         path: docs/fold-decision-rule.md
         section: "The rule that works: compile the body with const globals"
+        # Built by the frozen fold-decision-doc stage; pinned to the pass where its
+        # inputs last matched dvc.lock.
+        git_ref: meas/2026-11-03-two-prs-rebaselined
         explanation: >-
           The three candidate rules tested against every fold attempt on the
           record, the two failures the const-global probe caught before any code
@@ -385,6 +396,10 @@ questions:
       - kind: document
         path: docs/experiments/sedimentation-velocity-fold.md
         section: "Why it is worth recording anyway: headroom and share come apart"
+        # Built by the frozen sedimentation-velocity-fold-doc stage. The section
+        # cited is the frozen experiment record; pinned so it reads against the
+        # snapshot it was derived from rather than a later stack.
+        git_ref: meas/2026-11-03-two-prs-rebaselined
         explanation: >-
           The experiment that separates the two gates the file above reports as
           confounded. The sedimentation velocity kernels have the occupancy
@@ -397,6 +412,8 @@ questions:
           the next experiment.
       - kind: result
         path: results/sedimentation-fold.json
+        # The frozen snapshot itself, pinned to the pass that carries it.
+        git_ref: meas/2026-11-03-two-prs-rebaselined
         values:
           sed_change_pct: treated_change_pct
         explanation: >-
