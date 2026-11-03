@@ -994,6 +994,20 @@ pipeline:
       # results/fold-decision.json from four earlier stages' outputs and runs
       # no GPU, so re-running it restates nothing against a different run --
       # it re-reads the files the pass just wrote.
+    fold-compile-cost-doc:
+      kind: markdown
+      target_path: docs/fold-compile-cost.md
+      environment: py
+      # Live on main, like fold-decision-doc, and split out of
+      # docs/experiments/sedimentation-velocity-fold.md on 2026-11-03. It was a
+      # section there, which made that document half frozen and half live: its
+      # own figures come from a pinned snapshot of the 2026-10-31 stack, while
+      # these are re-measured by the live fold-compile-cost stage against
+      # whatever is current, so the two were rewritten on different schedules
+      # inside one file and `calkit check questions` reported the pinned
+      # citation as evidence the pipeline would rebuild. Separated, the
+      # experiment stops moving and this reprices the open pull request on
+      # every pass, which is what it is for.
     launch-cost:
       kind: markdown
       target_path: docs/experiments/launch-cost.md

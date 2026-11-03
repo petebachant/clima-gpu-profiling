@@ -141,7 +141,7 @@ of the answer rather than its sign.
 
 ## Moving to another GPU
 
-Everything above is an A100 measurement, and the two halves of a fold do not travel together: the compile-time price is paid on every device, while the benefit is registers buying another resident block, which depends on limits that differ per architecture.
+Everything above is an A100 measurement, and the two halves of a fold do not travel together: [the compile-time price](fold-compile-cost.md) is paid on every device, while the benefit is registers buying another resident block, which depends on limits that differ per architecture.
 `export-fold-arch-portability` works out the second half for the targets `ptxas` can assemble for, over <!-- calkit value key=summary.architectures_considered path=results/fold-arch-portability.json -->4<!-- /calkit value --> architectures.
 The occupancy arithmetic is checked rather than trusted --- it reproduces all <!-- calkit value key=summary.n_validation_points path=results/fold-arch-portability.json -->6<!-- /calkit value --> of the warps/SM figures this project has measured on sm_80, and the stage refuses to print a prediction otherwise.
 

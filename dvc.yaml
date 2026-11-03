@@ -948,8 +948,6 @@ stages:
       - .calkit/markdown/docs/experiments/sedimentation-velocity-fold.md/values.py
       - results/sedimentation-fold.json
       - results/fold-decision.json
-      - results/fold-compile-cost.json
-      - results/compile-time/compile-time.toml
       - .calkit/env-locks/py
     outs:
       - results/docs/sedimentation-velocity-fold.json:
@@ -976,6 +974,20 @@ stages:
           persist: false
     desc: Automatically generated from the 'fold-decision-doc/analyze' stage in
       calkit.yaml. Changes made here will be overwritten.
+  fold-compile-cost-doc/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/fold-compile-cost.md/values.py
+    deps:
+      - .calkit/markdown/docs/fold-compile-cost.md/values.py
+      - results/fold-compile-cost.json
+      - results/compile-time/compile-time.toml
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/fold-compile-cost.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'fold-compile-cost-doc/values' stage
+      in calkit.yaml. Changes made here will be overwritten.
   launch-cost/baseline:
     cmd: calkit scheduler batch --name launch-cost/baseline --environment clima
       --dep scripts/run-nsys.sh --dep scripts/run.jl --dep ClimaCoupler.jl/src
