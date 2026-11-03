@@ -39,23 +39,24 @@ json.dump(out, open("results/docs/diagnostics-cost.json", "w"), indent=2)
 
 ## The ceiling
 
-Diagnostics cost <!-- calkit value key=total_pct -->11.4<!-- /calkit value -->% of the wall clock on the benchmark window, so the whole of them is worth <!-- calkit value key=sypd_headroom_pct -->12.9<!-- /calkit value -->% in SYPD: <!-- calkit value key=sypd_with -->1.2967<!-- /calkit value --> SYPD with them against <!-- calkit value key=sypd_without -->1.4634<!-- /calkit value --> without.
+Diagnostics cost <!-- calkit value key=total_pct -->9.5<!-- /calkit value -->% of the wall clock on the benchmark window, so the whole of them is worth <!-- calkit value key=sypd_headroom_pct -->10.5<!-- /calkit value -->% in SYPD: <!-- calkit value key=sypd_with -->1.0305<!-- /calkit value --> SYPD with them against <!-- calkit value key=sypd_without -->1.1384<!-- /calkit value --> without.
 That is the number to compare an optimization's cost against before starting.
 
 Read it as an upper bound.
-It differences two whole runs, <!-- calkit value key=wall_on_s -->729<!-- /calkit value --> s against <!-- calkit value key=wall_off_s -->646<!-- /calkit value --> s over <!-- calkit value key=n_steps -->2878<!-- /calkit value --> steps, so it also contains the compilation the diagnostics-off run does not pay.
+It differences two whole runs, <!-- calkit value key=wall_on_s -->918<!-- /calkit value --> s against <!-- calkit value key=wall_off_s -->831<!-- /calkit value --> s over <!-- calkit value key=n_steps -->2878<!-- /calkit value --> steps, so it also contains the compilation the diagnostics-off run does not pay.
 The direction of that bias is known and its size is not, which is the honest limit of a difference-of-runs design and the reason the write-step share below is cited from a separate measurement rather than derived from this one.
 
 ## The split matters more than the total
 
 The two halves need different work.
-The <!-- calkit value key=diag_steps -->4<!-- /calkit value --> daily write events carry <!-- calkit value key=write_pct -->10.8<!-- /calkit value -->% of wall on their own, at <!-- calkit value key=diag_multiple -->103<!-- /calkit value -->x an ordinary step each, which is I/O and reduction flushing concentrated in a handful of steps.
+The <!-- calkit value key=diag_steps -->4<!-- /calkit value --> daily write events carry <!-- calkit value key=write_pct -->9.3<!-- /calkit value -->% of wall on their own, at <!-- calkit value key=diag_multiple -->87<!-- /calkit value -->x an ordinary step each, which is I/O and reduction flushing concentrated in a handful of steps.
 The rest is the sampling that feeds them, spread thinly across every ordinary step, where it is invisible in the median and cannot be found by looking for expensive steps.
 
-## The sampling share is under a point, and only just resolvable
+## The sampling share is under a point, and this window may not resolve it
 
-The residual left after the write steps is <!-- calkit value key=sampling_pct -->0.63<!-- /calkit value --> points of wall clock, against a <!-- calkit value key=repeat_spread_points -->0.507<!-- /calkit value -->-point spread between independent repeats of one AMIP pair of identical code.
-It clears that floor by <!-- calkit value key=margin_over_floor -->0.12<!-- /calkit value --> points, so `sampling_resolvable` is <!-- calkit value key=sampling_resolvable -->true<!-- /calkit value --> and the split can be read at all; the margin is smaller than the floor it cleared, so read the sampling share as under a point rather than to the digit.
+The residual left after the write steps is <!-- calkit value key=sampling_pct -->0.19<!-- /calkit value --> points of wall clock, against a <!-- calkit value key=repeat_spread_points -->0.507<!-- /calkit value -->-point spread between independent repeats of one AMIP pair of identical code.
+Its margin over that floor is <!-- calkit value key=margin_over_floor -->-0.32<!-- /calkit value --> points, with `sampling_resolvable` recording <!-- calkit value key=sampling_resolvable -->false<!-- /calkit value -->, which is the field that says whether the window separates the residual from its own repeat spread.
+Either way the margin is of the order of the floor, so read the sampling share as under a point rather than to the digit.
 A sampling cost cannot be negative, so a residual below minus the floor is not a small share but the two differently-sourced measurements disagreeing by more than the quantity between them, which `sources_inconsistent` records, currently <!-- calkit value key=sources_inconsistent -->false<!-- /calkit value -->.
 It was true before the 2026-10-30 re-baseline, on a stack where this residual came out negative, and comparing the magnitude against the floor would have reported that as resolved -- which is how a sign error gets published as a measurement.
 
