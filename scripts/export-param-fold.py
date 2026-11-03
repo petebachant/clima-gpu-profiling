@@ -230,8 +230,25 @@ def main():
     out = {"kernels": {}}
     for key, (pattern, rank) in TARGETS.items():
         b, m = select(bdb, pattern, rank), select(mdb, pattern, rank)
+        if b is None and m is None:
+            # Upstream deleted the kernel this target named, so it carries no
+            # work in EITHER arm and contributes zero to both. That is a
+            # different state from unpaired, where the work moved into another
+            # name and has to be recovered from the family total, so it needs
+            # no family and is recorded rather than totaled.
+            out["kernels"][key] = {
+                "pairing": "absent_from_both_arms",
+                "pattern": pattern,
+                "rank": rank,
+                "crossed_occupancy_step": False,
+            }
+            continue
         if b is None or m is None:
-            sys.exit(f"{key}: nothing at rank {rank} of {pattern!r}")
+            sys.exit(
+                f"{key}: nothing at rank {rank} of {pattern!r} in the "
+                f"{'baseline' if b is None else 'mod'} arm but present in the "
+                "other, so one arm's inventory is missing a kernel the other has"
+            )
         rec = {
             "baseline": b,
             "mod": m,
@@ -319,14 +336,18 @@ def main():
     # conversion. device_saving is the figure to divide: the family total
     # wherever a target is unpaired, the name-paired delta everywhere else.
     unpaired = [k for k, v in out["kernels"].items() if "pairing" in v]
-    missing = sorted(k for k in unpaired if k not in FAMILY_OF)
+    missing = sorted(
+        k for k in unpaired
+        if k not in FAMILY_OF
+        and out["kernels"][k].get("pairing") != "absent_from_both_arms"
+    )
     if missing:
         sys.exit(
             f"{', '.join(missing)}: unpaired and covered by no family, so the "
             "fold's device saving cannot be totaled; add the family to "
             "FAMILIES and FAMILY_OF"
         )
-    fallback = sorted({FAMILY_OF[k] for k in unpaired})
+    fallback = sorted({FAMILY_OF[k] for k in unpaired if k in FAMILY_OF})
     covered = {k for k, fam in FAMILY_OF.items() if fam in fallback}
     outside = [v for k, v in out["kernels"].items()
                if "pairing" not in v and k not in covered]
@@ -369,6 +390,10 @@ def main():
     OUT.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
 
     for key, v in out["kernels"].items():
+        if v.get("pairing") == "absent_from_both_arms":
+            print(f"{key:24s} GONE: no kernel matches {v['pattern']!r} in "
+                  "either arm, so it carries no work in this inventory")
+            continue
         step = "step" if v["crossed_occupancy_step"] else "    "
         head = (f"{key:24s} {v['baseline']['registers']:3d} -> {v['mod']['registers']:3d} regs  "
                 f"{v['baseline']['warps_per_sm']:2d} -> {v['mod']['warps_per_sm']:2d} warps/SM  ")
