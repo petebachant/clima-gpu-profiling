@@ -12,7 +12,7 @@ Its `inputs` are the files the prose quotes, which is what ties this document to
 The treatment measured in the step-breakdown and AMIP sections is read out of `results/fold-record/`, a verbatim copy of the measurement's tag that `scripts/snapshot-tag-records.py` re-makes on every pass, and the null test out of `results/null-record/` the same way.
 The live `results/summary.json` describes whatever ran last, and what ran last is a null test, so reading it live here would render roughly zero under this prose.
 
-```python calkit stage name=values environment=py outputs=[{path: results/docs/wall-clock-conversion.json, storage: git}] inputs=[results/fold-record/step-comparison.json, results/fold-record/summary.json, results/null-record/summary.json, results/null-record/step-comparison.json, results/null-record/param-fold.json, results/sypd-repeats.json, results/null-census.json]
+```python calkit stage name=values environment=py outputs=[{path: results/docs/wall-clock-conversion.json, storage: git}] inputs=[results/fold-record/step-comparison.json, results/fold-record/summary.json, results/null-record/summary.json, results/null-record/step-comparison.json, results/null-record/param-fold.json, results/sypd-repeats.json, results/null-census.json, results/summary.json, results/kernel-population.json]
 import json
 
 
@@ -31,10 +31,24 @@ current = repeat_record["latest_treatment"]
 # the re-baselined stack has one, so take the richest group of this treatment.
 repeats = repeat_record["most_repeated_treatment"]
 census = load("results/null-census.json")
+# The live files describe whatever ran last, which is the pair the `current`
+# block reports, so they are the right source for ITS device check and the
+# wrong one for every pinned figure above.
+live = load("results/summary.json")
+pop = load("results/kernel-population.json")
 # The nulls at the window in use now are the floor under every headline in
 # this document; the ones on earlier windows measure a different noise.
 cw = census["current_window_pct"]
 cw_mean = census["current_window_mean_pct"]
+
+# What the device side of this same pass can account for: the kernel-time
+# saving spread over the profiled window, against an unprofiled baseline step.
+nsys_steps = 120
+device_saved_ms_per_step = (
+    pop["baseline"]["kernel_time_ms"] - pop["mod"]["kernel_time_ms"]
+) / nsys_steps
+base_step_ms = live["baseline"]["walltime_per_step_s"] * 1000.0
+device_predicted_pct = 100.0 * device_saved_ms_per_step / base_step_ms
 
 plain, diag = step["classes"]["plain"], step["classes"]["diagnostics"]
 typ, pen, ss = step["typical_step"], step["compile_penalty"], step["steady_state"]
@@ -106,6 +120,15 @@ out = {
         # and its percentage is then a draw from the floor rather than a
         # measurement of a change.
         "is_null": current["treatment"] == [],
+        "device_predicted_pct": round(device_predicted_pct, 2),
+        "over_device_factor": round(
+            current["mean_pct"] / device_predicted_pct, 1
+        ),
+        # Sign-bearing, like clears_floor above. A headline inside the null
+        # spread of its own device prediction needs no caveat; one outside it
+        # is unexplained by the measurement this project trusts.
+        "exceeds_device_prediction": current["mean_pct"]
+        > device_predicted_pct + census["current_window_spread_points"],
     },
     "repeats": {
         "n": repeats["n_pairs"],
@@ -198,9 +221,12 @@ The device chain agrees it is zero where it should --- <!-- calkit value key=nul
 Repeating a pair says what kind of floor this is, and the answer is not the one this project assumed for months.
 The treatment measured here --- the updraft cache, not the fold above --- has been run end to end <!-- calkit value key=repeats.n -->3<!-- /calkit value --> times on one stack and one set of committed code, giving <!-- calkit value key=repeats.min_pct -->4.847<!-- /calkit value -->% to <!-- calkit value key=repeats.max_pct -->5.354<!-- /calkit value -->%: a mean of <!-- calkit value key=repeats.mean_pct -->5.086<!-- /calkit value -->% and a spread of <!-- calkit value key=repeats.spread_points -->0.507<!-- /calkit value --> points.
 Re-baselining onto a newer upstream main changes the code of both arms, so `record-treatment` files the result as a new group rather than a fourth repeat; the re-baseline's own pair was a null test, because upstream had merged the treatment and the two arms were identical, and it is the second of the two draws that set this window's floor below.
-The current group is the one after it, the sedimentation velocity fold, holding <!-- calkit value key=current.n -->1<!-- /calkit value --> pair at <!-- calkit value key=current.mean_pct -->1.89<!-- /calkit value -->%, with `is_null` recording <!-- calkit value key=current.is_null -->false<!-- /calkit value -->.
-Its margin over the floor is <!-- calkit value key=current.margin_points -->0.021<!-- /calkit value --> points, with `clears_floor` recording <!-- calkit value key=current.clears_floor -->true<!-- /calkit value -->, against a <!-- calkit value key=census.current_spread_points -->1.196<!-- /calkit value -->-point spread between the two nulls the floor averages.
-That is the worked example of a headline this window cannot resolve, and [the experiment that produced it](experiments/sedimentation-velocity-fold.md) had predicted as much from the device side before the pair was run.
+The current group is the one after it, the sedimentation velocity fold, holding <!-- calkit value key=current.n -->1<!-- /calkit value --> pair at <!-- calkit value key=current.mean_pct -->7.529<!-- /calkit value -->%, with `is_null` recording <!-- calkit value key=current.is_null -->false<!-- /calkit value -->.
+Its margin over the floor is <!-- calkit value key=current.margin_points -->5.66<!-- /calkit value --> points, with `clears_floor` recording <!-- calkit value key=current.clears_floor -->true<!-- /calkit value -->, against a <!-- calkit value key=census.current_spread_points -->1.196<!-- /calkit value -->-point spread between the two nulls the floor averages.
+That margin clears the floor and the spread under it, so the floor is no longer what limits this headline.
+The device side of the same pass is, because it accounts for only <!-- calkit value key=current.device_predicted_pct -->1.54<!-- /calkit value -->% of wall clock --- a factor of <!-- calkit value key=current.over_device_factor -->4.9<!-- /calkit value --> below the pair, with `exceeds_device_prediction` recording <!-- calkit value key=current.exceeds_device_prediction -->true<!-- /calkit value -->.
+The null test above says which of the two to doubt: with a treatment of nothing the device chain read zero while the unprofiled pair read <!-- calkit value key=null.amip_pct -->2.47<!-- /calkit value -->%, so a pair running several times past its own device prediction is the familiar failure rather than a new result, and [the experiment that produced it](experiments/sedimentation-velocity-fold.md) had predicted the small device effect before the pair was run.
+It needs a repeat on this stack, and a null on this stack, before the margin is worth quoting.
 
 Run-to-run repeatability is therefore about half a point, several times tighter than the <!-- calkit value key=census.current_mean_pct -->1.87<!-- /calkit value -->% the null tests find between two IDENTICAL arms.
 Those two figures cannot both be jitter.
