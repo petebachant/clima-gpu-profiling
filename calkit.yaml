@@ -1344,6 +1344,48 @@ pipeline:
         - path: results/val-params-registers.toml
           storage: git
 
+    gpoint-group-sweep:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # Does the longwave g-point split need 16 groups? The default widens
+      # every longwave workspace to `ncol * 16`, and that memory is the whole
+      # cost of the treatment, so the default should rest on a measurement of
+      # where the saving stops.
+      #
+      # One reservation, not four: the group count is a constructor argument,
+      # so all four points are taken in one process against one settled AMIP
+      # state, rebuilding only the group workspaces between them. That makes
+      # them in-block comparisons -- it never differences two runs, which is
+      # the only way to resolve a few percent on this machine.
+      #
+      # ClimaAtmos and ClimaCore sources are deliberately NOT inputs. A change
+      # upstream of the radiation solve moves all four points together and so
+      # cannot change which group count suffices; declaring them would re-run
+      # a 40-minute GPU stage on every microphysics edit. The stack it ran
+      # against is recorded in the output instead.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=75
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/measure-gpoint-sweep.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      inputs:
+        - scripts/measure-gpoint-sweep.jl
+        - scripts/run-julia-script.sh
+        - RRTMGP.jl-mod/src
+        - RRTMGP.jl-mod/ext
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      outputs:
+        - path: results/gpoint-sweep.toml
+          storage: git
+
     fold-compile-cost:
       kind: shell-script
       environment: clima
