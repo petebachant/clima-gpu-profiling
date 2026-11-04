@@ -527,6 +527,61 @@
         "RRTMGP.jl-mod": "ae3b09fe42d891983525cba267e8719e8f8343fc"
       },
       "same_gpu": false
+    },
+    {
+      "run_id": "8a85fbcfc15f",
+      "order": "mod_first",
+      "order_source": "log mtimes",
+      "ran_second": "baseline",
+      "gpus_by_arm": {
+        "baseline": [
+          0
+        ],
+        "mod": [
+          5
+        ]
+      },
+      "baseline": {
+        "gpus": [
+          0
+        ],
+        "sypd": 0.9919542126451599,
+        "wall_s": 953.2135,
+        "step_s": 0.33120692,
+        "n_steps_timed": 2878,
+        "dt_cpl_s": 120.0
+      },
+      "mod": {
+        "gpus": [
+          5
+        ],
+        "sypd": 1.0062434632299058,
+        "wall_s": 939.6773,
+        "step_s": 0.32650357,
+        "n_steps_timed": 2878,
+        "dt_cpl_s": 120.0
+      },
+      "speedup_pct": 1.42,
+      "step_change_pct": -1.42,
+      "treatment": [
+        "ClimaAtmos.jl-mod",
+        "RRTMGP.jl-mod"
+      ],
+      "diff_digest": "d97dc6f72781e5b5",
+      "reproducible": true,
+      "dirty_trees": [],
+      "stack": {
+        "ClimaAtmos.jl": "d9e7b974d8fe91383885afd890cb4170503255bf",
+        "ClimaAtmos.jl-mod": "fadfdc8f36ce4b93efea32ca4ce112601553fc9f",
+        "ClimaCore.jl": "09a157b036784ab20d9584ba69e990f53d3b28cf",
+        "ClimaCore.jl-mod": "09a157b036784ab20d9584ba69e990f53d3b28cf",
+        "ClimaCoupler.jl": "5216a3b0cc8e9a64dab458b818ea100c1261e4e8",
+        "ClimaCoupler.jl-mod": "37893a26aad3ef24642cfec5fdc07bc69b7ae2c4",
+        "CloudMicrophysics.jl-mod": "3baa60b7792990467caf0127dfa805636cb222cc",
+        "RRTMGP.jl": "a64796f870c318b855bba4afbecced7e586fdaa0",
+        "RRTMGP.jl-mod": "ae3b09fe42d891983525cba267e8719e8f8343fc"
+      },
+      "same_gpu": false
     }
   ],
   "note": "One entry per unprofiled AMIP pair, each an independent pair of runs of the same committed code. `speedup_pct` follows results/summary.json: 1 - baseline_sypd/mod_sypd. `spread_points` across pairs of one treatment is this measurement's own repeatability, to be read against the null test's noise floor in results/null-record/.",
@@ -592,6 +647,13 @@
           "mean_pct": 4.847
         }
       },
+      "arm_spread_pct": {
+        "baseline": 0.361,
+        "mod": 0.572
+      },
+      "widest_arm": "mod",
+      "max_arm_spread_pct": 0.572,
+      "effect_below_arm_spread": false,
       "order_effect_points": 0.105,
       "order_corrected_pct": 4.952,
       "margin_over_null_points": 3.217,
@@ -829,21 +891,23 @@
       "predicted_if_order_explains_null_pct": -3.044
     },
     "d97dc6f72781e5b5": {
-      "n_pairs": 1,
+      "n_pairs": 2,
       "treatment": [
         "ClimaAtmos.jl-mod",
         "RRTMGP.jl-mod"
       ],
       "speedups_pct": [
-        7.529
+        7.529,
+        1.42
       ],
-      "mean_pct": 7.529,
-      "min_pct": 7.529,
+      "mean_pct": 4.474,
+      "min_pct": 1.42,
       "max_pct": 7.529,
-      "spread_points": 0.0,
+      "spread_points": 6.109,
       "stacks": 1,
       "orders": [
-        "baseline_first"
+        "baseline_first",
+        "mod_first"
       ],
       "gpu_assignments": [
         {
@@ -853,6 +917,14 @@
           "mod": [
             6
           ]
+        },
+        {
+          "baseline": [
+            0
+          ],
+          "mod": [
+            5
+          ]
         }
       ],
       "same_gpu_pairs": 0,
@@ -860,10 +932,23 @@
         "baseline_first": {
           "n": 1,
           "mean_pct": 7.529
+        },
+        "mod_first": {
+          "n": 1,
+          "mean_pct": 1.42
         }
       },
-      "margin_over_null_points": 5.66,
-      "margin_exceeds_repeat_spread": true,
+      "arm_spread_pct": {
+        "baseline": 7.727,
+        "mod": 1.051
+      },
+      "widest_arm": "baseline",
+      "max_arm_spread_pct": 7.727,
+      "effect_below_arm_spread": true,
+      "order_effect_points": 3.054,
+      "order_corrected_pct": 4.474,
+      "margin_over_null_points": 2.605,
+      "margin_exceeds_repeat_spread": false,
       "margin_exceeds_floor_spread": true,
       "predicted_if_order_explains_null_pct": 2.595
     }
@@ -874,21 +959,23 @@
     "note": "results/null-record/, both arms on main at exp/2026-10-22-null-test-on-main. One pair, so this is a single draw from the wall-clock noise and not an estimate of its width."
   },
   "latest_treatment": {
-    "n_pairs": 1,
+    "n_pairs": 2,
     "treatment": [
       "ClimaAtmos.jl-mod",
       "RRTMGP.jl-mod"
     ],
     "speedups_pct": [
-      7.529
+      7.529,
+      1.42
     ],
-    "mean_pct": 7.529,
-    "min_pct": 7.529,
+    "mean_pct": 4.474,
+    "min_pct": 1.42,
     "max_pct": 7.529,
-    "spread_points": 0.0,
+    "spread_points": 6.109,
     "stacks": 1,
     "orders": [
-      "baseline_first"
+      "baseline_first",
+      "mod_first"
     ],
     "gpu_assignments": [
       {
@@ -898,6 +985,14 @@
         "mod": [
           6
         ]
+      },
+      {
+        "baseline": [
+          0
+        ],
+        "mod": [
+          5
+        ]
       }
     ],
     "same_gpu_pairs": 0,
@@ -905,10 +1000,23 @@
       "baseline_first": {
         "n": 1,
         "mean_pct": 7.529
+      },
+      "mod_first": {
+        "n": 1,
+        "mean_pct": 1.42
       }
     },
-    "margin_over_null_points": 5.66,
-    "margin_exceeds_repeat_spread": true,
+    "arm_spread_pct": {
+      "baseline": 7.727,
+      "mod": 1.051
+    },
+    "widest_arm": "baseline",
+    "max_arm_spread_pct": 7.727,
+    "effect_below_arm_spread": true,
+    "order_effect_points": 3.054,
+    "order_corrected_pct": 4.474,
+    "margin_over_null_points": 2.605,
+    "margin_exceeds_repeat_spread": false,
     "margin_exceeds_floor_spread": true,
     "predicted_if_order_explains_null_pct": 2.595,
     "diff_digest": "d97dc6f72781e5b5"
@@ -974,6 +1082,13 @@
         "mean_pct": 4.847
       }
     },
+    "arm_spread_pct": {
+      "baseline": 0.361,
+      "mod": 0.572
+    },
+    "widest_arm": "mod",
+    "max_arm_spread_pct": 0.572,
+    "effect_below_arm_spread": false,
     "order_effect_points": 0.105,
     "order_corrected_pct": 4.952,
     "margin_over_null_points": 3.217,

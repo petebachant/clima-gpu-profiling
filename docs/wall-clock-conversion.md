@@ -121,14 +121,20 @@ out = {
         # measurement of a change.
         "is_null": current["treatment"] == [],
         "device_predicted_pct": round(device_predicted_pct, 2),
-        "over_device_factor": round(
-            current["mean_pct"] / device_predicted_pct, 1
-        ),
         # Sign-bearing, like clears_floor above. A headline inside the null
         # spread of its own device prediction needs no caveat; one outside it
         # is unexplained by the measurement this project trusts.
         "exceeds_device_prediction": current["mean_pct"]
         > device_predicted_pct + census["current_window_spread_points"],
+        "spread_points": current.get("spread_points"),
+        # Each arm's own wander across the group. A pair differences two
+        # runs, so it resolves nothing smaller than this.
+        "arm_spread_baseline_pct": current.get("arm_spread_pct", {}).get("baseline"),
+        "arm_spread_mod_pct": current.get("arm_spread_pct", {}).get("mod"),
+        "widest_arm": current.get("widest_arm"),
+        "effect_below_arm_spread": current.get("effect_below_arm_spread"),
+        "fwd_pct": current.get("by_order", {}).get("baseline_first", {}).get("mean_pct"),
+        "rev_pct": current.get("by_order", {}).get("mod_first", {}).get("mean_pct"),
     },
     "repeats": {
         "n": repeats["n_pairs"],
@@ -221,12 +227,13 @@ The device chain agrees it is zero where it should --- <!-- calkit value key=nul
 Repeating a pair says what kind of floor this is, and the answer is not the one this project assumed for months.
 The treatment measured here --- the updraft cache, not the fold above --- has been run end to end <!-- calkit value key=repeats.n -->3<!-- /calkit value --> times on one stack and one set of committed code, giving <!-- calkit value key=repeats.min_pct -->4.847<!-- /calkit value -->% to <!-- calkit value key=repeats.max_pct -->5.354<!-- /calkit value -->%: a mean of <!-- calkit value key=repeats.mean_pct -->5.086<!-- /calkit value -->% and a spread of <!-- calkit value key=repeats.spread_points -->0.507<!-- /calkit value --> points.
 Re-baselining onto a newer upstream main changes the code of both arms, so `record-treatment` files the result as a new group rather than a fourth repeat; the re-baseline's own pair was a null test, because upstream had merged the treatment and the two arms were identical, and it is the second of the two draws that set this window's floor below.
-The current group is the one after it, the sedimentation velocity fold, holding <!-- calkit value key=current.n -->1<!-- /calkit value --> pair at <!-- calkit value key=current.mean_pct -->7.529<!-- /calkit value -->%, with `is_null` recording <!-- calkit value key=current.is_null -->false<!-- /calkit value -->.
-Its margin over the floor is <!-- calkit value key=current.margin_points -->5.66<!-- /calkit value --> points, with `clears_floor` recording <!-- calkit value key=current.clears_floor -->true<!-- /calkit value -->, against a <!-- calkit value key=census.current_spread_points -->1.196<!-- /calkit value -->-point spread between the two nulls the floor averages.
-That margin clears the floor and the spread under it, so the floor is no longer what limits this headline.
-The device side of the same pass is, because it accounts for only <!-- calkit value key=current.device_predicted_pct -->1.54<!-- /calkit value -->% of wall clock --- a factor of <!-- calkit value key=current.over_device_factor -->4.9<!-- /calkit value --> below the pair, with `exceeds_device_prediction` recording <!-- calkit value key=current.exceeds_device_prediction -->true<!-- /calkit value -->.
-The null test above says which of the two to doubt: with a treatment of nothing the device chain read zero while the unprofiled pair read <!-- calkit value key=null.amip_pct -->2.47<!-- /calkit value -->%, so a pair running several times past its own device prediction is the familiar failure rather than a new result, and [the experiment that produced it](experiments/sedimentation-velocity-fold.md) had predicted the small device effect before the pair was run.
-It needs a repeat on this stack, and a null on this stack, before the margin is worth quoting.
+The current group is the one after it, the sedimentation velocity fold, and it now holds <!-- calkit value key=current.n -->2<!-- /calkit value --> pairs of one set of committed code returning <!-- calkit value key=current.fwd_pct -->7.529<!-- /calkit value -->% and <!-- calkit value key=current.rev_pct -->1.42<!-- /calkit value -->% --- a spread of <!-- calkit value key=current.spread_points -->6.109<!-- /calkit value --> points, with `is_null` recording <!-- calkit value key=current.is_null -->false<!-- /calkit value -->.
+The mean of two draws that far apart is not the treatment, and the arms say why: across the group the `<!-- calkit value key=current.widest_arm -->baseline<!-- /calkit value -->` arm's own throughput moved <!-- calkit value key=current.arm_spread_baseline_pct -->7.727<!-- /calkit value -->% between its two runs while the mod arm moved <!-- calkit value key=current.arm_spread_mod_pct -->1.051<!-- /calkit value -->%, so `effect_below_arm_spread` records <!-- calkit value key=current.effect_below_arm_spread -->true<!-- /calkit value -->.
+A pair differences two runs, so it cannot resolve an effect smaller than the wander of the runs it differences, and on this stack it is not close.
+The device side settles which draw to believe: it prices both treatments on this stack at <!-- calkit value key=current.device_predicted_pct -->1.66<!-- /calkit value -->% of wall clock, and the pair that ran mod first returned <!-- calkit value key=current.rev_pct -->1.42<!-- /calkit value -->%, which is the draw that agrees with it.
+The group mean still sits above that, with `exceeds_device_prediction` recording <!-- calkit value key=current.exceeds_device_prediction -->true<!-- /calkit value -->, which is the same disagreement the null test priced: with a treatment of nothing the device chain read zero while the unprofiled pair read <!-- calkit value key=null.amip_pct -->2.47<!-- /calkit value -->%.
+So [the experiment that produced it](experiments/sedimentation-velocity-fold.md), which predicted a small device effect before any pair was run, is the figure that held, and the reversed order was predicted to return <!-- calkit value key=current.predicted_pct -->2.595<!-- /calkit value -->% before it ran, so the record can be checked against the prediction rather than described after it.
+What is still missing is a null on this stack, and an account of why one run in four came back <!-- calkit value key=current.arm_spread_baseline_pct -->7.727<!-- /calkit value -->% off its own twin.
 
 Run-to-run repeatability is therefore about half a point, several times tighter than the <!-- calkit value key=census.current_mean_pct -->1.87<!-- /calkit value -->% the null tests find between two IDENTICAL arms.
 Those two figures cannot both be jitter.

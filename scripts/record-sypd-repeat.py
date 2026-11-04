@@ -211,6 +211,31 @@ def main():
             o: {"n": len(xs), "mean_pct": round(sum(xs) / len(xs), 3)}
             for o, xs in by_order.items()
         }
+        # Each arm's own spread across the group's repeats. A pair subtracts two
+        # runs, so it can only resolve a treatment that is larger than the
+        # variation of the arms it differences -- and on 2026-11-04 it was not:
+        # two repeats of one committed pair returned +7.53% and +1.42% because
+        # the BASELINE arm alone moved 7.7% between its two runs while the mod
+        # arm moved 1.0%. Reported per arm, because a mean over such a group
+        # hides which side is unstable.
+        if len(v) > 1:
+            arm_spread = {}
+            for arm in ("baseline", "mod"):
+                sypds = [p[arm]["sypd"] for p in v if p.get(arm, {}).get("sypd")]
+                if len(sypds) > 1:
+                    arm_spread[arm] = round(
+                        100.0 * (max(sypds) - min(sypds)) / min(sypds), 3
+                    )
+            if arm_spread:
+                g["arm_spread_pct"] = arm_spread
+                worst = max(arm_spread, key=arm_spread.get)
+                g["widest_arm"] = worst
+                g["max_arm_spread_pct"] = arm_spread[worst]
+                # Sign-bearing: true means the arms wander by more than the
+                # effect between them, so no pairing of these runs measures it.
+                g["effect_below_arm_spread"] = (
+                    abs(g["mean_pct"]) < arm_spread[worst]
+                )
         fwd, rev = g["by_order"].get("baseline_first"), g["by_order"].get("mod_first")
         if fwd and rev:
             # If running second is worth A, one order measures T + A and the
