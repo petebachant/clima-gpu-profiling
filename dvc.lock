@@ -4140,3 +4140,92 @@ stages:
       hash: md5
       md5: 18172ce30838d429bef5bdbe100ec854
       size: 470
+  gpoint-group-sweep:
+    cmd: calkit scheduler batch --name gpoint-group-sweep --environment clima 
+      --dep scripts/measure-gpoint-sweep.jl --dep RRTMGP.jl-mod/src --dep 
+      RRTMGP.jl-mod/ext --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml 
+      --dep .calkit/env-locks/clima --out results/gpoint-sweep.toml --option 
+      --gpus=1 --option --time=75 -- scripts/run-julia-script.sh 
+      --project=ClimaCoupler.jl-mod/experiments/AMIP 
+      scripts/measure-gpoint-sweep.jl --config_file 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      hash: md5
+      md5: 66e9712dfb39a09d73ab08e096b614db
+      size: 1114
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 68480f6457cea178b9c39d5826001c61
+      size: 827
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: a9dae059301508b4a879a1e8c6ab9f34
+      size: 122255
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: RRTMGP.jl-mod/ext
+      hash: md5
+      md5: c1da0b4875f21124d39c7ea8d099580b.dir
+      size: 70040
+      nfiles: 11
+    - path: RRTMGP.jl-mod/src
+      hash: md5
+      md5: c0ee4e7da0b67d374e87720c1e5d26ce.dir
+      size: 339339
+      nfiles: 44
+    - path: scripts/measure-gpoint-sweep.jl
+      hash: md5
+      md5: a4f6ad2da833614bde00d6d4cd3594a8
+      size: 7706
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: a61880cfce301ad9069fbaddfa8d5ad5
+      size: 1033
+    outs:
+    - path: .calkit/scheduler/logs/gpoint-group-sweep.out
+      hash: md5
+      md5: dd485d1ad9a97cd0e5c5bd7d2c989bf9
+      size: 30832
+    - path: results/gpoint-sweep.toml
+      hash: md5
+      md5: 458f5efc89ba3ada71382a42f7346d2d
+      size: 2063
+  gpoint-group-count-doc/values:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/experiments/gpoint-group-count.md/values.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: .calkit/markdown/docs/experiments/gpoint-group-count.md/values.py
+      hash: md5
+      md5: 350eec14758271782e9fa55d33eafcf6
+      size: 5272
+    - path: results/gpoint-groups.json
+      hash: md5
+      md5: 3abd8896ec1975de3483d28b674df5a6
+      size: 3622
+    - path: results/gpoint-sweep.toml
+      hash: md5
+      md5: 458f5efc89ba3ada71382a42f7346d2d
+      size: 2063
+    outs:
+    - path: results/docs/gpoint-group-count.json
+      hash: md5
+      md5: 01d2ab964e39574037d7d135682f35c1
+      size: 2757

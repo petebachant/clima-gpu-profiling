@@ -940,6 +940,20 @@ stages:
           persist: false
     desc: Automatically generated from the 'val-fold-scope-doc/values' stage in
       calkit.yaml. Changes made here will be overwritten.
+  gpoint-group-count-doc/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/gpoint-group-count.md/values.py
+    deps:
+      - .calkit/markdown/docs/experiments/gpoint-group-count.md/values.py
+      - results/gpoint-sweep.toml
+      - results/gpoint-groups.json
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/gpoint-group-count.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'gpoint-group-count-doc/values' stage
+      in calkit.yaml. Changes made here will be overwritten.
   wall-clock-conversion-doc/values:
     cmd: calkit xenv -n py --no-check -- python
       .calkit/markdown/docs/wall-clock-conversion.md/values.py

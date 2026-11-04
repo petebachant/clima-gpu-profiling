@@ -426,6 +426,42 @@ questions:
           and both nsys databases' hashes, so a stale freeze is visible in the
           file.
 
+  - question: >-
+      Does the longwave g-point split need 16 groups, or is the default just the first count that worked?
+    answer: >-
+      Sixteen is the smallest group count that reaches the best measured saving of {best_change_pct:.2f}%, so the default carries no excess -- but it is also the largest count swept, so the measurement bounds the knee at 16 or beyond rather than finding it.
+      Most of that saving is wave quantization rather than the split itself, and it is resolvable at all only because the sweep is in-block: its repeat spread is {spread_pct:.3f}%, against the 7.73% one arm of this stack wandered between two runs of identical code.
+    evidence:
+      - kind: document
+        path: docs/experiments/gpoint-group-count.md
+        section: "Wave quantization accounts for the jump and not for the rest"
+        explanation: >-
+          The sweep, the quantization model it is read against, and the two
+          cross-checks against the nsys pass. Live on main rather than pinned,
+          because the sweep writes its own results file that no other experiment
+          touches, so re-running cannot restate it against a different run.
+          Built by the gpoint-group-count-doc stage, whose values block converts
+          the sweep's TOML to JSON and derives the per-GiB and residual columns
+          the argument rests on.
+      - kind: result
+        path: results/gpoint-sweep.toml
+        values:
+          best_change_pct: best_change_pct
+          spread_pct: repeat_spread_pct
+        explanation: >-
+          Four group counts taken in one process against one settled AMIP state,
+          rebuilding only the longwave group workspaces between them, so the
+          points differ by the group count and nothing else. That is what makes
+          the figure usable at all: differencing two runs cannot resolve it,
+          since one arm of this stack wandered 7.73% between two runs of
+          identical code, while this sweep's own repeat spread is under a fifth
+          of a percent. `ngroups = 1` is the ungrouped specialization, so the
+          baseline is a point in the same sweep. `sufficient_ngroups` is derived
+          rather than asserted -- the smallest count within one repeat spread of
+          the best saving -- and `sufficient_is_sweep_maximum` records that it
+          landed on the endpoint, which is the guard against reading "smallest
+          sufficient" as "enough".
+
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod
@@ -958,6 +994,18 @@ pipeline:
       # them across two documents would duplicate the device budget both rest
       # on. Its values stage is also doing real work rather than copying: two of
       # its inputs are TOML, which a value marker cannot read.
+    gpoint-group-count-doc:
+      kind: markdown
+      target_path: docs/experiments/gpoint-group-count.md
+      environment: py
+      # Live on main although it is an experiment document. The template's
+      # reason for an experiment declaring its own profiling stages is that a
+      # shared nsys path holds whichever experiment ran last; this one reads
+      # results/gpoint-sweep.toml, which the gpoint-group-sweep stage writes and
+      # nothing else touches, so there is nothing for a later pass to clobber.
+      # Its values stage converts that TOML to JSON because value markers read
+      # JSON only, and derives the per-GiB and increment columns the prose
+      # argues from.
     wall-clock-conversion-doc:
       kind: markdown
       target_path: docs/wall-clock-conversion.md
