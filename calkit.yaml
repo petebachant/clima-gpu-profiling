@@ -1401,21 +1401,31 @@ pipeline:
       # cost of the treatment, so the default should rest on a measurement of
       # where the saving stops.
       #
-      # One reservation, not four: the group count is a constructor argument,
-      # so all four points are taken in one process against one settled AMIP
-      # state, rebuilding only the group workspaces between them. That makes
-      # them in-block comparisons -- it never differences two runs, which is
-      # the only way to resolve a few percent on this machine.
+      # One reservation, not five: the group count is a constructor argument,
+      # so every point is taken in one process against one settled AMIP state,
+      # rebuilding only the group workspaces between them. That makes them
+      # in-block comparisons -- it never differences two runs, which is the
+      # only way to resolve a few percent on this machine.
+      #
+      # The same job also times blocks of real coupler steps, so the saving can
+      # be reported as SYPD. The blocks run the live grouped solver and the
+      # ungrouped SYPD is reconstructed by adding the measured in-block saving
+      # back onto a measured block, because an AMIP pair cannot resolve a
+      # sub-percent effect: one arm wandered 7.73% between two runs of
+      # identical code. Wall clock is timed before the sweep so the sweep
+      # cannot perturb a timed step.
       #
       # ClimaAtmos and ClimaCore sources are deliberately NOT inputs. A change
-      # upstream of the radiation solve moves all four points together and so
+      # upstream of the radiation solve moves every point together and so
       # cannot change which group count suffices; declaring them would re-run
       # a 40-minute GPU stage on every microphysics edit. The stack it ran
-      # against is recorded in the output instead.
+      # against is recorded in the output instead. The step time it measures
+      # WOULD move with them, which is why that figure is quoted as a
+      # steady-state rate rather than as this stack's SYPD.
       scheduler:
         options:
           - --gpus=1
-          - --time=75
+          - --time=110
       args:
         - --project=ClimaCoupler.jl-mod/experiments/AMIP
         - scripts/measure-gpoint-sweep.jl
@@ -1432,6 +1442,8 @@ pipeline:
         - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
       outputs:
         - path: results/gpoint-sweep.toml
+          storage: git
+        - path: results/gpoint-wallclock.toml
           storage: git
 
     fold-compile-cost:

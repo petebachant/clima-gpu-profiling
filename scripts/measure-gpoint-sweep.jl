@@ -14,6 +14,12 @@
 #
 # `ngroups = 1` passes `nothing` and takes the ungrouped specialization, so the
 # baseline is a point in the same sweep rather than a separate measurement.
+#
+# It also times blocks of real coupler steps, so the saving can be reported as
+# SYPD rather than as device time. The blocks are measured with the live
+# grouped solver and the ungrouped SYPD is reconstructed by adding the in-block
+# saving back, because differencing two AMIP runs cannot resolve a sub-percent
+# effect on this machine.
 
 import CUDA
 import RRTMGP
@@ -33,11 +39,56 @@ let i = findfirst(==("--out"), ARGS)
     end
 end
 
-const GROUPS = [1, 4, 8, 16]
+wall_path = "results/gpoint-wallclock.toml"
+let i = findfirst(==("--out-wallclock"), ARGS)
+    if !isnothing(i)
+        wall_path = ARGS[i + 1]
+        deleteat!(ARGS, i:(i + 1))
+    end
+end
+
+const GROUPS = [1, 4, 8, 16, 32]
 const REPEATS = 7
 const WARMUP_STEPS = 3
 
+# Wall clock, for the SYPD question. Blocks are a whole number of radiation
+# periods so every block carries the same radiation work, and 12 of them keeps
+# the timed window inside `t_end`.
+const RAD_PERIODS_PER_BLOCK = 6
+const WALLCLOCK_BLOCKS = 12
+
 config_file = Input.parse_commandline(Input.argparse_settings())["config_file"]
+
+# Read the cadences rather than assume them, and do it before the model is
+# built: a bad parse should cost nothing.
+const UNIT_SECONDS =
+    Dict("secs" => 1.0, "mins" => 60.0, "hours" => 3600.0, "days" => 86400.0)
+
+function duration_seconds(path, key)
+    text = read(path, String)
+    m = match(Regex("^$(key):\\s*\"?([0-9.]+)([a-z]+)\"?", "m"), text)
+    isnothing(m) && error("could not find `$key` in $path")
+    haskey(UNIT_SECONDS, m[2]) || error("unknown time unit `$(m[2])` for `$key` in $path")
+    return parse(Float64, m[1]) * UNIT_SECONDS[m[2]]
+end
+
+coupler_root = first(split(config_file, "/config/"))
+atmos_config_file = let m = match(r"^atmos_config_file:\s*\"([^\"]+)\""m, read(config_file, String))
+    isnothing(m) && error("could not find `atmos_config_file` in $config_file")
+    joinpath(coupler_root, m[1])
+end
+
+dt_cpl = duration_seconds(config_file, "dt_cpl")
+dt_rad = duration_seconds(atmos_config_file, "dt_rad")
+t_end = duration_seconds(config_file, "t_end")
+rad_period_steps = dt_rad / dt_cpl
+isinteger(rad_period_steps) ||
+    error("dt_rad $(dt_rad)s is not a whole number of dt_cpl $(dt_cpl)s steps")
+rad_period_steps = Int(rad_period_steps)
+block_steps = RAD_PERIODS_PER_BLOCK * rad_period_steps
+WARMUP_STEPS + WALLCLOCK_BLOCKS * block_steps <= t_end / dt_cpl ||
+    error("the timed window runs past t_end")
+
 cs = CoupledSimulation(config_file)
 
 # Radiation fires every dt_rad, so step until it has run and the state the
@@ -46,6 +97,25 @@ for i in 1:WARMUP_STEPS
     @info "warmup step $i / $WARMUP_STEPS"
     step!(cs)
 end
+
+# Wall clock first, so the sweep cannot perturb a timed step. These blocks run
+# the real model: the live solver, the real diagnostics, the real coupling.
+function timed_blocks(cs, nblocks, steps)
+    seconds = Float64[]
+    for b in 1:nblocks
+        CUDA.synchronize()
+        t0 = time_ns()
+        for _ in 1:steps
+            step!(cs)
+        end
+        CUDA.synchronize()
+        push!(seconds, (time_ns() - t0) / 1e9)
+        @info "block $b / $nblocks" seconds = last(seconds)
+    end
+    return seconds
+end
+
+block_seconds = timed_blocks(cs, WALLCLOCK_BLOCKS, block_steps)
 
 solver = cs.model_sims.atmos_sim.integrator.p.radiation.rrtmgp_solver
 lws = solver.lws
@@ -220,3 +290,79 @@ results = Dict{String, Any}(
 mkpath(dirname(out_path))
 open(io -> TOML.print(io, results; sorted = true), out_path, "w")
 @info "wrote $out_path" sufficient best spread_pct
+
+# SYPD, by the coupler's own definition: simulated seconds per wall second over
+# 365.25 days. The grouped figure is measured end to end on real steps. The
+# ungrouped one adds the measured in-block saving back onto that measured
+# block, which is the single arithmetic step here -- there is no second run to
+# difference, and the solve is synchronous on the step's critical path, so a
+# millisecond saved in it is a millisecond of wall clock.
+function wallclock_results(seconds, points)
+    sorted = sort(seconds)
+    n = length(sorted)
+    mid = sorted[(n + 1) ÷ 2]
+    q1 = sorted[max(1, (n + 3) ÷ 4)]
+    q3 = sorted[min(n, (3 * n + 1) ÷ 4)]
+    mean = sum(sorted) / n
+    sd = sqrt(sum((x - mean)^2 for x in sorted) / (n - 1))
+    sim_seconds = block_steps * dt_cpl
+    events = RAD_PERIODS_PER_BLOCK
+    sypd(w) = sim_seconds / w / 365.25
+
+    arms = Dict{String, Any}()
+    for g in GROUPS
+        g == 1 && continue
+        per_event = points["1"]["solve_ms"] - points[string(g)]["solve_ms"]
+        saved = events * per_event / 1e3
+        arms[string(g)] = Dict{String, Any}(
+            "ngroups" => g,
+            "solve_saved_per_event_ms" => per_event,
+            "saved_per_block_s" => saved,
+            "sypd_grouped" => sypd(mid),
+            "sypd_ungrouped" => sypd(mid + saved),
+            "sypd_gain_pct" => 100.0 * saved / mid,
+        )
+    end
+
+    default_gain = arms[string(RTE.DEFAULT_NGPT_GROUPS)]["sypd_gain_pct"]
+    iqr_pct = 100.0 * (q3 - q1) / mid
+    return Dict{String, Any}(
+        "block_steps" => block_steps,
+        "blocks" => n,
+        "rad_period_steps" => rad_period_steps,
+        "radiation_events_per_block" => events,
+        "write_period_steps" => Int(86400 ÷ dt_cpl),
+        "dt_cpl_s" => dt_cpl,
+        "block_seconds" => sorted,
+        "block_median_s" => mid,
+        "block_min_s" => first(sorted),
+        "block_max_s" => last(sorted),
+        "block_spread_pct" => 100.0 * (last(sorted) - first(sorted)) / mid,
+        "block_iqr_pct" => iqr_pct,
+        "block_rel_se_pct" => 100.0 * (sd / sqrt(n)) / mid,
+        "step_ms" => 1e3 * mid / block_steps,
+        "default_ngpt_groups" => RTE.DEFAULT_NGPT_GROUPS,
+        "default_sypd_gain_pct" => default_gain,
+        "gain_below_block_iqr" => default_gain < iqr_pct,
+        "arms" => arms,
+        "note" => "sypd_grouped is measured: a block of real coupler steps " *
+                  "with the live grouped solver, timed with the wall clock " *
+                  "the coupler's own SYPD is defined on. sypd_ungrouped adds " *
+                  "the in-block solve saving back onto it rather than " *
+                  "differencing a second run, because the AMIP pair cannot " *
+                  "resolve a sub-percent effect: one arm wandered 7.73% " *
+                  "between two runs of identical code. It is a steady-state " *
+                  "figure and is NOT comparable to the pipeline's end-to-end " *
+                  "SYPD, which includes first-call compilation. Blocks are a " *
+                  "whole number of radiation periods so each carries the same " *
+                  "radiation work; the daily diagnostics write falls in one " *
+                  "block in every write_period_steps / block_steps, which is " *
+                  "why the median is quoted and the full spread reported " *
+                  "beside it.",
+    )
+end
+
+wall = wallclock_results(block_seconds, points)
+mkpath(dirname(wall_path))
+open(io -> TOML.print(io, wall; sorted = true), wall_path, "w")
+@info "wrote $wall_path" wall["step_ms"] wall["default_sypd_gain_pct"]

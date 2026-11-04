@@ -676,9 +676,9 @@ stages:
       ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
-      --dep .calkit/env-locks/clima --out results/gpoint-sweep.toml --option
-      --gpus=1 --option --time=75 -- scripts/run-julia-script.sh
-      --project=ClimaCoupler.jl-mod/experiments/AMIP
+      --dep .calkit/env-locks/clima --out results/gpoint-sweep.toml --out
+      results/gpoint-wallclock.toml --option --gpus=1 --option --time=75 --
+      scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
       scripts/measure-gpoint-sweep.jl --config_file
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
@@ -693,6 +693,9 @@ stages:
       - .calkit/env-locks/clima
     outs:
       - results/gpoint-sweep.toml:
+          cache: false
+          persist: true
+      - results/gpoint-wallclock.toml:
           cache: false
           persist: true
       - .calkit/scheduler/logs/gpoint-group-sweep.out:
