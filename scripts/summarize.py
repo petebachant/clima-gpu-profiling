@@ -90,6 +90,12 @@ results = {
     "nsys_speedup_pct": (1 - mod["nsys_duration"] / baseline["nsys_duration"])
     * 100,
     "speedup_pct": (1 - baseline["sypd"] / mod["sypd"]) * 100,
+    # True means the steady-state figures below come from a frozen snapshot
+    # whose own source commit is unrecoverable, so they may predate the
+    # end-to-end figures beside them. See results/step-comparison.json.
+    "steady_state_from_undated_snapshot": step_cmp.get("provenance", {}).get(
+        "sources_carry_no_provenance", True
+    ),
     "steady_state_pct": step_cmp["steady_state"]["saved_pct"],
     "steady_state_pct_ex_diagnostics": step_cmp["steady_state"][
         "saved_pct_ex_diagnostics"

@@ -3306,6 +3306,12 @@ untouched shortwave control reads the same either way; and the merged device
 total matches the unprofiled AMIP pair's change in walltime per step through the
 usual conversion, which the summed total does not.
 
+Note for anyone repeating that validation: the second of those three checks is
+no longer available. The shortwave solve was split too on 2026-11-05, so it is
+a treated band rather than a control, and `export-gpoint-groups.py` now resolves
+each band against the untreated kernels alone. The check was sound when it was
+made and the conclusion about merged intervals stands on the other two.
+
 So any treatment that changes kernel *concurrency* has to be measured on merged
 intervals, and the two figures are worth reporting side by side -- the gap
 between them is the overlap, which is a quantity of interest in its own right.

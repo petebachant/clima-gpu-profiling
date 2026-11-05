@@ -48,6 +48,8 @@ LW_SOLVE = "%rte_lw_2stream_solve%"
 SW_SOLVE = "%rte_sw_2stream_solve%"
 LW_REDUCE = "%reduce_lw_groups%"
 LW_AERO = "%lw_aero_mask%"
+SW_REDUCE = "%reduce_sw_groups%"
+SW_AERO = "%sw_aero_mask%"
 
 A100_SMS = 108
 A100_REGS_PER_SM = 65536
@@ -211,14 +213,26 @@ def main():
     lw_mod_charged = m_lw["elapsed_ms"] + overhead_ms
     lw_saved = b_lw["elapsed_ms"] - lw_mod_charged
 
+    # Shortwave is treated now too, and is charged the same way: its own
+    # reduction and hoisted aerosol mask. Until 2026-11-05 it was the untouched
+    # in-arm control, and this file reported it as one.
+    sw_reduce_k = family(mcon, SW_REDUCE)
+    sw_aero_k = family(mcon, SW_AERO)
+    sw_overhead_ms = sum(
+        k["elapsed_ms"] for k in (sw_reduce_k, sw_aero_k) if k
+    )
+    sw_mod_charged = m_sw["elapsed_ms"] + sw_overhead_ms
+    sw_saved = b_sw["elapsed_ms"] - sw_mod_charged
+    sw_is_treated = sw_reduce_k is not None
+
     # The split is one launch over a wider grid now, so the group count comes
     # from the grid ratio; launch counts are equal in both arms.
     ngroups = m_lw["grid"] // b_lw["grid"]
     w_base, w_mod = waves(b_lw), waves(m_lw)
 
-    # Shortwave is untouched, so its movement is the noise band the longwave
-    # change has to clear.
-    sw_delta = m_sw["elapsed_ms"] - b_sw["elapsed_ms"]
+    # The noise band is the untreated kernels alone. Shortwave used to be in
+    # it; a band that is itself treated is not a control, and leaving it in
+    # compared one treated band's saving against the other's.
     bc, mc = controls(bcon, ("rte_lw", "rte_sw")), controls(mcon, ("rte_lw", "rte_sw"))
     shared = sorted(set(bc) & set(mc))
     worst_control = max((abs(mc[k] - bc[k]) for k in shared), default=0.0)
@@ -246,23 +260,49 @@ def main():
             "baseline": w_base,
             "mod": w_mod,
         },
-        "shortwave_control": {
-            "baseline_ms": b_sw["elapsed_ms"],
-            "mod_ms": m_sw["elapsed_ms"],
-            "delta_ms": round(sw_delta, 1),
-            "change_pct": round(100 * sw_delta / b_sw["elapsed_ms"], 2),
-            "untouched": True,
+        "shortwave": {
+            "baseline": {k: v for k, v in b_sw.items() if k != "_rows"},
+            "mod": {k: v for k, v in m_sw.items() if k != "_rows"},
+            "mod_overhead_ms": round(sw_overhead_ms, 1),
+            "mod_charged_ms": round(sw_mod_charged, 1),
+            "saved_ms": round(sw_saved, 1),
+            "change_pct": round(100 * -sw_saved / b_sw["elapsed_ms"], 2),
+            "change_pct_if_summed": round(
+                100 * (m_sw["summed_ms"] + sw_overhead_ms - b_sw["summed_ms"])
+                / b_sw["summed_ms"], 2),
+            "pct_of_device_baseline": round(100 * b_sw["elapsed_ms"] / btotal, 2),
+            "saved_pct_of_device": round(100 * sw_saved / btotal, 3),
+            # False would mean the mod arm has no shortwave reduction kernel,
+            # so this band is untreated and IS a usable control again.
+            "treated": sw_is_treated,
+        },
+        "overhead_sw": {
+            "reduction": {
+                k: v for k, v in (sw_reduce_k or {}).items() if k != "_rows"
+            },
+            "aero_mask": {
+                k: v for k, v in (sw_aero_k or {}).items() if k != "_rows"
+            },
         },
         "noise": {
             "worst_untreated_kernel_delta_ms": round(worst_control, 1),
             "untreated_kernels_compared": len(shared),
         },
-        # Two separate claims. The saving is resolved if it is larger than the
-        # untouched kernels moved; the arm total is a different question and the
+        # Two separate claims. A saving is resolved if it is larger than the
+        # untreated kernels moved; the arm total is a different question and the
         # mod arm also carries the sedimentation fold, so it is not this
         # treatment's number.
+        #
+        # Each band is compared against the untreated noise band ONLY. Until
+        # 2026-11-05 this also took the max with the shortwave movement, which
+        # was right while shortwave was untouched and became wrong the moment it
+        # was treated: it then compared one band's saving against the other's,
+        # and would have reported the longwave as unresolved had the shortwave
+        # saved more.
         "saving_resolved_against_controls":
-            abs(lw_saved) > max(worst_control, abs(sw_delta)),
+            abs(lw_saved) > worst_control,
+        "sw_saving_resolved_against_controls":
+            abs(sw_saved) > worst_control,
         "device_total": {
             "baseline_elapsed_ms": round(btotal, 1),
             "mod_elapsed_ms": round(mtotal, 1),
@@ -290,10 +330,12 @@ def main():
             "resident kernel and so is not elapsed time once a treatment "
             "launches concurrently. `change_pct_if_summed` is what the summed "
             "figure would have claimed, and for longwave it has the opposite "
-            "sign. Longwave only; shortwave is the untouched in-arm control. The mod "
-            "arm's longwave kernel is a different kernel, so the arms are "
-            "paired by role and the mod side is charged for its own reduction "
-            "and hoisted aerosol mask. `waves` is a tested prediction, not an "
+            "sign. Both bands are treated as of 2026-11-05, and each is "
+            "charged for its own reduction and hoisted aerosol mask; neither "
+            "is a control any more, so each saving is resolved against the "
+            "untreated kernels alone. The mod arm's solve kernels are "
+            "different kernels from the baseline's, so the arms are paired by "
+            "role. `waves` is a tested prediction, not an "
             "explanation: it rose from below one to many at unchanged blocks per "
             "SM and the longwave time did not move, and a concurrent-launch "
             "build of the same split measured the same saving at a low overlap "
@@ -310,8 +352,12 @@ def main():
           f"({lw['change_pct']:+.2f}%, {lw['saved_pct_of_device']:+.3f} points of device)")
     print(f"  waves {w_base['waves']} -> {w_mod['waves']} over {ngroups} groups "
           f"at {w_mod['blocks_resident_per_sm']} block(s)/SM either way")
-    print(f"  shortwave control {doc['shortwave_control']['change_pct']:+.2f}%; "
-          f"resolved={doc['saving_resolved_against_controls']}")
+    print(f"  shortwave {doc['shortwave']['baseline']['elapsed_ms']} -> "
+          f"{doc['shortwave']['mod_charged_ms']} ms elapsed "
+          f"({doc['shortwave']['change_pct']:+.2f}%)")
+    print(f"  noise band {doc['noise']['worst_untreated_kernel_delta_ms']} ms; "
+          f"resolved lw={doc['saving_resolved_against_controls']} "
+          f"sw={doc['sw_saving_resolved_against_controls']}")
 
 
 if __name__ == "__main__":

@@ -28,6 +28,7 @@
 import ClimaComms
 ClimaComms.@import_required_backends
 import CUDA
+import Dates
 import Statistics
 import TOML
 using Printf
@@ -107,7 +108,27 @@ mw, mg = med(wall), med(span)
 
 mean_ms, median_ms, n_expensive, expensive_frac = duty_report(wall)
 
+# This stage is frozen between re-measurements, so the file has to say what
+# it describes or it gets displayed beside figures from different code. That
+# has already happened once: a steady-state percentage measured before the
+# shortwave g-point split sat in `summary.json` next to a fresh end-to-end one.
+function gitref(path)
+    try
+        return strip(read(Cmd(["git", "-C", path, "rev-parse", "HEAD"]), String))
+    catch
+        return "unknown"
+    end
+end
+
 TOML.print(open(out_path, "w"), Dict(
+    "provenance" => Dict(
+        "measured_at" => string(Dates.now()),
+        "source_commit" => gitref("."),
+        "rrtmgp_mod_ref" => gitref("RRTMGP.jl-mod"),
+        "climaatmos_mod_ref" => gitref("ClimaAtmos.jl-mod"),
+        "climacore_mod_ref" => gitref("ClimaCore.jl-mod"),
+        "coupler_mod_ref" => gitref("ClimaCoupler.jl-mod"),
+    ),
     "steps" => n_steps,
     "wall_ms_mean" => mean_ms,
     "expensive_steps" => n_expensive,

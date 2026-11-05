@@ -7,9 +7,9 @@ julia = "1.11.5"
 note = """Compile wall time and registers for the terminal-velocity bodies #4947 folds, one arm per process so every compile is cold. Only modes that read cmc/cmp are measured; the Fixed modes ignore both by signature. `params` is passed as nothing because no measured method reads it. The 1M payload is the\ndefault process selection rather than the benchmark's pruned one; both arms carry the identical payload, so the difference is\nunaffected and only the per-path absolute is a proxy."""
 paths_measured = ["liquid_stokes", "ice_chen2022", "rain_chen2022", "snow_chen2022"]
 rep = 2
-slurm_job_id = "271571"
-timestamp_utc = "2026-11-04T08:50:57.143"
-total_compile_s = 4.506044894
+slurm_job_id = "271953"
+timestamp_utc = "2026-11-05T14:47:52.089"
+total_compile_s = 4.173578498
 tv_isbits = true
 tv_sizeof_bytes = 280
 variant = "folded"
@@ -21,25 +21,25 @@ rain = "Fixed"
 snow = "Chen2022"
 
 [ice_chen2022]
-compile_s = 0.20593567
+compile_s = 0.188036153
 local_bytes = 32
 registers = 32
 warps_per_sm = 16
 
 [liquid_stokes]
-compile_s = 3.72490188
+compile_s = 3.465292377
 local_bytes = 32
 registers = 32
 warps_per_sm = 16
 
 [rain_chen2022]
-compile_s = 0.327427372
+compile_s = 0.287172399
 local_bytes = 32
 registers = 40
 warps_per_sm = 16
 
 [snow_chen2022]
-compile_s = 0.247779972
+compile_s = 0.233077569
 local_bytes = 32
 registers = 40
 warps_per_sm = 16

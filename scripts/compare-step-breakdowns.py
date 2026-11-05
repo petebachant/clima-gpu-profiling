@@ -4,6 +4,7 @@ Both arms run the same config, so step index i is the same work in both and the
 difference is paired rather than a comparison of aggregates.
 """
 
+import hashlib
 import json
 import statistics as st
 import sys
@@ -23,6 +24,39 @@ DIAG_PERIOD, DIAG_PHASE = 720, 716
 def load(path):
     with open(path, "rb") as f:
         return tomllib.load(f)
+
+
+def digest(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()[:16]
+
+
+def provenance(b, m):
+    """What the two source snapshots say about themselves.
+
+    The step-breakdown stages are frozen between re-measurements, so these
+    numbers can describe code older than whatever they are displayed beside.
+    `sources_carry_no_provenance` true means the snapshots predate the
+    convention and their own commit is unrecoverable from the files -- read
+    the digests and re-measure before quoting the derived percentages as
+    current.
+    """
+    pb, pm = b.get("provenance"), m.get("provenance")
+    return {
+        "baseline_digest": digest(BASELINE),
+        "mod_digest": digest(MOD),
+        "baseline_snapshot": pb,
+        "mod_snapshot": pm,
+        "sources_carry_no_provenance": pb is None or pm is None,
+        "arms_same_source_commit": (
+            None
+            if pb is None or pm is None
+            else pb.get("source_commit") == pm.get("source_commit")
+        ),
+    }
 
 
 def main():
@@ -192,7 +226,11 @@ def main():
     }
     d = out["classes"]["diagnostics"]
     d["multiple_of_plain_step"] = d["baseline_mean_ms"] / out["classes"]["plain"]["baseline_mean_ms"]
+    out["provenance"] = provenance(b, m)
     out["note"] = (
+        "The two source snapshots come from frozen stages, so these "
+        "percentages can describe older code than whatever they are shown "
+        "beside; read `provenance` before quoting them as current. "
         "Paired by step index: both arms run the same config, so index i is the "
         "same work in both. expensive_steps and expensive_wall_frac in the two "
         "source TOMLs are thresholded against each arm's OWN median and are not "
