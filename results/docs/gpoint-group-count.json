@@ -6,21 +6,21 @@
     "float_type": "Float32",
     "repeats": 7,
     "warmup_steps": 3,
-    "group_counts": "1, 4, 8, 16",
-    "repeat_spread_pct": 0.183,
-    "best_change_pct": -8.95,
-    "resolution_vs_spread": 48.8,
-    "sufficient_ngroups": 16,
+    "group_counts": "1, 4, 8, 16, 32",
+    "repeat_spread_pct": 0.273,
+    "best_change_pct": -12.59,
+    "resolution_vs_spread": 46.2,
+    "sufficient_ngroups": 32,
     "default_ngpt_groups": 16,
-    "default_is_sufficient_only": true,
+    "default_is_sufficient_only": false,
     "sufficient_is_sweep_maximum": true,
-    "threshold_pct": -8.77
+    "threshold_pct": -12.32
   },
   "points": {
     "1": {
       "ngroups": 1,
       "gpt_per_group": 256,
-      "solve_ms": 639.1,
+      "solve_ms": 677.0,
       "change_pct": 0.0,
       "saved_ms": 0.0,
       "workspace_gib": 0.0,
@@ -30,38 +30,49 @@
     "4": {
       "ngroups": 4,
       "gpt_per_group": 64,
-      "solve_ms": 624.4,
-      "change_pct": -2.29,
-      "saved_ms": 14.6,
+      "solve_ms": 658.0,
+      "change_pct": -2.8,
+      "saved_ms": 18.9,
       "workspace_gib": 0.46,
-      "pct_per_gib": 4.99,
+      "pct_per_gib": 6.09,
       "flux_deviation": 0.000762939453125
     },
     "8": {
       "ngroups": 8,
       "gpt_per_group": 32,
-      "solve_ms": 616.2,
-      "change_pct": -3.57,
-      "saved_ms": 22.8,
+      "solve_ms": 646.8,
+      "change_pct": -4.46,
+      "saved_ms": 30.2,
       "workspace_gib": 0.91,
-      "pct_per_gib": 3.92,
+      "pct_per_gib": 4.88,
       "flux_deviation": 0.000762939453125
     },
     "16": {
       "ngroups": 16,
       "gpt_per_group": 16,
-      "solve_ms": 581.8,
-      "change_pct": -8.95,
-      "saved_ms": 57.2,
+      "solve_ms": 609.9,
+      "change_pct": -9.91,
+      "saved_ms": 67.1,
       "workspace_gib": 1.81,
-      "pct_per_gib": 4.93,
+      "pct_per_gib": 5.46,
+      "flux_deviation": 0.00079345703125
+    },
+    "32": {
+      "ngroups": 32,
+      "gpt_per_group": 8,
+      "solve_ms": 591.7,
+      "change_pct": -12.59,
+      "saved_ms": 85.2,
+      "workspace_gib": 3.62,
+      "pct_per_gib": 3.48,
       "flux_deviation": 0.00079345703125
     }
   },
   "increments": {
-    "1_to_4": -2.29,
-    "4_to_8": -1.28,
-    "8_to_16": -5.38
+    "1_to_4": -2.8,
+    "4_to_8": -1.66,
+    "8_to_16": -5.45,
+    "16_to_32": -2.68
   },
   "quantization": {
     "sms": 108,
@@ -79,42 +90,125 @@
         "waves": 3.56,
         "waves_ceil": 4,
         "predicted_change_pct": 0.0,
-        "residual_pct": -2.29
+        "residual_pct": -2.8
       },
       "8": {
         "blocks": 768,
         "waves": 7.11,
         "waves_ceil": 8,
         "predicted_change_pct": 0.0,
-        "residual_pct": -3.57
+        "residual_pct": -4.46
       },
       "16": {
         "blocks": 1536,
         "waves": 14.22,
         "waves_ceil": 15,
         "predicted_change_pct": -6.25,
-        "residual_pct": -2.7
+        "residual_pct": -3.66
+      },
+      "32": {
+        "blocks": 3072,
+        "waves": 28.44,
+        "waves_ceil": 29,
+        "predicted_change_pct": -9.38,
+        "residual_pct": -3.22
       }
     },
     "next": {
-      "ngroups": 32,
-      "blocks": 3072,
-      "waves": 28.44,
-      "predicted_change_pct": -9.38,
-      "predicted_gain_pts": -3.12,
-      "predicted_total_pct": -12.08,
-      "workspace_gib": 3.63
+      "ngroups": 64,
+      "blocks": 6144,
+      "waves": 56.89,
+      "predicted_change_pct": -10.94,
+      "predicted_gain_pts": -1.56,
+      "predicted_total_pct": -14.15,
+      "workspace_gib": 7.25
     }
+  },
+  "wallclock": {
+    "blocks": 12,
+    "block_steps": 180,
+    "timed_steps": 2160,
+    "rad_period_steps": 30,
+    "write_period_steps": 720,
+    "write_blocks": 3,
+    "ordinary_blocks": 9,
+    "ordinary_mean_s": 54.91,
+    "ordinary_spread_pct": 7.01,
+    "ordinary_rel_se_pct": 0.722,
+    "ordinary_step_ms": 305.1,
+    "first_write_block_s": 97.7,
+    "steady_write_block_s": 67.0,
+    "write_overhead_pct": 22.0,
+    "steady_step_ms": 321.9,
+    "window_total_s": 726.0,
+    "window_sypd": 0.9775,
+    "arms": {
+      "16": {
+        "ngroups": 16,
+        "saved_per_event_ms": 67.1,
+        "gain_ordinary_pct": 0.733,
+        "gain_steady_pct": 0.695,
+        "sypd_steady": 1.0207,
+        "sypd_steady_ungrouped": 1.0137,
+        "gain_window_pct": 0.665,
+        "gain_steady_uncertainty_pts": 0.005
+      },
+      "32": {
+        "ngroups": 32,
+        "saved_per_event_ms": 85.2,
+        "gain_ordinary_pct": 0.931,
+        "gain_steady_pct": 0.883,
+        "sypd_steady": 1.0207,
+        "sypd_steady_ungrouped": 1.0118,
+        "gain_window_pct": 0.845,
+        "gain_steady_uncertainty_pts": 0.0064
+      },
+      "4": {
+        "ngroups": 4,
+        "saved_per_event_ms": 18.9,
+        "gain_ordinary_pct": 0.207,
+        "gain_steady_pct": 0.196,
+        "sypd_steady": 1.0207,
+        "sypd_steady_ungrouped": 1.0187,
+        "gain_window_pct": 0.188,
+        "gain_steady_uncertainty_pts": 0.0014
+      },
+      "8": {
+        "ngroups": 8,
+        "saved_per_event_ms": 30.2,
+        "gain_ordinary_pct": 0.33,
+        "gain_steady_pct": 0.313,
+        "sypd_steady": 1.0207,
+        "sypd_steady_ungrouped": 1.0175,
+        "gain_window_pct": 0.299,
+        "gain_steady_uncertainty_pts": 0.0023
+      }
+    }
+  },
+  "prediction": {
+    "source_commit": "8d91bb5",
+    "ngroups": 32,
+    "predicted_pct": -12.08,
+    "predicted_quantization_pct": -9.38,
+    "predicted_gib": 3.63,
+    "measured_pct": -12.59,
+    "measured_gib": 3.62,
+    "error_pts": -0.51,
+    "prior_16_pct": -8.95,
+    "current_16_pct": -9.91,
+    "state_shift_pts": -0.96,
+    "error_within_state_shift": true,
+    "prior_spread_pct": 0.183
   },
   "nsys": {
     "baseline_per_launch_ms": 674.7,
     "launches": 4,
-    "sweep_ungrouped_ms": 639.1,
-    "per_launch_gap_pct": 5.6,
+    "sweep_ungrouped_ms": 677.0,
+    "per_launch_gap_pct": -0.3,
     "window_change_pct": -9.86,
     "window_saved_ms": 266.2,
     "window_saved_per_launch_ms": 66.5,
-    "sweep_saved_per_solve_ms": 57.2,
+    "sweep_saved_per_solve_ms": 85.2,
     "pct_of_device_baseline": 7.71
   }
 }

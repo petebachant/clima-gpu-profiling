@@ -4148,9 +4148,9 @@ stages:
       ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
       --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml 
-      --dep .calkit/env-locks/clima --out results/gpoint-sweep.toml --option 
-      --gpus=1 --option --time=75 -- scripts/run-julia-script.sh 
-      --project=ClimaCoupler.jl-mod/experiments/AMIP 
+      --dep .calkit/env-locks/clima --out results/gpoint-sweep.toml --out 
+      results/gpoint-wallclock.toml --option --gpus=1 --option --time=110 -- 
+      scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
       scripts/measure-gpoint-sweep.jl --config_file 
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
     deps:
@@ -4188,8 +4188,8 @@ stages:
       nfiles: 44
     - path: scripts/measure-gpoint-sweep.jl
       hash: md5
-      md5: a4f6ad2da833614bde00d6d4cd3594a8
-      size: 7706
+      md5: f5c1b43a8cef2d5f79e88c7d25cebd20
+      size: 14016
     - path: scripts/run-julia-script.sh
       hash: md5
       md5: a61880cfce301ad9069fbaddfa8d5ad5
@@ -4197,12 +4197,16 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/gpoint-group-sweep.out
       hash: md5
-      md5: dd485d1ad9a97cd0e5c5bd7d2c989bf9
-      size: 30832
+      md5: 676faf238714323295aca1bd49ba997b
+      size: 34297
     - path: results/gpoint-sweep.toml
       hash: md5
-      md5: 458f5efc89ba3ada71382a42f7346d2d
-      size: 2063
+      md5: d4b705dd31acddf51870c844256916aa
+      size: 2346
+    - path: results/gpoint-wallclock.toml
+      hash: md5
+      md5: 5b90a5dbe77e0cef7c9a7c258b921092
+      size: 2229
   gpoint-group-count-doc/values:
     cmd: calkit xenv -n py --no-check -- python 
       .calkit/markdown/docs/experiments/gpoint-group-count.md/values.py
@@ -4214,18 +4218,26 @@ stages:
       nfiles: 2
     - path: .calkit/markdown/docs/experiments/gpoint-group-count.md/values.py
       hash: md5
-      md5: 350eec14758271782e9fa55d33eafcf6
-      size: 5272
+      md5: 6f33bfea7d257d8ed67b540196b998c1
+      size: 10535
     - path: results/gpoint-groups.json
       hash: md5
       md5: 3abd8896ec1975de3483d28b674df5a6
       size: 3622
+    - path: results/gpoint-record/prediction.json
+      hash: md5
+      md5: 02a00f6058e20a4dfa1ecc5d9d2db6b7
+      size: 866
     - path: results/gpoint-sweep.toml
       hash: md5
-      md5: 458f5efc89ba3ada71382a42f7346d2d
-      size: 2063
+      md5: d4b705dd31acddf51870c844256916aa
+      size: 2346
+    - path: results/gpoint-wallclock.toml
+      hash: md5
+      md5: 5b90a5dbe77e0cef7c9a7c258b921092
+      size: 2229
     outs:
     - path: results/docs/gpoint-group-count.json
       hash: md5
-      md5: 01d2ab964e39574037d7d135682f35c1
-      size: 2757
+      md5: d4a283e492b2d2d4019faeb5b8b1ca55
+      size: 5334

@@ -429,8 +429,9 @@ questions:
   - question: >-
       Does the longwave g-point split need 16 groups, or is the default just the first count that worked?
     answer: >-
-      Sixteen is the smallest group count that reaches the best measured saving of {best_change_pct:.2f}%, so the default carries no excess -- but it is also the largest count swept, so the measurement bounds the knee at 16 or beyond rather than finding it.
-      Most of that saving is wave quantization rather than the split itself, and it is resolvable at all only because the sweep is in-block: its repeat spread is {spread_pct:.3f}%, against the 7.73% one arm of this stack wandered between two runs of identical code.
+      No: {sufficient_ngroups} groups is the smallest count that reaches the best measured saving of {best_change_pct:.2f}%, so the shipped default of 16 is not the knee -- and {sufficient_ngroups} is again the largest count swept, so the bound has moved rather than closed.
+      Timed on real coupler steps the split is worth {sypd_gain_pct:.3f}% of SYPD at the shipped default, which is measured rather than converted from device time, though most of the solve-time saving turns out to be wave quantization rather than the split itself.
+      Both figures are reproducible to a fraction of a percent at a fixed atmospheric state and to about a point across states, which is the limit of the method and not of the repeats.
     evidence:
       - kind: document
         path: docs/experiments/gpoint-group-count.md
@@ -447,7 +448,7 @@ questions:
         path: results/gpoint-sweep.toml
         values:
           best_change_pct: best_change_pct
-          spread_pct: repeat_spread_pct
+          sufficient_ngroups: sufficient_ngroups
         explanation: >-
           Four group counts taken in one process against one settled AMIP state,
           rebuilding only the longwave group workspaces between them, so the
@@ -461,6 +462,24 @@ questions:
           the best saving -- and `sufficient_is_sweep_maximum` records that it
           landed on the endpoint, which is the guard against reading "smallest
           sufficient" as "enough".
+      - kind: result
+        path: results/docs/gpoint-group-count.json
+        values:
+          sypd_gain_pct: wallclock.arms.16.gain_steady_pct
+        explanation: >-
+          The derived file the document's values stage writes, cited here
+          rather than the raw results/gpoint-wallclock.toml because the SYPD
+          gain depends on a choice the raw file does not make. SYPD has three
+          defensible denominators -- ordinary steps between diagnostics writes,
+          steady state with the writes at their real cadence, and the timed
+          window exactly as it ran including the one-off compilation of the
+          first write -- and they differ by more than the effect. The raw
+          file's own figure uses the median block, which excludes the write
+          blocks entirely; this one is the steady-state basis, which is the
+          only one that describes a long run. The gain itself is a ratio of a
+          measured saving to a measured wall clock rather than a difference of
+          two runs, so the denominator's relative error scales it instead of
+          adding to it, and the uncertainty is a few thousandths of a point.
 
 tables:
   - path: results/top-kernels.csv
