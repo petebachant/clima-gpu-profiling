@@ -1,0 +1,553 @@
+config_file = "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml"
+float_type = "Float32"
+flux_tolerance_rel = 1.0e-5
+ncol = 24576
+nlay = 80
+note = "Equivalence of the grouped g-point solve against the ungrouped one, on the live AMIP state at full resolution. Group counts include values that divide neither g-point count, which both sweeps miss: 4, 8, 16 and 32 divide 256 and 224 exactly, so every group gets an equal stride and the ragged final stride never runs. Fluxes get a relative tolerance because the split is not bit-for-bit -- a g-point sum taken in N partials is a different summation order -- and the figure that matters is that the deviation does not grow with the group count, which is what separates roundoff from a dropped or double-counted g-point. Cloud cover is a count and is asserted exactly. The 550 nm aerosol optical depth is asserted exactly and shortwave only: it is a per-column read-modify-write with one nominated writer, so any difference is groups interleaving. This does NOT cover ngroups > n_gpt, where a group has no g-points at all; that needs more groups than there are g-points and so belongs in the unit tests, at a column count where the workspace is affordable."
+passed = true
+warmup_steps = 3
+
+[longwave]
+all_aod_exact = true
+all_cover_exact = true
+all_within_tolerance = true
+deviation_grows_with_groups = false
+group_counts = [1, 3, 5, 6, 7, 16, 24]
+n_gpt = 256
+nondivisor_counts_checked = 5
+worst_relative_deviation = 2.597991425473633e-6
+
+    [longwave.points.1]
+    aod_exact = true
+    cover_exact = true
+    divides_n_gpt = true
+    groups_with_short_stride = 0
+    ngroups = 1
+    stride_remainder = 0
+    within_tolerance = true
+    worst_relative_deviation = 0.0
+
+        [longwave.points.1.fields.clear_dn]
+        abs = 0.0
+        rel = 0.0
+        scale = 433.6783142089844
+
+        [longwave.points.1.fields.clear_up]
+        abs = 0.0
+        rel = 0.0
+        scale = 524.8367919921875
+
+        [longwave.points.1.fields.flux_dn]
+        abs = 0.0
+        rel = 0.0
+        scale = 433.6783142089844
+
+        [longwave.points.1.fields.flux_net]
+        abs = 0.0
+        rel = 0.0
+        scale = 317.1583251953125
+
+        [longwave.points.1.fields.flux_up]
+        abs = 0.0
+        rel = 0.0
+        scale = 524.8367919921875
+
+    [longwave.points.16]
+    aod_exact = true
+    cover_exact = true
+    divides_n_gpt = true
+    groups_with_short_stride = 0
+    ngroups = 16
+    stride_remainder = 0
+    within_tolerance = true
+    worst_relative_deviation = 2.5017695208264614e-6
+
+        [longwave.points.16.fields.clear_dn]
+        abs = 0.00054931640625
+        rel = 1.2666448569187414e-6
+        scale = 433.6783142089844
+
+        [longwave.points.16.fields.clear_up]
+        abs = 0.0006103515625
+        rel = 1.1629359294404905e-6
+        scale = 524.8367919921875
+
+        [longwave.points.16.fields.flux_dn]
+        abs = 0.00054931640625
+        rel = 1.2666448569187414e-6
+        scale = 433.6783142089844
+
+        [longwave.points.16.fields.flux_net]
+        abs = 0.00079345703125
+        rel = 2.5017695208264614e-6
+        scale = 317.1583251953125
+
+        [longwave.points.16.fields.flux_up]
+        abs = 0.0006103515625
+        rel = 1.1629359294404905e-6
+        scale = 524.8367919921875
+
+    [longwave.points.24]
+    aod_exact = true
+    cover_exact = true
+    divides_n_gpt = false
+    groups_with_short_stride = 8
+    ngroups = 24
+    stride_remainder = 16
+    within_tolerance = true
+    worst_relative_deviation = 2.597991425473633e-6
+
+        [longwave.points.24.fields.clear_dn]
+        abs = 0.00054931640625
+        rel = 1.2666448569187414e-6
+        scale = 433.6783142089844
+
+        [longwave.points.24.fields.clear_up]
+        abs = 0.0006103515625
+        rel = 1.1629359294404905e-6
+        scale = 524.8367919921875
+
+        [longwave.points.24.fields.flux_dn]
+        abs = 0.00054931640625
+        rel = 1.2666448569187414e-6
+        scale = 433.6783142089844
+
+        [longwave.points.24.fields.flux_net]
+        abs = 0.000823974609375
+        rel = 2.597991425473633e-6
+        scale = 317.1583251953125
+
+        [longwave.points.24.fields.flux_up]
+        abs = 0.0006103515625
+        rel = 1.1629359294404905e-6
+        scale = 524.8367919921875
+
+    [longwave.points.3]
+    aod_exact = true
+    cover_exact = true
+    divides_n_gpt = false
+    groups_with_short_stride = 2
+    ngroups = 3
+    stride_remainder = 1
+    within_tolerance = true
+    worst_relative_deviation = 2.40554761617929e-6
+
+        [longwave.points.3.fields.clear_dn]
+        abs = 0.000579833984375
+        rel = 1.3370140156364493e-6
+        scale = 433.6783142089844
+
+        [longwave.points.3.fields.clear_up]
+        abs = 0.00067138671875
+        rel = 1.2792295223845397e-6
+        scale = 524.8367919921875
+
+        [longwave.points.3.fields.flux_dn]
+        abs = 0.000579833984375
+        rel = 1.3370140156364493e-6
+        scale = 433.6783142089844
+
+        [longwave.points.3.fields.flux_net]
+        abs = 0.000762939453125
+        rel = 2.40554761617929e-6
+        scale = 317.1583251953125
+
+        [longwave.points.3.fields.flux_up]
+        abs = 0.00067138671875
+        rel = 1.2792295223845397e-6
+        scale = 524.8367919921875
+
+    [longwave.points.5]
+    aod_exact = true
+    cover_exact = true
+    divides_n_gpt = false
+    groups_with_short_stride = 4
+    ngroups = 5
+    stride_remainder = 1
+    within_tolerance = true
+    worst_relative_deviation = 2.40554761617929e-6
+
+        [longwave.points.5.fields.clear_dn]
+        abs = 0.00054931640625
+        rel = 1.2666448569187414e-6
+        scale = 433.6783142089844
+
+        [longwave.points.5.fields.clear_up]
+        abs = 0.000640869140625
+        rel = 1.2210827259125151e-6
+        scale = 524.8367919921875
+
+        [longwave.points.5.fields.flux_dn]
+        abs = 0.00054931640625
+        rel = 1.2666448569187414e-6
+        scale = 433.6783142089844
+
+        [longwave.points.5.fields.flux_net]
+        abs = 0.000762939453125
+        rel = 2.40554761617929e-6
+        scale = 317.1583251953125
+
+        [longwave.points.5.fields.flux_up]
+        abs = 0.000640869140625
+        rel = 1.2210827259125151e-6
+        scale = 524.8367919921875
+
+    [longwave.points.6]
+    aod_exact = true
+    cover_exact = true
+    divides_n_gpt = false
+    groups_with_short_stride = 2
+    ngroups = 6
+    stride_remainder = 4
+    within_tolerance = true
+    worst_relative_deviation = 2.3093257115321182e-6
+
+        [longwave.points.6.fields.clear_dn]
+        abs = 0.000579833984375
+        rel = 1.3370140156364493e-6
+        scale = 433.6783142089844
+
+        [longwave.points.6.fields.clear_up]
+        abs = 0.0006103515625
+        rel = 1.1629359294404905e-6
+        scale = 524.8367919921875
+
+        [longwave.points.6.fields.flux_dn]
+        abs = 0.000579833984375
+        rel = 1.3370140156364493e-6
+        scale = 433.6783142089844
+
+        [longwave.points.6.fields.flux_net]
+        abs = 0.000732421875
+        rel = 2.3093257115321182e-6
+        scale = 317.1583251953125
+
+        [longwave.points.6.fields.flux_up]
+        abs = 0.0006103515625
+        rel = 1.1629359294404905e-6
+        scale = 524.8367919921875
+
+    [longwave.points.7]
+    aod_exact = true
+    cover_exact = true
+    divides_n_gpt = false
+    groups_with_short_stride = 3
+    ngroups = 7
+    stride_remainder = 4
+    within_tolerance = true
+    worst_relative_deviation = 2.40554761617929e-6
+
+        [longwave.points.7.fields.clear_dn]
+        abs = 0.00054931640625
+        rel = 1.2666448569187414e-6
+        scale = 433.6783142089844
+
+        [longwave.points.7.fields.clear_up]
+        abs = 0.0006103515625
+        rel = 1.1629359294404905e-6
+        scale = 524.8367919921875
+
+        [longwave.points.7.fields.flux_dn]
+        abs = 0.00054931640625
+        rel = 1.2666448569187414e-6
+        scale = 433.6783142089844
+
+        [longwave.points.7.fields.flux_net]
+        abs = 0.000762939453125
+        rel = 2.40554761617929e-6
+        scale = 317.1583251953125
+
+        [longwave.points.7.fields.flux_up]
+        abs = 0.0006103515625
+        rel = 1.1629359294404905e-6
+        scale = 524.8367919921875
+
+[shortwave]
+all_aod_exact = true
+all_cover_exact = true
+all_within_tolerance = true
+deviation_grows_with_groups = false
+group_counts = [1, 3, 5, 6, 7, 16, 24]
+n_gpt = 224
+nondivisor_counts_checked = 4
+worst_relative_deviation = 1.0286272576498073e-6
+
+    [shortwave.points.1]
+    aod_exact = true
+    cover_exact = true
+    divides_n_gpt = true
+    groups_with_short_stride = 0
+    ngroups = 1
+    stride_remainder = 0
+    within_tolerance = true
+    worst_relative_deviation = 0.0
+
+        [shortwave.points.1.fields.clear_dn_dir]
+        abs = 0.0
+        rel = 0.0
+        scale = 1385.2601318359375
+
+        [shortwave.points.1.fields.clear_up]
+        abs = 0.0
+        rel = 0.0
+        scale = 549.3009643554688
+
+        [shortwave.points.1.fields.flux_dn]
+        abs = 0.0
+        rel = 0.0
+        scale = 1385.348876953125
+
+        [shortwave.points.1.fields.flux_dn_dir]
+        abs = 0.0
+        rel = 0.0
+        scale = 1385.2601318359375
+
+        [shortwave.points.1.fields.flux_net]
+        abs = 0.0
+        rel = 0.0
+        scale = 1305.4033203125
+
+        [shortwave.points.1.fields.flux_up]
+        abs = 0.0
+        rel = 0.0
+        scale = 549.3009643554688
+
+    [shortwave.points.16]
+    aod_exact = true
+    cover_exact = true
+    divides_n_gpt = true
+    groups_with_short_stride = 0
+    ngroups = 16
+    stride_remainder = 0
+    within_tolerance = true
+    worst_relative_deviation = 9.351156887725522e-7
+
+        [shortwave.points.16.fields.clear_dn_dir]
+        abs = 0.001220703125
+        rel = 8.812085881531552e-7
+        scale = 1385.2601318359375
+
+        [shortwave.points.16.fields.clear_up]
+        abs = 0.00042724609375
+        rel = 7.777996425899528e-7
+        scale = 549.3009643554688
+
+        [shortwave.points.16.fields.flux_dn]
+        abs = 0.001220703125
+        rel = 8.811521381420978e-7
+        scale = 1385.348876953125
+
+        [shortwave.points.16.fields.flux_dn_dir]
+        abs = 0.001220703125
+        rel = 8.812085881531552e-7
+        scale = 1385.2601318359375
+
+        [shortwave.points.16.fields.flux_net]
+        abs = 0.001220703125
+        rel = 9.351156887725522e-7
+        scale = 1305.4033203125
+
+        [shortwave.points.16.fields.flux_up]
+        abs = 0.00042724609375
+        rel = 7.777996425899528e-7
+        scale = 549.3009643554688
+
+    [shortwave.points.24]
+    aod_exact = true
+    cover_exact = true
+    divides_n_gpt = false
+    groups_with_short_stride = 16
+    ngroups = 24
+    stride_remainder = 8
+    within_tolerance = true
+    worst_relative_deviation = 9.351156887725522e-7
+
+        [shortwave.points.24.fields.clear_dn_dir]
+        abs = 0.0010986328125
+        rel = 7.930877293378396e-7
+        scale = 1385.2601318359375
+
+        [shortwave.points.24.fields.clear_up]
+        abs = 0.00042724609375
+        rel = 7.777996425899528e-7
+        scale = 549.3009643554688
+
+        [shortwave.points.24.fields.flux_dn]
+        abs = 0.001220703125
+        rel = 8.811521381420978e-7
+        scale = 1385.348876953125
+
+        [shortwave.points.24.fields.flux_dn_dir]
+        abs = 0.0010986328125
+        rel = 7.930877293378396e-7
+        scale = 1385.2601318359375
+
+        [shortwave.points.24.fields.flux_net]
+        abs = 0.001220703125
+        rel = 9.351156887725522e-7
+        scale = 1305.4033203125
+
+        [shortwave.points.24.fields.flux_up]
+        abs = 0.00042724609375
+        rel = 7.777996425899528e-7
+        scale = 549.3009643554688
+
+    [shortwave.points.3]
+    aod_exact = true
+    cover_exact = true
+    divides_n_gpt = false
+    groups_with_short_stride = 1
+    ngroups = 3
+    stride_remainder = 2
+    within_tolerance = true
+    worst_relative_deviation = 9.693294469684706e-7
+
+        [shortwave.points.3.fields.clear_dn_dir]
+        abs = 0.0013427734375
+        rel = 9.693294469684706e-7
+        scale = 1385.2601318359375
+
+        [shortwave.points.3.fields.clear_up]
+        abs = 0.00048828125
+        rel = 8.889138772456603e-7
+        scale = 549.3009643554688
+
+        [shortwave.points.3.fields.flux_dn]
+        abs = 0.001220703125
+        rel = 8.811521381420978e-7
+        scale = 1385.348876953125
+
+        [shortwave.points.3.fields.flux_dn_dir]
+        abs = 0.0013427734375
+        rel = 9.693294469684706e-7
+        scale = 1385.2601318359375
+
+        [shortwave.points.3.fields.flux_net]
+        abs = 0.001220703125
+        rel = 9.351156887725522e-7
+        scale = 1305.4033203125
+
+        [shortwave.points.3.fields.flux_up]
+        abs = 0.00048828125
+        rel = 8.889138772456603e-7
+        scale = 549.3009643554688
+
+    [shortwave.points.5]
+    aod_exact = true
+    cover_exact = true
+    divides_n_gpt = false
+    groups_with_short_stride = 1
+    ngroups = 5
+    stride_remainder = 4
+    within_tolerance = true
+    worst_relative_deviation = 1.0286272576498073e-6
+
+        [shortwave.points.5.fields.clear_dn_dir]
+        abs = 0.001220703125
+        rel = 8.812085881531552e-7
+        scale = 1385.2601318359375
+
+        [shortwave.points.5.fields.clear_up]
+        abs = 0.00042724609375
+        rel = 7.777996425899528e-7
+        scale = 549.3009643554688
+
+        [shortwave.points.5.fields.flux_dn]
+        abs = 0.001220703125
+        rel = 8.811521381420978e-7
+        scale = 1385.348876953125
+
+        [shortwave.points.5.fields.flux_dn_dir]
+        abs = 0.001220703125
+        rel = 8.812085881531552e-7
+        scale = 1385.2601318359375
+
+        [shortwave.points.5.fields.flux_net]
+        abs = 0.0013427734375
+        rel = 1.0286272576498073e-6
+        scale = 1305.4033203125
+
+        [shortwave.points.5.fields.flux_up]
+        abs = 0.00042724609375
+        rel = 7.777996425899528e-7
+        scale = 549.3009643554688
+
+    [shortwave.points.6]
+    aod_exact = true
+    cover_exact = true
+    divides_n_gpt = false
+    groups_with_short_stride = 4
+    ngroups = 6
+    stride_remainder = 2
+    within_tolerance = true
+    worst_relative_deviation = 8.416041198952969e-7
+
+        [shortwave.points.6.fields.clear_dn_dir]
+        abs = 0.0010986328125
+        rel = 7.930877293378396e-7
+        scale = 1385.2601318359375
+
+        [shortwave.points.6.fields.clear_up]
+        abs = 0.00042724609375
+        rel = 7.777996425899528e-7
+        scale = 549.3009643554688
+
+        [shortwave.points.6.fields.flux_dn]
+        abs = 0.0010986328125
+        rel = 7.93036924327888e-7
+        scale = 1385.348876953125
+
+        [shortwave.points.6.fields.flux_dn_dir]
+        abs = 0.0010986328125
+        rel = 7.930877293378396e-7
+        scale = 1385.2601318359375
+
+        [shortwave.points.6.fields.flux_net]
+        abs = 0.0010986328125
+        rel = 8.416041198952969e-7
+        scale = 1305.4033203125
+
+        [shortwave.points.6.fields.flux_up]
+        abs = 0.00042724609375
+        rel = 7.777996425899528e-7
+        scale = 549.3009643554688
+
+    [shortwave.points.7]
+    aod_exact = true
+    cover_exact = true
+    divides_n_gpt = true
+    groups_with_short_stride = 0
+    ngroups = 7
+    stride_remainder = 0
+    within_tolerance = true
+    worst_relative_deviation = 9.351156887725522e-7
+
+        [shortwave.points.7.fields.clear_dn_dir]
+        abs = 0.0010986328125
+        rel = 7.930877293378396e-7
+        scale = 1385.2601318359375
+
+        [shortwave.points.7.fields.clear_up]
+        abs = 0.00042724609375
+        rel = 7.777996425899528e-7
+        scale = 549.3009643554688
+
+        [shortwave.points.7.fields.flux_dn]
+        abs = 0.0010986328125
+        rel = 7.93036924327888e-7
+        scale = 1385.348876953125
+
+        [shortwave.points.7.fields.flux_dn_dir]
+        abs = 0.0010986328125
+        rel = 7.930877293378396e-7
+        scale = 1385.2601318359375
+
+        [shortwave.points.7.fields.flux_net]
+        abs = 0.001220703125
+        rel = 9.351156887725522e-7
+        scale = 1305.4033203125
+
+        [shortwave.points.7.fields.flux_up]
+        abs = 0.00042724609375
+        rel = 7.777996425899528e-7
+        scale = 549.3009643554688

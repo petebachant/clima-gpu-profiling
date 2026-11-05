@@ -3989,13 +3989,13 @@ stages:
       size: 367673344
     - path: scripts/export-gpoint-groups.py
       hash: md5
-      md5: c22af8ae9624e892ef558dbec3874da4
-      size: 14088
+      md5: 5ec8c91a2b04ca2981abe62d48ff7afb
+      size: 14069
     outs:
     - path: results/gpoint-groups.json
       hash: md5
-      md5: 3abd8896ec1975de3483d28b674df5a6
-      size: 3622
+      md5: b76cc083870da3a730581b43570117d3
+      size: 3584
   fold-compile-cost:
     cmd: calkit scheduler batch --name fold-compile-cost --environment clima 
       --dep scripts/measure-fold-compile-cost.jl --dep 
@@ -4222,8 +4222,8 @@ stages:
       size: 10535
     - path: results/gpoint-groups.json
       hash: md5
-      md5: 3abd8896ec1975de3483d28b674df5a6
-      size: 3622
+      md5: b76cc083870da3a730581b43570117d3
+      size: 3584
     - path: results/gpoint-record/prediction.json
       hash: md5
       md5: 02a00f6058e20a4dfa1ecc5d9d2db6b7
@@ -4352,8 +4352,8 @@ stages:
       size: 5334
     - path: results/gpoint-groups.json
       hash: md5
-      md5: 3abd8896ec1975de3483d28b674df5a6
-      size: 3622
+      md5: b76cc083870da3a730581b43570117d3
+      size: 3584
     - path: results/sw-gpoint-sweep.toml
       hash: md5
       md5: 2585d26c7c12cc5d36ea74251269e809
@@ -4371,3 +4371,66 @@ stages:
       hash: md5
       md5: 2811ebe967e69d5d65bf572ba8ff5638
       size: 2960
+  gpoint-equivalence:
+    cmd: calkit scheduler batch --name gpoint-equivalence --environment clima 
+      --dep scripts/check-gpoint-group-equivalence.jl --dep RRTMGP.jl-mod/src 
+      --dep RRTMGP.jl-mod/ext --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml 
+      --dep .calkit/env-locks/clima --out results/gpoint-equivalence.toml 
+      --option --gpus=1 --option --time=60 -- scripts/run-julia-script.sh 
+      --project=ClimaCoupler.jl-mod/experiments/AMIP 
+      scripts/check-gpoint-group-equivalence.jl --config_file 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      hash: md5
+      md5: 66e9712dfb39a09d73ab08e096b614db
+      size: 1114
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 68480f6457cea178b9c39d5826001c61
+      size: 827
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: a9dae059301508b4a879a1e8c6ab9f34
+      size: 122255
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: RRTMGP.jl-mod/ext
+      hash: md5
+      md5: 0ba4968add0a7e7382a3bc287ead49cf.dir
+      size: 79687
+      nfiles: 11
+    - path: RRTMGP.jl-mod/src
+      hash: md5
+      md5: 483f82aa020e43540fb9811fbc1ce4be.dir
+      size: 344110
+      nfiles: 44
+    - path: scripts/check-gpoint-group-equivalence.jl
+      hash: md5
+      md5: d20660adc0295c7d4e4b19d5fae5ff16
+      size: 12331
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: a61880cfce301ad9069fbaddfa8d5ad5
+      size: 1033
+    outs:
+    - path: .calkit/scheduler/logs/gpoint-equivalence.out
+      hash: md5
+      md5: c1aa8a1f0e1c05f4e2ac52351327ed2d
+      size: 31021
+    - path: results/gpoint-equivalence.toml
+      hash: md5
+      md5: f9349d2a49c94fc5242390b537bcf9b2
+      size: 16125

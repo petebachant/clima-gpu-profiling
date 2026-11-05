@@ -163,7 +163,7 @@ def waves(fam):
         "blocks_resident_per_sm": per_sm,
         "blocks_resident": resident,
         "waves": round(grid / resident, 2) if resident else None,
-        "launches_per_radiation_step": fam["launches"],
+        "launches": fam["launches"],
     }
 
 
