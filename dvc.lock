@@ -4241,3 +4241,133 @@ stages:
       hash: md5
       md5: d4a283e492b2d2d4019faeb5b8b1ca55
       size: 5334
+  sw-gpoint-sweep:
+    cmd: calkit scheduler batch --name sw-gpoint-sweep --environment clima --dep
+      scripts/measure-sw-gpoint-sweep.jl --dep RRTMGP.jl-mod/src --dep 
+      RRTMGP.jl-mod/ext --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml 
+      --dep .calkit/env-locks/clima --out results/sw-gpoint-sweep.toml --out 
+      results/sw-gpoint-wallclock.toml --option --gpus=1 --option --time=110 -- 
+      scripts/run-julia-script.sh --project=ClimaCoupler.jl-mod/experiments/AMIP
+      scripts/measure-sw-gpoint-sweep.jl --config_file 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      hash: md5
+      md5: 66e9712dfb39a09d73ab08e096b614db
+      size: 1114
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 68480f6457cea178b9c39d5826001c61
+      size: 827
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: a9dae059301508b4a879a1e8c6ab9f34
+      size: 122255
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: RRTMGP.jl-mod/ext
+      hash: md5
+      md5: 0ba4968add0a7e7382a3bc287ead49cf.dir
+      size: 79687
+      nfiles: 11
+    - path: RRTMGP.jl-mod/src
+      hash: md5
+      md5: 483f82aa020e43540fb9811fbc1ce4be.dir
+      size: 344110
+      nfiles: 44
+    - path: scripts/measure-sw-gpoint-sweep.jl
+      hash: md5
+      md5: c88430cb49fde1461bf92881254f5a29
+      size: 16054
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: a61880cfce301ad9069fbaddfa8d5ad5
+      size: 1033
+    outs:
+    - path: .calkit/scheduler/logs/sw-gpoint-sweep.out
+      hash: md5
+      md5: 65c3ddbb16c64a697ab12a86de8c5f33
+      size: 34295
+    - path: results/sw-gpoint-sweep.toml
+      hash: md5
+      md5: 2585d26c7c12cc5d36ea74251269e809
+      size: 2831
+    - path: results/sw-gpoint-wallclock.toml
+      hash: md5
+      md5: b088a91cbf7f2b95878a26a87d747011
+      size: 2770
+  wave-census:
+    cmd: calkit xenv -n py --no-check -- python scripts/export-wave-census.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: results/gpoint-sweep.toml
+      hash: md5
+      md5: d4b705dd31acddf51870c844256916aa
+      size: 2346
+    - path: results/nsys/baseline.sqlite
+      hash: md5
+      md5: c54f8520d113c33309c97d90927d17f8
+      size: 365817856
+    - path: scripts/export-wave-census.py
+      hash: md5
+      md5: d253de2a25c3c9ad7c06fae15ad459b3
+      size: 11889
+    outs:
+    - path: results/wave-census.json
+      hash: md5
+      md5: 387854b9ac8b8bc8e1af92ae3e643026
+      size: 77985
+  wave-census-doc/values:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/experiments/wave-census.md/values.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: .calkit/markdown/docs/experiments/wave-census.md/values.py
+      hash: md5
+      md5: 2eaab6b9f01ac44a3072e4835c5db01f
+      size: 8708
+    - path: results/docs/gpoint-group-count.json
+      hash: md5
+      md5: d4a283e492b2d2d4019faeb5b8b1ca55
+      size: 5334
+    - path: results/gpoint-groups.json
+      hash: md5
+      md5: 3abd8896ec1975de3483d28b674df5a6
+      size: 3622
+    - path: results/sw-gpoint-sweep.toml
+      hash: md5
+      md5: 2585d26c7c12cc5d36ea74251269e809
+      size: 2831
+    - path: results/sw-gpoint-wallclock.toml
+      hash: md5
+      md5: b088a91cbf7f2b95878a26a87d747011
+      size: 2770
+    - path: results/wave-census.json
+      hash: md5
+      md5: 387854b9ac8b8bc8e1af92ae3e643026
+      size: 77985
+    outs:
+    - path: results/docs/wave-census.json
+      hash: md5
+      md5: 2811ebe967e69d5d65bf572ba8ff5638
+      size: 2960

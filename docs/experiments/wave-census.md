@@ -10,12 +10,12 @@ It also finds that the single largest geometric loss in the profile sits in kern
 
 ## The ceiling every per-column kernel runs into
 
-At <!-- calkit value key=ceiling.registers_at_cap path=results/docs/wave-census.json -->255<!-- /calkit value --> registers per thread an A100 SM holds <!-- calkit value key=ceiling.resident_threads_per_sm_at_cap path=results/docs/wave-census.json -->256<!-- /calkit value --> threads, so the device holds <!-- calkit value key=ceiling.resident_threads_at_cap format="{:,}" path=results/docs/wave-census.json -->27648<!-- /calkit value --> of them, and the benchmark's <!-- calkit value key=ceiling.columns format="{:,}" path=results/docs/wave-census.json -->24576<!-- /calkit value --> columns at one thread each come to <!-- calkit value key=ceiling.waves_at_cap format="{:.2f}" path=results/docs/wave-census.json -->0.89<!-- /calkit value --> of a wave.
+At <!-- calkit value key=ceiling.registers_at_cap path=results/docs/wave-census.json -->255<!-- /calkit value --> registers per thread an A100 SM holds <!-- calkit value key=ceiling.resident_threads_per_sm_at_cap path=results/docs/wave-census.json -->256<!-- /calkit value --> threads, so the device holds <!-- calkit value key=ceiling.resident_threads_at_cap format="{:,}" path=results/docs/wave-census.json -->27,648<!-- /calkit value --> of them, and the benchmark's <!-- calkit value key=ceiling.columns format="{:,}" path=results/docs/wave-census.json -->24,576<!-- /calkit value --> columns at one thread each come to <!-- calkit value key=ceiling.waves_at_cap format="{:.2f}" path=results/docs/wave-census.json -->0.89<!-- /calkit value --> of a wave.
 That is why all <!-- calkit value key=family.configs path=results/docs/wave-census.json -->4<!-- /calkit value --> kernels at the register cap have the *same* launch geometry whatever their block size: <!-- calkit value key=family.waves format="{:.2f}" path=results/docs/wave-census.json -->0.89<!-- /calkit value --> waves and <!-- calkit value key=family.warp_capacity_pct format="{:.1f}" path=results/docs/wave-census.json -->11.1<!-- /calkit value -->% of the SM's warp capacity.
 Block size cannot move it, because the resident thread count at a given register count is fixed and the problem's thread count is fixed with it.
 
 The weaker version of the same ceiling applies to every per-column kernel regardless of registers.
-Ignoring register limits entirely, an A100 holds <!-- calkit value key=machine.resident_thread_slots format="{:,}" path=results/docs/wave-census.json -->221184<!-- /calkit value --> resident threads, and one thread per column occupies <!-- calkit value key=ceiling.column_threads_as_pct_of_slots format="{:.1f}" path=results/docs/wave-census.json -->11.1<!-- /calkit value -->% of them.
+Ignoring register limits entirely, an A100 holds <!-- calkit value key=machine.resident_thread_slots format="{:,}" path=results/docs/wave-census.json -->221,184<!-- /calkit value --> resident threads, and one thread per column occupies <!-- calkit value key=ceiling.column_threads_as_pct_of_slots format="{:.1f}" path=results/docs/wave-census.json -->11.1<!-- /calkit value -->% of them.
 This model at this resolution is simply too small for this card along the column axis, and every kernel that parallelizes over columns alone inherits that.
 Escaping it means finding a second axis, which is exactly what splitting the g-point loop does.
 
@@ -23,6 +23,7 @@ Escaping it means finding a second axis, which is exactly what splitting the g-p
 
 ```python calkit stage name=values environment=py outputs=[{path: results/docs/wave-census.json, storage: git}] inputs=[results/wave-census.json, results/gpoint-groups.json, results/docs/gpoint-group-count.json, results/sw-gpoint-sweep.toml, results/sw-gpoint-wallclock.toml]
 import json
+import os
 import tomllib
 
 census = json.load(open("results/wave-census.json"))
@@ -107,10 +108,12 @@ sw_measured_sypd = swwall["arms"][str(swwall["default_ngpt_groups"])][
 ]
 sw_pts = swsweep["points"]
 
-untreated = [k for k in capped if k["kernel"] != lw["kernel"]]
+treated_kernels = {lw["kernel"], sw["kernel"]}
+untreated = [k for k in capped if k["kernel"] not in treated_kernels]
 remaining_sypd = sum(sypd_of(k["quantization_loss_ms"]) * collected for k in untreated)
+collected_sypd = lw_sypd_pct + sw_measured_sypd
 
-print(json.dumps({
+out = {
     "machine": {
         "sms": mach["sms"],
         "resident_thread_slots": mach["resident_thread_slots"],
@@ -154,9 +157,15 @@ print(json.dumps({
         "waves": capped[0]["waves"],
         "warp_capacity_pct": capped[0]["warp_capacity_pct"],
         "loss_ms": round(sum(k["quantization_loss_ms"] for k in capped), 1),
-        "treated": 1,
+        "treated": len(treated_kernels),
         "untreated": len(untreated),
         "remaining_sypd_pct": round(remaining_sypd, 3),
+        "collected_sypd_pct": round(collected_sypd, 3),
+        "largest_untreated": (
+            max(untreated, key=lambda k: k["quantization_loss_ms"])["kernel"]
+            if untreated
+            else None
+        ),
         "lw": {"ms": lw["ms"], "loss_ms": lw["quantization_loss_ms"]},
         "sw": {
             "ms": sw["ms"],
@@ -171,11 +180,14 @@ print(json.dumps({
         "sw_measured_sypd_pct": sw_measured_sypd,
         "error_pts": round(sw_measured_sypd - sw_predicted_sypd, 3),
         "measured_beat_prediction": sw_measured_sypd > sw_predicted_sypd,
+        # Directly comparable to lw_collected_fraction: what share of its own
+        # geometric floor each band's split actually collected.
+        "sw_collected_fraction": round(
+            sw_measured_sypd / sypd_of(sw["quantization_loss_ms"]), 3
+        ),
         # The longwave figure moved 0.96 points between two simulation states,
         # which is the method's own reproducibility and the right yardstick.
-        "state_shift_pts": abs(
-            lwdoc["prediction"]["current_16"] - lwdoc["prediction"]["prior_16"]
-        ),
+        "state_shift_pts": abs(lwdoc["prediction"]["state_shift_pts"]),
     },
     "shortwave": {
         "n_gpt": swsweep["n_gpt_sw"],
@@ -193,6 +205,13 @@ print(json.dumps({
             sw_pts[str(n)]["worst_flux_deviation"] for n in swsweep["group_counts"]
         ),
         "aod_bit_identical": swsweep["aod_bit_identical_at_every_count"],
+        # A reordering bug would scale with the number of partials; roundoff
+        # does not. Eight times the partials, and this is the ratio.
+        "deviation_ratio_32_over_4": round(
+            sw_pts["32"]["worst_flux_deviation"]
+            / sw_pts["4"]["worst_flux_deviation"],
+            3,
+        ),
         "sypd_grouped": swwall["arms"][str(swwall["default_ngpt_groups"])][
             "sypd_grouped"
         ],
@@ -215,11 +234,13 @@ print(json.dumps({
             k["one_thread_per_column"] for k in vertical
         ),
     },
-}, indent=2, sort_keys=True))
+}
+os.makedirs("results/docs", exist_ok=True)
+json.dump(out, open("results/docs/wave-census.json", "w"), indent=2, sort_keys=True)
 ```
 
 The census classifies every kernel by launch geometry and charges each one the time its geometry wastes: blocks occupy `ceil(waves)` wave-times to do `waves` wave-times of work, so the waste is `1 - waves / ceil(waves)`.
-Across <!-- calkit value key=device.censused_ms format="{:,.0f}" path=results/docs/wave-census.json -->33493<!-- /calkit value --> ms of censused kernel time, which is <!-- calkit value key=device.censused_pct_of_device format="{:.0f}" path=results/docs/wave-census.json -->96<!-- /calkit value -->% of device time, that comes to <!-- calkit value key=device.total_loss_ms format="{:,.0f}" path=results/docs/wave-census.json -->1752<!-- /calkit value --> ms, or <!-- calkit value key=device.total_loss_pct_of_device format="{:.2f}" path=results/docs/wave-census.json -->5.00<!-- /calkit value -->% of device time and <!-- calkit value key=device.total_loss_sypd_pct format="{:.2f}" path=results/docs/wave-census.json -->4.57<!-- /calkit value -->% of SYPD if all of it were somehow collectable.
+Across <!-- calkit value key=device.censused_ms format="{:,.0f}" path=results/docs/wave-census.json -->33,493<!-- /calkit value --> ms of censused kernel time, which is <!-- calkit value key=device.censused_pct_of_device format="{:.0f}" path=results/docs/wave-census.json -->96<!-- /calkit value -->% of device time, that comes to <!-- calkit value key=device.total_loss_ms format="{:,.0f}" path=results/docs/wave-census.json -->1,752<!-- /calkit value --> ms, or <!-- calkit value key=device.total_loss_pct_of_device format="{:.2f}" path=results/docs/wave-census.json -->5.00<!-- /calkit value -->% of device time and <!-- calkit value key=device.total_loss_sypd_pct format="{:.2f}" path=results/docs/wave-census.json -->4.57<!-- /calkit value -->% of SYPD if all of it were somehow collectable.
 
 What the census refuses to charge for is occupancy.
 A kernel can have a block on every SM and still hold a fraction of the warps its registers would allow, and that is reported beside the loss rather than inside it.
@@ -231,7 +252,7 @@ Anchoring it that way cancels the profiling window's length instead of requiring
 
 ## How the longwave split scored against its own geometry
 
-The longwave kernel's geometry wastes <!-- calkit value key=family.lw.loss_ms format="{:.1f}" path=results/docs/wave-census.json -->299.9<!-- /calkit value --> ms of its <!-- calkit value key=family.lw.ms format="{:,.1f}" path=results/docs/wave-census.json -->2698.8<!-- /calkit value --> ms, and the split collected <!-- calkit value key=conversion.lw_saved_ms format="{:.1f}" path=results/docs/wave-census.json -->266.2<!-- /calkit value --> ms of that, or <!-- calkit value key=conversion.lw_collected_fraction format="{:.0%}" path=results/docs/wave-census.json -->89%<!-- /calkit value -->.
+The longwave kernel's geometry wastes <!-- calkit value key=family.lw.loss_ms format="{:.1f}" path=results/docs/wave-census.json -->299.9<!-- /calkit value --> ms of its <!-- calkit value key=family.lw.ms format="{:,.1f}" path=results/docs/wave-census.json -->2,698.8<!-- /calkit value --> ms, and the split collected <!-- calkit value key=conversion.lw_saved_ms format="{:.1f}" path=results/docs/wave-census.json -->266.2<!-- /calkit value --> ms of that, or <!-- calkit value key=conversion.lw_collected_fraction format="{:.0%}" path=results/docs/wave-census.json -->89%<!-- /calkit value -->.
 That fraction is the useful number, because it turns another member's floor into a prediction rather than a ceiling.
 It is below 1 for reasons the treatment does not remove: the grouped path pays for its own reduction and hoisted aerosol mask, and the blocks are not perfectly equal in cost.
 
@@ -239,17 +260,28 @@ It is below 1 for reasons the treatment does not remove: the grouped path pays f
 
 The shortwave two-stream solve is the closest member of the family.
 It has the same <!-- calkit value key=family.sw.blocks path=results/docs/wave-census.json -->96<!-- /calkit value --> blocks of <!-- calkit value key=family.sw.threads path=results/docs/wave-census.json -->256<!-- /calkit value --> threads, the same register cap, the same geometry, and the same independent g-point loop with flux accumulation -- so porting the split to it is a port and not a design.
-Its geometry wastes <!-- calkit value key=family.sw.loss_ms format="{:.1f}" path=results/docs/wave-census.json -->282.0<!-- /calkit value --> ms, which at the longwave's collected fraction predicts <!-- calkit value key=prediction.sw_predicted_saving_ms format="{:.1f}" path=results/docs/wave-census.json -->250.4<!-- /calkit value --> ms and <!-- calkit value key=prediction.sw_predicted_sypd_pct format="{:.3f}" path=results/docs/wave-census.json -->0.654<!-- /calkit value -->% of SYPD.
+Its geometry wastes <!-- calkit value key=family.sw.loss_ms format="{:.1f}" path=results/docs/wave-census.json -->282.0<!-- /calkit value --> ms, which at the longwave's collected fraction predicts <!-- calkit value key=prediction.sw_predicted_saving_ms format="{:.1f}" path=results/docs/wave-census.json -->250.3<!-- /calkit value --> ms and <!-- calkit value key=prediction.sw_predicted_sypd_pct format="{:.3f}" path=results/docs/wave-census.json -->0.654<!-- /calkit value -->% of SYPD.
 
-Measured, timing real coupler steps in the same process the way the longwave sweep did, it is <!-- calkit value key=prediction.sw_measured_sypd_pct format="{:.3f}" path=results/docs/wave-census.json -->0.654<!-- /calkit value -->% of SYPD, taking SYPD from <!-- calkit value key=shortwave.sypd_ungrouped format="{:.4f}" path=results/docs/wave-census.json -->1.0<!-- /calkit value --> to <!-- calkit value key=shortwave.sypd_grouped format="{:.4f}" path=results/docs/wave-census.json -->1.0<!-- /calkit value -->.
-The prediction erred by <!-- calkit value key=prediction.error_pts format="{:+.3f}" path=results/docs/wave-census.json -->0.000<!-- /calkit value --> percentage points, against the <!-- calkit value key=prediction.state_shift_pts format="{:.2f}" path=results/docs/wave-census.json -->0.96<!-- /calkit value --> points by which the longwave figure moved between two simulation states -- which is the method's own reproducibility and so the right yardstick for it.
+Measured, timing real coupler steps in the same process the way the longwave sweep did, it is <!-- calkit value key=prediction.sw_measured_sypd_pct format="{:.3f}" path=results/docs/wave-census.json -->0.605<!-- /calkit value -->% of SYPD, taking SYPD from <!-- calkit value key=shortwave.sypd_ungrouped format="{:.4f}" path=results/docs/wave-census.json -->1.0979<!-- /calkit value --> to <!-- calkit value key=shortwave.sypd_grouped format="{:.4f}" path=results/docs/wave-census.json -->1.1045<!-- /calkit value -->.
+The prediction erred by <!-- calkit value key=prediction.error_pts format="{:+.3f}" path=results/docs/wave-census.json -->-0.048<!-- /calkit value --> percentage points, against the <!-- calkit value key=prediction.state_shift_pts format="{:.2f}" path=results/docs/wave-census.json -->0.96<!-- /calkit value --> points by which the longwave figure moved between two simulation states -- which is the method's own reproducibility and so the right yardstick for it.
 
-In the solve itself the split is worth <!-- calkit value key=shortwave.default_change_pct format="{:.2f}" path=results/docs/wave-census.json -->0.0<!-- /calkit value -->% at the shipped default of 16 groups, for <!-- calkit value key=shortwave.default_workspace_gib format="{:.2f}" path=results/docs/wave-census.json -->0.0<!-- /calkit value --> GiB of workspace, against a repeat spread of <!-- calkit value key=shortwave.repeat_spread_pct format="{:.3f}" path=results/docs/wave-census.json -->0.0<!-- /calkit value -->%.
-The best saving the sweep reached is <!-- calkit value key=shortwave.best_change_pct format="{:.2f}" path=results/docs/wave-census.json -->0.0<!-- /calkit value -->% at <!-- calkit value key=shortwave.sufficient_ngroups path=results/docs/wave-census.json -->32<!-- /calkit value --> groups.
+The shortwave has one source of saving the longwave does not, and it is worth stating because it is the reason the prediction above could be too low rather than too high.
+Half the columns are dark, and section 4l measured that: the night criterion covers 50% of points and 45.96% of warps, so it is genuinely warp-coherent.
+Those columns skip both sweeps, so they finish early -- and in the ungrouped solve that buys nothing, because the grid is one resident wave and a block that retires frees no capacity for work that is not queued.
+Splitting the g-point loop is what queues the work, so the same imbalance the night skip could not collect in 2026-09-11 becomes absorbable.
+Geometry alone does not predict that, so whether the measurement shows it is recorded rather than argued: `measured_beat_prediction` is <!-- calkit value key=prediction.measured_beat_prediction path=results/docs/wave-census.json -->false<!-- /calkit value -->.
+
+It did not, and the two bands' collected fractions are the clean way to see it: the longwave took <!-- calkit value key=conversion.lw_collected_fraction format="{:.0%}" path=results/docs/wave-census.json -->89%<!-- /calkit value --> of its geometric floor and the shortwave <!-- calkit value key=prediction.sw_collected_fraction format="{:.0%}" path=results/docs/wave-census.json -->82%<!-- /calkit value -->.
+So the shortwave collected slightly *less* of its floor rather than more, and the night-column imbalance section 4l could not reach is still not collected -- splitting the g-point loop made it absorbable in principle without the solve going looking for it, because the optics are still computed for a dark column and only the two sweeps are skipped.
+Skipping the optics as well is a separate change, and this is the measurement that says what is left on that table.
+
+In the solve itself the split is worth <!-- calkit value key=shortwave.default_change_pct format="{:.2f}" path=results/docs/wave-census.json -->-8.47<!-- /calkit value -->% at the shipped default of 16 groups, for <!-- calkit value key=shortwave.default_workspace_gib format="{:.2f}" path=results/docs/wave-census.json -->2.05<!-- /calkit value --> GiB of workspace, against a repeat spread of <!-- calkit value key=shortwave.repeat_spread_pct format="{:.3f}" path=results/docs/wave-census.json -->0.258<!-- /calkit value -->%.
+The best saving the sweep reached is <!-- calkit value key=shortwave.best_change_pct format="{:.2f}" path=results/docs/wave-census.json -->-10.56<!-- /calkit value -->% at <!-- calkit value key=shortwave.sufficient_ngroups path=results/docs/wave-census.json -->32<!-- /calkit value --> groups.
 Whether that is a knee or just the end of the sweep is recorded rather than inferred: `sufficient_is_sweep_maximum` is <!-- calkit value key=shortwave.sufficient_is_sweep_maximum path=results/docs/wave-census.json -->true<!-- /calkit value -->.
 
 Correctness is checked in the same pass.
-The worst flux deviation from the ungrouped solve across every group count is <!-- calkit value key=shortwave.worst_flux_deviation format="{:.2e}" path=results/docs/wave-census.json -->0.0<!-- /calkit value --> W/m2 against fluxes of order a few hundred, and it does not grow with the group count, which is what separates a different summation order from a dropped g-point.
+The worst flux deviation from the ungrouped solve across every group count is <!-- calkit value key=shortwave.worst_flux_deviation format="{:.2e}" path=results/docs/wave-census.json -->1.46e-03<!-- /calkit value --> W/m2, against fluxes of order a few hundred.
+What separates a different summation order from a dropped g-point is whether that deviation scales with the number of partials, and it does not: going from 4 groups to 32 multiplies the partials by eight and the deviation by <!-- calkit value key=shortwave.deviation_ratio_32_over_4 format="{:.2f}" path=results/docs/wave-census.json -->1.04<!-- /calkit value -->.
 The 550 nm aerosol optical depth is asserted *exactly* rather than to a tolerance, and it holds at every count: <!-- calkit value key=shortwave.aod_bit_identical path=results/docs/wave-census.json -->true<!-- /calkit value -->.
 It needs asserting because it is the one quantity the split could corrupt without touching a flux -- it is zeroed and re-accumulated per g-point, so it is a read-modify-write on one per-column address, and concurrent groups would interleave their partial sums rather than agree.
 The implementation nominates the single g-point the ungrouped loop leaves standing as the only writer.
@@ -270,14 +302,15 @@ The census's contribution is to price it: <!-- calkit value key=vertical.loss_sy
 
 ## What the family is worth
 
-Of the register-capped family, the longwave is treated and the shortwave is now treated.
-The <!-- calkit value key=family.untreated path=results/docs/wave-census.json -->3<!-- /calkit value --> remaining members are worth <!-- calkit value key=family.remaining_sypd_pct format="{:.3f}" path=results/docs/wave-census.json -->0.0<!-- /calkit value -->% of SYPD between them at the longwave's collected fraction, which is dominated by `non_orographic_gravity_wave_forcing` and is not obviously worth the code.
-So the lever is close to exhausted, and the two solves were nearly all of it.
+Of the register-capped family, <!-- calkit value key=family.treated path=results/docs/wave-census.json -->2<!-- /calkit value --> of <!-- calkit value key=family.configs path=results/docs/wave-census.json -->4<!-- /calkit value --> are now treated, and they were worth <!-- calkit value key=family.collected_sypd_pct format="{:.2f}" path=results/docs/wave-census.json -->1.30<!-- /calkit value -->% of SYPD between them.
+The <!-- calkit value key=family.untreated path=results/docs/wave-census.json -->2<!-- /calkit value --> that remain are worth <!-- calkit value key=family.remaining_sypd_pct format="{:.3f}" path=results/docs/wave-census.json -->0.048<!-- /calkit value -->% of SYPD between them at the longwave's collected fraction, dominated by `non_orographic_gravity_wave_forcing`, which is not obviously worth the code.
+So the lever is close to exhausted and the two radiation solves were nearly all of it.
 
-The honest summary of the family is that it was worth about one and a half points of SYPD, that it is now collected, and that the census's lasting value is the <!-- calkit value key=vertical.loss_sypd_pct format="{:.2f}" path=results/docs/wave-census.json -->2.54<!-- /calkit value -->% sitting in the vertical scans and the statement that no amount of launch tuning will reach it.
+The census's lasting value is therefore not the shortwave port.
+It is the <!-- calkit value key=vertical.loss_sypd_pct format="{:.2f}" path=results/docs/wave-census.json -->2.54<!-- /calkit value -->% of SYPD sitting in the vertical scans, and the statement that no amount of launch tuning will reach it.
 
 ## What it costs
 
-The shortwave workspace is <!-- calkit value key=shortwave.default_workspace_gib format="{:.2f}" path=results/docs/wave-census.json -->0.0<!-- /calkit value --> GiB at the shipped default, on top of the longwave's, and both scale with `ncol * ngroups`.
+The shortwave workspace is <!-- calkit value key=shortwave.default_workspace_gib format="{:.2f}" path=results/docs/wave-census.json -->2.05<!-- /calkit value --> GiB at the shipped default, on top of the longwave's, and both scale with `ncol * ngroups`.
 At this resolution the AMIP run uses about 11 GiB of an 80 GiB card, so that is affordable; at ten times the columns it would not be, and the group count is the dial that trades it back.
 The split is not bit-for-bit, which is a real cost and not an accounting one: a 256-term `Float32` sum taken in N partials is a different summation order, so neither band's fluxes reproduce the serial path exactly.
