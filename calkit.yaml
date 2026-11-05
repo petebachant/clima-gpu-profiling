@@ -1465,6 +1465,60 @@ pipeline:
         - path: results/gpoint-wallclock.toml
           storage: git
 
+    sw-gpoint-sweep:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # Does the shortwave split pay what the longwave one did? The longwave
+      # solve was the first treated member of a family -- kernels at the
+      # 255-register cap whose grid is one resident wave, where the only lever
+      # left is to split the kernel so there are more blocks. The shortwave
+      # two-stream solve is its closest member: the same 96 blocks of 256
+      # threads, the same cap, the same independent g-point loop. So its saving
+      # is a prediction to test rather than a new question, and this stage is
+      # the test.
+      #
+      # Same method as gpoint-group-sweep, and the same reasons: one
+      # reservation for every group count, each point rebuilding only the
+      # shortwave group workspaces against one settled AMIP state, so the
+      # points are in-block comparisons rather than differences of runs. Wall
+      # clock is timed before the sweep so the sweep cannot perturb a timed
+      # step.
+      #
+      # It does NOT share the longwave stage's wall-clock file. The live solver
+      # now carries the longwave split, so this run's blocks are faster and the
+      # two runs' block times are not comparable; each sweep times its own so
+      # each gain is a ratio measured within one run.
+      #
+      # ClimaAtmos and ClimaCore sources are deliberately NOT inputs, for the
+      # reason the longwave stage gives: a change upstream of the radiation
+      # solve moves every point together and cannot change which group count
+      # suffices, and declaring them would re-run a GPU stage on every
+      # microphysics edit.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=110
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/measure-sw-gpoint-sweep.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      inputs:
+        - scripts/measure-sw-gpoint-sweep.jl
+        - scripts/run-julia-script.sh
+        - RRTMGP.jl-mod/src
+        - RRTMGP.jl-mod/ext
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      outputs:
+        - path: results/sw-gpoint-sweep.toml
+          storage: git
+        - path: results/sw-gpoint-wallclock.toml
+          storage: git
+
     fold-compile-cost:
       kind: shell-script
       environment: clima
