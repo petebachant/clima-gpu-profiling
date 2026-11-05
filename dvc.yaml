@@ -738,6 +738,51 @@ stages:
           persist: true
     desc: Automatically generated from the 'sw-gpoint-sweep' stage in
       calkit.yaml. Changes made here will be overwritten.
+  wave-census:
+    cmd: calkit xenv -n py --no-check -- python scripts/export-wave-census.py
+    deps:
+      - scripts/export-wave-census.py
+      - results/nsys/baseline.sqlite
+      - results/gpoint-sweep.toml
+      - .calkit/env-locks/py
+    outs:
+      - results/wave-census.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'wave-census' stage in calkit.yaml.
+      Changes made here will be overwritten.
+  gpoint-equivalence:
+    cmd: calkit scheduler batch --name gpoint-equivalence --environment clima
+      --dep scripts/check-gpoint-group-equivalence.jl --dep RRTMGP.jl-mod/src
+      --dep RRTMGP.jl-mod/ext --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      --dep .calkit/env-locks/clima --out results/gpoint-equivalence.toml
+      --option --gpus=1 --option --time=60 -- scripts/run-julia-script.sh
+      --project=ClimaCoupler.jl-mod/experiments/AMIP
+      scripts/check-gpoint-group-equivalence.jl --config_file
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+    deps:
+      - scripts/run-julia-script.sh
+      - scripts/check-gpoint-group-equivalence.jl
+      - RRTMGP.jl-mod/src
+      - RRTMGP.jl-mod/ext
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      - .calkit/env-locks/clima
+    outs:
+      - results/gpoint-equivalence.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/gpoint-equivalence.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'gpoint-equivalence' stage in
+      calkit.yaml. Changes made here will be overwritten.
   fold-compile-cost:
     cmd: calkit scheduler batch --name fold-compile-cost --environment clima
       --dep scripts/measure-fold-compile-cost.jl --dep
@@ -977,6 +1022,23 @@ stages:
           cache: false
           persist: false
     desc: Automatically generated from the 'val-fold-scope-doc/values' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  wave-census-doc/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/wave-census.md/values.py
+    deps:
+      - .calkit/markdown/docs/experiments/wave-census.md/values.py
+      - results/wave-census.json
+      - results/gpoint-groups.json
+      - results/docs/gpoint-group-count.json
+      - results/sw-gpoint-sweep.toml
+      - results/sw-gpoint-wallclock.toml
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/wave-census.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'wave-census-doc/values' stage in
       calkit.yaml. Changes made here will be overwritten.
   gpoint-group-count-doc/values:
     cmd: calkit xenv -n py --no-check -- python

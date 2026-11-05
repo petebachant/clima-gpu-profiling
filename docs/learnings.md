@@ -2561,9 +2561,25 @@ nothing, and 98 kernels were already at 100%. The number that matters is 86.
 Two corrections to §4aa fall out, and the second is a correction to a
 correction:
 
-  * The kernels at the cap are named now: two `set_microphysics_tendency_cache`
-    kernels and both fused radiation kernels, all at 255 registers and 12.5%
-    occupancy, with `non_orographic_gravity_wave_forcing` beside them.
+  * The kernels at the cap are named now: both fused radiation kernels and
+    `non_orographic_gravity_wave_forcing`.
+
+    **Corrected 2026-11-04.** This bullet used to name two
+    `set_microphysics_tendency_cache` kernels among them and put five kernels
+    at the cap at 12.5% occupancy. That was wrong on its own source: the
+    `results/ncu/pointwise-details.csv` this section cites records those cache
+    kernels at 118 registers, and the live nsys profile records the two the
+    model actually launches at 129 and 117, holding 18.8% and 25.0% of warp
+    capacity rather than 12.5%. Only the two radiation solves and the
+    gravity-wave forcing are at 255. `at_register_cap` in
+    `results/pointwise-registers.json` said three all along, against the five
+    in this prose.
+
+    The error mattered because of what the paragraph below drew from it. It
+    excused the largest two kernels in the profile from register work on the
+    grounds that a kernel at the cap spends any freed register on live state --
+    and they are not at the cap. `docs/experiments/wave-census.md` has the
+    current census.
   * The 255 figure from the compile-only probe was **right**, and the frozen
     `results/kernel-resources.csv` showing 32-128 registers for that cache was
     the stale thing. I had used the stale table to call my own probe an artifact
@@ -2577,10 +2593,18 @@ correction:
 
 What it means for the Val idea: payload folding is worth testing on the
 addressable kernels BELOW the cap, where a saving can still convert to
-occupancy. For the five AT the cap -- the ones worth the most -- the live state
-has to come down instead, which is what splitting a kernel does. §4r and the
-comments in `microphysics_cache.jl` record that hoisting invariants out of the
-quadrature was already worth doing twice.
+occupancy. For the ones AT the cap the live state has to come down instead,
+which is what splitting a kernel does. §4r and the comments in
+`microphysics_cache.jl` record that hoisting invariants out of the quadrature
+was already worth doing twice.
+
+And the kernels worth the most are **below** the cap, not at it, which is the
+opposite of what this section said until 2026-11-04. The two
+`set_microphysics_tendency_cache` kernels and `update_implicit_1m_tendency` are
+the three largest in the profile and sit at register counts that still cap
+their occupancy, so a register saving there can convert. That is where the next
+chunk is, and `docs/experiments/wave-census.md` prices it against the
+alternatives rather than ranking it by register count alone.
 
 ### 4aa. Folding the microphysics parameters is huge in isolation and nothing in place
 

@@ -480,6 +480,44 @@ questions:
           measured saving to a measured wall clock rather than a difference of
           two runs, so the denominator's relative error scales it instead of
           adding to it, and the uncertainty is a few thousandths of a point.
+  - question: >-
+      Was the g-point split a one-off, or is there a family of kernels it applies to?
+    answer: >-
+      A family of {family_configs}, found by censusing every kernel's launch geometry rather than guessed, and it is now close to exhausted: the two radiation solves were nearly all of it, worth {lw_sypd_pct:.3f}% and {sw_sypd_pct:.3f}% of SYPD measured on real coupler steps.
+      The larger geometric loss left in the profile is {vertical_sypd_pct:.2f}% of SYPD sitting in vertical scans, where the serial axis is the recursion itself, so no launch-geometry change reaches it and collecting it would need a parallel scan in ClimaCore.
+    evidence:
+      - kind: document
+        path: docs/experiments/wave-census.md
+        section: "The largest geometric loss is in kernels this lever cannot reach"
+        explanation: >-
+          The census, the conversion to SYPD and the reasoning for why the
+          vertical scans are out of reach of this lever.
+      - kind: result
+        path: results/wave-census.json
+        values:
+          family_configs: at_register_cap.configs
+        explanation: >-
+          The census itself, derived from the baseline profile's launch
+          geometry. It is name-agnostic: it classifies whatever the profile
+          holds, so an upstream rename relabels a row rather than breaking the
+          stage.
+      - kind: result
+        path: results/docs/wave-census.json
+        values:
+          lw_sypd_pct: conversion.lw_sypd_pct
+          sw_sypd_pct: prediction.sw_measured_sypd_pct
+          vertical_sypd_pct: vertical.loss_sypd_pct
+        explanation: >-
+          The derived file rather than the raw census, because the SYPD figures
+          are the census's device times converted through an anchor measured on
+          real coupler steps, and that anchor lives in the longwave document's
+          values.
+      - kind: result
+        path: results/gpoint-equivalence.toml
+        explanation: >-
+          That the split did not change the answer in either band, checked at
+          group counts that divide neither g-point count so the ragged final
+          stride is exercised.
 
 tables:
   - path: results/top-kernels.csv
@@ -1013,6 +1051,23 @@ pipeline:
       # them across two documents would duplicate the device budget both rest
       # on. Its values stage is also doing real work rather than copying: two of
       # its inputs are TOML, which a value marker cannot read.
+    wave-census-doc:
+      kind: markdown
+      target_path: docs/experiments/wave-census.md
+      environment: py
+      # Live on main rather than frozen. The template's reason for freezing an
+      # experiment document is that a shared nsys path holds whichever
+      # experiment ran last, so a live document would be regenerated against a
+      # different run. This one reads only committed results files -- the
+      # census, the two g-point sweeps and the longwave document's derived
+      # values -- and never the profile itself, so there is nothing for a later
+      # pass to clobber.
+      #
+      # Its values stage converts TOML to JSON because value markers read JSON
+      # only, and derives the device-time-to-SYPD conversion the prose argues
+      # from. That conversion is anchored on the one case where both ends are
+      # measured, so it cancels the profiling window's length rather than
+      # needing it declared.
     gpoint-group-count-doc:
       kind: markdown
       target_path: docs/experiments/gpoint-group-count.md
@@ -1517,6 +1572,73 @@ pipeline:
         - path: results/sw-gpoint-sweep.toml
           storage: git
         - path: results/sw-gpoint-wallclock.toml
+          storage: git
+
+    wave-census:
+      kind: python-script
+      environment: py
+      script_path: scripts/export-wave-census.py
+      # Which kernels cannot fill this device, and which of them splitting can
+      # help. The longwave g-point split came out of one observation about one
+      # kernel's launch geometry; this asks the same question of every kernel in
+      # the profile so the next candidate is chosen from a measurement.
+      #
+      # It reads the baseline profile, which is transient -- results/nsys holds
+      # whichever experiment profiled last -- and commits the small derived
+      # numbers as their own results file. Nothing downstream reads the sqlite,
+      # so regenerating a profile cannot destroy a census and asking for a
+      # census cannot regenerate a profile. Run it with
+      # `calkit dvc repro --single-item wave-census` for the second half of that
+      # to hold: naming it to `calkit run` would offer to rebuild baseline-nsys.
+      #
+      # Column count comes from the g-point sweep's output rather than from a
+      # constant here, because the ceiling this census is about is a ratio
+      # between the column count and the device's resident threads.
+      inputs:
+        - scripts/export-wave-census.py
+        - results/nsys/baseline.sqlite
+        - results/gpoint-sweep.toml
+      outputs:
+        - path: results/wave-census.json
+          storage: git
+
+    gpoint-equivalence:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # Does splitting the g-point loop change the answer? The sweeps measure
+      # what the split is worth; this checks that it is the same solve, for both
+      # bands, and it is the only place that does so from the pipeline. The test
+      # runs quoted in CliMA/RRTMGP.jl#637 were taken by hand.
+      #
+      # Separate from the sweeps because it needs no timing, so it can afford
+      # group counts a sweep cannot: counts that divide NEITHER g-point count.
+      # Both sweeps use 4, 8, 16 and 32 against 256 longwave and 224 shortwave
+      # g-points, which divide exactly, so every group gets an equal stride and
+      # the ragged final stride never runs -- which is exactly where a dropped
+      # or double-counted g-point would hide.
+      #
+      # It errors rather than reporting, so a regression fails the pipeline.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=60
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/check-gpoint-group-equivalence.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      inputs:
+        - scripts/check-gpoint-group-equivalence.jl
+        - scripts/run-julia-script.sh
+        - RRTMGP.jl-mod/src
+        - RRTMGP.jl-mod/ext
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      outputs:
+        - path: results/gpoint-equivalence.toml
           storage: git
 
     fold-compile-cost:
