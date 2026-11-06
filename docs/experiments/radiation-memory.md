@@ -18,7 +18,8 @@ The mod arm's g-point split raises that to 1,536 blocks, so it already fixed the
 
 ## What is profiled
 
-Four launches per arm, which is every radiation call in the 120-step window, filtered by kernel name so ncu replays nothing else.
+Four launches per arm, filtered by kernel name so ncu replays nothing else.
+The filter is the bare substring `2stream_solve` rather than an anchored pattern: it is unique to these two kernels in the whole inventory, it matches the baseline's `both_skies` and the mod arm's `grouped` names alike, and a filter that matches nothing costs a reservation and still reports success.
 The stages write under `results/experiments/radiation-memory/` rather than `results/ncu/`, so the shared ncu reports -- which are frozen and describe the microphysics kernels at a different revision -- cannot be overwritten by this experiment or overwrite it.
 
 ```sh calkit stage name=baseline-ncu environment=clima outputs=[results/experiments/radiation-memory/baseline.ncu-rep, {path: results/experiments/radiation-memory/baseline-details.csv, storage: git}, {path: results/experiments/radiation-memory/baseline-raw.csv, storage: git}] inputs=[scripts/run-ncu.sh, scripts/run.jl, ClimaCoupler.jl/src, ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml, ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml, ClimaCore.jl/src, ClimaCore.jl/ext, ClimaAtmos.jl/src, RRTMGP.jl/src] scheduler={options: [--gpus=1, --time=180]}
@@ -26,7 +27,7 @@ The stages write under `results/experiments/radiation-memory/` rather than `resu
 set -euo pipefail
 P=results/experiments/radiation-memory/baseline
 bash scripts/run-ncu.sh "$P" \
-  --kernel-name "regex:rte_.*_2stream_solve_.*" \
+  --kernel-name "regex:2stream_solve" \
   --project ClimaCoupler.jl/experiments/AMIP \
   --config ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml \
   --launch-count 4
@@ -41,7 +42,7 @@ NCU=$(command -v ncu || echo /usr/local/cuda/bin/ncu)
 set -euo pipefail
 P=results/experiments/radiation-memory/mod
 bash scripts/run-ncu.sh "$P" \
-  --kernel-name "regex:rte_.*_2stream_solve_.*" \
+  --kernel-name "regex:2stream_solve" \
   --project ClimaCoupler.jl-mod/experiments/AMIP \
   --config ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml \
   --launch-count 4
