@@ -188,6 +188,7 @@ def derive(k):
     glob = k.get("global_ld_sectors", 0) + k.get("global_st_sectors", 0)
     total = local + glob
     ld = ratio("global_ld_sectors", "global_ld_requests")
+    total_stall = sum(k.get(f"stall_{n}", 0) or 0 for n in STALLS)
     return {
         "global_ld_sectors_per_request": ld,
         "global_st_sectors_per_request": ratio(
@@ -204,6 +205,20 @@ def derive(k):
         # it, so it reads 1.3x where the per-instruction ideal says 2.3x. Use
         # `coalescing.amplification_x` from the source page instead.
         "ld_waste_x_warp_average_diluted": round(ld / 4.0, 2) if ld else None,
+        # Share of the stall reasons collected here, NOT of all stall cycles:
+        # the `STALLS` list is a subset, so this says which of the measured
+        # reasons dominates and must not be quoted as a fraction of runtime.
+        #
+        # It is also the only way to connect the sector waste to time, because
+        # per-instruction stall sampling cannot: a long-scoreboard stall is
+        # charged to the instruction that CONSUMES the loaded register, not to
+        # the load, so attributing samples to the loads finds ~0% on them and
+        # ~98% on instructions with no memory access at all. That is an artifact
+        # of where the sample lands, not evidence the loads are free.
+        "stall_long_scoreboard_share_of_measured_pct": (
+            round(100.0 * k["stall_long_scoreboard"] / total_stall, 1)
+            if total_stall else None
+        ),
         "occupancy_shortfall_pts": (
             round(k["theoretical_occupancy_pct"] - k["achieved_occupancy_pct"], 2)
             if k.get("theoretical_occupancy_pct") and k.get("achieved_occupancy_pct")

@@ -48,7 +48,14 @@ That matters for the fix, because it means the cost of the gather is not bytes m
 
 **So the headline figure needs qualifying rather than repeating.** DRAM throughput is only <!-- calkit value key=baseline.headline.dram_pct_peak path=results/experiments/radiation-memory/stats.json -->10.49<!-- /calkit value -->% of peak and the compute pipes are at <!-- calkit value key=baseline.headline.compute_pct_peak path=results/experiments/radiation-memory/stats.json -->21.78<!-- /calkit value -->%, so nothing in this kernel is bandwidth-saturated and "the memory traffic is insane" is not a bandwidth statement.
 What is insane is the *sector count*: the solvers fetch <!-- calkit value key=baseline.headline.worst_amplification_x path=results/experiments/radiation-memory/stats.json -->2.34<!-- /calkit value -->x more sectors than the same bytes would need if they were packed, which is <!-- calkit value key=baseline.headline.worst_excessive_pct path=results/experiments/radiation-memory/stats.json -->57.2<!-- /calkit value -->% of all sector traffic thrown away.
-Each uncoalesced load serializes into one L1 wavefront per sector, so that excess is issue slots and load-store cycles rather than bandwidth -- and at eight resident warps there is no other warp ready to issue while it drains, which is why a latency cost shows up as elapsed time here and would not at full occupancy.
+Each uncoalesced load serializes into one L1 wavefront per sector, so the excess is load-store work and exposed latency rather than bandwidth, and memory dependency is indeed the largest stall reason measured, at <!-- calkit value key=baseline.headline.worst_long_scoreboard_share_of_measured_pct path=results/experiments/radiation-memory/stats.json -->60.3<!-- /calkit value -->% of the stall cycles in this counter set.
+But the honest consequence of nothing being saturated is that removing the excess frees no bottlenecked resource, so the time saved will be *less* than the sector count falls -- a 10%-utilized L1 does not reward a 10% cut in wavefronts with 10% of the runtime.
+The binding constraint is the one that was free to find: 255 registers, one block per SM, eight resident warps, and <!-- calkit value key=baseline.headline.grid_size path=results/experiments/radiation-memory/stats.json -->96<!-- /calkit value --> blocks on 108 multiprocessors, so there is nothing to switch to while a load is outstanding.
+Coalescing is worth fixing where it is cheap, and it is a second-order lever behind occupancy, not an alternative to it.
+
+**What cannot be concluded, and the attempt is recorded so it is not retried.** The obvious way to price the gather would be to attribute stall samples to the offending loads, and it does not work: a long-scoreboard stall is charged to the instruction that *consumes* the loaded register, not to the load that fetched it.
+Doing it anyway puts 98.1% of the long-scoreboard samples on instructions with no memory access at all and 0.0% on the <!-- calkit value key=baseline.headline.lookup_gather_instructions path=results/experiments/radiation-memory/stats.json -->52<!-- /calkit value --> gather loads, which reads as though the gather were free and is purely an artifact of where the sample lands.
+The sector counts are therefore the evidence for wasted work and the stall shares are the evidence that memory dependency is the limiter, but this profile does not contain a measurement of how much time the gather specifically costs.
 
 **The instrument was wrong, and would have scored the prediction as a near-miss.** The prediction named sectors per request, which comes out at <!-- calkit value key=baseline.headline.worst_ld_sectors_per_request path=results/experiments/radiation-memory/stats.json -->5.38<!-- /calkit value --> against an ideal of 4 -- a 1.3x waste, small enough to read as a refutation.
 It is diluted: <!-- calkit value key=baseline.headline.coalesced_instructions path=results/experiments/radiation-memory/stats.json -->404<!-- /calkit value --> instructions in the same kernel are perfectly coalesced and contribute the large majority of all requests, so they pull a warp-average toward 1.0 no matter how bad the minority is.
@@ -211,6 +218,10 @@ for a, data in out.items():
         "dram_pct_peak": round(max(k["dram_pct_peak"] for k in both), 2),
         "compute_pct_peak": round(max(k["compute_pct_peak"] for k in both), 2),
         "grid_size": max(k["grid_size"] for k in both),
+        "worst_long_scoreboard_share_of_measured_pct": max(
+            k["derived"]["stall_long_scoreboard_share_of_measured_pct"]
+            for k in both
+        ),
     }
 
 json.dump(out, open(f"{D}/stats.json", "w"), indent=2, sort_keys=True)
