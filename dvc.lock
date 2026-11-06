@@ -4492,3 +4492,86 @@ stages:
       hash: md5
       md5: 51fa9b9d26ce22ade22a1d186466e152
       size: 5639
+  radiation-memory/baseline-ncu:
+    cmd: calkit scheduler batch --name radiation-memory/baseline-ncu 
+      --environment clima --dep scripts/run-ncu.sh --dep scripts/run.jl --dep 
+      ClimaCoupler.jl/src --dep 
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml 
+      --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaCore.jl/src --dep ClimaCore.jl/ext --dep ClimaAtmos.jl/src --dep 
+      RRTMGP.jl/src --dep .calkit/env-locks/clima --out 
+      results/experiments/radiation-memory/baseline.ncu-rep --out 
+      results/experiments/radiation-memory/baseline-details.csv --out 
+      results/experiments/radiation-memory/baseline-raw.csv --option --gpus=1 
+      --option --time=180 -- 
+      .calkit/markdown/docs/experiments/radiation-memory.md/baseline-ncu.sh
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: 
+        .calkit/markdown/docs/experiments/radiation-memory.md/baseline-ncu.sh
+      hash: md5
+      md5: ad5e5e0602828863039d5dc359596825
+      size: 571
+    - path: ClimaAtmos.jl/src
+      hash: md5
+      md5: 571d42481a2ff73a85821bada3da1038.dir
+      size: 2485051
+      nfiles: 162
+    - path: ClimaCore.jl/ext
+      hash: md5
+      md5: 28d7f20d362f461b2c389ffa0e5b7493.dir
+      size: 224023
+      nfiles: 26
+    - path: ClimaCore.jl/src
+      hash: md5
+      md5: ec0d4ed69dc1baaf23247802b1776c65.dir
+      size: 1476629
+      nfiles: 105
+    - path: 
+        ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 68480f6457cea178b9c39d5826001c61
+      size: 827
+    - path: ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: c6499ea93ee8ecf472ff08d21c113e68
+      size: 125178
+    - path: ClimaCoupler.jl/src
+      hash: md5
+      md5: 644e59914ebb4752f62f1b1dfc7605d9.dir
+      size: 318411
+      nfiles: 22
+    - path: RRTMGP.jl/src
+      hash: md5
+      md5: 2bfdef50530642e10b4a46c2a05e4887.dir
+      size: 333505
+      nfiles: 43
+    - path: scripts/run-ncu.sh
+      hash: md5
+      md5: c867521e040a5d380de0dcfdf1cd883c
+      size: 3817
+    - path: scripts/run.jl
+      hash: md5
+      md5: 4f2b60cda5845786541c8cb3831dd4ba
+      size: 3877
+    outs:
+    - path: .calkit/scheduler/logs/radiation-memory/baseline-ncu.out
+      hash: md5
+      md5: c88ad35573159fc8cf947c081ccbcb27
+      size: 56690
+    - path: results/experiments/radiation-memory/baseline-details.csv
+      hash: md5
+      md5: 35819415f3e41ac2aa6f65fc4f24286f
+      size: 856329
+    - path: results/experiments/radiation-memory/baseline-raw.csv
+      hash: md5
+      md5: 1f03125845434d388be0d921b4394784
+      size: 172257
+    - path: results/experiments/radiation-memory/baseline.ncu-rep
+      hash: md5
+      md5: e2238a2614cc45a921a5e19f94edf9b0
+      size: 21146984
