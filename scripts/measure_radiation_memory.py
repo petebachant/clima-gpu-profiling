@@ -74,6 +74,19 @@ DETAILS = {
 
 # A metric that disappears upstream would otherwise drop a field silently, and
 # a document citing a dropped field renders nothing rather than failing.
+# Columns from the source page, which is the only place a per-instruction ideal
+# appears. A warp-averaged sectors-per-request is diluted by every uniform load
+# that needs one sector, so it understates the waste; ncu compares each
+# instruction against the sectors its own bytes would need. Note its
+# `derived__..._excessive` column loses scale in CSV export -- it prints 18 for
+# 17.7 billion -- so excess is computed here as actual minus ideal.
+SOURCE = {
+    "sectors": "L2 Theoretical Sectors Global",
+    "ideal": "L2 Theoretical Sectors Global Ideal",
+    "size_bits": "Access Size",
+    "op": "Access Operation",
+}
+
 REQUIRED = ("dram_read", "global_ld_sectors", "global_ld_requests",
             "local_ld_sectors", "achieved_occupancy_pct", "duration")
 
@@ -186,9 +199,11 @@ def derive(k):
         "local_sectors": round(local),
         "global_sectors": round(glob),
         "local_share_pct": round(100.0 * local / total, 2) if total else None,
-        # Sectors fetched per sector the warp would need if the access were
-        # contiguous. 1.0 is perfect; 8.0 means eight times the traffic.
-        "ld_coalescing_waste_x": round(ld / 4.0, 2) if ld else None,
+        # The warp-average, kept only because it is what a reader computes
+        # first and it is misleading: uniform loads needing one sector dilute
+        # it, so it reads 1.3x where the per-instruction ideal says 2.3x. Use
+        # `coalescing.amplification_x` from the source page instead.
+        "ld_waste_x_warp_average_diluted": round(ld / 4.0, 2) if ld else None,
         "occupancy_shortfall_pts": (
             round(k["theoretical_occupancy_pct"] - k["achieved_occupancy_pct"], 2)
             if k.get("theoretical_occupancy_pct") and k.get("achieved_occupancy_pct")
@@ -197,18 +212,90 @@ def derive(k):
     }
 
 
-def arm(raw_path, details_path):
+def arm(raw_path, details_path, source_path=None):
     """One arm's radiation kernels, counters and rules merged."""
     raw = load_raw(raw_path)
     det = load_details(details_path)
+    src = load_source(source_path) if source_path else {}
     out = {"units": raw["units"], "missing_metrics": raw["missing"], "kernels": {}}
     for name, k in raw["kernels"].items():
         merged = dict(k)
         merged.update({a: b for a, b in det.get(name, {}).items() if a != "rules"})
         merged["derived"] = derive(merged)
         merged["rules"] = det.get(name, {}).get("rules", [])
+        if name in src:
+            merged["coalescing"] = src[name]
         out["kernels"][name] = {
             a: (round(b, 4) if isinstance(b, float) else b)
             for a, b in merged.items()
+        }
+    return out
+
+
+def classify(size_bits, op, amp):
+    """Name the access pattern a (width, amplification) pair describes.
+
+    The widths are what separates the causes. A 4-byte load at 8x has every
+    lane in its own 32-byte sector, which is the gas-optics lookup gather: the
+    table index depends on the lane's own column, so the addresses are
+    unrelated. A 1-byte access at 32x is a `Bool` mask stored with the level
+    index fastest, so consecutive lanes sit a column apart -- the same
+    transposition the flux buffers already avoid.
+    """
+    if amp <= 1.05:
+        return "coalesced"
+    if size_bits == 8:
+        return "mask_byte_strided"
+    if size_bits == 32 and amp >= 4.0:
+        return "lookup_gather"
+    return "partially_coalesced"
+
+
+def load_source(path):
+    """Per-kernel sector totals and the excess grouped by access pattern.
+
+    The page repeats a kernel once per profiled launch and reports absolute
+    counts, so shares and ratios are quoted rather than totals: both are
+    independent of how many launches were profiled.
+    """
+    kernels = collections.defaultdict(list)
+    cur, hdr = None, None
+    with open(path, newline="") as f:
+        for row in csv.reader(f):
+            if not row:
+                continue
+            if row[0] == "Kernel Name":
+                cur, hdr = short(row[1]), None
+            elif row[0] == "Address":
+                hdr = row
+            elif hdr and cur:
+                kernels[cur].append(dict(zip(hdr, row)))
+
+    out = {}
+    for name, rows in kernels.items():
+        groups = collections.defaultdict(lambda: {"instructions": 0, "sectors": 0,
+                                                  "ideal": 0, "excessive": 0})
+        tot = ide = 0
+        for r in rows:
+            a, i = num(r[SOURCE["sectors"]]), num(r[SOURCE["ideal"]])
+            if not a:
+                continue
+            tot, ide = tot + a, ide + i
+            amp = a / i if i else 0.0
+            g = groups[classify(num(r[SOURCE["size_bits"]]), r[SOURCE["op"]], amp)]
+            g["instructions"] += 1
+            g["sectors"] += a
+            g["ideal"] += i
+            g["excessive"] += a - i
+        excess = tot - ide
+        for g in groups.values():
+            g["amplification_x"] = round(g["sectors"] / g["ideal"], 2) if g["ideal"] else None
+            g["pct_of_excess"] = round(100.0 * g["excessive"] / excess, 1) if excess else None
+            for key in ("sectors", "ideal", "excessive"):
+                g[key] = round(g[key])
+        out[name] = {
+            "amplification_x": round(tot / ide, 2) if ide else None,
+            "excessive_pct": round(100.0 * excess / tot, 1) if tot else None,
+            "groups": dict(groups),
         }
     return out

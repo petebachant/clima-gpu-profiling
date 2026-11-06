@@ -34,6 +34,32 @@ It also predicts something about the arms.
 The mod arm's g-point split gives each block a sixteenth of the spectrum, so the table footprint a block touches shrinks by that factor, and the split's 9.6% device saving should show up here as **a higher L2 hit rate in the mod arm at the same sectors per request**.
 If instead the mod arm's sectors per request fall, the split is doing something other than what this reasoning says, and the explanation above is wrong.
 
+## How the prediction scored
+
+The mechanism was predicted correctly and the statistic chosen to test it was the wrong instrument, and those are worth separating because only the second one is a lesson.
+
+**The gather is the cause, as predicted.** Of every excessive sector in the longwave solver, <!-- calkit value key=baseline.headline.lookup_gather_pct_of_excess path=results/experiments/radiation-memory/stats.json -->77.9<!-- /calkit value -->% comes from a single group of <!-- calkit value key=baseline.headline.lookup_gather_instructions path=results/experiments/radiation-memory/stats.json -->52<!-- /calkit value --> four-byte loads running at <!-- calkit value key=baseline.headline.lookup_gather_amplification_x path=results/experiments/radiation-memory/stats.json -->8.0<!-- /calkit value -->x, and eight-fold amplification on a four-byte load is the exact signature of a gather: 32 lanes asking for 128 contiguous bytes would need four sectors, and these fetch thirty-two, one per lane.
+Their SASS is `LDG.E Rn, [Rm.64+-0x4]` -- the address is a full 64-bit per-thread register rather than a base plus a thread index, which is what an index computed from the lane's own column state looks like after compilation.
+The shortwave solver agrees to a tenth of a point on every group, which is what one algorithm on different spectral data should do and is the main reason to believe the split is real rather than an artifact of how the rows were bucketed.
+
+**The traffic is cached, not streamed, also as predicted.** The L1 hit rate is at least <!-- calkit value key=baseline.headline.worst_l1_hit_pct path=results/experiments/radiation-memory/stats.json -->82.5992<!-- /calkit value -->% and the L2 hit rate at least <!-- calkit value key=baseline.headline.worst_l2_hit_pct path=results/experiments/radiation-memory/stats.json -->57.5059<!-- /calkit value -->%, so the table the warp gathers from is resident rather than being re-fetched from memory.
+The prediction said "high rather than low" about L2 specifically, and <!-- calkit value key=baseline.headline.worst_l2_hit_pct path=results/experiments/radiation-memory/stats.json -->57.5059<!-- /calkit value -->% is middling rather than high; what is high is L1, which absorbs the gather one level earlier than the reasoning expected.
+That matters for the fix, because it means the cost of the gather is not bytes moved from DRAM.
+
+**So the headline figure needs qualifying rather than repeating.** DRAM throughput is only <!-- calkit value key=baseline.headline.dram_pct_peak path=results/experiments/radiation-memory/stats.json -->10.49<!-- /calkit value -->% of peak and the compute pipes are at <!-- calkit value key=baseline.headline.compute_pct_peak path=results/experiments/radiation-memory/stats.json -->21.78<!-- /calkit value -->%, so nothing in this kernel is bandwidth-saturated and "the memory traffic is insane" is not a bandwidth statement.
+What is insane is the *sector count*: the solvers fetch <!-- calkit value key=baseline.headline.worst_amplification_x path=results/experiments/radiation-memory/stats.json -->2.34<!-- /calkit value -->x more sectors than the same bytes would need if they were packed, which is <!-- calkit value key=baseline.headline.worst_excessive_pct path=results/experiments/radiation-memory/stats.json -->57.2<!-- /calkit value -->% of all sector traffic thrown away.
+Each uncoalesced load serializes into one L1 wavefront per sector, so that excess is issue slots and load-store cycles rather than bandwidth -- and at eight resident warps there is no other warp ready to issue while it drains, which is why a latency cost shows up as elapsed time here and would not at full occupancy.
+
+**The instrument was wrong, and would have scored the prediction as a near-miss.** The prediction named sectors per request, which comes out at <!-- calkit value key=baseline.headline.worst_ld_sectors_per_request path=results/experiments/radiation-memory/stats.json -->5.38<!-- /calkit value --> against an ideal of 4 -- a 1.3x waste, small enough to read as a refutation.
+It is diluted: <!-- calkit value key=baseline.headline.coalesced_instructions path=results/experiments/radiation-memory/stats.json -->404<!-- /calkit value --> instructions in the same kernel are perfectly coalesced and contribute the large majority of all requests, so they pull a warp-average toward 1.0 no matter how bad the minority is.
+The per-instruction comparison ncu's own uncoalesced-access rule uses -- actual sectors against the sectors that instruction's own bytes would need -- is what resolves 1.3x into <!-- calkit value key=baseline.headline.worst_amplification_x path=results/experiments/radiation-memory/stats.json -->2.34<!-- /calkit value -->x overall and <!-- calkit value key=baseline.headline.lookup_gather_amplification_x path=results/experiments/radiation-memory/stats.json -->8.0<!-- /calkit value -->x in the group that matters.
+A prediction has to name a statistic capable of separating the hypotheses, and an average over a population containing the answer and hundreds of non-answers is not one; `ld_waste_x_warp_average_diluted` is now named for what it is so the next reader does not quote it.
+
+**One finding was not predicted, and contradicts something the section above asserts.** The section says transposition is ruled out because upstream has already done the coalescing pass, and that is true of every array it names.
+It is not true of the three `Bool` masks: <!-- calkit value key=baseline.headline.mask_strided_pct_of_excess path=results/experiments/radiation-memory/stats.json -->11.1<!-- /calkit value -->% of the excess comes from <!-- calkit value key=baseline.headline.mask_strided_instructions path=results/experiments/radiation-memory/stats.json -->14<!-- /calkit value --> one-byte accesses at <!-- calkit value key=baseline.headline.mask_strided_amplification_x path=results/experiments/radiation-memory/stats.json -->32.0<!-- /calkit value -->x, which is a perfectly strided access, not a gather.
+Thirty-two lanes reading one byte each would need a single sector and these need thirty-two, because `cld_mask_lw`, `cld_mask_sw` and `aero_mask` are allocated `(nlay, ncol)` and read through `view(mask, :, gcol)`, so consecutive lanes sit `nlay` bytes apart.
+The reason the coalescing pass missed them is that they are not allocated in RRTMGP at all -- they are allocated in `ClimaAtmos.jl/src/parameterized_tendencies/radiation/RRTMGPInterface.jl` as `DA{Bool}(undef, nlay, ncol)` and passed in, so `_coalesced_2d` never saw them and reading only RRTMGP could not have found it.
+
 ## What is profiled
 
 Four launches per arm, filtered by kernel name so ncu replays nothing else.
@@ -70,21 +96,40 @@ NCU=$(command -v ncu || echo /usr/local/cuda/bin/ncu)
 
 ## Analysis
 
-```python calkit stage name=analyze environment=py outputs=[{path: results/experiments/radiation-memory/stats.json, storage: git}] inputs=[scripts/measure_radiation_memory.py, results/experiments/radiation-memory/baseline-raw.csv, results/experiments/radiation-memory/baseline-details.csv, results/experiments/radiation-memory/mod-raw.csv, results/experiments/radiation-memory/mod-details.csv]
+```python calkit stage name=analyze environment=py outputs=[{path: results/experiments/radiation-memory/stats.json, storage: git}] inputs=[scripts/measure_radiation_memory.py, results/experiments/radiation-memory/baseline-raw.csv, results/experiments/radiation-memory/baseline-details.csv, results/experiments/radiation-memory/baseline.ncu-rep, results/experiments/radiation-memory/mod-raw.csv, results/experiments/radiation-memory/mod-details.csv, results/experiments/radiation-memory/mod.ncu-rep]
 import json
+import os
+import shutil
+import subprocess
 import sys
+import tempfile
 
 sys.path.insert(0, "scripts")
 from measure_radiation_memory import arm
 
 D = "results/experiments/radiation-memory"
+NCU = shutil.which("ncu") or "/usr/local/cuda/bin/ncu"
+# The source page is exported here rather than in the profiling stages because
+# it is a read of a report file, not a measurement: it needs no GPU and no
+# model run, so deriving it late costs nothing and keeps the two ncu stages
+# from going stale over an analysis change. It stays an intermediate -- it is
+# tens of megabytes of per-instruction rows, and what survives into Git is the
+# aggregate in `stats.json`.
+tmp = tempfile.mkdtemp()
 out = {}
 for a in ("baseline", "mod"):
-    out[a] = arm(f"{D}/{a}-raw.csv", f"{D}/{a}-details.csv")
+    src = os.path.join(tmp, f"{a}-source.csv")
+    with open(src, "w") as f:
+        subprocess.run([NCU, "--csv", "-i", f"{D}/{a}.ncu-rep", "--page", "source"],
+                       stdout=f, stderr=subprocess.DEVNULL, check=True)
+    out[a] = arm(f"{D}/{a}-raw.csv", f"{D}/{a}-details.csv", src)
     assert not out[a]["missing_metrics"], (
         f"{a}: ncu did not report {out[a]['missing_metrics']}"
     )
     assert out[a]["kernels"], f"{a}: the kernel filter matched nothing"
+    assert all("coalescing" in k for k in out[a]["kernels"].values()), (
+        f"{a}: the source page did not attach to every kernel"
+    )
 
 # Headline per arm: the longwave and shortwave solvers, summed, since they are
 # the same code on different spectral data and a reader cares about radiation.
@@ -118,6 +163,54 @@ for a, data in out.items():
         "worst_long_scoreboard_stall": max(
             k["stall_long_scoreboard"] for k in both
         ),
+        # The per-instruction figures. `amplification_x` is sectors fetched per
+        # sector the same bytes would need packed, so 1.0 is perfect; the two
+        # group shares say which access pattern the excess is in.
+        "worst_amplification_x": max(
+            k["coalescing"]["amplification_x"] for k in both
+        ),
+        "worst_excessive_pct": max(
+            k["coalescing"]["excessive_pct"] for k in both
+        ),
+        "lookup_gather_pct_of_excess": max(
+            k["coalescing"]["groups"]["lookup_gather"]["pct_of_excess"]
+            for k in both
+        ),
+        "lookup_gather_amplification_x": max(
+            k["coalescing"]["groups"]["lookup_gather"]["amplification_x"]
+            for k in both
+        ),
+        "mask_strided_pct_of_excess": max(
+            k["coalescing"]["groups"]["mask_byte_strided"]["pct_of_excess"]
+            for k in both
+        ),
+        "mask_strided_amplification_x": max(
+            k["coalescing"]["groups"]["mask_byte_strided"]["amplification_x"]
+            for k in both
+        ),
+        "partially_coalesced_pct_of_excess": max(
+            k["coalescing"]["groups"]["partially_coalesced"]["pct_of_excess"]
+            for k in both
+        ),
+        # Instruction counts, because the shares above are concentrated in very
+        # few instructions and that is what makes a fix tractable.
+        "lookup_gather_instructions": max(
+            k["coalescing"]["groups"]["lookup_gather"]["instructions"]
+            for k in both
+        ),
+        "mask_strided_instructions": max(
+            k["coalescing"]["groups"]["mask_byte_strided"]["instructions"]
+            for k in both
+        ),
+        "coalesced_instructions": max(
+            k["coalescing"]["groups"]["coalesced"]["instructions"] for k in both
+        ),
+        # The cache and bandwidth readings the gather hypothesis predicted.
+        "worst_l1_hit_pct": min(k["l1_hit_pct"] for k in both),
+        "worst_l2_hit_pct": min(k["l2_hit_pct"] for k in both),
+        "dram_pct_peak": round(max(k["dram_pct_peak"] for k in both), 2),
+        "compute_pct_peak": round(max(k["compute_pct_peak"] for k in both), 2),
+        "grid_size": max(k["grid_size"] for k in both),
     }
 
 json.dump(out, open(f"{D}/stats.json", "w"), indent=2, sort_keys=True)
@@ -127,6 +220,12 @@ print(f"baseline radiation: {h['ms_per_call']} ms/call, {h['registers']} regs, "
 print(f"  worst sectors/request {h['worst_ld_sectors_per_request']}, "
       f"local share {h['worst_local_share_pct']}%, "
       f"spill overhead {h['worst_spill_overhead_pct']}%")
+print(f"  {h['worst_amplification_x']}x sectors vs ideal "
+      f"({h['worst_excessive_pct']}% excessive): "
+      f"{h['lookup_gather_pct_of_excess']}% of it lookup gather at "
+      f"{h['lookup_gather_amplification_x']}x, "
+      f"{h['mask_strided_pct_of_excess']}% byte masks at "
+      f"{h['mask_strided_amplification_x']}x")
 ```
 
 <!-- calkit values path=results/experiments/radiation-memory/stats.json -->
