@@ -1249,3 +1249,99 @@ stages:
     frozen: true
     desc: Automatically generated from the 'launch-cost/analyze' stage in
       calkit.yaml. Changes made here will be overwritten.
+  radiation-memory/baseline-ncu:
+    cmd: calkit scheduler batch --name radiation-memory/baseline-ncu
+      --environment clima --dep scripts/run-ncu.sh --dep scripts/run.jl --dep
+      ClimaCoupler.jl/src --dep
+      ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCore.jl/src --dep ClimaCore.jl/ext --dep ClimaAtmos.jl/src --dep
+      RRTMGP.jl/src --dep .calkit/env-locks/clima --out
+      results/experiments/radiation-memory/baseline.ncu-rep --out
+      results/experiments/radiation-memory/baseline-details.csv --out
+      results/experiments/radiation-memory/baseline-raw.csv --option --gpus=1
+      --option --time=180 --
+      .calkit/markdown/docs/experiments/radiation-memory.md/baseline-ncu.sh
+    deps:
+      - .calkit/markdown/docs/experiments/radiation-memory.md/baseline-ncu.sh
+      - scripts/run-ncu.sh
+      - scripts/run.jl
+      - ClimaCoupler.jl/src
+      - ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCore.jl/src
+      - ClimaCore.jl/ext
+      - ClimaAtmos.jl/src
+      - RRTMGP.jl/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/experiments/radiation-memory/baseline.ncu-rep:
+          persist: true
+      - results/experiments/radiation-memory/baseline-details.csv:
+          cache: false
+          persist: true
+      - results/experiments/radiation-memory/baseline-raw.csv:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/radiation-memory/baseline-ncu.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'radiation-memory/baseline-ncu' stage
+      in calkit.yaml. Changes made here will be overwritten.
+  radiation-memory/mod-ncu:
+    cmd: calkit scheduler batch --name radiation-memory/mod-ncu --environment
+      clima --dep scripts/run-ncu.sh --dep scripts/run.jl --dep
+      ClimaCoupler.jl-mod/src --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep
+      ClimaCore.jl-mod/src --dep ClimaCore.jl-mod/ext --dep
+      ClimaAtmos.jl-mod/src --dep RRTMGP.jl-mod/src --dep
+      .calkit/env-locks/clima --out
+      results/experiments/radiation-memory/mod.ncu-rep --out
+      results/experiments/radiation-memory/mod-details.csv --out
+      results/experiments/radiation-memory/mod-raw.csv --option --gpus=1
+      --option --time=180 --
+      .calkit/markdown/docs/experiments/radiation-memory.md/mod-ncu.sh
+    deps:
+      - .calkit/markdown/docs/experiments/radiation-memory.md/mod-ncu.sh
+      - scripts/run-ncu.sh
+      - scripts/run.jl
+      - ClimaCoupler.jl-mod/src
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      - ClimaCore.jl-mod/src
+      - ClimaCore.jl-mod/ext
+      - ClimaAtmos.jl-mod/src
+      - RRTMGP.jl-mod/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/experiments/radiation-memory/mod.ncu-rep:
+          persist: true
+      - results/experiments/radiation-memory/mod-details.csv:
+          cache: false
+          persist: true
+      - results/experiments/radiation-memory/mod-raw.csv:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/radiation-memory/mod-ncu.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'radiation-memory/mod-ncu' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  radiation-memory/analyze:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/radiation-memory.md/analyze.py
+    deps:
+      - .calkit/markdown/docs/experiments/radiation-memory.md/analyze.py
+      - scripts/measure_radiation_memory.py
+      - results/experiments/radiation-memory/baseline-raw.csv
+      - results/experiments/radiation-memory/baseline-details.csv
+      - results/experiments/radiation-memory/mod-raw.csv
+      - results/experiments/radiation-memory/mod-details.csv
+      - .calkit/env-locks/py
+    outs:
+      - results/experiments/radiation-memory/stats.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'radiation-memory/analyze' stage in
+      calkit.yaml. Changes made here will be overwritten.
