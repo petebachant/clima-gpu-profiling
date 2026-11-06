@@ -16,6 +16,24 @@ The quantity that decides whether there is anything to win is therefore sectors 
 The baseline's grid is **96 blocks on 108 SMs**, which is its own small finding: one thread per column, 24,576 columns, and twelve SMs idle for the whole launch.
 The mod arm's g-point split raises that to 1,536 blocks, so it already fixed the tail; it did not change the register count, which is still 255.
 
+## What the source already rules out, and the prediction that follows
+
+Written before the measurement, so the counters can contradict it.
+
+The obvious cause is not available: upstream has already done the coalescing pass.
+`Fluxes.jl` has a `_coalesced_2d`/`_coalesced_3d` pair whose whole purpose is this kernel shape -- on the GPU they allocate `(ncol, nlev)` so that one-thread-per-column access is contiguous, and on the CPU they allocate `(nlev, ncol)` behind a `PermutedDimsArray` so the indexing convention is shared.
+`FluxLW`, `FluxSW`, the `TwoStream` optics (`τ`, `ssa`, `g`) and the longwave sources (`lev_source`, `albedo`, `src`) all go through it, and `TransposedStateCache` does the same for `layerdata` and `t_lev`.
+The one struct that does not is `FluxBand`, which allocates `(nlay + 1, ncol, n_bnd)` raw and is read-modify-written per level inside the g-point loop by `accumulate_band_flux!` -- an 8x traffic multiplier if it ran, but `spectral_fluxes` is never set in ClimaAtmos, so `band_flux` is `nothing` here and the method specializes away.
+It is a real latent bug for anyone who turns spectral fluxes on; it is not this model's traffic.
+
+What is left is the gas-optics lookup.
+Every lane in a warp is on the same g-point at the same time but a different column, and the `kmajor` lookup index depends on that column's own temperature and pressure interpolation, so the warp issues a gather into a multi-megabyte table rather than a contiguous read.
+That cannot be fixed by transposing anything, and it predicts a specific pair of readings: **sectors per request well above 4 with an L2 hit rate that is high rather than low**, because neighboring columns have similar states and therefore hit each other's lines.
+
+It also predicts something about the arms.
+The mod arm's g-point split gives each block a sixteenth of the spectrum, so the table footprint a block touches shrinks by that factor, and the split's 9.6% device saving should show up here as **a higher L2 hit rate in the mod arm at the same sectors per request**.
+If instead the mod arm's sectors per request fall, the split is doing something other than what this reasoning says, and the explanation above is wrong.
+
 ## What is profiled
 
 Four launches per arm, filtered by kernel name so ncu replays nothing else.
