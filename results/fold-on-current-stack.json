@@ -98,7 +98,7 @@
     "mod_ref": "9eb34e31a7c7ae1134e94f367badd3e34bf27159",
     "mod_sqlite_sha256_16": "3ee1c63f0513fcc8",
     "profiled_steps": 120,
-    "superproject_commit": "b99fc5be7afbc4115efbba9b57006f3052e71896"
+    "superproject_commit": "54bc028753f31d3d851669f02e9e61aa1b4a8833"
   },
   "routes_agree_within_pts": 0.113,
   "routes_agree_within_pts_same_basis": 0.216,
@@ -123,7 +123,36 @@
   "vs_as_written": {
     "frozen_snapshot_saved_ms": 48.9,
     "frozen_snapshot_source": "results/sedimentation-fold.json",
+    "fusion": {
+      "absorbed_broadcasts": [
+        {
+          "broadcast": "env_terminal_velocity",
+          "group": "_FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L221",
+          "pre_launches_all_tracers": 4320,
+          "pre_launches_heavy_population": 1080,
+          "pre_ms_all_tracers": 306.4,
+          "pre_ms_heavy_population": 185.9,
+          "pre_registers": 78
+        },
+        {
+          "broadcast": "updraft_terminal_velocity",
+          "group": "_FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L233",
+          "pre_launches_all_tracers": 4320,
+          "pre_launches_heavy_population": 1080,
+          "pre_ms_all_tracers": 143.0,
+          "pre_ms_heavy_population": 125.1,
+          "pre_registers": 92
+        }
+      ],
+      "basis_note": "Registers are comparable across the two sources and are cross-checked above. Times are not: `_all_tracers` is the whole source line as the regression attribution groups it, `_heavy_population` is the Chen 2022 subset the frozen snapshot isolates. The named kernel's `now_ms` covers everything the fusion merged, so it pairs with neither.",
+      "named_kernel": {
+        "now_ms": 2319.8,
+        "now_registers": 115,
+        "pre_ms": 43.7,
+        "pre_registers": 19
+      }
+    },
     "times_larger_now": 13.5,
-    "why": "Upstream's 2026-11-03 broadcast fusion took the unfolded kernel from 19 to 115 registers, past an occupancy step. The fold did not change; what it is worth did."
+    "why": "Upstream's 2026-11-03 broadcast fusion merged the two broadcasts this fold targets, 78 and 92 registers, into one set_precipitation_velocities kernel at 115 registers -- above both of them, and past an occupancy step the fold now steps back across. The fold did not change; what it is worth did."
   }
 }

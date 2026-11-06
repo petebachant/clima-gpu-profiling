@@ -1398,6 +1398,11 @@ pipeline:
         # Which files the mod arm changes, so whether the residual is
         # attributable to this fold alone is derived rather than asserted.
         - diffs/ClimaAtmos.jl.diff
+        # The as-written measurement and the regression attribution, paired to
+        # derive what upstream's fusion did to the broadcasts this fold
+        # targets. Both are committed snapshots, so neither is a GPU hop.
+        - results/sedimentation-fold.json
+        - results/regression-record/attribution-1103.json
       outputs:
         - path: results/fold-on-current-stack.json
           storage: git

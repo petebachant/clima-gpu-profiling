@@ -598,6 +598,28 @@ stages:
     frozen: true
     desc: Automatically generated from the 'export-sedimentation-fold' stage in
       calkit.yaml. Changes made here will be overwritten.
+  export-fold-on-current-stack:
+    cmd: calkit xenv -n py --no-check -- python
+      scripts/export-fold-on-current-stack.py
+    deps:
+      - scripts/export-fold-on-current-stack.py
+      - results/nsys/baseline.sqlite
+      - results/nsys/mod.sqlite
+      - results/docs/wave-census.json
+      - results/gpoint-wallclock.toml
+      - results/sw-gpoint-wallclock.toml
+      - results/summary.json
+      - results/null-census.json
+      - diffs/ClimaAtmos.jl.diff
+      - results/sedimentation-fold.json
+      - results/regression-record/attribution-1103.json
+      - .calkit/env-locks/py
+    outs:
+      - results/fold-on-current-stack.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'export-fold-on-current-stack' stage
+      in calkit.yaml. Changes made here will be overwritten.
   export-gpoint-groups:
     cmd: calkit xenv -n py --no-check -- python scripts/export-gpoint-groups.py
     deps:

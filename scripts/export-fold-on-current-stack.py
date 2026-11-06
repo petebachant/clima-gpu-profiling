@@ -6,10 +6,11 @@ fused those into one `set_precipitation_velocities`, so that stage dies on an
 empty match. A frozen experiment record is the measurement as it was run, so it
 stays as it is and this stage prices the same treatment on the current stack.
 
-What changed is not the treatment but its worth. The pull pushed the unfolded
-kernel from 19 to 115 registers, past an occupancy step, so the fold now
-recovers an order of magnitude more than when it was written. See
-results/regression-record/attribution-1103.json.
+What changed is not the treatment but its worth: the pull merged the two
+broadcasts this fold targets into one register-heavier kernel, past an occupancy
+step, so the fold now recovers an order of magnitude more than when it was
+written. `fusion_history` derives that from the frozen snapshot and the
+regression attribution rather than restating it.
 
 Two independent routes are reported and neither is hidden:
 
@@ -126,6 +127,64 @@ def atmos_arm_files():
     return files
 
 
+def fusion_history():
+    """What upstream's fusion did to the two broadcasts this fold targets.
+
+    The frozen snapshot names them by source line; the regression attribution
+    says what became of each group. Pairing the two is what licenses the claim
+    that this fold is worth more now than when it was written, and the register
+    counts are cross-checked across the two files rather than taken from either
+    -- they were built by different scripts from different profiles.
+    """
+    frozen = json.load(open(rel("results/sedimentation-fold.json")))
+    attr = json.load(open(rel("results/regression-record/attribution-1103.json")))
+    groups = {f["function"]: f for f in attr["functions"]}
+
+    absorbed = []
+    for name, k in sorted(frozen["kernels"].items()):
+        g = groups[
+            "_FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L"
+            f"{k['baseline_line']}"
+        ]
+        assert g["pre_registers"] == k["registers"]["baseline"], (
+            f"{name}: snapshot says {k['registers']['baseline']} registers, "
+            f"attribution says {g['pre_registers']}"
+        )
+        assert g["now_ms"] is None, f"{name} survived the fusion, so it did not fuse"
+        absorbed.append({
+            "broadcast": name,
+            "group": g["function"],
+            "pre_registers": g["pre_registers"],
+            # The whole source line, every tracer. The frozen snapshot's
+            # total_ms for the same broadcast is smaller because it keeps only
+            # the register-heavy Chen 2022 population, so do not difference
+            # these two files' times against each other.
+            "pre_ms_all_tracers": g["pre_ms"],
+            "pre_launches_all_tracers": g["pre_launches"],
+            "pre_ms_heavy_population": k["total_ms"]["baseline"],
+            "pre_launches_heavy_population": k["launches"],
+        })
+
+    named = groups[TREATED]
+    return frozen, {
+        "absorbed_broadcasts": absorbed,
+        "basis_note": (
+            "Registers are comparable across the two sources and are "
+            "cross-checked above. Times are not: `_all_tracers` is the whole "
+            "source line as the regression attribution groups it, "
+            "`_heavy_population` is the Chen 2022 subset the frozen snapshot "
+            "isolates. The named kernel's `now_ms` covers everything the "
+            "fusion merged, so it pairs with neither."
+        ),
+        "named_kernel": {
+            "pre_registers": named["pre_registers"],
+            "pre_ms": named["pre_ms"],
+            "now_registers": named["now_registers"],
+            "now_ms": named["now_ms"],
+        },
+    }
+
+
 def gitref(path):
     try:
         return subprocess.run(
@@ -185,6 +244,8 @@ def main():
     pair = summary["speedup_pct"]
     residual = pair - (lw_sypd + sw_sypd)
     arm_files = atmos_arm_files()
+    frozen, fusion = fusion_history()
+    frozen_saved = frozen["treated_saved_ms"]
 
     device_total_base = sum(v["ms"] for v in base.values())
     out = {
@@ -258,13 +319,22 @@ def main():
             round(max(device_sypd, device_sypd_full, residual), 3),
         ],
         "vs_as_written": {
-            "frozen_snapshot_saved_ms": 48.9,
+            "frozen_snapshot_saved_ms": frozen_saved,
             "frozen_snapshot_source": "results/sedimentation-fold.json",
-            "times_larger_now": round(saved / 48.9, 1),
+            "times_larger_now": round(saved / frozen_saved, 1),
+            "fusion": fusion,
             "why": (
-                "Upstream's 2026-11-03 broadcast fusion took the unfolded kernel "
-                "from 19 to 115 registers, past an occupancy step. The fold did "
-                "not change; what it is worth did."
+                "Upstream's 2026-11-03 broadcast fusion merged the two "
+                "broadcasts this fold targets, "
+                + " and ".join(
+                    f"{a['pre_registers']}"
+                    for a in fusion["absorbed_broadcasts"]
+                )
+                + " registers, into one "
+                f"{TREATED} kernel at "
+                f"{fusion['named_kernel']['now_registers']} registers -- above "
+                "both of them, and past an occupancy step the fold now steps "
+                "back across. The fold did not change; what it is worth did."
             ),
         },
         "provenance": {
