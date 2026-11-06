@@ -1378,6 +1378,35 @@ pipeline:
       # value on the current stack lives in the live outputs instead.
       frozen: true
 
+    export-fold-on-current-stack:
+      kind: python-script
+      environment: py
+      script_path: scripts/export-fold-on-current-stack.py
+      inputs:
+        - scripts/export-fold-on-current-stack.py
+        - results/nsys/baseline.sqlite
+        - results/nsys/mod.sqlite
+        # The conversion anchor and the two bands' in-process SYPD gains, so
+        # the device figure and the AMIP residual can be compared.
+        - results/docs/wave-census.json
+        - results/gpoint-wallclock.toml
+        - results/sw-gpoint-wallclock.toml
+        # The wall-clock side through summarize, never from the amip stages
+        # directly: this stage must not be able to trigger a GPU run.
+        - results/summary.json
+        - results/null-census.json
+        # Which files the mod arm changes, so whether the residual is
+        # attributable to this fold alone is derived rather than asserted.
+        - diffs/ClimaAtmos.jl.diff
+      outputs:
+        - path: results/fold-on-current-stack.json
+          storage: git
+      # Live, unlike the frozen snapshot above. The fold is a permanent feature
+      # of the mod arm, so every pass profiles it and restating it against the
+      # current pass is the point; and the file derives whether the arm still
+      # carries this treatment alone, so it reports a second treatment rather
+      # than silently misattributing one.
+
     export-gpoint-groups:
       kind: python-script
       environment: py

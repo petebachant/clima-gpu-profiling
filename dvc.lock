@@ -1379,8 +1379,8 @@ stages:
       nfiles: 2
     - path: calkit.yaml
       hash: md5
-      md5: 5114c8f38f034e37e5576484ae46d89c
-      size: 96892
+      md5: a429a4a651f23dd74fa3b6cfc58b528b
+      size: 98276
     - path: diffs
       hash: md5
       md5: 2db5c9622f9bde52fc94c2acf61d1404.dir
@@ -1393,7 +1393,7 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: 0ccf0c2b858c42d2693c2c63801f381f
+      md5: 310590da9369a3148b5aea00a5dff67f
       size: 31579
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
@@ -4434,3 +4434,53 @@ stages:
       hash: md5
       md5: f9349d2a49c94fc5242390b537bcf9b2
       size: 16125
+  export-fold-on-current-stack:
+    cmd: calkit xenv -n py --no-check -- python 
+      scripts/export-fold-on-current-stack.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: diffs/ClimaAtmos.jl.diff
+      hash: md5
+      md5: 3dc0813131d7171ed9f82bd7416c4a7b
+      size: 4421
+    - path: results/docs/wave-census.json
+      hash: md5
+      md5: a3289372d1531c873c0c311c7ed20048
+      size: 2963
+    - path: results/gpoint-wallclock.toml
+      hash: md5
+      md5: 357d9cc939329211720a0bd4152c3392
+      size: 2224
+    - path: results/nsys/baseline.sqlite
+      hash: md5
+      md5: a9578d44f6e49ca05b2ea27a33c779c6
+      size: 369397760
+    - path: results/nsys/mod.sqlite
+      hash: md5
+      md5: f32bca2752dd944cd93c9b603eb6ffd1
+      size: 366612480
+    - path: results/null-census.json
+      hash: md5
+      md5: d9cf08faa89fb2705fba87bf4efe4da1
+      size: 2548
+    - path: results/summary.json
+      hash: md5
+      md5: 7cdce221c48ed86f11e975f3518b61b7
+      size: 2289
+    - path: results/sw-gpoint-wallclock.toml
+      hash: md5
+      md5: 2390586b51e511d3a46a884eff47c844
+      size: 2765
+    - path: scripts/export-fold-on-current-stack.py
+      hash: md5
+      md5: 569eea31337f768254059a12c3271f49
+      size: 12518
+    outs:
+    - path: results/fold-on-current-stack.json
+      hash: md5
+      md5: b4d198f28baec2ae9f12ead00a82626c
+      size: 4229

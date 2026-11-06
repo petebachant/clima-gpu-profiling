@@ -1,0 +1,129 @@
+{
+  "controls": {
+    "excluded_as_also_treated": [
+      "rte_lw_2stream_solve_both_skies_CUDA_",
+      "rte_sw_2stream_solve_both_skies_CUDA_"
+    ],
+    "largest_movers": [
+      {
+        "baseline_ms": 7782.9,
+        "delta_ms": -11.4,
+        "kernel": "set_microphysics_tendency_cache",
+        "mod_ms": 7771.4
+      },
+      {
+        "baseline_ms": 526.8,
+        "delta_ms": -7.8,
+        "kernel": "_FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1794",
+        "mod_ms": 519.0
+      },
+      {
+        "baseline_ms": 395.2,
+        "delta_ms": -5.6,
+        "kernel": "_FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L850",
+        "mod_ms": 389.6
+      },
+      {
+        "baseline_ms": 2771.8,
+        "delta_ms": -4.8,
+        "kernel": "update_implicit_1m_tendency",
+        "mod_ms": 2766.9
+      },
+      {
+        "baseline_ms": 4074.8,
+        "delta_ms": -2.9,
+        "kernel": "copyto_by_slices",
+        "mod_ms": 4072.0
+      },
+      {
+        "baseline_ms": 171.7,
+        "delta_ms": 2.3,
+        "kernel": "update_sedimentation_jacobian",
+        "mod_ms": 174.0
+      },
+      {
+        "baseline_ms": 184.0,
+        "delta_ms": 2.0,
+        "kernel": "set_covariance_cache_and_cloud_fraction",
+        "mod_ms": 186.1
+      },
+      {
+        "baseline_ms": 469.3,
+        "delta_ms": -1.9,
+        "kernel": "_FILE_ClimaAtmos_jl_src_prognostic_equations_advection_jl_L821",
+        "mod_ms": 467.4
+      }
+    ],
+    "n": 197,
+    "resolved_against_controls": true,
+    "resolved_by_factor": 57.9,
+    "unpaired_excluded": [
+      "_lw_aero_mask_CUDA_",
+      "_reduce_lw_groups_CUDA_",
+      "_reduce_sw_groups_CUDA_",
+      "_sw_aero_mask_CUDA_",
+      "rte_lw_2stream_solve_both_skies_CUDA_",
+      "rte_lw_2stream_solve_grouped_CUDA_",
+      "rte_sw_2stream_solve_both_skies_CUDA_",
+      "rte_sw_2stream_solve_grouped_CUDA_"
+    ],
+    "worst_delta_ms": 11.4
+  },
+  "device": {
+    "anchor": "The longwave g-point split, the one treatment whose device saving and SYPD gain are both measured; the shortwave then tested the conversion and came in -0.097 points off.",
+    "anchor_basis": "longwave steady-state gain per device ms",
+    "anchor_spread_pts": 0.103,
+    "full_run_anchor_basis": "longwave full-run gain per device ms",
+    "sypd_pct": 1.724,
+    "sypd_pct_full_run_anchor": 1.827,
+    "sypd_pct_per_device_ms": 0.00261
+  },
+  "end_to_end_residual": {
+    "amip_pair_pct": 2.936,
+    "arm_carries_only_this_besides_radiation": true,
+    "atmos_arm_changed_files": [
+      "ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl",
+      "ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/terminal_velocity_utils.jl"
+    ],
+    "longwave_in_process_pct": 0.753,
+    "null_floor_pct": 1.869,
+    "null_spread_points": 1.196,
+    "residual_clears_null_floor": false,
+    "residual_pct": 1.611,
+    "shortwave_in_process_pct": 0.572
+  },
+  "provenance": {
+    "baseline_ref": "6c57ba6d98f74ae6f3d02eb3ac5ff052b3c52f06",
+    "baseline_sqlite_sha256_16": "778a7489e1210129",
+    "mod_ref": "9eb34e31a7c7ae1134e94f367badd3e34bf27159",
+    "mod_sqlite_sha256_16": "3ee1c63f0513fcc8",
+    "profiled_steps": 120,
+    "superproject_commit": "b99fc5be7afbc4115efbba9b57006f3052e71896"
+  },
+  "routes_agree_within_pts": 0.113,
+  "routes_agree_within_pts_same_basis": 0.216,
+  "sypd_range_pct": [
+    1.611,
+    1.827
+  ],
+  "treated": {
+    "baseline_ms": 2319.8,
+    "baseline_registers": 115,
+    "change_pct": -28.47,
+    "kernel": "set_precipitation_velocities",
+    "launches": 1200,
+    "launches_match": true,
+    "mod_ms": 1659.3,
+    "mod_registers": 68,
+    "pct_of_device": 1.901,
+    "saved_ms": 660.5,
+    "threads_per_block": 128
+  },
+  "treatment": "Val-fold the terminal-velocity parameters at both set_precipitation_velocities! call sites (CliMA/ClimaAtmos.jl#4947)",
+  "vs_as_written": {
+    "frozen_snapshot_saved_ms": 48.9,
+    "frozen_snapshot_source": "results/sedimentation-fold.json",
+    "times_larger_now": 13.5,
+    "why": "Upstream's 2026-11-03 broadcast fusion took the unfolded kernel from 19 to 115 registers, past an occupancy step. The fold did not change; what it is worth did."
+  }
+}
