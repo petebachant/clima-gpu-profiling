@@ -30,16 +30,16 @@ Loading climacommon/2025_05_15
 │ In any other case, please file an issue.
 └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
 Precompiling ClimaAtmos...
-   2896.0 ms  ✓ RRTMGP → RRTMGPNCDatasetsExt
-  76286.1 ms  ✓ ClimaCore
-   6889.5 ms  ✓ ClimaCore → KrylovExt
-   6932.8 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreExt
-  11479.3 ms  ✓ ClimaTimeSteppers → ClimaTimeSteppersClimaCoreExt
-   7379.0 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreNCDatasetsExt
-   9372.0 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreInterpolationsExt
-   8468.2 ms  ✓ ClimaDiagnostics
-  29774.5 ms  ✓ ClimaAtmos
-  9 dependencies successfully precompiled in 133 seconds. 285 already precompiled.
+   2055.7 ms  ✓ RRTMGP → RRTMGPNCDatasetsExt
+  83251.9 ms  ✓ ClimaCore
+   7902.7 ms  ✓ ClimaCore → KrylovExt
+   7980.5 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreExt
+  12174.9 ms  ✓ ClimaTimeSteppers → ClimaTimeSteppersClimaCoreExt
+   8494.6 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreNCDatasetsExt
+   9621.9 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreInterpolationsExt
+  10126.1 ms  ✓ ClimaDiagnostics
+  35056.7 ms  ✓ ClimaAtmos
+  9 dependencies successfully precompiled in 149 seconds. 297 already precompiled.
 Precompiling ClimaCoreCUDAExt...
 Info Given ClimaCoreCUDAExt was explicitly requested, output will be shown live [0K
 [0K┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
@@ -69,8 +69,8 @@ Info Given ClimaCoreCUDAExt was explicitly requested, output will be shown live 
 [0K│ 
 [0K│ In any other case, please file an issue.
 [0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-  10041.9 ms  ✓ ClimaCore → ClimaCoreCUDAExt
-  1 dependency successfully precompiled in 13 seconds. 160 already precompiled.
+  11359.5 ms  ✓ ClimaCore → ClimaCoreCUDAExt
+  1 dependency successfully precompiled in 15 seconds. 172 already precompiled.
   1 dependency had output during precompilation:
 ┌ ClimaCore → ClimaCoreCUDAExt
 │  [Output was shown above]
@@ -104,8 +104,8 @@ Info Given RRTMGPCUDAExt was explicitly requested, output will be shown live [0
 [0K│ 
 [0K│ In any other case, please file an issue.
 [0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-   4956.2 ms  ✓ RRTMGP → RRTMGPCUDAExt
-  1 dependency successfully precompiled in 6 seconds. 94 already precompiled.
+   5600.5 ms  ✓ RRTMGP → RRTMGPCUDAExt
+  1 dependency successfully precompiled in 7 seconds. 94 already precompiled.
   1 dependency had output during precompilation:
 ┌ RRTMGP → RRTMGPCUDAExt
 │  [Output was shown above]
@@ -118,9 +118,9 @@ Info Given RRTMGPCUDAExt was explicitly requested, output will be shown live [0
 MP isbits=true (364 B)   TPS isbits=true (104 B)
 
 === how the parameters arrive ===
-runtime_arguments          regs=215  local=   32 B  warps/SM= 8
-const_globals              regs= 99  local=   32 B  warps/SM=16
-val_type_parameters        regs= 99  local=   32 B  warps/SM=16
+runtime_arguments          regs=214  local=   32 B  warps/SM= 8
+const_globals              regs= 98  local=   32 B  warps/SM=16
+val_type_parameters        regs= 98  local=   32 B  warps/SM=16
 
 Val saves 116 registers against runtime arguments (const globals save 116).
 warps/SM: arguments 8 -> Val 16  (gains an occupancy step)
@@ -139,15 +139,15 @@ quad_noinline_val          regs=255  local= 1704 B  warps/SM= 8
 forced inlining costs 0 registers (255 -> 255); warps/SM 8 -> 8, and 8 folded
 
 === the quadrature path with Val carried INTO the wrapper ===
-quad_val_carried_in        regs=138  local=  328 B  warps/SM=12
+quad_val_carried_in        regs=136  local=  328 B  warps/SM=12
 
-carrying the Val in saves 117 registers (255 -> 138); warps/SM 8 -> 12  (gains a step)
+carrying the Val in saves 119 registers (255 -> 136); warps/SM 8 -> 12  (gains a step)
 
 === where the parameters live, through the real quadrature loop ===
 evaluator_params_as_fields regs=255  local=  904 B  warps/SM= 8
-evaluator_params_in_type   regs=146  local=   80 B  warps/SM=12
+evaluator_params_in_type   regs=145  local=   80 B  warps/SM=12
 
-moving the parameters out of the evaluator's fields saves 109 registers (255 -> 146); warps/SM 8 -> 12  (gains a step)
+moving the parameters out of the evaluator's fields saves 110 registers (255 -> 145); warps/SM 8 -> 12  (gains a step)
 
 === Thermodynamics: q_vap_saturation, by how the parameters arrive ===
 td_runtime_arguments       regs= 32  local=   32 B  warps/SM=16

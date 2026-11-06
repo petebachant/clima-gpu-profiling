@@ -34,7 +34,7 @@ The parameter set that ClimaAtmos folds is `Microphysics1MParams` plus
 `ThermodynamicsParameters`, which at `Float32` is <!-- calkit value key=summary.payload_bytes -->468<!-- /calkit value --> bytes, or <!-- calkit value key=summary.payload_registers -->117<!-- /calkit value --> registers at four bytes each.
 Call that the payload: the most a fold could free if the kernel were holding the
 whole struct.
-That one payload produced savings of <!-- calkit value key=summary.savings_list -->0, 102, 105, 109, 116, 117<!-- /calkit value --> registers at <!-- calkit value key=summary.payload_sites -->6<!-- /calkit value --> sites, a spread of <!-- calkit value key=summary.saving_spread -->117<!-- /calkit value --> registers on an identical parameter set.
+That one payload produced savings of <!-- calkit value key=summary.savings_list -->0, 102, 105, 110, 116, 119<!-- /calkit value --> registers at <!-- calkit value key=summary.payload_sites -->6<!-- /calkit value --> sites, a spread of <!-- calkit value key=summary.saving_spread -->119<!-- /calkit value --> registers on an identical parameter set.
 A number that takes every value from nothing to everything is not a predictor.
 
 The payload does bound them. None of the <!-- calkit value key=summary.payload_sites -->6<!-- /calkit value --> savings exceeded it and the largest landed exactly on it, so the size prices the
@@ -47,8 +47,8 @@ Nor does a small payload mean a small prize. The Thermodynamics call carries a <
 kernel that never paid for its parameters in the first place.
 
 What the payload does give is the scale, once a fold is known to land. Where
-nothing boxed the parameters and the kernel was larger than the payload -- <!-- calkit value key=summary.landing_sites -->5<!-- /calkit value --> of the nine -- the measured saving was <!-- calkit value key=summary.recovered_min_pct -->87.2<!-- /calkit value -->% to <!-- calkit value key=summary.recovered_max_pct -->100.0<!-- /calkit value -->% of it.
-So `sizeof(params)/4` brackets the prize within <!-- calkit value key=summary.recovered_spread_pct -->12.8<!-- /calkit value --> points of the payload and says nothing at all about the odds of collecting it.
+nothing boxed the parameters and the kernel was larger than the payload -- <!-- calkit value key=summary.landing_sites -->5<!-- /calkit value --> of the nine -- the measured saving was <!-- calkit value key=summary.recovered_min_pct -->87.2<!-- /calkit value -->% to <!-- calkit value key=summary.recovered_max_pct -->101.7<!-- /calkit value -->% of it.
+So `sizeof(params)/4` brackets the prize within <!-- calkit value key=summary.recovered_spread_pct -->14.5<!-- /calkit value --> points of the payload and says nothing at all about the odds of collecting it.
 
 ## The rule that works: compile the body with const globals
 
@@ -77,7 +77,7 @@ handing it a compile-time constant has that constant stored into a struct and
 read back per point, and the body sits at the same register count whether the
 parameters arrive as runtime arguments, as `Val`, or as const globals.
 That one is a code shape to change rather than a verdict on the kernel, and the
-same body with the parameters moved into the evaluator's type goes <!-- calkit value key=summary.boxed_registers -->255<!-- /calkit value --> to <!-- calkit value key=summary.unboxed_registers -->146<!-- /calkit value --> registers, <!-- calkit value key=summary.unboxed_saving -->109<!-- /calkit value --> saved.
+same body with the parameters moved into the evaluator's type goes <!-- calkit value key=summary.boxed_registers -->255<!-- /calkit value --> to <!-- calkit value key=summary.unboxed_registers -->145<!-- /calkit value --> registers, <!-- calkit value key=summary.unboxed_saving -->110<!-- /calkit value --> saved.
 
 So a `no` from the ceiling probe closes the fold as written and asks which of
 the two causes it is -- and the second question is another compile, not a

@@ -65,19 +65,19 @@ It is compile-only and standalone -- both parameter sets construct from a defaul
 
 ## The cost
 
-The <!-- calkit value key=paths_n -->4<!-- /calkit value --> paths cost <!-- calkit value key=unfolded_s -->1.365<!-- /calkit value --> s to compile unfolded and <!-- calkit value key=folded_s -->4.277<!-- /calkit value --> s folded, so the fold costs <!-- calkit value key=cost_s -->2.912<!-- /calkit value --> s, against a repeat spread of <!-- calkit value key=floor_s -->0.207<!-- /calkit value --> s between the two runs of each arm.
+The <!-- calkit value key=paths_n -->4<!-- /calkit value --> paths cost <!-- calkit value key=unfolded_s -->1.465<!-- /calkit value --> s to compile unfolded and <!-- calkit value key=folded_s -->4.662<!-- /calkit value --> s folded, so the fold costs <!-- calkit value key=cost_s -->3.197<!-- /calkit value --> s, against a repeat spread of <!-- calkit value key=floor_s -->0.138<!-- /calkit value --> s between the two runs of each arm.
 Whether that delta clears its own floor is recorded rather than argued: `resolved` is <!-- calkit value key=resolved -->true<!-- /calkit value -->, which is the field to read before quoting the figure at all, and it is held to the same rule as a SYPD headline against its null census.
-In relative terms the cost is <!-- calkit value key=cost_pct -->213.33<!-- /calkit value -->%, which is worth stating plainly and is also the least useful way to read it: it more than triples a quantity whose absolute size is seconds.
+In relative terms the cost is <!-- calkit value key=cost_pct -->218.23<!-- /calkit value -->%, which is worth stating plainly and is also the least useful way to read it: it more than triples a quantity whose absolute size is seconds.
 
 ## It is a one-time cost, not a per-call-site one
 
-Effectively all of it lands on whichever body is compiled first -- <!-- calkit value key=first_cost_s -->2.937<!-- /calkit value --> s on `<!-- calkit value key=first_path -->liquid_stokes<!-- /calkit value -->` -- while the <!-- calkit value key=rest_n -->3<!-- /calkit value --> bodies that follow it come to <!-- calkit value key=rest_cost_s -->-0.025<!-- /calkit value --> s between them, which is inside the <!-- calkit value key=floor_s -->0.207<!-- /calkit value --> s repeat spread and so not separable from nothing.
+Effectively all of it lands on whichever body is compiled first -- <!-- calkit value key=first_cost_s -->3.194<!-- /calkit value --> s on `<!-- calkit value key=first_path -->liquid_stokes<!-- /calkit value -->` -- while the <!-- calkit value key=rest_n -->3<!-- /calkit value --> bodies that follow it come to <!-- calkit value key=rest_cost_s -->0.003<!-- /calkit value --> s between them, which is inside the <!-- calkit value key=floor_s -->0.138<!-- /calkit value --> s repeat spread and so not separable from nothing.
 That is the shape of specializing once on the payload types and reusing it: the first body pays to infer and codegen through the two parameter structs embedded in type parameters, and nothing after it pays again.
 The harness compiles the paths in a fixed order, so it does not separate "the body compiled first" from "that particular body" -- but a cost that was genuinely per-call-site would have to appear in the ones that follow, and it does not.
 
 ## Set against the startup it is part of, the figure is small
 
-Host-side Julia JIT is <!-- calkit value key=host_jit_s -->1628.0<!-- /calkit value --> s of a profiling job ([compile time](compile-time.md)), so the fold adds <!-- calkit value key=share_of_jit_pct -->0.179<!-- /calkit value -->% to it.
+Host-side Julia JIT is <!-- calkit value key=host_jit_s -->1628.0<!-- /calkit value --> s of a profiling job ([compile time](compile-time.md)), so the fold adds <!-- calkit value key=share_of_jit_pct -->0.196<!-- /calkit value -->% to it.
 That is the comparison that matters for a production run, where startup is amortized over simulated years; it is not the comparison that matters for a short benchmark, where a fixed cost in seconds is weighed against a per-step saving in milliseconds.
 
 ## The registers these bodies show in isolation are not the benefit

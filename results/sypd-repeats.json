@@ -637,6 +637,61 @@
         "RRTMGP.jl-mod": "87e41de098aa72c5e0cbbe77df6a797351cffd98"
       },
       "same_gpu": false
+    },
+    {
+      "run_id": "c9d37cefd764",
+      "order": "baseline_first",
+      "order_source": "log mtimes",
+      "ran_second": "mod",
+      "gpus_by_arm": {
+        "baseline": [
+          0
+        ],
+        "mod": [
+          0
+        ]
+      },
+      "baseline": {
+        "gpus": [
+          0
+        ],
+        "sypd": 0.9922713847028541,
+        "wall_s": 952.9088,
+        "step_s": 0.33110106,
+        "n_steps_timed": 2878,
+        "dt_cpl_s": 120.0
+      },
+      "mod": {
+        "gpus": [
+          0
+        ],
+        "sypd": 1.022287597233106,
+        "wall_s": 924.9297,
+        "step_s": 0.32137933,
+        "n_steps_timed": 2878,
+        "dt_cpl_s": 120.0
+      },
+      "speedup_pct": 2.936,
+      "step_change_pct": -2.936,
+      "treatment": [
+        "ClimaAtmos.jl-mod",
+        "RRTMGP.jl-mod"
+      ],
+      "diff_digest": "2547f0331a3a321f",
+      "reproducible": true,
+      "dirty_trees": [],
+      "stack": {
+        "ClimaAtmos.jl": "6c57ba6d98f74ae6f3d02eb3ac5ff052b3c52f06",
+        "ClimaAtmos.jl-mod": "9eb34e31a7c7ae1134e94f367badd3e34bf27159",
+        "ClimaCore.jl": "e52ee077ee83982684f0f13d482c7a78850e0a67",
+        "ClimaCore.jl-mod": "e52ee077ee83982684f0f13d482c7a78850e0a67",
+        "ClimaCoupler.jl": "a0ecbd4816b8f3e4e39bb0c035824ac62a30fb0f",
+        "ClimaCoupler.jl-mod": "d2b330160a90c01d2e8d3ea213309370c7681c22",
+        "CloudMicrophysics.jl-mod": "3baa60b7792990467caf0127dfa805636cb222cc",
+        "RRTMGP.jl": "a64796f870c318b855bba4afbecced7e586fdaa0",
+        "RRTMGP.jl-mod": "87e41de098aa72c5e0cbbe77df6a797351cffd98"
+      },
+      "same_gpu": true
     }
   ],
   "note": "One entry per unprofiled AMIP pair, each an independent pair of runs of the same committed code. `speedup_pct` follows results/summary.json: 1 - baseline_sypd/mod_sypd. `spread_points` across pairs of one treatment is this measurement's own repeatability, to be read against the null test's noise floor in results/null-record/.",
@@ -1045,6 +1100,45 @@
       "margin_exceeds_repeat_spread": false,
       "margin_exceeds_floor_spread": false,
       "predicted_if_order_explains_null_pct": -3.203
+    },
+    "2547f0331a3a321f": {
+      "n_pairs": 1,
+      "treatment": [
+        "ClimaAtmos.jl-mod",
+        "RRTMGP.jl-mod"
+      ],
+      "speedups_pct": [
+        2.936
+      ],
+      "mean_pct": 2.936,
+      "min_pct": 2.936,
+      "max_pct": 2.936,
+      "spread_points": 0.0,
+      "stacks": 1,
+      "orders": [
+        "baseline_first"
+      ],
+      "gpu_assignments": [
+        {
+          "baseline": [
+            0
+          ],
+          "mod": [
+            0
+          ]
+        }
+      ],
+      "same_gpu_pairs": 1,
+      "by_order": {
+        "baseline_first": {
+          "n": 1,
+          "mean_pct": 2.936
+        }
+      },
+      "margin_over_null_points": 1.067,
+      "margin_exceeds_repeat_spread": true,
+      "margin_exceeds_floor_spread": false,
+      "predicted_if_order_explains_null_pct": -1.998
     }
   },
   "null_test": {
@@ -1059,11 +1153,11 @@
       "RRTMGP.jl-mod"
     ],
     "speedups_pct": [
-      1.731
+      2.936
     ],
-    "mean_pct": 1.731,
-    "min_pct": 1.731,
-    "max_pct": 1.731,
+    "mean_pct": 2.936,
+    "min_pct": 2.936,
+    "max_pct": 2.936,
     "spread_points": 0.0,
     "stacks": 1,
     "orders": [
@@ -1075,22 +1169,22 @@
           0
         ],
         "mod": [
-          2
+          0
         ]
       }
     ],
-    "same_gpu_pairs": 0,
+    "same_gpu_pairs": 1,
     "by_order": {
       "baseline_first": {
         "n": 1,
-        "mean_pct": 1.731
+        "mean_pct": 2.936
       }
     },
-    "margin_over_null_points": -0.138,
-    "margin_exceeds_repeat_spread": false,
+    "margin_over_null_points": 1.067,
+    "margin_exceeds_repeat_spread": true,
     "margin_exceeds_floor_spread": false,
-    "predicted_if_order_explains_null_pct": -3.203,
-    "diff_digest": "e6125bb5e167288e"
+    "predicted_if_order_explains_null_pct": -1.998,
+    "diff_digest": "2547f0331a3a321f"
   },
   "most_repeated_treatment": {
     "n_pairs": 3,
