@@ -527,6 +527,7 @@ questions:
     evidence:
       - kind: document
         path: docs/experiments/radiation-memory.md
+        git_ref: meas/2026-11-06-radiation-memory
         section: "How the prediction scored"
         explanation: >-
           Where the traffic goes, measured against a per-instruction ideal
@@ -536,6 +537,7 @@ questions:
           price the gather.
       - kind: document
         path: docs/experiments/radiation-memory.md
+        git_ref: meas/2026-11-06-radiation-memory
         section: "Result"
         explanation: >-
           The arm comparison that separates machine fill from locality. The
@@ -544,6 +546,7 @@ questions:
           split actually bought.
       - kind: result
         path: results/experiments/radiation-memory/stats.json
+        git_ref: meas/2026-11-06-radiation-memory
         values:
           amplification: baseline.headline.worst_amplification_x
           excessive_pct: baseline.headline.worst_excessive_pct
@@ -1453,9 +1456,15 @@ pipeline:
       kind: markdown
       target_path: docs/experiments/radiation-memory.md
       environment: py
-      # Live until the measurement is in and the prose is written, then frozen
-      # and tagged the way launch-cost and compile-time-study are: the stages
-      # this document declares cost about three GPU hours between them.
+      frozen: true
+      # Frozen on main and tagged meas/2026-11-06-radiation-memory, the way
+      # launch-cost and compile-time-study are: the two ncu stages this
+      # document declares cost about three GPU hours between them, and the
+      # `.ncu-rep` pair they write is a cache rather than the record. At the tag
+      # nothing is frozen and the inputs exist, so the whole experiment
+      # reproduces with `git checkout <tag> && calkit run radiation-memory`;
+      # on main `calkit run` leaves it alone. Unfreeze the two ncu stages
+      # together or the arms come from different revisions.
 
     export-gpoint-groups:
       kind: python-script
