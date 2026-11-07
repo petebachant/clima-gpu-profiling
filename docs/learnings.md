@@ -3428,3 +3428,70 @@ warp takes 32 sectors where one would do. RRTMGP's `_coalesced_2d` pass never
 saw them because the allocation lives in the other repository --- which is the
 general shape to watch for, since reading only the library that *uses* a buffer
 cannot find a layout chosen by its caller.
+
+## 8o. ClimaCore computes a kernel's grid from its register count, which I read backwards (2026-11-07)
+
+`docs/experiments/occupancy-launch-model.md` and
+`results/experiments/occupancy-launch-model/stats.json`.
+
+**The reading that was wrong.** The four heaviest ClimaAtmos kernels each launch
+exactly `ncol` threads, and I took that for a column decomposition: one thread
+per column, work therefore the binding constraint, and the register file's
+capacity at their register count merely a coincidence that left nothing to gain.
+Both halves of that are false. The kernels are point loops with tens of times
+more slices than threads, and the agreement between work and register capacity
+is not a coincidence but a construction --- ClimaCore's launcher schedules
+`max_waves = 1`, so it computes the grid *from* the register count and the two
+cannot disagree. `ncol` appears because 108 multiprocessors times 512 threads is
+55,296, which is also h_elem 16 times Nq 6 squared. Two unrelated quantities
+with the same value, and I built a direction on it, twice.
+
+**The general shape.** A launch geometry read off a profile looks like a fact
+about the problem and is often a fact about the compiler: `ptxas` picks a
+register count with nothing telling it to economize, and every thread count,
+block size and grid downstream of that is derived. So the question to ask of a
+suspicious thread count is not "why was it decomposed this way" but "what did
+the launcher compute it from". Before theorizing about a grid, read the launcher.
+
+**Occupancy is a step function, and the band width is the trap.** Registers are
+allocated to warps in units of 256 and to schedulers in whole warps, so on an
+A100 the reachable occupancy levels are few and unevenly spaced, and the band
+these kernels sit in is the widest below the cap. The heaviest of them can shed most of a quarter of its registers and not
+move; the document carries the count. A change that cuts a dozen registers from one of these kernels will
+read as a null result rather than as a near miss, which is a reading error worth
+anticipating before a profiling run is spent on one.
+
+**A model is worth transcribing when it makes a falsifiable prediction.** The
+launcher's arithmetic is about sixty lines of Julia and reproducing it in Python
+costs an afternoon, which is worth it only because it then predicts, from a
+register count alone, the resident thread count of every launch in a profile
+where the prediction is well posed --- without exception, including the handful
+whose block shape it gets wrong because they hand a slice to a sub-block rather
+than a thread. It also reproduces every warps-per-multiprocessor figure that a
+different script recorded in `results/sedimentation-fold.json` five weeks
+earlier, which is the check that matters, being one nobody arranged.
+
+**Pricing the lever needed a measured exponent, and the only available one is a
+bound.** Occupancy is not time: more resident warps hide latency but execute the
+same instructions. The sedimentation fold is the one treatment here that crossed
+an occupancy step with a control population to resolve it against, and its two
+kernels agree closely on an exponent near a third --- doubling occupancy buys
+about a fifth of the runtime. That exponent is an upper bound in magnitude and
+cannot be made better from this data, because the fold also removed work and
+nothing separates the two effects. The consequence is a decision: the first
+occupancy step is worth slightly less than the measured floor between two runs
+of identical code, so it is not something to measure end to end, and the first
+target worth a full pair is two steps further down.
+
+**The regression and the lever are independent, which the corrected shape fields
+revealed.** `scripts/export-regression-attribution.py` reproduced the §8i bug it
+was written after: `MAX(registersPerThread)` beside `MAX(blockSize)` over a
+shared short name, which reported the pre-fusion microphysics cache at a block
+holding more than twice the register file. Grouping by launch variant and taking
+one variant's register count and block size together leaves every sum in that
+file identical, function by function, and corrects the shape fields of several
+dozen.
+What it then shows is that the 2026-11-03 fusion *raised* this kernel's
+occupancy while making it much slower. So the register lever is not a recovery
+of the regression; it is an independent gain, and conversely the regression
+cannot be explained by the thing this document prices.
