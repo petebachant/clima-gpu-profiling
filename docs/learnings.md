@@ -3375,3 +3375,56 @@ The in-kernel build is the one kept, on simplicity rather than speed: no
 streams, no events, one scratch allocation instead of one per group, and its
 summed kernel time equals its elapsed time again, which removes the trap
 section 8l is about.
+
+## 8n. The radiation solvers' memory traffic is real waste and not the limiter (2026-11-06)
+
+Figures live in `docs/experiments/radiation-memory.md`, injected from
+`results/experiments/radiation-memory/stats.json`. Four things are worth
+carrying here, because three of them are about instruments rather than about
+radiation.
+
+**A warp-averaged sectors-per-request will refute a true hypothesis.** It is the
+first coalescing statistic anyone computes, `--set full` does not even collect
+it, and computing it from sectors and requests understates the waste by half:
+the hundreds of perfectly coalesced instructions in a large kernel dominate the
+request count and pull the mean toward the ideal no matter how bad the minority
+is. The figure that resolves it is the per-instruction one on ncu's `--page
+source` --- actual sectors against the sectors that instruction's own bytes
+would need --- which is what ncu's own `UncoalescedGlobalAccess` rule uses. The
+diluted field is now named `ld_waste_x_warp_average_diluted` so it cannot be
+quoted by accident.
+
+**Stall sampling cannot price a load.** A long-scoreboard stall is charged to
+the instruction that *consumes* the loaded register, not to the load, so
+attributing samples to the offending loads puts nearly all of them on
+instructions with no memory access at all and approximately none on the loads.
+That reads as though the bad accesses were free. Sector counts are the evidence
+for wasted work; stall shares are the evidence for what the warps are waiting
+on; neither becomes a time attribution for one instruction.
+
+**Which ncu rules a treatment retires says what it bought.** The g-point split
+left every memory figure in both solvers identical to within a tenth of a point
+and still ran measurably faster. It retired exactly `LaunchConfiguration` and
+`WorkloadImbalance` and left `UncoalescedGlobalAccess`,
+`MemoryCacheAccessPattern` and `TheoreticalOccupancy` at their baseline
+magnitudes --- so the saving was machine fill, not locality, and the written-down
+prediction that it would show up as better cache behavior is refuted. The useful
+consequence is that the sector waste is unspent: it is still entirely present in
+the arm that is already faster, so it is additive to the split rather than
+overlapping it.
+
+**Nothing in these kernels is saturated, which bounds what coalescing is worth.**
+DRAM is at a tenth of peak and the compute pipes at a fifth. Removing excess
+sectors therefore frees no bottlenecked resource and returns less time than the
+sector count falls; the binding constraint is the one that was free to find,
+255 registers holding the solvers to one block per multiprocessor and eight
+resident warps. Coalescing is a second-order lever here, not an alternative to
+occupancy.
+
+One concrete bug came out of it: `cld_mask_lw`, `cld_mask_sw` and `aero_mask`
+are allocated `(nlay, ncol)` in ClimaAtmos's `RRTMGPInterface.jl` and read
+through `view(mask, :, gcol)`, so consecutive lanes sit `nlay` bytes apart and a
+warp takes 32 sectors where one would do. RRTMGP's `_coalesced_2d` pass never
+saw them because the allocation lives in the other repository --- which is the
+general shape to watch for, since reading only the library that *uses* a buffer
+cannot find a layout chosen by its caller.
