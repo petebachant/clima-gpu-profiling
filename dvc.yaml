@@ -1350,3 +1350,20 @@ stages:
     frozen: true
     desc: Automatically generated from the 'radiation-memory/analyze' stage in
       calkit.yaml. Changes made here will be overwritten.
+  occupancy-launch-model/analyze:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/occupancy-launch-model.md/analyze.py
+    deps:
+      - .calkit/markdown/docs/experiments/occupancy-launch-model.md/analyze.py
+      - scripts/measure_occupancy.py
+      - results/launch-inventory.json
+      - results/sedimentation-fold.json
+      - results/fold-on-current-stack.json
+      - results/regression-record/attribution-1103.json
+      - .calkit/env-locks/py
+    outs:
+      - results/experiments/occupancy-launch-model/stats.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'occupancy-launch-model/analyze'
+      stage in calkit.yaml. Changes made here will be overwritten.

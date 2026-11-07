@@ -559,6 +559,44 @@ questions:
           details and source pages. The source page is the only one carrying a
           per-instruction ideal, which is what resolves the coalescing figure.
 
+  - question: >-
+      The heaviest kernels launch exactly one thread per column. Is that a column decomposition, and would giving them more parallelism help?
+    answer: >-
+      Neither: the thread count is a coincidence and the parallelism is already there.
+      ClimaCore launches one occupancy wave, so a slice loop's grid is computed from its own register count -- and at {registers:.0f} registers that wave is {threads:.0f} threads, which equals ncol only because 108 multiprocessors times 512 threads does.
+      The loops are already pointwise over ncol times z_elem slices and stride over them, so {pct_of_device}% of device time runs at {occupancy_pct}% occupancy with registers as the sole cause, and the only lever is a register count low enough to cross a step -- {next_step:.0f} rather than the {band_max:.0f} they sit at now.
+    evidence:
+      - kind: document
+        path: docs/experiments/occupancy-launch-model.md
+        section: "The model, and the check on it"
+        explanation: >-
+          The launcher's arithmetic, transcribed from ClimaCore, and the check
+          that makes it a model rather than a reading: given only a register
+          count it predicts the resident thread count of every launch where the
+          prediction is well posed.
+      - kind: document
+        path: docs/experiments/occupancy-launch-model.md
+        section: "What this rules out"
+        explanation: >-
+          Why un-fusing these kernels for parallelism buys nothing, and why a
+          hard register cap is the wrong instrument for reaching a step. Also
+          records the arithmetic that made this look like a work limit, which is
+          the reading this document corrects.
+      - kind: result
+        path: results/experiments/occupancy-launch-model/stats.json
+        values:
+          registers: targets.max_registers
+          threads: targets.threads
+          pct_of_device: inventory.register_limited_pct_of_device
+          occupancy_pct: targets.occupancy_pct
+          next_step: model.next_step.max_registers
+          band_max: model.current_band.max_registers
+        explanation: >-
+          The model, its validation against both arms, and what each occupancy
+          step is predicted to be worth against the measured floor between two
+          runs of identical code. The prediction is committed before a treatment
+          exists, so building one tests it.
+
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod
@@ -1465,6 +1503,19 @@ pipeline:
       # reproduces with `git checkout <tag> && calkit run radiation-memory`;
       # on main `calkit run` leaves it alone. Unfreeze the two ncu stages
       # together or the arms come from different revisions.
+
+    occupancy-launch-model:
+      kind: markdown
+      target_path: docs/experiments/occupancy-launch-model.md
+      environment: py
+      # Live on main, and it declares no profiling stage at all: every figure
+      # comes from profiles already paid for. The template's reason for an
+      # experiment owning its own nsys runs is that a shared path holds
+      # whichever experiment profiled last, and the indirection that solves it
+      # here is `results/launch-inventory.json`, a committed snapshot that
+      # `scripts/measure_occupancy.py` writes by hand with the source profiles
+      # identified by hash. So nothing this document reads is transient and
+      # there is nothing for a freeze to protect.
 
     export-gpoint-groups:
       kind: python-script

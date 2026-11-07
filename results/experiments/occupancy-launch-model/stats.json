@@ -1,0 +1,443 @@
+{
+  "model": {
+    "device": "NVIDIA A100 (Compute Capability 8.0)",
+    "source": "ClimaCore.jl/ext/cuda/cuda_utils.jl",
+    "sm_count": 108,
+    "warps_per_sm_capacity": 64,
+    "max_waves": 1,
+    "n_steps": 11,
+    "steps": [
+      {
+        "min_registers": 1,
+        "max_registers": 32,
+        "warps_per_sm": 64,
+        "occupancy_pct": 100.0,
+        "block_size": 1024,
+        "grid_size": 216,
+        "threads": 221184,
+        "limiter": "num_threads"
+      },
+      {
+        "min_registers": 33,
+        "max_registers": 40,
+        "warps_per_sm": 48,
+        "occupancy_pct": 75.0,
+        "block_size": 768,
+        "grid_size": 216,
+        "threads": 165888,
+        "limiter": "registers"
+      },
+      {
+        "min_registers": 41,
+        "max_registers": 48,
+        "warps_per_sm": 40,
+        "occupancy_pct": 62.5,
+        "block_size": 640,
+        "grid_size": 216,
+        "threads": 138240,
+        "limiter": "registers"
+      },
+      {
+        "min_registers": 49,
+        "max_registers": 56,
+        "warps_per_sm": 36,
+        "occupancy_pct": 56.25,
+        "block_size": 576,
+        "grid_size": 216,
+        "threads": 124416,
+        "limiter": "registers"
+      },
+      {
+        "min_registers": 57,
+        "max_registers": 64,
+        "warps_per_sm": 32,
+        "occupancy_pct": 50.0,
+        "block_size": 1024,
+        "grid_size": 108,
+        "threads": 110592,
+        "limiter": "registers"
+      },
+      {
+        "min_registers": 65,
+        "max_registers": 72,
+        "warps_per_sm": 28,
+        "occupancy_pct": 43.75,
+        "block_size": 896,
+        "grid_size": 108,
+        "threads": 96768,
+        "limiter": "registers"
+      },
+      {
+        "min_registers": 73,
+        "max_registers": 80,
+        "warps_per_sm": 24,
+        "occupancy_pct": 37.5,
+        "block_size": 768,
+        "grid_size": 108,
+        "threads": 82944,
+        "limiter": "registers"
+      },
+      {
+        "min_registers": 81,
+        "max_registers": 96,
+        "warps_per_sm": 20,
+        "occupancy_pct": 31.25,
+        "block_size": 640,
+        "grid_size": 108,
+        "threads": 69120,
+        "limiter": "registers"
+      },
+      {
+        "min_registers": 97,
+        "max_registers": 128,
+        "warps_per_sm": 16,
+        "occupancy_pct": 25.0,
+        "block_size": 512,
+        "grid_size": 108,
+        "threads": 55296,
+        "limiter": "registers"
+      },
+      {
+        "min_registers": 129,
+        "max_registers": 168,
+        "warps_per_sm": 12,
+        "occupancy_pct": 18.75,
+        "block_size": 384,
+        "grid_size": 108,
+        "threads": 41472,
+        "limiter": "registers"
+      },
+      {
+        "min_registers": 169,
+        "max_registers": 256,
+        "warps_per_sm": 8,
+        "occupancy_pct": 12.5,
+        "block_size": 256,
+        "grid_size": 108,
+        "threads": 27648,
+        "limiter": "registers"
+      }
+    ],
+    "current_band": {
+      "min_registers": 97,
+      "max_registers": 128,
+      "warps_per_sm": 16,
+      "occupancy_pct": 25.0,
+      "block_size": 512,
+      "grid_size": 108,
+      "threads": 55296,
+      "limiter": "registers"
+    },
+    "next_step": {
+      "min_registers": 81,
+      "max_registers": 96,
+      "warps_per_sm": 20,
+      "occupancy_pct": 31.25,
+      "block_size": 640,
+      "grid_size": 108,
+      "threads": 69120,
+      "limiter": "registers"
+    },
+    "full_occupancy_registers": 32
+  },
+  "validation": {
+    "checked": 187,
+    "thread_count_agree": 187,
+    "thread_count_agree_pct": 100.0,
+    "block_shape_agree": 174,
+    "block_shape_agree_pct": 93.05,
+    "shape_only_mismatches": 13,
+    "disagree": [
+      {
+        "kernel": "copyto_by_slices__FILE_ClimaCore_jl_src_Operators_broadcast_",
+        "registers": 32,
+        "predicted": "1024x216",
+        "observed": "128x1728",
+        "threads_agree": true
+      },
+      {
+        "kernel": "copyto_by_slices__FILE_ClimaCore_jl_src_Operators_broadcast_",
+        "registers": 22,
+        "predicted": "1024x216",
+        "observed": "128x1728",
+        "threads_agree": true
+      },
+      {
+        "kernel": "copyto_by_slices__FILE_ClimaCore_jl_src_Operators_broadcast_",
+        "registers": 44,
+        "predicted": "640x216",
+        "observed": "128x1080",
+        "threads_agree": true
+      },
+      {
+        "kernel": "copyto_by_slices__FILE_ClimaCore_jl_src_Operators_broadcast_",
+        "registers": 25,
+        "predicted": "1024x216",
+        "observed": "128x1728",
+        "threads_agree": true
+      },
+      {
+        "kernel": "copyto_by_slices__FILE_ClimaCore_jl_src_Operators_broadcast_",
+        "registers": 46,
+        "predicted": "640x216",
+        "observed": "128x1080",
+        "threads_agree": true
+      },
+      {
+        "kernel": "copyto_by_slices__FILE_ClimaCore_jl_src_Operators_broadcast_",
+        "registers": 29,
+        "predicted": "1024x216",
+        "observed": "128x1728",
+        "threads_agree": true
+      },
+      {
+        "kernel": "copyto_by_slices__FILE_ClimaCore_jl_src_Operators_broadcast_",
+        "registers": 17,
+        "predicted": "1024x216",
+        "observed": "128x1728",
+        "threads_agree": true
+      },
+      {
+        "kernel": "copyto_by_slices__FILE_ClimaCore_jl_src_Operators_broadcast_",
+        "registers": 18,
+        "predicted": "1024x216",
+        "observed": "128x1728",
+        "threads_agree": true
+      },
+      {
+        "kernel": "copyto_by_slices__FILE_ClimaCore_jl_src_Operators_broadcast_",
+        "registers": 28,
+        "predicted": "1024x216",
+        "observed": "128x1728",
+        "threads_agree": true
+      },
+      {
+        "kernel": "copyto_by_slices__FILE_ClimaCore_jl_src_Operators_broadcast_",
+        "registers": 23,
+        "predicted": "1024x216",
+        "observed": "128x1728",
+        "threads_agree": true
+      },
+      {
+        "kernel": "copyto_by_slices__FILE_ClimaCore_jl_src_Operators_broadcast_",
+        "registers": 16,
+        "predicted": "1024x216",
+        "observed": "128x1728",
+        "threads_agree": true
+      },
+      {
+        "kernel": "copyto_by_slices__FILE_ClimaCore_jl_src_Operators_broadcast_",
+        "registers": 24,
+        "predicted": "1024x216",
+        "observed": "128x1728",
+        "threads_agree": true
+      }
+    ]
+  },
+  "inventory": {
+    "device_total_ms": 34742.7,
+    "kernel_variants": 503,
+    "fills_one_wave_variants": 244,
+    "fills_one_wave_ms": 24972.4,
+    "fills_one_wave_pct_of_device": 71.88,
+    "below_one_wave_variants": 218,
+    "above_one_wave_variants": 41,
+    "register_limited_ms": 20458.4,
+    "register_limited_variants": 76,
+    "register_limited_pct_of_device": 58.89
+  },
+  "targets": {
+    "n": 3,
+    "total_ms": 10200.2,
+    "pct_of_device": 29.36,
+    "warps_per_sm": 16,
+    "occupancy_pct": 25.0,
+    "registers": [
+      114,
+      116,
+      128
+    ],
+    "max_registers": 128,
+    "min_registers": 114,
+    "spill_bytes_per_thread": [
+      0
+    ],
+    "threads": 55296,
+    "block_size": 512,
+    "grid_size": 108,
+    "dead_headroom_registers": {
+      "set_microphysics_tendency_cache@128": 31,
+      "set_microphysics_tendency_cache@116": 19,
+      "update_implicit_1m_tendency@114": 17
+    },
+    "max_dead_headroom_registers": 31,
+    "kernels": [
+      {
+        "kernel": "set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphy",
+        "total_ms": 4988.2,
+        "registers": 128
+      },
+      {
+        "kernel": "set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphy",
+        "total_ms": 2743.8,
+        "registers": 116
+      },
+      {
+        "kernel": "update_implicit_1m_tendency__FILE_ClimaAtmos_jl_src_cache_microphysics",
+        "total_ms": 2468.2,
+        "registers": 114
+      }
+    ]
+  },
+  "calibration": {
+    "source": "results/sedimentation-fold.json",
+    "treatment": "Val-fold the terminal-velocity parameters at both set_precipitation_velocities! call sites",
+    "resolved_against_controls": true,
+    "worst_control_delta_ms": 1.4,
+    "null_floor_pct": 1.869,
+    "points": [
+      {
+        "kernel": "env_terminal_velocity",
+        "registers_before": 78,
+        "registers_after": 48,
+        "warps_before": 24,
+        "warps_after": 40,
+        "model_warps_before": 24,
+        "model_warps_after": 40,
+        "ms_before": 185.9,
+        "ms_after": 157.2,
+        "change_pct": -15.47,
+        "exponent": -0.3283,
+        "model_agrees": true
+      },
+      {
+        "kernel": "updraft_terminal_velocity",
+        "registers_before": 92,
+        "registers_after": 56,
+        "warps_before": 20,
+        "warps_after": 36,
+        "model_warps_before": 20,
+        "model_warps_after": 36,
+        "ms_before": 125.1,
+        "ms_after": 104.9,
+        "change_pct": -16.08,
+        "exponent": -0.2996,
+        "model_agrees": true
+      }
+    ],
+    "all_model_agrees": true,
+    "exponent_mean": -0.3139,
+    "exponent_min": -0.3283,
+    "exponent_max": -0.2996
+  },
+  "fusion": {
+    "pre_registers": 150,
+    "pre_block_size": 384,
+    "pre_warps_per_sm": 12,
+    "now_registers": 128,
+    "now_block_size": 512,
+    "now_warps_per_sm": 16,
+    "pre_ms": 4755.9,
+    "now_ms": 7782.9,
+    "ms_change_pct": 63.6,
+    "occupancy_rose": true,
+    "warps_gained": 4
+  },
+  "prediction": {
+    "sypd_pct_per_device_ms": 0.00261,
+    "exponent": -0.3139,
+    "null_floor_pct": 1.869,
+    "steps": [
+      {
+        "warps_before": 16,
+        "warps_after": 20,
+        "warps_factor": 1.25,
+        "predicted_ms": 9510.2,
+        "saved_ms": 690.0,
+        "change_pct": -6.76,
+        "target_registers": 96,
+        "sypd_points": 1.8,
+        "vs_null_floor": 0.96,
+        "resolvable": false
+      },
+      {
+        "warps_before": 16,
+        "warps_after": 24,
+        "warps_factor": 1.5,
+        "predicted_ms": 8981.2,
+        "saved_ms": 1219.0,
+        "change_pct": -11.95,
+        "target_registers": 80,
+        "sypd_points": 3.18,
+        "vs_null_floor": 1.7,
+        "resolvable": true
+      },
+      {
+        "warps_before": 16,
+        "warps_after": 28,
+        "warps_factor": 1.75,
+        "predicted_ms": 8557.0,
+        "saved_ms": 1643.2,
+        "change_pct": -16.11,
+        "target_registers": 72,
+        "sypd_points": 4.29,
+        "vs_null_floor": 2.3,
+        "resolvable": true
+      },
+      {
+        "warps_before": 16,
+        "warps_after": 32,
+        "warps_factor": 2.0,
+        "predicted_ms": 8205.7,
+        "saved_ms": 1994.5,
+        "change_pct": -19.55,
+        "target_registers": 64,
+        "sypd_points": 5.21,
+        "vs_null_floor": 2.79,
+        "resolvable": true
+      },
+      {
+        "warps_before": 16,
+        "warps_after": 36,
+        "warps_factor": 2.25,
+        "predicted_ms": 7907.9,
+        "saved_ms": 2292.3,
+        "change_pct": -22.47,
+        "target_registers": 56,
+        "sypd_points": 5.98,
+        "vs_null_floor": 3.2,
+        "resolvable": true
+      },
+      {
+        "warps_before": 16,
+        "warps_after": 40,
+        "warps_factor": 2.5,
+        "predicted_ms": 7650.6,
+        "saved_ms": 2549.6,
+        "change_pct": -25.0,
+        "target_registers": 48,
+        "sypd_points": 6.65,
+        "vs_null_floor": 3.56,
+        "resolvable": true
+      },
+      {
+        "warps_before": 16,
+        "warps_after": 64,
+        "warps_factor": 4.0,
+        "predicted_ms": 6601.2,
+        "saved_ms": 3599.0,
+        "change_pct": -35.28,
+        "target_registers": 32,
+        "sypd_points": 9.39,
+        "vs_null_floor": 5.02,
+        "resolvable": true
+      }
+    ],
+    "first_step_registers": 96,
+    "first_step_saved_ms": 690.0,
+    "first_step_sypd_points": 1.8,
+    "first_step_vs_null_floor": 0.96,
+    "first_step_resolvable": false,
+    "recommended_target_registers": 80
+  }
+}
