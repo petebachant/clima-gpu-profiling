@@ -519,6 +519,43 @@ questions:
           group counts that divide neither g-point count so the ragged final
           stride is exercised.
 
+  - question: >-
+      The radiation solvers move enormous amounts of memory. Is that the next lever, and did the g-point split already collect it?
+    answer: >-
+      It is a real inefficiency and not the binding constraint: the solvers fetch {amplification}x more sectors than their own bytes need, discarding {excessive_pct}% of all sector traffic, but DRAM runs at only {dram_pct_peak}% of peak, so nothing is saturated and the limit remains {registers:.0f} registers per thread holding the kernels to one block per multiprocessor.
+      The split did not collect it -- it left every memory figure unchanged, the L2 hit rate moving {l2_delta} points, and bought its {ms_change}% per call by filling 108 multiprocessors instead -- so the traffic is unspent and additive to it rather than already counted.
+    evidence:
+      - kind: document
+        path: docs/experiments/radiation-memory.md
+        section: "How the prediction scored"
+        explanation: >-
+          Where the traffic goes, measured against a per-instruction ideal
+          rather than a warp average, and why the average understates it by
+          half. Also records what this profile cannot answer: stall sampling
+          charges a memory stall to the consuming instruction, so it cannot
+          price the gather.
+      - kind: document
+        path: docs/experiments/radiation-memory.md
+        section: "Result"
+        explanation: >-
+          The arm comparison that separates machine fill from locality. The
+          prediction written before the data said the split would show as better
+          cache behavior; it is refuted, and the rules ncu retires say what the
+          split actually bought.
+      - kind: result
+        path: results/experiments/radiation-memory/stats.json
+        values:
+          amplification: baseline.headline.worst_amplification_x
+          excessive_pct: baseline.headline.worst_excessive_pct
+          dram_pct_peak: baseline.headline.dram_pct_peak
+          registers: baseline.headline.registers
+          l2_delta: comparison.l2_hit_pts_delta
+          ms_change: comparison.ms_per_call_change_pct
+        explanation: >-
+          Both arms' counters and ncu's own rule output, merged from the raw,
+          details and source pages. The source page is the only one carrying a
+          per-instruction ideal, which is what resolves the coalescing figure.
+
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod

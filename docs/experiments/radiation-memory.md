@@ -50,7 +50,7 @@ That matters for the fix, because it means the cost of the gather is not bytes m
 What is insane is the *sector count*: the solvers fetch <!-- calkit value key=baseline.headline.worst_amplification_x path=results/experiments/radiation-memory/stats.json -->2.34<!-- /calkit value -->x more sectors than the same bytes would need if they were packed, which is <!-- calkit value key=baseline.headline.worst_excessive_pct path=results/experiments/radiation-memory/stats.json -->57.2<!-- /calkit value -->% of all sector traffic thrown away.
 Each uncoalesced load serializes into one L1 wavefront per sector, so the excess is load-store work and exposed latency rather than bandwidth, and memory dependency is indeed the largest stall reason measured, at <!-- calkit value key=baseline.headline.worst_long_scoreboard_share_of_measured_pct path=results/experiments/radiation-memory/stats.json -->60.3<!-- /calkit value -->% of the stall cycles in this counter set.
 But the honest consequence of nothing being saturated is that removing the excess frees no bottlenecked resource, so the time saved will be *less* than the sector count falls -- a 10%-utilized L1 does not reward a 10% cut in wavefronts with 10% of the runtime.
-The binding constraint is the one that was free to find: 255 registers, one block per SM, eight resident warps, and <!-- calkit value key=baseline.headline.grid_size path=results/experiments/radiation-memory/stats.json -->96<!-- /calkit value --> blocks on 108 multiprocessors, so there is nothing to switch to while a load is outstanding.
+The binding constraint is the one that was free to find: 255 registers, one block per SM, eight resident warps, and <!-- calkit value key=baseline.headline.grid_size path=results/experiments/radiation-memory/stats.json -->96.0<!-- /calkit value --> blocks on 108 multiprocessors, so there is nothing to switch to while a load is outstanding.
 Coalescing is worth fixing where it is cheap, and it is a second-order lever behind occupancy, not an alternative to it.
 
 **What cannot be concluded, and the attempt is recorded so it is not retried.** The obvious way to price the gather would be to attribute stall samples to the offending loads, and it does not work: a long-scoreboard stall is charged to the instruction that *consumes* the loaded register, not to the load that fetched it.
@@ -224,7 +224,70 @@ for a, data in out.items():
         ),
     }
 
+# The arms compared. The prediction this document committed before the data was
+# that the g-point split would show up here as better cache behavior, so the
+# test of it is derived rather than read off: `prediction_l2_hit_rose` and
+# `prediction_sectors_per_request_fell` are the two branches the prose named.
+b, m = out["baseline"]["headline"], out["mod"]["headline"]
+
+
+def rules(arm):
+    ks = out[arm]["kernels"]
+    lw = next(k for k in ks if "_lw_" in k)
+    return {
+        r["rule"]: r["estimated_speedup_pct"]
+        for r in ks[lw]["rules"]
+        if r.get("estimated_speedup_pct") is not None
+    }
+
+
+base_rules, mod_rules = rules("baseline"), rules("mod")
+dropped = sorted(set(base_rules) - set(mod_rules))
+out["comparison"] = {
+    "ms_per_call_change_pct": round(
+        100.0 * (m["ms_per_call"] - b["ms_per_call"]) / b["ms_per_call"], 2
+    ),
+    "grid_size_factor": round(m["grid_size"] / b["grid_size"], 1),
+    # Every memory figure, differenced. The prediction says these move; the
+    # alternative explanation says they do not.
+    "l2_hit_pts_delta": round(m["worst_l2_hit_pct"] - b["worst_l2_hit_pct"], 3),
+    "l1_hit_pts_delta": round(m["worst_l1_hit_pct"] - b["worst_l1_hit_pct"], 3),
+    "amplification_delta_x": round(
+        m["worst_amplification_x"] - b["worst_amplification_x"], 3
+    ),
+    "sectors_per_request_delta": round(
+        m["worst_ld_sectors_per_request"] - b["worst_ld_sectors_per_request"], 3
+    ),
+    "occupancy_pts_delta": round(
+        m["achieved_occupancy_pct"] - b["achieved_occupancy_pct"], 3
+    ),
+    "registers_delta": m["registers"] - b["registers"],
+    "prediction_l2_hit_rose": m["worst_l2_hit_pct"] > b["worst_l2_hit_pct"] + 1.0,
+    "prediction_sectors_per_request_fell": (
+        m["worst_ld_sectors_per_request"] < b["worst_ld_sectors_per_request"] - 0.1
+    ),
+    # The rules the split retired, and what ncu estimated they were worth. If
+    # these are the grid-shape rules, the saving is machine fill, not memory.
+    "rules_dropped_in_mod": dropped,
+    "rules_dropped_estimated_speedup_pct": round(
+        sum(base_rules[r] for r in dropped), 2
+    ),
+    "memory_rules_unchanged": {
+        r: [base_rules[r], mod_rules[r]]
+        for r in ("UncoalescedGlobalAccess", "MemoryCacheAccessPattern",
+                  "TheoreticalOccupancy")
+        if r in base_rules and r in mod_rules
+    },
+}
+
 json.dump(out, open(f"{D}/stats.json", "w"), indent=2, sort_keys=True)
+c = out["comparison"]
+print(f"mod vs baseline: {c['ms_per_call_change_pct']}% ms/call at "
+      f"{c['grid_size_factor']}x the blocks; L2 hit {c['l2_hit_pts_delta']:+} pts, "
+      f"amplification {c['amplification_delta_x']:+}x, "
+      f"registers {c['registers_delta']:+}")
+print(f"  rules retired: {', '.join(c['rules_dropped_in_mod']) or 'none'} "
+      f"(ncu estimated {c['rules_dropped_estimated_speedup_pct']}%)")
 h = out["baseline"]["headline"]
 print(f"baseline radiation: {h['ms_per_call']} ms/call, {h['registers']} regs, "
       f"{h['achieved_occupancy_pct']}% occupancy, {h['dram_gb_per_call']} GB/call")
@@ -243,8 +306,35 @@ print(f"  {h['worst_amplification_x']}x sectors vs ideal "
 
 ## Result
 
-Filled from `stats.json` once both arms have run.
+The baseline readings are in the section above; what the arms say about the prediction is here.
+
+**The arm half of the prediction is refuted, and not in either of the two ways the prediction allowed for.** It said the g-point split should appear as a higher L2 hit rate at the same sectors per request, and named the falsifying outcome as sectors per request falling instead.
+Neither happened: the L2 hit rate moved <!-- calkit value key=comparison.l2_hit_pts_delta path=results/experiments/radiation-memory/stats.json -->-0.033<!-- /calkit value --> points, L1 moved <!-- calkit value key=comparison.l1_hit_pts_delta path=results/experiments/radiation-memory/stats.json -->-0.107<!-- /calkit value --> points, sectors per request moved <!-- calkit value key=comparison.sectors_per_request_delta path=results/experiments/radiation-memory/stats.json -->0.0<!-- /calkit value -->, and the per-instruction amplification moved <!-- calkit value key=comparison.amplification_delta_x path=results/experiments/radiation-memory/stats.json -->0.0<!-- /calkit value -->x.
+`prediction_l2_hit_rose` is <!-- calkit value key=comparison.prediction_l2_hit_rose path=results/experiments/radiation-memory/stats.json -->false<!-- /calkit value --> and `prediction_sectors_per_request_fell` is <!-- calkit value key=comparison.prediction_sectors_per_request_fell path=results/experiments/radiation-memory/stats.json -->false<!-- /calkit value -->.
+The memory behavior of the two arms is, to within a tenth of a point on every figure collected, identical -- and yet the mod arm runs <!-- calkit value key=comparison.ms_per_call_change_pct path=results/experiments/radiation-memory/stats.json -->-8.23<!-- /calkit value -->% per call.
+
+**The split's saving is machine fill, not locality.** The one thing that changed is the grid: <!-- calkit value key=baseline.headline.grid_size path=results/experiments/radiation-memory/stats.json -->96.0<!-- /calkit value --> blocks became <!-- calkit value key=comparison.grid_size_factor path=results/experiments/radiation-memory/stats.json -->16.0<!-- /calkit value -->x as many, with registers moving <!-- calkit value key=comparison.registers_delta path=results/experiments/radiation-memory/stats.json -->0.0<!-- /calkit value --> and achieved occupancy <!-- calkit value key=comparison.occupancy_pts_delta path=results/experiments/radiation-memory/stats.json -->0.02<!-- /calkit value --> points.
+ncu's own rule set makes the same reading without being asked: the mod arm retires exactly two rules, `LaunchConfiguration` and `WorkloadImbalance`, together worth <!-- calkit value key=comparison.rules_dropped_estimated_speedup_pct path=results/experiments/radiation-memory/stats.json -->22.17<!-- /calkit value -->% by ncu's estimate, and those are precisely the two that are about a grid too small and too lumpy to fill 108 multiprocessors.
+Every memory rule survives at the same magnitude -- `UncoalescedGlobalAccess` at 56.44% in the baseline and 56.86% in the mod arm, `MemoryCacheAccessPattern` 15.18% and 16.64%, `TheoreticalOccupancy` 74.96% and 76.26%.
+A treatment that moved cache behavior could not leave the cache rules untouched and retire the grid rules instead.
+
+This is worth more than the prediction would have been if it had held.
+It means the g-point split, which is the one radiation treatment with a measured SYPD gain, did nothing whatsoever about the memory problem: it collected the 96-blocks-on-108-SMs tail and stopped.
+The entire <!-- calkit value key=baseline.headline.worst_excessive_pct path=results/experiments/radiation-memory/stats.json -->57.2<!-- /calkit value -->% sector excess is still there in the arm that is already 8% faster, so it is not spent, and whatever it is worth is additive to the split rather than overlapping with it.
 
 ## Verdict
 
-Pending.
+Three things to do, in the order their evidence supports rather than the order of their size.
+
+**1. The `Bool` masks, now.** <!-- calkit value key=baseline.headline.mask_strided_pct_of_excess path=results/experiments/radiation-memory/stats.json -->11.1<!-- /calkit value -->% of the excess from <!-- calkit value key=baseline.headline.mask_strided_instructions path=results/experiments/radiation-memory/stats.json -->14<!-- /calkit value --> instructions at <!-- calkit value key=baseline.headline.mask_strided_amplification_x path=results/experiments/radiation-memory/stats.json -->32.0<!-- /calkit value -->x, caused by `cld_mask_lw`, `cld_mask_sw` and `aero_mask` being allocated `(nlay, ncol)` in `ClimaAtmos.jl/src/parameterized_tendencies/radiation/RRTMGPInterface.jl` and read through `view(mask, :, gcol)`.
+The fix is three allocations and seven view sites, all of them the same pattern, on buffers that are pure per-column scratch with no other consumer and no I/O contract; it is the `_coalesced_2d` treatment the flux buffers already have, applied where the coalescing pass could not see it because the allocation lives in the other repository.
+Priced generously -- assuming time falls with sector count, which the section above argues it will not -- it is under a point of SYPD, so it is worth doing as a correctness-shaped bug in a shared library more than as a speedup.
+
+**2. Measure the bin spread before touching `kmajor`.** The <!-- calkit value key=baseline.headline.lookup_gather_pct_of_excess path=results/experiments/radiation-memory/stats.json -->77.9<!-- /calkit value -->% group is the only thing here big enough to matter, and the layout argument for it is incomplete.
+`kmajor` is `(n_η, n_p_ref + 1, n_t_ref, n_gpt)` and `interp3d` reads `coeff[jη, jpresst, jtemp]`, so a lane's neighbors are 4 bytes away in η, `n_η` × 4 bytes away in pressure and `n_η` × `(n_p_ref + 1)` × 4 bytes away in temperature -- only the η axis is inside a sector, and the other two both split one.
+Permuting the table so temperature joins η at the fast end would help only to the extent that a warp's 32 columns actually cluster in temperature and pressure bins, and that is not measured anywhere in this profile.
+It is a cheap thing to measure and an expensive thing to guess: the permutation touches the table load, every `interp*` reader, and the published artifact layout, so the histogram of per-warp bin spread comes first.
+
+**3. Registers remain the first-order lever, and this experiment did not move them.** <!-- calkit value key=baseline.headline.registers path=results/experiments/radiation-memory/stats.json -->255.0<!-- /calkit value --> registers per thread, one block per multiprocessor, eight resident warps of a possible 64, <!-- calkit value key=baseline.headline.worst_long_scoreboard_share_of_measured_pct path=results/experiments/radiation-memory/stats.json -->60.3<!-- /calkit value -->% of measured stall cycles waiting on memory, and `TheoreticalOccupancy` still the largest global rule in both arms.
+Nothing in the memory findings competes with that, and the two arms differing by <!-- calkit value key=comparison.registers_delta path=results/experiments/radiation-memory/stats.json -->0.0<!-- /calkit value --> registers is why the split bought a tail and not a step change.
+`scripts/measure-radiation-phase-registers.jl` is written and has never been run; it is what decides whether the solver can be split by phase the way it was split by g-point, and it is the next GPU hour worth spending on radiation.

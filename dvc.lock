@@ -1379,8 +1379,8 @@ stages:
       nfiles: 2
     - path: calkit.yaml
       hash: md5
-      md5: 4e8be3b1eede4de32fa35fe265144406
-      size: 98601
+      md5: 21ad43a17776cd55e42e04fa45891678
+      size: 101341
     - path: diffs
       hash: md5
       md5: 2db5c9622f9bde52fc94c2acf61d1404.dir
@@ -1393,7 +1393,7 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: eccf7dbec51cd86eed41c5eafcbf5951
+      md5: 8278e8f32d4b9e48a0f4ceb8746e4dbd
       size: 31579
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
@@ -3755,7 +3755,7 @@ stages:
       size: 2220
     - path: results/treatment.json
       hash: md5
-      md5: eccf7dbec51cd86eed41c5eafcbf5951
+      md5: 8278e8f32d4b9e48a0f4ceb8746e4dbd
       size: 31579
     - path: scripts/record-sypd-repeat.py
       hash: md5
@@ -4575,3 +4575,132 @@ stages:
       hash: md5
       md5: e2238a2614cc45a921a5e19f94edf9b0
       size: 21146984
+  radiation-memory/mod-ncu:
+    cmd: calkit scheduler batch --name radiation-memory/mod-ncu --environment 
+      clima --dep scripts/run-ncu.sh --dep scripts/run.jl --dep 
+      ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml --dep 
+      ClimaCore.jl-mod/src --dep ClimaCore.jl-mod/ext --dep 
+      ClimaAtmos.jl-mod/src --dep RRTMGP.jl-mod/src --dep 
+      .calkit/env-locks/clima --out 
+      results/experiments/radiation-memory/mod.ncu-rep --out 
+      results/experiments/radiation-memory/mod-details.csv --out 
+      results/experiments/radiation-memory/mod-raw.csv --option --gpus=1 
+      --option --time=180 -- 
+      .calkit/markdown/docs/experiments/radiation-memory.md/mod-ncu.sh
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: .calkit/markdown/docs/experiments/radiation-memory.md/mod-ncu.sh
+      hash: md5
+      md5: e8b1ca292efdb22e3a71e0cd18e37f10
+      size: 429
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: 534f271069e32fed642ffc8b6f9c36e6.dir
+      size: 2486207
+      nfiles: 162
+    - path: ClimaCore.jl-mod/ext
+      hash: md5
+      md5: 28d7f20d362f461b2c389ffa0e5b7493.dir
+      size: 224023
+      nfiles: 26
+    - path: ClimaCore.jl-mod/src
+      hash: md5
+      md5: ec0d4ed69dc1baaf23247802b1776c65.dir
+      size: 1476629
+      nfiles: 105
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 68480f6457cea178b9c39d5826001c61
+      size: 827
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
+      hash: md5
+      md5: bf84be5903321687a9df719f6f95478e
+      size: 125190
+    - path: ClimaCoupler.jl-mod/src
+      hash: md5
+      md5: 644e59914ebb4752f62f1b1dfc7605d9.dir
+      size: 318411
+      nfiles: 22
+    - path: RRTMGP.jl-mod/src
+      hash: md5
+      md5: 483f82aa020e43540fb9811fbc1ce4be.dir
+      size: 344110
+      nfiles: 44
+    - path: scripts/run-ncu.sh
+      hash: md5
+      md5: c867521e040a5d380de0dcfdf1cd883c
+      size: 3817
+    - path: scripts/run.jl
+      hash: md5
+      md5: 4f2b60cda5845786541c8cb3831dd4ba
+      size: 3877
+    outs:
+    - path: .calkit/scheduler/logs/radiation-memory/mod-ncu.out
+      hash: md5
+      md5: df143c98cdefddf5ded689bd1ae47277
+      size: 52713
+    - path: results/experiments/radiation-memory/mod-details.csv
+      hash: md5
+      md5: 23363bf97e8fd32b5a4b447639fe5965
+      size: 838368
+    - path: results/experiments/radiation-memory/mod-raw.csv
+      hash: md5
+      md5: e29098d8f5fa6a0cb84068c9afdb6b71
+      size: 174701
+    - path: results/experiments/radiation-memory/mod.ncu-rep
+      hash: md5
+      md5: 030023579183e45753ccaf6b89582172
+      size: 21410308
+  radiation-memory/analyze:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/experiments/radiation-memory.md/analyze.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: .calkit/markdown/docs/experiments/radiation-memory.md/analyze.py
+      hash: md5
+      md5: ea80d8ecb209683774c7b93eb69a0f84
+      size: 8701
+    - path: results/experiments/radiation-memory/baseline-details.csv
+      hash: md5
+      md5: 35819415f3e41ac2aa6f65fc4f24286f
+      size: 856329
+    - path: results/experiments/radiation-memory/baseline-raw.csv
+      hash: md5
+      md5: 1f03125845434d388be0d921b4394784
+      size: 172257
+    - path: results/experiments/radiation-memory/baseline.ncu-rep
+      hash: md5
+      md5: e2238a2614cc45a921a5e19f94edf9b0
+      size: 21146984
+    - path: results/experiments/radiation-memory/mod-details.csv
+      hash: md5
+      md5: 23363bf97e8fd32b5a4b447639fe5965
+      size: 838368
+    - path: results/experiments/radiation-memory/mod-raw.csv
+      hash: md5
+      md5: e29098d8f5fa6a0cb84068c9afdb6b71
+      size: 174701
+    - path: results/experiments/radiation-memory/mod.ncu-rep
+      hash: md5
+      md5: 030023579183e45753ccaf6b89582172
+      size: 21410308
+    - path: scripts/measure_radiation_memory.py
+      hash: md5
+      md5: e357db1b692581491f0f3e45ac18e154
+      size: 13951
+    outs:
+    - path: results/experiments/radiation-memory/stats.json
+      hash: md5
+      md5: d0e95e3f6b72f5951c8decf32bf32226
+      size: 39719
