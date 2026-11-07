@@ -80,11 +80,16 @@ def digest(path):
 def load(path):
     con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     rows = con.execute(
+        # One row per launch VARIANT, not per name. A MAX over registers beside
+        # a MAX over block size invents a launch that cannot exist, because one
+        # short name covers several specializations: that is how this file came
+        # to report 150 registers at 1024 threads, which is 153,600 registers
+        # against a 65,536-register file (docs/learnings.md section 8i).
         """SELECT s.value, COUNT(*), SUM(k.end - k.start)/1e6,
-                  MAX(k.registersPerThread), MAX(k.blockX*k.blockY*k.blockZ)
+                  k.registersPerThread, k.blockX*k.blockY*k.blockZ
            FROM CUPTI_ACTIVITY_KIND_KERNEL k
            JOIN StringIds s ON s.id = k.shortName
-           GROUP BY s.value"""
+           GROUP BY s.value, k.registersPerThread, k.blockX*k.blockY*k.blockZ"""
     ).fetchall()
     funcs = {}
     for name, n, ms, regs, threads in rows:
@@ -92,13 +97,34 @@ def load(path):
         # the same helper can compare arms as well as revisions.
         f = group(name.replace("_jl_mod_", "_jl_"))
         a = funcs.setdefault(
-            f, {"ms": 0.0, "launches": 0, "names": 0, "registers": 0, "threads": 0}
+            f,
+            {
+                "ms": 0.0,
+                "launches": 0,
+                "names": set(),
+                "variants": 0,
+                "registers": 0,
+                "threads": 0,
+                "registers_ms": 0.0,
+            },
         )
         a["ms"] += ms or 0.0
         a["launches"] += n
-        a["names"] += 1
-        a["registers"] = max(a["registers"], regs or 0)
-        a["threads"] = max(a["threads"], threads or 0)
+        a["names"].add(name)
+        a["variants"] += 1
+        # Registers and block size describe one launch together, so they are
+        # taken from one variant: the register-heaviest, which is what the
+        # `heavy` subtotals below classify on, with time breaking a tie.
+        if (regs or 0, ms or 0.0) > (a["registers"], a["registers_ms"]):
+            a["registers"] = regs or 0
+            a["threads"] = threads or 0
+            a["registers_ms"] = round(ms or 0.0, 1)
+    for a in funcs.values():
+        a["names"] = len(a["names"])
+        # A block cannot hold more registers than the register file.
+        assert a["registers"] * a["threads"] <= 65536, (
+            f"impossible launch: {a['registers']} registers at {a['threads']} threads"
+        )
     gpus = con.execute("SELECT DISTINCT name, clockRate FROM TARGET_INFO_GPU").fetchall()
     elapsed = union_ms(
         con.execute("SELECT start, end FROM CUPTI_ACTIVITY_KIND_KERNEL").fetchall()
@@ -152,6 +178,8 @@ def main():
             "now_registers": b["registers"] if b else None,
             "pre_threads_per_block": a["threads"] if a else None,
             "now_threads_per_block": b["threads"] if b else None,
+            "pre_variants": a["variants"] if a else None,
+            "now_variants": b["variants"] if b else None,
         })
     rows.sort(key=lambda r: -r["delta_ms"])
     for r in rows:
