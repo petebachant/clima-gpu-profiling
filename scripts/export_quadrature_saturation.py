@@ -95,7 +95,36 @@ def main(out=OUT):
                                        base["device_total_ms"])
         row["sypd_points"] = round(-row["device_change_ms"] * pct_per_ms, 2)
         row["faster"] = row["device_change_ms"] < 0
+        # A variant is only unambiguously an improvement if nothing it touches
+        # lost occupancy. Net device time can be positive while the heaviest
+        # kernel in the model is slower, which is a cost the total hides.
+        row["kernels_slower"] = [k for k in KERNELS if row[k]["change_ms"] > 0]
+        row["kernels_losing_warps"] = [k for k in KERNELS
+                                       if row[k]["warps_change"] < 0]
+        row["no_regression"] = not row["kernels_losing_warps"]
         profiled[name] = row
+
+    # The two ways to choose between the variants: the largest net device saving,
+    # and the largest saving that costs no kernel any occupancy. They disagree
+    # here, which is the decision this experiment hands back.
+    headline = None
+    if profiled:
+        best = min(profiled.items(), key=lambda kv: kv[1]["device_change_ms"])
+        clean = [kv for kv in profiled.items() if kv[1]["no_regression"]]
+        best_clean = (min(clean, key=lambda kv: kv[1]["device_change_ms"])
+                      if clean else None)
+        headline = {
+            "best_variant": best[0],
+            "best_device_change_ms": best[1]["device_change_ms"],
+            "best_sypd_points": best[1]["sypd_points"],
+            "best_no_regression": best[1]["no_regression"],
+            "best_clean_variant": best_clean[0] if best_clean else None,
+            "best_clean_device_change_ms": (best_clean[1]["device_change_ms"]
+                                            if best_clean else None),
+            "best_clean_sypd_points": (best_clean[1]["sypd_points"]
+                                       if best_clean else None),
+            "best_is_clean": bool(best_clean) and best[0] == best_clean[0],
+        }
 
     # Which half moved the registers, and what the other half is worth at a
     # geometry the two share. The expectation was the opposite of the result:
@@ -107,6 +136,15 @@ def main(out=OUT):
                            for k in (BEFORE, "dead_field", "both_removals"))
         attribution = {
             "pre_registers": pre["registers"],
+            # Measured directly rather than inferred: the reuse applied on its
+            # own leaves the count where it was, so the field accounts for all
+            # of the move and the reuse for none of it.
+            "reuse_alone_registers": (
+                profiles["saturation_reuse"]["quadrature_cache"]["registers"]
+                if "saturation_reuse" in profiles else None),
+            "reuse_alone_warps": (
+                profiles["saturation_reuse"]["quadrature_cache"]["warps_per_sm"]
+                if "saturation_reuse" in profiles else None),
             "dead_field_registers": dead["registers"],
             "both_registers": both["registers"],
             "dead_field_moved_registers": dead["registers"] - pre["registers"],
@@ -215,6 +253,7 @@ def main(out=OUT):
             "profiled_steps": 120,
         },
         "cliff": cliff,
+        "headline": headline,
         "attribution": attribution,
         "profiled": profiled,
         "probe": probe,

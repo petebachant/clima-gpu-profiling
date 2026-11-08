@@ -21,8 +21,20 @@
     "headroom_registers": 0,
     "at_band_edge": true
   },
+  "headline": {
+    "best_variant": "both_removals",
+    "best_device_change_ms": -457.9,
+    "best_sypd_points": 1.2,
+    "best_no_regression": false,
+    "best_clean_variant": "saturation_reuse",
+    "best_clean_device_change_ms": -102.1,
+    "best_clean_sypd_points": 0.27,
+    "best_is_clean": false
+  },
   "attribution": {
     "pre_registers": 128,
+    "reuse_alone_registers": 128,
+    "reuse_alone_warps": 16,
     "dead_field_registers": 130,
     "both_registers": 130,
     "dead_field_moved_registers": 2,
@@ -73,7 +85,14 @@
       "device_change_ms": -457.9,
       "device_change_pct": -1.36,
       "sypd_points": 1.2,
-      "faster": true
+      "faster": true,
+      "kernels_slower": [
+        "quadrature_cache"
+      ],
+      "kernels_losing_warps": [
+        "quadrature_cache"
+      ],
+      "no_regression": false
     },
     "dead_field": {
       "label": "dead node field only",
@@ -114,7 +133,58 @@
       "device_change_ms": -318.1,
       "device_change_pct": -0.95,
       "sypd_points": 0.83,
-      "faster": true
+      "faster": true,
+      "kernels_slower": [
+        "quadrature_cache"
+      ],
+      "kernels_losing_warps": [
+        "quadrature_cache"
+      ],
+      "no_regression": false
+    },
+    "saturation_reuse": {
+      "label": "saturation reuse only",
+      "climaatmos_commit": "0abce268f",
+      "quadrature_cache": {
+        "before_ms": 4979.0,
+        "after_ms": 4945.5,
+        "change_ms": -33.5,
+        "change_pct": -0.67,
+        "registers_before": 128,
+        "registers_after": 128,
+        "registers_change": 0,
+        "block_before": 512,
+        "block_after": 512,
+        "warps_before": 16,
+        "warps_after": 16,
+        "warps_change": 0,
+        "band_crossed": false
+      },
+      "implicit_tendency": {
+        "before_ms": 2463.7,
+        "after_ms": 2377.7,
+        "change_ms": -86.0,
+        "change_pct": -3.49,
+        "registers_before": 114,
+        "registers_after": 114,
+        "registers_change": 0,
+        "block_before": 512,
+        "block_after": 512,
+        "warps_before": 16,
+        "warps_after": 16,
+        "warps_change": 0,
+        "band_crossed": false
+      },
+      "treated_change_ms": -119.5,
+      "device_before_ms": 33551.9,
+      "device_after_ms": 33449.8,
+      "device_change_ms": -102.1,
+      "device_change_pct": -0.3,
+      "sypd_points": 0.27,
+      "faster": true,
+      "kernels_slower": [],
+      "kernels_losing_warps": [],
+      "no_regression": true
     }
   },
   "probe": {

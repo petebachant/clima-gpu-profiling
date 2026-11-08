@@ -3627,13 +3627,26 @@ occupancy move at all --- and those are the same fact about it, not two. Check a
 screening instrument's error against the margin the decision turns on, not
 against the size of the effect.
 
+**The register move came from the half meant to lower the count, which three
+variants separate cleanly.** Deleting a field removes eight registers from a
+table live across the whole integration and is what took the kernel 128 -> 130;
+handing the saturation across the barrier --- which adds a value that lives
+across a call, and was the obvious suspect --- applied on its own leaves the
+count at 128 and the kernel at 16 warps. So the non-regressive variant is the
+one that looked riskier, and the risky-looking one is the only one that pays.
+Measure each half at its own commit and profile each: the probe cannot tell
+these apart at all, since it compiles 130 for every one of them.
+
 **The same removal moved a sibling kernel the other way, and that is where the
 saving came from.** `update_implicit_1m_tendency` reaches the same node function
 with `BMT.Instantaneous`, which has no substep loop and no 4x4 linearized
 operator, so its frame is much smaller and the removal took it 114 -> 81
 registers, up a band to 20 warps, and about 35% faster. Net over the device the
 treatment gains, by roughly a point of SYPD --- entirely on the kernel that was
-not the target, while the target regressed. A treatment aimed at one kernel
+not the target, while the target regressed. And the sibling's band jump needs
+the dead field: the register-neutral half alone moves it 3.5% and leaves it at
+114 registers, so the only variant that collects the large saving is the one
+that also pays the regression. A treatment aimed at one kernel
 through shared code is a treatment of every kernel that shares it, so enumerate
 them before reading a profile: the implicit sibling was briefly in the control
 set, where it reported a 31% "control" change.

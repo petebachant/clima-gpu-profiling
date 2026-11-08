@@ -54,6 +54,107 @@ index c12aadb..f2676c5 100644
          ρ,
          q,
      )
+diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/conditional_nodes.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/conditional_nodes.jl
+index d0ff776..3e1244a 100644
+--- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/conditional_nodes.jl
++++ b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/conditional_nodes.jl
+@@ -388,29 +388,28 @@ end
+ """
+     _point_value(f, n, t, spread)
+ 
+-`f(T, q, shaft)` at the temperature point of the node `n` offset by `t` [-],
+-in units of the spread `σ⊥` at fixed saturation excess (`_temperature_points`):
+-the point's temperature is `n.T + t σ⊥` floored at `spread.T_min` [K], and its
+-total water is set from the `TemperatureSpread` `spread` so that the evaluator
+-recovers the node's `S′`, clamped to `[0, spread.q_max]` [kg/kg]. The value is
+-wrapped for accumulation (`add_auto_broadcasters`), so `f` may return a
+-scalar or a `NamedTuple` of scalars.
++`f(T, q, shaft, q_sat)` at the temperature point of the node `n` offset by `t`
++[-], in units of the spread `σ⊥` at fixed saturation excess
++(`_temperature_points`): the point's temperature is `n.T + t σ⊥` floored at
++`spread.T_min` [K], and its total water is set from the `TemperatureSpread`
++`spread` so that the evaluator recovers the node's `S′`, clamped to
++`[0, spread.q_max]` [kg/kg]. The saturation specific humidity the point's total
++water was built from is passed to `f`, which needs the same value to recover
++`S′`. The value is wrapped for accumulation (`add_auto_broadcasters`), so `f`
++may return a scalar or a `NamedTuple` of scalars.
+ """
+ @inline function _point_value(f, n, t, spread)
+     FT = typeof(n.w)
+     T_pt = max(spread.T_min, n.T + t * spread.σ⊥)
+-    q_pt = clamp(
+-        TD.q_vap_saturation(_unwrapped(spread.thp), T_pt, spread.ρ) + spread.mu_S + n.S′,
+-        zero(FT),
+-        spread.q_max,
+-    )
+-    return add_auto_broadcasters(f(T_pt, q_pt, n.shaft))
++    q_sat_pt = TD.q_vap_saturation(_unwrapped(spread.thp), T_pt, spread.ρ)
++    q_pt = clamp(q_sat_pt + spread.mu_S + n.S′, zero(FT), spread.q_max)
++    return add_auto_broadcasters(f(T_pt, q_pt, n.shaft, q_sat_pt))
+ end
+ 
+ """
+     sum_over_conditional_nodes(f, rule, spread)
+ 
+-Weighted sum of `f(T, q, shaft)` over the nodes of a `ConditionalRule` and,
++Weighted sum of `f(T, q, shaft, q_sat)` over the nodes of a `ConditionalRule` and,
+ for each node, over its points in temperature at fixed saturation excess
+ (`_temperature_points`, with the `TemperatureSpread` `spread`); a point's
+ total water is set so that the evaluator recovers the node's `S′`. The first
+diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
+index 783a31d..2f53595 100644
+--- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
++++ b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
+@@ -386,7 +386,7 @@ share has mean `λ q_c = q_lcl` (resp. `(1 − λ) q_c = q_icl`) by construction
+ end
+ 
+ # `@noinline` here is the SGS node function barrier. The functor body
+-# below (saturation, shape-function partition, plus the heavy
++# below (the shape-function partition, plus the heavy
+ # `BMT.average_bulk_microphysics_tendencies` call with its `nsubs`
+ # substep loop and 4×4 linearized operator) gets invoked at every node and
+ # temperature point of `sum_over_conditional_nodes`. Without the barrier those copies inline
+@@ -396,12 +396,16 @@ end
+ # give LLVM/NVPTX not to re-inline this — the body is multi-statement and
+ # meaningfully sized, so the late inliner won't undo it.
+ """
++    (eval::Microphysics1MEvaluator)(T_hat, q_tot_hat, flag_p, q_sat_hat)
+     (eval::Microphysics1MEvaluator)(T_hat, q_tot_hat, flag_p)
+ 
+ Evaluate the 1-moment tendencies at one node `(T_hat, q_tot_hat)` [K, kg/kg]
+ with the node's shaft flag `flag_p` (`1` inside the precipitation shaft, `0`
+ outside; the intervals of the conditional-moment rule lie entirely on one
+-side of the shaft edge).
++side of the shaft edge) and the saturation specific humidity `q_sat_hat` at
++`(T_hat, ρ)`, which `_point_value` set the node's total water from and so has
++to hand; the three-argument form evaluates it instead, for callers that reach
++the evaluator from outside the node traversal.
+ 
+ The local cloud condensate is obtained from the centred saturation excess
+ `S′_hat = (q_tot_hat − q_sat(T_hat, ρ)) − mu_S`:
+@@ -429,7 +433,13 @@ local vapor.
+ NamedTuple from `BMT.bulk_microphysics_tendencies(BMT.LinearizedAverage(), ...)`
+ with `dq_lcl_dt`, `dq_icl_dt`, `dq_rai_dt`, `dq_sno_dt` [kg/kg/s].
+ """
+-@noinline function (eval::Microphysics1MEvaluator)(T_hat, q_tot_hat, flag_p)
++@inline (eval::Microphysics1MEvaluator)(T_hat, q_tot_hat, flag_p) = eval(
++    T_hat, q_tot_hat, flag_p,
++    TD.q_vap_saturation(_unwrapped(eval.tps), T_hat, eval.ρ),
++)
++@noinline function (eval::Microphysics1MEvaluator)(
++    T_hat, q_tot_hat, flag_p, q_sat_hat,
++)
+     FT = typeof(eval.ρ)
+     q_tot_hat = max(FT(0), q_tot_hat)
+ 
+@@ -442,7 +452,6 @@ with `dq_lcl_dt`, `dq_icl_dt`, `dq_rai_dt`, `dq_sno_dt` [kg/kg/s].
+     # by cloud-only q_c), and CloudMicrophysics subtracts q_rai/q_sno from
+     # q_tot_hat when it diagnoses the local vapor. Subtracting them from the
+     # cloud condensate as well would double-count them and break ⟨q_c^local⟩ = q_c.
+-    q_sat_hat = TD.q_vap_saturation(_unwrapped(eval.tps), T_hat, eval.ρ)
+     S′_hat = q_tot_hat - q_sat_hat - eval.mu_S
+     αS′_hat = eval.α * S′_hat
+     shifted_excess = max(FT(0), eval.λ_lagrange + αS′_hat)
 diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/terminal_velocity_utils.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/terminal_velocity_utils.jl
 index 0ebd57e..42cad34 100644
 --- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/terminal_velocity_utils.jl
@@ -133,3 +234,20 @@ index 0ebd57e..42cad34 100644
  
  """
      gs_terminal_velocity(
+diff --git a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/conditional_nodes.jl b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/conditional_nodes.jl
+index bccdb68..512af1a 100644
+--- a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/conditional_nodes.jl
++++ b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/conditional_nodes.jl
+@@ -288,9 +288,9 @@ const CA = ClimaAtmos
+             σ⊥ = CA.sgs_temperature_spread_at_fixed_excess(FT(1), β_T, σ_S)
+             @test (β_T * σ_S)^2 + σ⊥^2 ≈ 1
+             spread = CA.TemperatureSpread(thp, ρ, mu_S, σ⊥, T_frz, FT(150), FT(0.05))
+-            one_f = (T, q, s) -> one(T)
+-            T_f = (T, q, s) -> T
+-            S_f = (T, q, s) -> q - TD.q_vap_saturation(thp, T, ρ) - mu_S
++            one_f = (T, q, s, q_sat) -> one(T)
++            T_f = (T, q, s, q_sat) -> T
++            S_f = (T, q, s, q_sat) -> q - q_sat - mu_S
+             # the unsplit rule: no spread at fixed S′
+             unsplit = CA.TemperatureSpread(thp, ρ, mu_S, FT(0), T_frz, FT(150), FT(0.05))
+             @test CA.sum_over_conditional_nodes(one_f, rule, spread) ≈
