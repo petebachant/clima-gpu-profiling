@@ -1,0 +1,42 @@
+arm = "mod"
+climaatmos_commit = "a36c32b2fb62904e1031888e949bf9d0f41bdc37"
+climaatmos_dirty = false
+climaatmos_path = "/home/pbachant/calkit/clima-gpu-profiling/ClimaAtmos.jl-mod"
+measured = "2026-11-07"
+note = "Compile-only register census of the SGS-quadrature microphysics broadcast, read from ClimaCore's RECORD_KERNELS hook on the real AMIP he16 data layout. Parameters are folded into Val as the model folds them. Packing the seven precomputed scratch fields into one struct field moved neither registers nor spill, because kernel arguments live in constant parameter space."
+
+[cases."non-quadrature sibling"]
+kernels_launched = 1
+local_bytes = 32
+maxthreads = 512
+occupancy_pct = 25.0
+registers = 102
+warps_per_sm = 16
+
+[cases."quadrature broadcast (L1297)"]
+kernels_launched = 1
+local_bytes = 360
+maxthreads = 384
+occupancy_pct = 18.75
+registers = 163
+warps_per_sm = 12
+
+[cases.steps]
+1 = 64
+128 = 16
+168 = 12
+32 = 64
+40 = 48
+48 = 40
+56 = 36
+64 = 32
+72 = 28
+80 = 24
+96 = 20
+
+[layout]
+Nh = 1536
+Nij = 6
+Nv = 79
+float_type = "Float32"
+points = 4368384
