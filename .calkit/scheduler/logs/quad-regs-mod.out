@@ -1,0 +1,62 @@
+gpu-guard: running on GPU(s) [0] -- OK (avoiding [])
+Loading climacommon/2025_05_15
+  Loading requirement: climaauth/2025_05_15 openmpi/4.1.5-mpitrampoline
+    julia/1.11.5 cuda/julia-pref
+┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
+│ This may cause errors.
+│ 
+│ If you're running under a profiler, this situation is expected. Otherwise,
+│ ensure that your library path environment variable (e.g., `PATH` on Windows
+│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│ 
+│ In any other case, please file an issue.
+└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+┌ Warning: CUDA runtime library `libnvJitLink.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libnvJitLink.so.13`.
+│ This may cause errors.
+│ 
+│ If you're running under a profiler, this situation is expected. Otherwise,
+│ ensure that your library path environment variable (e.g., `PATH` on Windows
+│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│ 
+│ In any other case, please file an issue.
+└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+┌ Warning: CUDA runtime library `libcusparse.so.12` was loaded from a system path, `/usr/local/cuda/lib64/libcusparse.so.12`.
+│ This may cause errors.
+│ 
+│ If you're running under a profiler, this situation is expected. Otherwise,
+│ ensure that your library path environment variable (e.g., `PATH` on Windows
+│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│ 
+│ In any other case, please file an issue.
+└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+Precompiling ClimaAtmos...
+  28857.7 ms  ✓ ClimaAtmos
+  1 dependency successfully precompiled in 35 seconds. 305 already precompiled.
+┌ Warning: Package cuDNN not found in current path.
+│ - Run `import Pkg; Pkg.add("cuDNN")` to install the cuDNN package, then restart julia.
+│ - If cuDNN is not installed, some Flux functionalities will not be available when running on the GPU.
+└ @ FluxCUDAExt ~/.julia/packages/Flux/YMjah/ext/FluxCUDAExt.jl:11
+
+=== SGS-quadrature microphysics: where the registers go ===
+AMIP he16 layout: Nv=79 Nij=6 Nh=1536, 4368384 points, Float32
+
+case                              regs  spill B  warps/SM  occupancy
+quadrature broadcast (L1297)      163   360      12        18.75%
+non-quadrature sibling            102   32       16        25.0%
+
+=== A100 occupancy steps, and what a case would need ===
+  <= 1    regs -> 64  warps/SM  (100.0%)
+  <= 32   regs -> 64  warps/SM  (100.0%)
+  <= 40   regs -> 48  warps/SM  (75.0%)
+  <= 48   regs -> 40  warps/SM  (62.5%)
+  <= 56   regs -> 36  warps/SM  (56.2%)
+  <= 64   regs -> 32  warps/SM  (50.0%)
+  <= 72   regs -> 28  warps/SM  (43.8%)
+  <= 80   regs -> 24  warps/SM  (37.5%)
+  <= 96   regs -> 20  warps/SM  (31.2%)
+  <= 128  regs -> 16  warps/SM  (25.0%)
+  <= 168  regs -> 12  warps/SM  (18.8%)
+
+arm = mod, ClimaAtmos at /home/pbachant/calkit/clima-gpu-profiling/ClimaAtmos.jl-mod @ a36c32b2fb62904e1031888e949bf9d0f41bdc37
+
+PROBE DONE

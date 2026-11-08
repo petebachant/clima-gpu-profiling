@@ -3495,3 +3495,64 @@ What it then shows is that the 2026-11-03 fusion *raised* this kernel's
 occupancy while making it much slower. So the register lever is not a recovery
 of the regression; it is an independent gain, and conversely the regression
 cannot be explained by the thing this document prices.
+
+## 8p. The one register saving ClimaAtmos offers on the hot kernel costs registers instead (2026-11-07)
+
+`docs/experiments/occupancy-launch-model.md`, last section, and
+`results/quadrature-registers-baseline.toml` and
+`results/quadrature-registers-mod.toml` carry the figures.
+
+**Build a probe before building a treatment, when the band is wide.** Section
+8o priced an occupancy step on a kernel sitting in the widest register band
+below the hardware cap, which means a treatment can be most of the way there
+and read as a null. `scripts/measure-quadrature-registers.jl` compiles the real
+broadcast and reads the register count out of ClimaCore's own `RECORD_KERNELS`
+launch record, so a candidate costs minutes of one GPU instead of a profiling
+pair. Three directions were priced this way and two of them died before a line
+of treatment was written.
+
+**A kernel's arguments are not a register cost.** Packing the seven precomputed
+scratch fields the broadcast reads into one struct field, so the kernel took one
+base pointer where it had taken seven, moved neither the register count nor the
+spill by a single byte. Kernel parameters live in constant parameter space, not
+in registers, so counting pointers as live state is a category error --- and it
+was the estimate that made a two-part treatment look like it would cross two
+steps.
+
+**Hand-rematerializing to relieve register pressure competes with the allocator
+rather than helping it.** The biggest piece of live state ClimaAtmos owns in
+this kernel is the eight-node conditional-moment table, held across the whole
+integration and consumed one node at a time, which reads like an obvious
+saving. Rebuilding each interval's nodes on demand made the kernel *worse* on
+both axes, registers and spill, because the generation's own working set then
+coexists with the evaluator's and the peak is what `ptxas` allocates for.
+Rematerialization is something a register allocator already does, with the
+whole live-range graph in front of it; source-level rematerialization only hides
+the choice from it.
+
+**A second kernel compiled in the same run is the control that makes a probe
+differential.** The probe does not reproduce the profiled register count
+exactly --- a standalone reconstruction cannot match every type the coupled
+model builds --- so its absolute number is not the measurement. The
+non-quadrature sibling, which shares the launcher, the layout and the parameter
+construction and is untouched by the treatment, came out identical in both arms,
+which is what licenses reading the difference on the target as the treatment's
+own effect. Without it, the treatment's effect and the reconstruction's error
+are the same kind of number and nothing separates them.
+
+**Read the config's defaults before concluding which arm of a branch runs.**
+`use_sgs_quadrature` is absent from every config file in this project and
+defaults to `true`, so the quadrature path is the live one; the register census
+was nearly abandoned on the opposite reading. ClimaCore's kernel names carry
+the source line, so the profile itself settles which branch a kernel came from
+--- `L1297` and `L1246` are the two quadrature calls and `L1268` is the
+`foreach_column` precompute, and a `LIKE '%microphysics%'` query over the
+sqlite prints all three with their register counts.
+
+**What remains on this kernel is a physics choice, not an implementation one.**
+The registers that are left are inside CloudMicrophysics' bulk tendency, behind
+a `@noinline` barrier that is already in place and already holding, and neither
+arm devs that package --- reaching it rewrites the AMIP manifest and
+invalidates every profiling stage. The kernel's cost is that it evaluates the
+1M microphysics at up to sixteen points per cell, so the lever that is left is
+the node count.

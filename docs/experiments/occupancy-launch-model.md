@@ -23,7 +23,7 @@ Freezing exists to stop a document being regenerated against a profile it did no
 
 ## Analysis
 
-```python calkit stage name=analyze environment=py outputs=[{path: results/experiments/occupancy-launch-model/stats.json, storage: git}] inputs=[scripts/measure_occupancy.py, results/launch-inventory.json, results/sedimentation-fold.json, results/fold-on-current-stack.json, results/regression-record/attribution-1103.json]
+```python calkit stage name=analyze environment=py outputs=[{path: results/experiments/occupancy-launch-model/stats.json, storage: git}] inputs=[scripts/measure_occupancy.py, results/launch-inventory.json, results/sedimentation-fold.json, results/fold-on-current-stack.json, results/regression-record/attribution-1103.json, results/quadrature-registers-baseline.toml, results/quadrature-registers-mod.toml]
 import json
 import sys
 
@@ -112,6 +112,50 @@ recommended = next(
     (p["target_registers"] for p in prediction if p["vs_null_floor"] >= 1.5), None
 )
 
+# The one structural saving the kernel offers from ClimaAtmos, measured by
+# compiling the real broadcast rather than by estimating it. The two snapshots
+# come from one script run over the two arms, and the non-quadrature sibling is
+# the in-run control: it shares the launcher and the layout and is untouched by
+# the treatment, so an equal control with an unequal target is the treatment's
+# own effect.
+import tomllib
+
+TARGET_CASE = "quadrature broadcast (L1297)"
+CONTROL_CASE = "non-quadrature sibling"
+probe = {
+    a: tomllib.load(open(f"results/quadrature-registers-{a}.toml", "rb"))
+    for a in ("baseline", "mod")
+}
+assert not any(p["climaatmos_dirty"] for p in probe.values()), "probe ran on a dirty tree"
+eager, lazy = probe["baseline"]["cases"], probe["mod"]["cases"]
+attempt = {
+    "treatment": "rebuild the eight conditional-moment nodes on demand "
+    "instead of materializing the node table",
+    "eager_commit": probe["baseline"]["climaatmos_commit"][:9],
+    "lazy_commit": probe["mod"]["climaatmos_commit"][:9],
+    "eager_registers": eager[TARGET_CASE]["registers"],
+    "lazy_registers": lazy[TARGET_CASE]["registers"],
+    "eager_spill_bytes": eager[TARGET_CASE]["local_bytes"],
+    "lazy_spill_bytes": lazy[TARGET_CASE]["local_bytes"],
+    "control_eager_registers": eager[CONTROL_CASE]["registers"],
+    "control_lazy_registers": lazy[CONTROL_CASE]["registers"],
+    "probe_target_registers": eager[TARGET_CASE]["registers"],
+    "profiled_target_registers": current["max_registers"],
+}
+attempt["register_change"] = attempt["lazy_registers"] - attempt["eager_registers"]
+attempt["spill_change_bytes"] = (
+    attempt["lazy_spill_bytes"] - attempt["eager_spill_bytes"]
+)
+attempt["control_unchanged"] = (
+    attempt["control_eager_registers"] == attempt["control_lazy_registers"]
+)
+attempt["probe_error_registers"] = (
+    attempt["probe_target_registers"] - attempt["profiled_target_registers"]
+)
+# The table is live across the integration, five fields of eight nodes.
+attempt["node_table_registers"] = 8 * 5
+attempt["helped"] = attempt["register_change"] < 0
+
 out = {
     "model": {
         "device": inv["provenance"]["device"],
@@ -171,6 +215,7 @@ out = {
     },
     "calibration": cal,
     "fusion": fusion,
+    "attempt": attempt,
     "prediction": {
         "sypd_pct_per_device_ms": SYPD_PCT_PER_MS,
         "exponent": exponent,
@@ -187,6 +232,8 @@ out = {
 
 # ncol is a coincidence, not a decomposition; assert it so the claim is checked.
 assert out["targets"]["threads"] == 55296, out["targets"]["threads"]
+# The control carries the comparison, so an unequal control invalidates it.
+assert attempt["control_unchanged"], attempt
 
 json.dump(out, open("results/experiments/occupancy-launch-model/stats.json", "w"), indent=2)
 ```
@@ -257,6 +304,8 @@ The falsifier is two-sided, which is the point of writing it down.
 If a treatment reaches an occupancy step and the kernel does not move at all, occupancy is not what limits these kernels and the register direction is dead.
 If it moves by substantially *more* than the power law says, the exponent fitted from the fold does not transfer --- most likely because the fold's kernels were less latency-bound than these, which would make the remaining steps worth more than the table claims rather than less.
 
+Neither has been tested, because no treatment has reached a step: the one structural saving the kernel offers from this side of the stack moves the register count the wrong way, which the last section records.
+
 ## What this rules out
 
 **Register shaving was never the wrong idea; the arithmetic I used to dismiss it was wrong.** Reading <!-- calkit value key=targets.threads path=results/experiments/occupancy-launch-model/stats.json -->55296<!-- /calkit value --> threads as one per column makes the work look like the binding constraint, and under that reading the register file's capacity at <!-- calkit value key=targets.max_registers path=results/experiments/occupancy-launch-model/stats.json -->128<!-- /calkit value --> registers --- also <!-- calkit value key=targets.block_size path=results/experiments/occupancy-launch-model/stats.json -->512<!-- /calkit value --> threads per multiprocessor --- is a coincidence that leaves nothing to gain.
@@ -273,3 +322,14 @@ So nothing in the regression is explained by the lever this document prices, and
 **A hard register cap is the wrong instrument for reaching a step.** ClimaCore exposes one, as the `maxregs` keyword on `foreach_slice`, and it works by letting `ptxas` spill whatever does not fit; the kernels here spill nothing today, so a cap buys occupancy by creating memory traffic.
 This repo has already tried it twice --- a cap alone measured +0.43% and a 64-register cap measured -5.5%.
 The register count has to fall because the kernel needs less live state, not because it was forbidden more.
+
+**De-materializing the node table costs registers rather than saving them.** The quadrature kernel holds an eight-node conditional-moment rule live across its integration, five floats per node, so the table alone is <!-- calkit value key=attempt.node_table_registers path=results/experiments/occupancy-launch-model/stats.json -->40<!-- /calkit value --> registers --- the largest single piece of live state that `ClimaAtmos` owns here, and the only one of any size outside `CloudMicrophysics`, which neither arm devs.
+Rebuilding each interval's node pair on demand instead, so that one pair is live where the table was, moved the compiled kernel from <!-- calkit value key=attempt.eager_registers path=results/experiments/occupancy-launch-model/stats.json -->130<!-- /calkit value --> registers to <!-- calkit value key=attempt.lazy_registers path=results/experiments/occupancy-launch-model/stats.json -->163<!-- /calkit value --> and its spill from <!-- calkit value key=attempt.eager_spill_bytes path=results/experiments/occupancy-launch-model/stats.json -->328<!-- /calkit value --> to <!-- calkit value key=attempt.lazy_spill_bytes path=results/experiments/occupancy-launch-model/stats.json -->360<!-- /calkit value --> bytes, a change of <!-- calkit value key=attempt.register_change path=results/experiments/occupancy-launch-model/stats.json -->33<!-- /calkit value -->.
+The non-quadrature sibling compiled in the same two runs is the control: it shares the launcher, the layout and the parameter construction, it is untouched by the treatment, and it stayed at <!-- calkit value key=attempt.control_eager_registers path=results/experiments/occupancy-launch-model/stats.json -->102<!-- /calkit value --> registers in both arms, so nothing about the instrument moved.
+The mechanism is that the generation's own working set --- a saturation-vapor-pressure evaluation per node, among others --- then lives at the same time as the evaluator's, and the peak is what `ptxas` allocates for, so the materialized table is the cheaper of the two arrangements rather than the more expensive.
+Rematerializing to relieve pressure is a register allocator's own trick, and doing it by hand in the source competes with the allocator instead of helping it.
+
+**What is left is not reachable from the arms as they stand, but the kernel's work is.** The registers that remain are in CloudMicrophysics' bulk tendency, behind the `@noinline` barrier that is already in place and already holding; reaching them means devving a package that neither arm devs, which rewrites the AMIP manifest and invalidates every profiling stage.
+The kernel is expensive because it evaluates the 1M microphysics at up to sixteen points per cell, and the node count is a physics-accuracy choice rather than an implementation detail --- so the lever that remains on this kernel is a science question, not an optimization.
+The measurement above cost a handful of compile-only jobs of a few minutes each and no profiling pair, which is the use the probe is for: `scripts/measure-quadrature-registers.jl` reads the register count out of ClimaCore's own launch record, so it measures the kernel the model launches rather than a stand-in.
+It reads <!-- calkit value key=attempt.probe_target_registers path=results/experiments/occupancy-launch-model/stats.json -->130<!-- /calkit value --> registers where the profile reads <!-- calkit value key=attempt.profiled_target_registers path=results/experiments/occupancy-launch-model/stats.json -->128<!-- /calkit value -->, a difference of <!-- calkit value key=attempt.probe_error_registers path=results/experiments/occupancy-launch-model/stats.json -->2<!-- /calkit value -->, so it is trusted for differences between arms and not for an absolute count.
