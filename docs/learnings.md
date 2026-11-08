@@ -3562,13 +3562,14 @@ wrong** --- see 8q, which found an implementation lever in the same twenty
 lines of the same function, on the kernel's arithmetic rather than its live
 state.
 
-## 8q. The hot kernel's registers are unreachable and its arithmetic was redundant (2026-11-08)
+## 8q. A kernel at the edge of its occupancy band turns any change into an occupancy change (2026-11-08)
 
-`docs/experiments/quadrature-saturation.md` and
-`results/experiments/quadrature-saturation/stats.json`; the frame census is in
+`docs/experiments/quadrature-saturation.md`,
+`results/experiments/quadrature-saturation/stats.json` and
+`results/quadrature-profiles.json`; the frame census is in
 `docs/experiments/occupancy-launch-model.md`. The user's instruction was to try
-very hard to speed the kernel up without decreasing accuracy, which rules out
-the node count and leaves only changes that cannot move the answer.
+very hard to speed the hot kernel up without decreasing accuracy, which rules
+out the node count and leaves only changes that cannot move the answer.
 
 **Measure the frames before proposing another register treatment, because a
 barrier splits a frame and never shrinks one.** A kernel whose node function is
@@ -3579,44 +3580,86 @@ compiles on its own with no edit to the package under test, because
 can be passed in its place. Doing that put CloudMicrophysics' bulk tendency
 alone in the same A100 occupancy band the whole kernel already occupies, which
 is a stronger closure than "the registers are in a package neither arm devs":
-it says that a ClimaAtmos-side treatment removing every register ClimaAtmos
-owns would not move the resident warps at all. Two passes of register work on
-this kernel could have been skipped for the price of three compiles.
+it says a ClimaAtmos-side treatment removing every register ClimaAtmos owns
+would not move the resident warps at all. Two passes of register work on this
+kernel could have been skipped for the price of three compiles.
 
 **Having a sharp instrument narrowed the question rather than widening it.**
-Every pass over this kernel asked how much live state it holds, because that
-was what the probe measured. The answer to a different question --- how much of
+Every pass over this kernel asked how much live state it holds, because that is
+what the probe measured. The answer to a different question --- how much of
 this does it compute twice --- was in the same function the whole time: the
 conditional node carried a total water that no production path read, a leftover
 from before the temperature-point split made `_point_value` build the
 evaluator's state per point, and the node function then recomputed the
-saturation specific humidity that `_point_value` had just evaluated at the same
+saturation specific humidity `_point_value` had just evaluated at the same
 temperature, density and parameters. When a lever is measured and found empty,
 re-read the code for a different kind of waste before concluding the subsystem
 is done.
 
-**A change that reuses a value already computed is bit-for-bit, and should be
-checked that way rather than approximately.** Both removals are exact by
-construction --- one deletes a field nothing reads, the other passes the
-identical float into the identical expression --- so the probe hashes the raw
-bits of the kernel's whole output and the arms are compared on the hash. That
-is a stronger and cheaper statement than any tolerance on four million values,
-and it is the statement the accuracy constraint actually asked for. The
-analysis asserts the hashes match rather than rendering a boolean into the
-prose.
+### The finding that matters: zero register headroom
 
-**Counting the removed operations predicted the wrong half as the larger.** The
-duplicated call behind the barrier is removed at up to sixteen points per cell
-and the dead node field at eight, so call-counting says the duplicate is worth
-twice as much; measured separately, at one commit each, the dead field is worth
-more. It was not only arithmetic: it was eight registers of a table live across
-the whole integration, and the kernel's spill fell with it. Price each half on
-the probe instead of apportioning a total, which is cheap when a commit is the
-A and the next commit is the B.
+**This kernel compiles to exactly the top of its occupancy band, so its
+headroom is zero registers and every change to it is an occupancy change.**
+Removing arithmetic from it netted two registers the *wrong* way --- a value
+handed across the `@noinline` barrier has to live across the call --- and
+because ClimaCore derives the grid from the register count, two registers moved
+the block from 512 threads to 384 and the kernel from 16 resident warps to 12.
+It then ran slower while doing strictly less work. Nothing about the change was
+wrong; the kernel simply had no room for it.
+
+So on a stack where the grid is computed from the register count, a register is
+not a resource to economize but a step function, and the first question about
+any edit to a band-edge kernel is what it does to the register count --- before
+anything about its arithmetic. The step table in
+`docs/experiments/occupancy-launch-model.md` already said 97--128 was the
+widest band below the cap and that these kernels sit at 114, 116 and 128. What
+it did not say, and what should have been read off it immediately, is that 128
+**is** the edge.
+
+**A screening probe is worthless at a band edge if its register error exceeds
+the headroom.** The compile-only probe reads 130 registers where the profile
+reads 128. That was written down as a reason to trust it for differences
+between arms rather than for an absolute count, which sounded like a modest
+caveat and was not: the absolute count is what selects the band, the headroom
+was zero, and the error was two. The probe compiled the same register count in
+every variant, so it reported the arithmetic cleanly and could not see the
+occupancy move at all --- and those are the same fact about it, not two. Check a
+screening instrument's error against the margin the decision turns on, not
+against the size of the effect.
+
+**The same removal moved a sibling kernel the other way, and that is where the
+saving came from.** `update_implicit_1m_tendency` reaches the same node function
+with `BMT.Instantaneous`, which has no substep loop and no 4x4 linearized
+operator, so its frame is much smaller and the removal took it 114 -> 81
+registers, up a band to 20 warps, and about 35% faster. Net over the device the
+treatment gains, by roughly a point of SYPD --- entirely on the kernel that was
+not the target, while the target regressed. A treatment aimed at one kernel
+through shared code is a treatment of every kernel that shares it, so enumerate
+them before reading a profile: the implicit sibling was briefly in the control
+set, where it reported a 31% "control" change.
+
+**Pair the arms within one arm when the arms differ by something else.** The mod
+arm carries the sedimentation fold, which edits the same file the treated
+broadcast lives in, so a cross-arm comparison both carries a standing
+difference and silently fails to pair the kernels --- a kernel's name embeds the
+source line of the statement that built it, and inserted lines move it. The
+honest comparison is this arm before against this arm after, which needed the
+pre-treatment figures to still exist: they survived only because
+`results/launch-inventory.json` had snapshotted them before the profile was
+overwritten. Variants of one treatment now accumulate in
+`results/quadrature-profiles.json`, one entry per revision.
+
+**Price each half at its own commit.** The dead field is worth about 8% of the
+kernel's arithmetic and the duplicated call about 4.5%, measured at one commit
+each. Counting removed operations predicts the opposite order --- the duplicate
+is removed at up to sixteen points per cell and the field at eight --- because
+the field was also eight registers of a table live across the whole
+integration. Two commits and two five-minute probe runs give the split outright;
+apportioning a total does not.
 
 **The relative saving from a uniform-cloudiness probe is an upper bound.** The
 probe's state is varied but almost every cell carries condensate, so it prices
 the full-work path and runs about twice the profile's per-launch time. Cells
-that take an early-out never pay the work the treatment removes, so the
-model's own figure is the profiled kernel time and the probe's percentage is a
-ceiling on it, not an estimate of it.
+that take an early-out never pay the work the treatment removes, so the model's
+figure is the profiled kernel time and the probe's percentage is a ceiling on
+it, not an estimate of it.

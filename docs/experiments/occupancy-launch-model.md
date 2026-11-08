@@ -191,6 +191,27 @@ frames["bmt_in_kernels_own_band"] = (
     frames["bmt_warps_per_sm"] == frames["kernel_warps_per_sm_profiled"]
 )
 
+# How much the heaviest target could gain before it loses a band. The step table
+# above gives the bands; what it does not say on its own is where in its band
+# this kernel sits, and it sits on the edge -- so every change to it, including
+# one that removes work, is an occupancy change.
+headroom = {
+    "heaviest_target_registers": max(r["registers"] for r in counted),
+    "band_max_registers": current["max_registers"],
+    "warps_in_band": current["warps_per_sm"],
+    "warps_one_band_down": next(
+        (b["warps_per_sm"] for b in steps
+         if b["min_registers"] > current["max_registers"]), None
+    ),
+}
+headroom["registers"] = (
+    headroom["band_max_registers"] - headroom["heaviest_target_registers"]
+)
+headroom["at_band_edge"] = headroom["registers"] == 0
+headroom["warps_lost_at_edge"] = (
+    headroom["warps_in_band"] - headroom["warps_one_band_down"]
+)
+
 out = {
     "model": {
         "device": inv["provenance"]["device"],
@@ -252,6 +273,7 @@ out = {
     "fusion": fusion,
     "attempt": attempt,
     "frames": frames,
+    "headroom": headroom,
     "prediction": {
         "sypd_pct_per_device_ms": SYPD_PCT_PER_MS,
         "exponent": exponent,
@@ -374,9 +396,14 @@ ClimaAtmos's entire reconstruction is therefore worth <!-- calkit value key=fram
 So the bulk tendency by itself already runs at <!-- calkit value key=frames.bmt_warps_per_sm path=results/experiments/occupancy-launch-model/stats.json -->16<!-- /calkit value --> warps per multiprocessor --- the same <!-- calkit value key=frames.kernel_warps_per_sm_profiled path=results/experiments/occupancy-launch-model/stats.json -->16<!-- /calkit value --> the whole kernel gets today at <!-- calkit value key=attempt.profiled_target_registers path=results/experiments/occupancy-launch-model/stats.json -->128<!-- /calkit value --> registers --- and a ClimaAtmos-side treatment that removed every register it owns would land in the occupancy band it started in.
 That is what retires the prediction above for this kernel: the saving is real arithmetic, but there is no arrangement of this stack that collects it.
 
-**The kernel's work, unlike its registers, was reachable --- which corrects what this section used to conclude.** Reaching the remaining registers means devving CloudMicrophysics, which rewrites the AMIP manifest and invalidates every profiling stage; and the node count, up to sixteen evaluations of the 1M microphysics per cell, is a physics-accuracy choice rather than an implementation detail, so the largest lever left is a science question.
+**The heaviest target has zero register headroom, which this document should have said the first time it drew the step table.** It compiles to <!-- calkit value key=headroom.heaviest_target_registers path=results/experiments/occupancy-launch-model/stats.json -->128<!-- /calkit value --> registers and its band ends at <!-- calkit value key=headroom.band_max_registers path=results/experiments/occupancy-launch-model/stats.json -->128<!-- /calkit value -->, so its headroom is <!-- calkit value key=headroom.registers path=results/experiments/occupancy-launch-model/stats.json -->0<!-- /calkit value --> registers: one more and it falls from <!-- calkit value key=headroom.warps_in_band path=results/experiments/occupancy-launch-model/stats.json -->16<!-- /calkit value --> warps per multiprocessor to <!-- calkit value key=headroom.warps_one_band_down path=results/experiments/occupancy-launch-model/stats.json -->12<!-- /calkit value -->, losing <!-- calkit value key=headroom.warps_lost_at_edge path=results/experiments/occupancy-launch-model/stats.json -->4<!-- /calkit value -->.
+The table above gives the bands and the section on targets gives the counts, and the conjunction --- that the largest of them sits exactly on an edge --- was never written down.
+It is the most consequential fact in this document, because it inverts the advice: for a kernel at a band edge the first question about any edit is what it does to the register count, before anything about what the edit is for.
+
+**The kernel's work, unlike its registers, was reachable --- and collecting it on this kernel cost more occupancy than the work was worth.** Reaching the remaining registers means devving CloudMicrophysics, which rewrites the AMIP manifest and invalidates every profiling stage; and the node count, up to sixteen evaluations of the 1M microphysics per cell, is a physics-accuracy choice rather than an implementation detail, so the largest lever left is a science question.
 This section previously stopped there, and it was wrong to: the kernel was also doing arithmetic it did not need, in the same node path whose registers had just been priced.
 `docs/experiments/quadrature-saturation.md` measures the removal of two dead or duplicated saturation evaluations per node --- a field of the node table that nothing read, and a recomputation behind the barrier of the value the traversal had just handed across it --- and both are bit-for-bit rather than approximately equal.
-Having a register probe in hand made the work finding harder to see, not easier: every question asked of this kernel for two passes was "how much live state does it hold", and the answer to "how much of this does it compute twice" was in the same twenty lines the whole time.
+It also measures what the headroom above implies: the removal nets two registers the wrong way, because a value handed across the barrier lives across the call, and the kernel pays four warps for them and runs slower while doing less work.
+Having a register probe in hand made the work finding harder to see rather than easier --- every question asked of this kernel for two passes was "how much live state does it hold" --- and then the probe could not price the work finding either, because its register reading is off by <!-- calkit value key=attempt.probe_error_registers path=results/experiments/occupancy-launch-model/stats.json -->2<!-- /calkit value --> and the headroom it had to resolve was <!-- calkit value key=headroom.registers path=results/experiments/occupancy-launch-model/stats.json -->0<!-- /calkit value -->.
 The measurement above cost a handful of compile-only jobs of a few minutes each and no profiling pair, which is the use the probe is for: `scripts/measure-quadrature-registers.jl` reads the register count out of ClimaCore's own launch record, so it measures the kernel the model launches rather than a stand-in.
 It reads <!-- calkit value key=attempt.probe_target_registers path=results/experiments/occupancy-launch-model/stats.json -->130<!-- /calkit value --> registers where the profile reads <!-- calkit value key=attempt.profiled_target_registers path=results/experiments/occupancy-launch-model/stats.json -->128<!-- /calkit value -->, a difference of <!-- calkit value key=attempt.probe_error_registers path=results/experiments/occupancy-launch-model/stats.json -->2<!-- /calkit value -->, so it is trusted for differences between arms and not for an absolute count.

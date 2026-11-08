@@ -1,130 +1,130 @@
 {
   "note": "Price the removal of the SGS quadrature kernel's redundant saturation work.",
   "provenance": {
-    "baseline_ref": "6c57ba6d98f74ae6f3d02eb3ac5ff052b3c52f06",
-    "mod_ref": "6990237efa2d32c33b59f17727286c9511a4076b",
-    "mod_branch": "pb/sgs-saturation-reuse",
-    "superproject_commit": "e5c9f77c33201c28609947cf121420ea1f97d2eb",
-    "baseline_sqlite_sha256_16": "778a7489e1210129",
-    "mod_sqlite_sha256_16": "e5692c52f58abac1",
+    "profiles": "results/quadrature-profiles.json",
+    "compared_against": "pre_treatment",
+    "pre_treatment_commit": "9eb34e31a",
+    "pre_treatment_transcribed_from": "results/launch-inventory.json",
     "probe_commits": {
-      "untreated": "6c57ba6d98f74ae6f3d02eb3ac5ff052b3c52f06",
-      "saturation_reuse": "0abce268f2617ec4035bd99d6ecb6f6ed062301c",
-      "treated": "6990237efa2d32c33b59f17727286c9511a4076b"
+      "untreated": "6c57ba6d9",
+      "saturation_reuse": "0abce268f",
+      "dead_field": "6269ad911",
+      "both_removals": "6990237ef"
     },
     "profiled_steps": 120
   },
-  "kernel": {
-    "baseline": {
-      "name": "set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1297",
-      "launches": 240,
-      "total_ms": 4988.2,
-      "registers": 128,
-      "block_size": 512,
-      "spill_bytes": 0
-    },
-    "mod": {
-      "name": "set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1313",
-      "launches": 240,
-      "total_ms": 5348.1,
-      "registers": 130,
-      "block_size": 384,
-      "spill_bytes": 0
-    },
-    "baseline_warps_per_sm": 16,
-    "mod_warps_per_sm": 12,
-    "warps_lost": 4,
-    "occupancy_lost_pct": 25.0,
-    "band_crossed": true,
-    "saved_ms": -359.9,
-    "saved_pct": -7.22,
-    "launches_agree": true,
-    "registers_moved": 2,
-    "spill_moved_bytes": 0
+  "cliff": {
+    "kernel_registers": 128,
+    "band_max_registers": 128,
+    "warps_in_band": 16,
+    "next_band_down_warps": 12,
+    "headroom_registers": 0,
+    "at_band_edge": true
   },
-  "control": {
-    "kernels_over_100ms": 34,
-    "worst_change_pct": -31.13,
-    "worst_kernel": "update_implicit_1m_tendency__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L*",
-    "median_abs_change_pct": 0.11,
-    "rows": [
-      {
-        "kernel": "update_implicit_1m_tendency__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L*",
-        "baseline_ms": 2771.8,
-        "mod_ms": 1908.8,
-        "change_pct": -31.13
-      },
-      {
-        "kernel": "update_sedimentation_jacobian__FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L*",
-        "baseline_ms": 171.7,
-        "mod_ms": 174.2,
-        "change_pct": 1.47
-      },
-      {
-        "kernel": "set_covariance_cache_and_cloud_fraction__FILE_ClimaAtmos_jl_src_parameterized_tendencies_microphysics_cloud_fraction_jl_L*",
-        "baseline_ms": 184.0,
-        "mod_ms": 186.2,
-        "change_pct": 1.18
-      },
-      {
-        "kernel": "_FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L*",
-        "baseline_ms": 526.8,
-        "mod_ms": 521.5,
-        "change_pct": -1.0
-      },
-      {
-        "kernel": "solve_sgs_u__implicit_stage_analytic__FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L*",
-        "baseline_ms": 212.5,
-        "mod_ms": 214.2,
-        "change_pct": 0.78
-      },
-      {
-        "kernel": "non_orographic_gravity_wave_forcing_FILE_ClimaAtmos_jl_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L*",
-        "baseline_ms": 150.0,
-        "mod_ms": 150.7,
-        "change_pct": 0.5
-      },
-      {
-        "kernel": "_FILE_ClimaAtmos_jl_src_prognostic_equations_advection_jl_L*",
-        "baseline_ms": 484.6,
-        "mod_ms": 483.2,
-        "change_pct": -0.29
-      },
-      {
-        "kernel": "update_advection_jacobian__FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L*",
-        "baseline_ms": 121.6,
-        "mod_ms": 121.9,
-        "change_pct": 0.24
-      },
-      {
-        "kernel": "set_implicit_precomputed_quantities_core__NVTX",
-        "baseline_ms": 240.0,
-        "mod_ms": 240.6,
-        "change_pct": 0.22
-      },
-      {
-        "kernel": "set_prognostic_edmf_precomputed_quantities_draft_thermo__FILE_ClimaAtmos_jl_src_cache_prognostic_edmf_precomputed_quantities_jl_L*",
-        "baseline_ms": 105.7,
-        "mod_ms": 106.0,
-        "change_pct": 0.22
-      }
-    ]
+  "attribution": {
+    "pre_registers": 128,
+    "dead_field_registers": 130,
+    "both_registers": 130,
+    "dead_field_moved_registers": 2,
+    "reuse_moved_registers": 0,
+    "reuse_is_register_neutral": true,
+    "same_geometry": true,
+    "reuse_quadrature_change_ms": -70.5,
+    "reuse_device_change_ms": -139.8,
+    "table_registers_removed": 8
   },
-  "end_to_end": {
-    "sypd_pct_per_device_ms": 0.00261,
-    "sypd_points": -0.94,
-    "null_floor_pct": 1.869,
-    "clears_null_floor": false,
-    "device_share_pct": -1.04
+  "profiled": {
+    "both_removals": {
+      "label": "saturation reuse + dead node field",
+      "climaatmos_commit": "6990237ef",
+      "quadrature_cache": {
+        "before_ms": 4979.0,
+        "after_ms": 5348.1,
+        "change_ms": 369.1,
+        "change_pct": 7.41,
+        "registers_before": 128,
+        "registers_after": 130,
+        "registers_change": 2,
+        "block_before": 512,
+        "block_after": 384,
+        "warps_before": 16,
+        "warps_after": 12,
+        "warps_change": -4,
+        "band_crossed": true
+      },
+      "implicit_tendency": {
+        "before_ms": 2463.7,
+        "after_ms": 1605.2,
+        "change_ms": -858.5,
+        "change_pct": -34.85,
+        "registers_before": 114,
+        "registers_after": 81,
+        "registers_change": -33,
+        "block_before": 512,
+        "block_after": 640,
+        "warps_before": 16,
+        "warps_after": 20,
+        "warps_change": 4,
+        "band_crossed": true
+      },
+      "treated_change_ms": -489.4,
+      "device_before_ms": 33551.9,
+      "device_after_ms": 33094.0,
+      "device_change_ms": -457.9,
+      "device_change_pct": -1.36,
+      "sypd_points": 1.2,
+      "faster": true
+    },
+    "dead_field": {
+      "label": "dead node field only",
+      "climaatmos_commit": "6269ad911",
+      "quadrature_cache": {
+        "before_ms": 4979.0,
+        "after_ms": 5418.6,
+        "change_ms": 439.6,
+        "change_pct": 8.83,
+        "registers_before": 128,
+        "registers_after": 130,
+        "registers_change": 2,
+        "block_before": 512,
+        "block_after": 384,
+        "warps_before": 16,
+        "warps_after": 12,
+        "warps_change": -4,
+        "band_crossed": true
+      },
+      "implicit_tendency": {
+        "before_ms": 2463.7,
+        "after_ms": 1682.9,
+        "change_ms": -780.8,
+        "change_pct": -31.69,
+        "registers_before": 114,
+        "registers_after": 81,
+        "registers_change": -33,
+        "block_before": 512,
+        "block_after": 640,
+        "warps_before": 16,
+        "warps_after": 20,
+        "warps_change": 4,
+        "band_crossed": true
+      },
+      "treated_change_ms": -341.2,
+      "device_before_ms": 33551.9,
+      "device_after_ms": 33233.8,
+      "device_change_ms": -318.1,
+      "device_change_pct": -0.95,
+      "sypd_points": 0.83,
+      "faster": true
+    }
   },
   "probe": {
     "untreated": {
       "device_ms": 45.6294,
       "registers": 130,
       "spill_bytes": 328,
-      "out_bits_hash": "320adf82375eb67b",
       "block_size": 384,
       "kernels_launched": 1,
+      "out_bits_hash": "320adf82375eb67b",
       "control_device_ms": 4.6674,
       "control_out_bits_hash": "327c0ef430000f68"
     },
@@ -132,37 +132,60 @@
       "device_ms": 43.5661,
       "registers": 130,
       "spill_bytes": 328,
-      "out_bits_hash": "320adf82375eb67b",
       "block_size": 384,
       "kernels_launched": 1,
+      "out_bits_hash": "320adf82375eb67b",
       "control_device_ms": 4.6674,
       "control_out_bits_hash": "327c0ef430000f68"
     },
-    "treated": {
+    "dead_field": {
+      "device_ms": 41.7843,
+      "registers": 130,
+      "spill_bytes": 296,
+      "block_size": 384,
+      "kernels_launched": 1,
+      "out_bits_hash": "320adf82375eb67b",
+      "control_device_ms": 4.6735,
+      "control_out_bits_hash": "327c0ef430000f68"
+    },
+    "both_removals": {
       "device_ms": 40.2729,
       "registers": 130,
       "spill_bytes": 296,
-      "out_bits_hash": "320adf82375eb67b",
       "block_size": 384,
       "kernels_launched": 1,
+      "out_bits_hash": "320adf82375eb67b",
       "control_device_ms": 4.6623,
       "control_out_bits_hash": "327c0ef430000f68"
     }
   },
   "probe_summary": {
-    "saved_pct_total": 11.74,
-    "saved_pct_saturation_reuse": 4.52,
-    "saved_pct_dead_field": 7.22,
-    "control_change_pct": -0.11,
+    "points": 4368384,
+    "saved_pct": {
+      "saturation_reuse": 4.52,
+      "dead_field": 8.43,
+      "both_removals": 11.74
+    },
+    "control_change_pct": {
+      "saturation_reuse": 0.0,
+      "dead_field": 0.13,
+      "both_removals": -0.11
+    },
+    "spill_change_bytes": {
+      "saturation_reuse": 0,
+      "dead_field": -32,
+      "both_removals": -32
+    },
     "bit_for_bit": true,
     "control_bit_for_bit": true,
-    "spill_moved_bytes": -32,
-    "points": 4368384,
     "registers_unchanged": true,
     "block_size_unchanged": true,
     "one_kernel_each": true,
     "registers": 130,
-    "block_size": 384
+    "block_size": 384,
+    "profiled_registers": 128,
+    "error_registers": 2,
+    "error_exceeds_headroom": true
   },
   "work": {
     "nodes": 8,
@@ -172,8 +195,7 @@
     "calls_node_function": 16,
     "calls_before": 40,
     "calls_after": 16,
-    "calls_removed": 24,
-    "removed_pct": 60.0
+    "calls_removed": 24
   },
   "frames": {
     "census_commit": "9eb34e31a",

@@ -1,7 +1,7 @@
 {
   "note": "Profiled figures for the treated SGS node kernels, one entry per ClimaAtmos.jl-mod revision. Accumulated by hand because results/nsys/mod.sqlite holds whichever experiment profiled last. The `pre-treatment` entry is transcribed from results/launch-inventory.json, whose profile is gone.",
   "variants": {
-    "6990237ef": {
+    "both_removals": {
       "climaatmos_branch": "pb/sgs-saturation-reuse",
       "climaatmos_commit": "6990237efa2d32c33b59f17727286c9511a4076b",
       "device_total_ms": 33094.0,
@@ -24,9 +24,36 @@
         "total_ms": 5348.1,
         "warps_per_sm": 12
       },
-      "superproject_commit": "e5c9f77c33201c28609947cf121420ea1f97d2eb"
+      "superproject_commit": "e5c9f77c33201c28609947cf121420ea1f97d2eb",
+      "variant": "both_removals"
     },
-    "9eb34e31a": {
+    "dead_field": {
+      "climaatmos_branch": "pb/sgs-dead-node-field",
+      "climaatmos_commit": "6269ad911da0b0a3e53cfeb24a71339032edc88b",
+      "device_total_ms": 33233.8,
+      "implicit_tendency": {
+        "block_size": 640,
+        "family_total_ms": 1986.5,
+        "launches": 720,
+        "line": 928,
+        "registers": 81,
+        "total_ms": 1682.9,
+        "warps_per_sm": 20
+      },
+      "label": "dead node field only",
+      "quadrature_cache": {
+        "block_size": 384,
+        "family_total_ms": 8213.3,
+        "launches": 240,
+        "line": 1313,
+        "registers": 130,
+        "total_ms": 5418.6,
+        "warps_per_sm": 12
+      },
+      "superproject_commit": "a8165751946ecf0bf8aadb3dacb0611fd8e90b25",
+      "variant": "dead_field"
+    },
+    "pre_treatment": {
       "climaatmos_branch": "pb/fold-sedimentation-velocity-upstream",
       "climaatmos_commit": "9eb34e31a7c7ae1134e94f367badd3e34bf27159",
       "device_total_ms": 33551.9,
@@ -50,7 +77,8 @@
         "warps_per_sm": 16
       },
       "superproject_commit": "68ce345631ebd77ccdd423cbee14dfee956a900e",
-      "transcribed_from": "results/launch-inventory.json"
+      "transcribed_from": "results/launch-inventory.json",
+      "variant": "pre_treatment"
     }
   }
 }

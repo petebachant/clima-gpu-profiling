@@ -600,6 +600,54 @@ questions:
           runs of identical code. The prediction is committed before a treatment
           exists, so building one tests it.
 
+  - question: >-
+      The heaviest kernel's registers turn out to be unreachable. Is there
+      anything left in it that does not change the physics?
+    answer: >-
+      Yes, and it arrives on a different kernel than the one it was aimed at:
+      {calls_removed:.0f} of the {calls_before:.0f} saturation evaluations a
+      cloudy cell performed in the shared SGS node path were dead or
+      duplicated, and removing them bit-for-bit is worth {sypd_points:.2f}
+      points of SYPD -- earned on the instantaneous sibling, which gains an
+      occupancy band, while the target itself falls from {warps_before:.0f}
+      resident warps to {warps_after:.0f} and runs slower while doing less
+      work. That is the practical content of the launch model: the target
+      compiles to {kernel_registers:.0f} registers and its occupancy band ends
+      there, so its headroom is {headroom:.0f} and every edit to it, including
+      one that removes work, is an occupancy change before it is anything else.
+    evidence:
+      - kind: document
+        path: docs/experiments/quadrature-saturation.md
+        section: "What was removed"
+        explanation: >-
+          The two redundancies and why each is exact rather than approximate:
+          a node field no production path reads, and a saturation the node
+          function recomputed at the same temperature, density and parameters
+          the traversal had just used to build the state it was handed.
+      - kind: document
+        path: docs/experiments/quadrature-saturation.md
+        section: "The cliff, which is the transferable finding"
+        explanation: >-
+          Why a kernel at the top of its occupancy band converts any register
+          change into a quarter of its resident warps, and why a screening
+          probe whose register reading is off by two cannot decide anything
+          about it.
+      - kind: result
+        path: results/experiments/quadrature-saturation/stats.json
+        values:
+          calls_removed: work.calls_removed
+          calls_before: work.calls_before
+          sypd_points: profiled.both_removals.sypd_points
+          warps_before: profiled.both_removals.quadrature_cache.warps_before
+          warps_after: profiled.both_removals.quadrature_cache.warps_after
+          kernel_registers: cliff.kernel_registers
+          headroom: cliff.headroom_registers
+        explanation: >-
+          Both removals priced at their own commit on the compile-only probe
+          and then profiled within one arm, against that arm before the
+          treatment rather than against the baseline arm, which differs by the
+          sedimentation fold as well.
+
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod

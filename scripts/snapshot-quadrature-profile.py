@@ -15,7 +15,10 @@ runs the instantaneous one, so its node function needs far fewer registers and i
 has room to move up a band.
 
 Usage:
-    python scripts/snapshot-quadrature-profile.py [label]
+    python scripts/snapshot-quadrature-profile.py <variant-slug> [label]
+
+The slug is the stable name the analysis and the prose refer to, so it does not
+move when a commit is rewritten; the label is the human description.
 """
 
 import json
@@ -91,7 +94,7 @@ def read(path):
     return out
 
 
-def main(label=None):
+def main(variant, label=None):
     ref = git("-C", "ClimaAtmos.jl-mod", "rev-parse", "HEAD")
     dirty = git("-C", "ClimaAtmos.jl-mod", "status", "--porcelain")
     if dirty:
@@ -110,11 +113,12 @@ def main(label=None):
     entry["climaatmos_branch"] = git("-C", "ClimaAtmos.jl-mod", "rev-parse",
                                      "--abbrev-ref", "HEAD")
     entry["superproject_commit"] = git("rev-parse", "HEAD")
-    entry["label"] = label or ref[:9]
-    doc["variants"][ref[:9]] = entry
+    entry["label"] = label or variant
+    entry["variant"] = variant
+    doc["variants"][variant] = entry
     OUT.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
 
-    print(f"wrote {OUT}: variant {ref[:9]} ({entry['label']})")
+    print(f"wrote {OUT}: variant {variant} ({entry['label']}) at {ref[:9]}")
     for tag in TREATED:
         e = entry[tag]
         print(f"  {tag:18} {e['total_ms']:8} ms  {e['registers']:3} regs  "
@@ -123,4 +127,6 @@ def main(label=None):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else None)
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None)
