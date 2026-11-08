@@ -1362,6 +1362,7 @@ stages:
       - results/regression-record/attribution-1103.json
       - results/quadrature-registers-baseline.toml
       - results/quadrature-registers-mod.toml
+      - results/quadrature-registers-frames.toml
       - .calkit/env-locks/py
     outs:
       - results/experiments/occupancy-launch-model/stats.json:
@@ -1369,3 +1370,22 @@ stages:
           persist: false
     desc: Automatically generated from the 'occupancy-launch-model/analyze'
       stage in calkit.yaml. Changes made here will be overwritten.
+  quadrature-saturation/analyze:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/quadrature-saturation.md/analyze.py
+    deps:
+      - .calkit/markdown/docs/experiments/quadrature-saturation.md/analyze.py
+      - scripts/export_quadrature_saturation.py
+      - results/nsys/baseline.sqlite
+      - results/nsys/mod.sqlite
+      - results/quadrature-registers-work-baseline.toml
+      - results/quadrature-registers-work-mod-satreuse-only.toml
+      - results/quadrature-registers-work-mod.toml
+      - results/experiments/occupancy-launch-model/stats.json
+      - .calkit/env-locks/py
+    outs:
+      - results/experiments/quadrature-saturation/stats.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'quadrature-saturation/analyze' stage
+      in calkit.yaml. Changes made here will be overwritten.

@@ -3549,10 +3549,74 @@ the source line, so the profile itself settles which branch a kernel came from
 `foreach_column` precompute, and a `LIKE '%microphysics%'` query over the
 sqlite prints all three with their register counts.
 
-**What remains on this kernel is a physics choice, not an implementation one.**
-The registers that are left are inside CloudMicrophysics' bulk tendency, behind
-a `@noinline` barrier that is already in place and already holding, and neither
-arm devs that package --- reaching it rewrites the AMIP manifest and
-invalidates every profiling stage. The kernel's cost is that it evaluates the
-1M microphysics at up to sixteen points per cell, so the lever that is left is
-the node count.
+**What remains of this kernel's *registers* is a physics choice, not an
+implementation one.** The registers that are left are inside CloudMicrophysics'
+bulk tendency, behind a `@noinline` barrier that is already in place and
+already holding, and neither arm devs that package --- reaching it rewrites the
+AMIP manifest and invalidates every profiling stage. The kernel's cost is that
+it evaluates the 1M microphysics at up to sixteen points per cell, so the
+register lever that is left is the node count.
+
+**This section first said that without the word "registers", and that was
+wrong** --- see 8q, which found an implementation lever in the same twenty
+lines of the same function, on the kernel's arithmetic rather than its live
+state.
+
+## 8q. The hot kernel's registers are unreachable and its arithmetic was redundant (2026-11-08)
+
+`docs/experiments/quadrature-saturation.md` and
+`results/experiments/quadrature-saturation/stats.json`; the frame census is in
+`docs/experiments/occupancy-launch-model.md`. The user's instruction was to try
+very hard to speed the kernel up without decreasing accuracy, which rules out
+the node count and leaves only changes that cannot move the answer.
+
+**Measure the frames before proposing another register treatment, because a
+barrier splits a frame and never shrinks one.** A kernel whose node function is
+`@noinline` costs the largest frame on its call graph, not the sum, so the
+largest frame is the floor of every barrier arrangement available. Each frame
+compiles on its own with no edit to the package under test, because
+`sum_over_conditional_nodes` takes the node function as an argument and a stub
+can be passed in its place. Doing that put CloudMicrophysics' bulk tendency
+alone in the same A100 occupancy band the whole kernel already occupies, which
+is a stronger closure than "the registers are in a package neither arm devs":
+it says that a ClimaAtmos-side treatment removing every register ClimaAtmos
+owns would not move the resident warps at all. Two passes of register work on
+this kernel could have been skipped for the price of three compiles.
+
+**Having a sharp instrument narrowed the question rather than widening it.**
+Every pass over this kernel asked how much live state it holds, because that
+was what the probe measured. The answer to a different question --- how much of
+this does it compute twice --- was in the same function the whole time: the
+conditional node carried a total water that no production path read, a leftover
+from before the temperature-point split made `_point_value` build the
+evaluator's state per point, and the node function then recomputed the
+saturation specific humidity that `_point_value` had just evaluated at the same
+temperature, density and parameters. When a lever is measured and found empty,
+re-read the code for a different kind of waste before concluding the subsystem
+is done.
+
+**A change that reuses a value already computed is bit-for-bit, and should be
+checked that way rather than approximately.** Both removals are exact by
+construction --- one deletes a field nothing reads, the other passes the
+identical float into the identical expression --- so the probe hashes the raw
+bits of the kernel's whole output and the arms are compared on the hash. That
+is a stronger and cheaper statement than any tolerance on four million values,
+and it is the statement the accuracy constraint actually asked for. The
+analysis asserts the hashes match rather than rendering a boolean into the
+prose.
+
+**Counting the removed operations predicted the wrong half as the larger.** The
+duplicated call behind the barrier is removed at up to sixteen points per cell
+and the dead node field at eight, so call-counting says the duplicate is worth
+twice as much; measured separately, at one commit each, the dead field is worth
+more. It was not only arithmetic: it was eight registers of a table live across
+the whole integration, and the kernel's spill fell with it. Price each half on
+the probe instead of apportioning a total, which is cheap when a commit is the
+A and the next commit is the B.
+
+**The relative saving from a uniform-cloudiness probe is an upper bound.** The
+probe's state is varied but almost every cell carries condensate, so it prices
+the full-work path and runs about twice the profile's per-launch time. Cells
+that take an early-out never pay the work the treatment removes, so the
+model's own figure is the profiled kernel time and the probe's percentage is a
+ceiling on it, not an estimate of it.

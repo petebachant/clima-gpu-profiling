@@ -23,7 +23,7 @@ Freezing exists to stop a document being regenerated against a profile it did no
 
 ## Analysis
 
-```python calkit stage name=analyze environment=py outputs=[{path: results/experiments/occupancy-launch-model/stats.json, storage: git}] inputs=[scripts/measure_occupancy.py, results/launch-inventory.json, results/sedimentation-fold.json, results/fold-on-current-stack.json, results/regression-record/attribution-1103.json, results/quadrature-registers-baseline.toml, results/quadrature-registers-mod.toml]
+```python calkit stage name=analyze environment=py outputs=[{path: results/experiments/occupancy-launch-model/stats.json, storage: git}] inputs=[scripts/measure_occupancy.py, results/launch-inventory.json, results/sedimentation-fold.json, results/fold-on-current-stack.json, results/regression-record/attribution-1103.json, results/quadrature-registers-baseline.toml, results/quadrature-registers-mod.toml, results/quadrature-registers-frames.toml]
 import json
 import sys
 
@@ -156,6 +156,41 @@ attempt["probe_error_registers"] = (
 attempt["node_table_registers"] = 8 * 5
 attempt["helped"] = attempt["register_change"] < 0
 
+# What any register treatment on this kernel could reach at best. The node
+# function is `@noinline`, so `ptxas` allocates for the largest frame on the
+# call graph rather than the sum: a barrier splits a frame and never shrinks
+# one, which makes the largest frame the floor of every barrier arrangement.
+# Each frame is measured by compiling it alone -- the traversal with a stub node
+# function in place of the evaluator, the evaluator at one point, and
+# CloudMicrophysics' bulk tendency with nothing of ClimaAtmos around it -- which
+# needs no edit to ClimaAtmos, since `sum_over_conditional_nodes` takes the node
+# function as an argument.
+fr = tomllib.load(open("results/quadrature-registers-frames.toml", "rb"))
+assert not fr["climaatmos_dirty"], "frame census ran on a dirty tree"
+fc = fr["cases"]
+frames = {
+    "census_commit": fr["climaatmos_commit"][:9],
+    "whole_kernel_registers": fc[TARGET_CASE]["registers"],
+    "traversal_registers": fc["traversal frame (stub node function)"]["registers"],
+    "node_function_registers": fc["node function frame (recon + BMT)"]["registers"],
+    "bmt_registers": fc["BMT frame (CloudMicrophysics only)"]["registers"],
+    "bmt_warps_per_sm": fc["BMT frame (CloudMicrophysics only)"]["warps_per_sm"],
+    "step_to_gain_registers": nxt["max_registers"],
+    "kernel_warps_per_sm_profiled": current["warps_per_sm"],
+}
+# What ClimaAtmos's own reconstruction adds on top of the package it calls.
+frames["climaatmos_registers"] = (
+    frames["node_function_registers"] - frames["bmt_registers"]
+)
+frames["bmt_over_step"] = frames["bmt_registers"] - frames["step_to_gain_registers"]
+# The question the census settles: if CloudMicrophysics' own frame already needs
+# more registers than the next step allows, no ClimaAtmos-side treatment can
+# move this kernel's occupancy, however perfectly it works.
+frames["occupancy_reachable"] = frames["bmt_over_step"] <= 0
+frames["bmt_in_kernels_own_band"] = (
+    frames["bmt_warps_per_sm"] == frames["kernel_warps_per_sm_profiled"]
+)
+
 out = {
     "model": {
         "device": inv["provenance"]["device"],
@@ -216,6 +251,7 @@ out = {
     "calibration": cal,
     "fusion": fusion,
     "attempt": attempt,
+    "frames": frames,
     "prediction": {
         "sypd_pct_per_device_ms": SYPD_PCT_PER_MS,
         "exponent": exponent,
@@ -234,6 +270,9 @@ out = {
 assert out["targets"]["threads"] == 55296, out["targets"]["threads"]
 # The control carries the comparison, so an unequal control invalidates it.
 assert attempt["control_unchanged"], attempt
+# The census is only a closure of this lever while CloudMicrophysics' own frame
+# sits in the band the whole kernel already occupies.
+assert frames["bmt_in_kernels_own_band"], frames
 
 json.dump(out, open("results/experiments/occupancy-launch-model/stats.json", "w"), indent=2)
 ```
@@ -329,7 +368,15 @@ The non-quadrature sibling compiled in the same two runs is the control: it shar
 The mechanism is that the generation's own working set --- a saturation-vapor-pressure evaluation per node, among others --- then lives at the same time as the evaluator's, and the peak is what `ptxas` allocates for, so the materialized table is the cheaper of the two arrangements rather than the more expensive.
 Rematerializing to relieve pressure is a register allocator's own trick, and doing it by hand in the source competes with the allocator instead of helping it.
 
-**What is left is not reachable from the arms as they stand, but the kernel's work is.** The registers that remain are in CloudMicrophysics' bulk tendency, behind the `@noinline` barrier that is already in place and already holding; reaching them means devving a package that neither arm devs, which rewrites the AMIP manifest and invalidates every profiling stage.
-The kernel is expensive because it evaluates the 1M microphysics at up to sixteen points per cell, and the node count is a physics-accuracy choice rather than an implementation detail --- so the lever that remains on this kernel is a science question, not an optimization.
+**A frame census closes the register lever on this kernel outright, and on stronger grounds than "the registers are in a package neither arm devs".** The node function is `@noinline`, so `ptxas` allocates for the largest frame on the call graph rather than the sum of the frames, which means a barrier can split a frame but never shrink one and the largest frame is the floor of every barrier arrangement ClimaAtmos could adopt.
+Each frame compiles alone, with no edit to ClimaAtmos at all, because `sum_over_conditional_nodes` takes the node function as an argument: the traversal with a stub in the evaluator's place reads <!-- calkit value key=frames.traversal_registers path=results/experiments/occupancy-launch-model/stats.json -->84<!-- /calkit value --> registers, the real node function reads <!-- calkit value key=frames.node_function_registers path=results/experiments/occupancy-launch-model/stats.json -->112<!-- /calkit value -->, and CloudMicrophysics' substep-averaged bulk tendency with nothing of ClimaAtmos around it reads <!-- calkit value key=frames.bmt_registers path=results/experiments/occupancy-launch-model/stats.json -->102<!-- /calkit value -->.
+ClimaAtmos's entire reconstruction is therefore worth <!-- calkit value key=frames.climaatmos_registers path=results/experiments/occupancy-launch-model/stats.json -->10<!-- /calkit value --> registers on top of the package it calls, and the next step up needs <!-- calkit value key=frames.step_to_gain_registers path=results/experiments/occupancy-launch-model/stats.json -->96<!-- /calkit value --> or fewer, which the bulk tendency misses on its own by <!-- calkit value key=frames.bmt_over_step path=results/experiments/occupancy-launch-model/stats.json -->6<!-- /calkit value -->.
+So the bulk tendency by itself already runs at <!-- calkit value key=frames.bmt_warps_per_sm path=results/experiments/occupancy-launch-model/stats.json -->16<!-- /calkit value --> warps per multiprocessor --- the same <!-- calkit value key=frames.kernel_warps_per_sm_profiled path=results/experiments/occupancy-launch-model/stats.json -->16<!-- /calkit value --> the whole kernel gets today at <!-- calkit value key=attempt.profiled_target_registers path=results/experiments/occupancy-launch-model/stats.json -->128<!-- /calkit value --> registers --- and a ClimaAtmos-side treatment that removed every register it owns would land in the occupancy band it started in.
+That is what retires the prediction above for this kernel: the saving is real arithmetic, but there is no arrangement of this stack that collects it.
+
+**The kernel's work, unlike its registers, was reachable --- which corrects what this section used to conclude.** Reaching the remaining registers means devving CloudMicrophysics, which rewrites the AMIP manifest and invalidates every profiling stage; and the node count, up to sixteen evaluations of the 1M microphysics per cell, is a physics-accuracy choice rather than an implementation detail, so the largest lever left is a science question.
+This section previously stopped there, and it was wrong to: the kernel was also doing arithmetic it did not need, in the same node path whose registers had just been priced.
+`docs/experiments/quadrature-saturation.md` measures the removal of two dead or duplicated saturation evaluations per node --- a field of the node table that nothing read, and a recomputation behind the barrier of the value the traversal had just handed across it --- and both are bit-for-bit rather than approximately equal.
+Having a register probe in hand made the work finding harder to see, not easier: every question asked of this kernel for two passes was "how much live state does it hold", and the answer to "how much of this does it compute twice" was in the same twenty lines the whole time.
 The measurement above cost a handful of compile-only jobs of a few minutes each and no profiling pair, which is the use the probe is for: `scripts/measure-quadrature-registers.jl` reads the register count out of ClimaCore's own launch record, so it measures the kernel the model launches rather than a stand-in.
 It reads <!-- calkit value key=attempt.probe_target_registers path=results/experiments/occupancy-launch-model/stats.json -->130<!-- /calkit value --> registers where the profile reads <!-- calkit value key=attempt.profiled_target_registers path=results/experiments/occupancy-launch-model/stats.json -->128<!-- /calkit value -->, a difference of <!-- calkit value key=attempt.probe_error_registers path=results/experiments/occupancy-launch-model/stats.json -->2<!-- /calkit value -->, so it is trusted for differences between arms and not for an absolute count.

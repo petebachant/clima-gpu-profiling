@@ -1,0 +1,192 @@
+{
+  "note": "Price the removal of the SGS quadrature kernel's redundant saturation work.",
+  "provenance": {
+    "baseline_ref": "6c57ba6d98f74ae6f3d02eb3ac5ff052b3c52f06",
+    "mod_ref": "6990237efa2d32c33b59f17727286c9511a4076b",
+    "mod_branch": "pb/sgs-saturation-reuse",
+    "superproject_commit": "e5c9f77c33201c28609947cf121420ea1f97d2eb",
+    "baseline_sqlite_sha256_16": "778a7489e1210129",
+    "mod_sqlite_sha256_16": "e5692c52f58abac1",
+    "probe_commits": {
+      "untreated": "6c57ba6d98f74ae6f3d02eb3ac5ff052b3c52f06",
+      "saturation_reuse": "0abce268f2617ec4035bd99d6ecb6f6ed062301c",
+      "treated": "6990237efa2d32c33b59f17727286c9511a4076b"
+    },
+    "profiled_steps": 120
+  },
+  "kernel": {
+    "baseline": {
+      "name": "set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1297",
+      "launches": 240,
+      "total_ms": 4988.2,
+      "registers": 128,
+      "block_size": 512,
+      "spill_bytes": 0
+    },
+    "mod": {
+      "name": "set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L1313",
+      "launches": 240,
+      "total_ms": 5348.1,
+      "registers": 130,
+      "block_size": 384,
+      "spill_bytes": 0
+    },
+    "baseline_warps_per_sm": 16,
+    "mod_warps_per_sm": 12,
+    "warps_lost": 4,
+    "occupancy_lost_pct": 25.0,
+    "band_crossed": true,
+    "saved_ms": -359.9,
+    "saved_pct": -7.22,
+    "launches_agree": true,
+    "registers_moved": 2,
+    "spill_moved_bytes": 0
+  },
+  "control": {
+    "kernels_over_100ms": 34,
+    "worst_change_pct": -31.13,
+    "worst_kernel": "update_implicit_1m_tendency__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L*",
+    "median_abs_change_pct": 0.11,
+    "rows": [
+      {
+        "kernel": "update_implicit_1m_tendency__FILE_ClimaAtmos_jl_src_cache_microphysics_cache_jl_L*",
+        "baseline_ms": 2771.8,
+        "mod_ms": 1908.8,
+        "change_pct": -31.13
+      },
+      {
+        "kernel": "update_sedimentation_jacobian__FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L*",
+        "baseline_ms": 171.7,
+        "mod_ms": 174.2,
+        "change_pct": 1.47
+      },
+      {
+        "kernel": "set_covariance_cache_and_cloud_fraction__FILE_ClimaAtmos_jl_src_parameterized_tendencies_microphysics_cloud_fraction_jl_L*",
+        "baseline_ms": 184.0,
+        "mod_ms": 186.2,
+        "change_pct": 1.18
+      },
+      {
+        "kernel": "_FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L*",
+        "baseline_ms": 526.8,
+        "mod_ms": 521.5,
+        "change_pct": -1.0
+      },
+      {
+        "kernel": "solve_sgs_u__implicit_stage_analytic__FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L*",
+        "baseline_ms": 212.5,
+        "mod_ms": 214.2,
+        "change_pct": 0.78
+      },
+      {
+        "kernel": "non_orographic_gravity_wave_forcing_FILE_ClimaAtmos_jl_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L*",
+        "baseline_ms": 150.0,
+        "mod_ms": 150.7,
+        "change_pct": 0.5
+      },
+      {
+        "kernel": "_FILE_ClimaAtmos_jl_src_prognostic_equations_advection_jl_L*",
+        "baseline_ms": 484.6,
+        "mod_ms": 483.2,
+        "change_pct": -0.29
+      },
+      {
+        "kernel": "update_advection_jacobian__FILE_ClimaAtmos_jl_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L*",
+        "baseline_ms": 121.6,
+        "mod_ms": 121.9,
+        "change_pct": 0.24
+      },
+      {
+        "kernel": "set_implicit_precomputed_quantities_core__NVTX",
+        "baseline_ms": 240.0,
+        "mod_ms": 240.6,
+        "change_pct": 0.22
+      },
+      {
+        "kernel": "set_prognostic_edmf_precomputed_quantities_draft_thermo__FILE_ClimaAtmos_jl_src_cache_prognostic_edmf_precomputed_quantities_jl_L*",
+        "baseline_ms": 105.7,
+        "mod_ms": 106.0,
+        "change_pct": 0.22
+      }
+    ]
+  },
+  "end_to_end": {
+    "sypd_pct_per_device_ms": 0.00261,
+    "sypd_points": -0.94,
+    "null_floor_pct": 1.869,
+    "clears_null_floor": false,
+    "device_share_pct": -1.04
+  },
+  "probe": {
+    "untreated": {
+      "device_ms": 45.6294,
+      "registers": 130,
+      "spill_bytes": 328,
+      "out_bits_hash": "320adf82375eb67b",
+      "block_size": 384,
+      "kernels_launched": 1,
+      "control_device_ms": 4.6674,
+      "control_out_bits_hash": "327c0ef430000f68"
+    },
+    "saturation_reuse": {
+      "device_ms": 43.5661,
+      "registers": 130,
+      "spill_bytes": 328,
+      "out_bits_hash": "320adf82375eb67b",
+      "block_size": 384,
+      "kernels_launched": 1,
+      "control_device_ms": 4.6674,
+      "control_out_bits_hash": "327c0ef430000f68"
+    },
+    "treated": {
+      "device_ms": 40.2729,
+      "registers": 130,
+      "spill_bytes": 296,
+      "out_bits_hash": "320adf82375eb67b",
+      "block_size": 384,
+      "kernels_launched": 1,
+      "control_device_ms": 4.6623,
+      "control_out_bits_hash": "327c0ef430000f68"
+    }
+  },
+  "probe_summary": {
+    "saved_pct_total": 11.74,
+    "saved_pct_saturation_reuse": 4.52,
+    "saved_pct_dead_field": 7.22,
+    "control_change_pct": -0.11,
+    "bit_for_bit": true,
+    "control_bit_for_bit": true,
+    "spill_moved_bytes": -32,
+    "points": 4368384,
+    "registers_unchanged": true,
+    "block_size_unchanged": true,
+    "one_kernel_each": true,
+    "registers": 130,
+    "block_size": 384
+  },
+  "work": {
+    "nodes": 8,
+    "points_max": 16,
+    "calls_node_table": 8,
+    "calls_point_state": 16,
+    "calls_node_function": 16,
+    "calls_before": 40,
+    "calls_after": 16,
+    "calls_removed": 24,
+    "removed_pct": 60.0
+  },
+  "frames": {
+    "census_commit": "9eb34e31a",
+    "whole_kernel_registers": 130,
+    "traversal_registers": 84,
+    "node_function_registers": 112,
+    "bmt_registers": 102,
+    "bmt_warps_per_sm": 16,
+    "step_to_gain_registers": 96,
+    "kernel_warps_per_sm_profiled": 16,
+    "climaatmos_registers": 10,
+    "bmt_over_step": 6,
+    "occupancy_reachable": false,
+    "bmt_in_kernels_own_band": true
+  }
+}

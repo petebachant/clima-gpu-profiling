@@ -1520,6 +1520,19 @@ pipeline:
       # identified by hash. So nothing this document reads is transient and
       # there is nothing for a freeze to protect.
 
+    quadrature-saturation:
+      kind: markdown
+      target_path: docs/experiments/quadrature-saturation.md
+      environment: py
+      # Unlike the launch model above, this one does read the shared arm
+      # profiles, because its treatment is a change to one arm and the pipeline
+      # already profiles both arms of that comparison. That makes
+      # `results/nsys/mod.sqlite` an input, which the next experiment
+      # overwrites, so every derived number is snapshotted into the stage's own
+      # `stats.json` with the arm refs and each profile's digest, and the stage
+      # is frozen once the experiment is tagged. Freeze and unfreeze it with
+      # nothing else: it is the only stage this document declares.
+
     export-gpoint-groups:
       kind: python-script
       environment: py

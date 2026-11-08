@@ -599,8 +599,8 @@ stages:
       nfiles: 102
     - path: ClimaAtmos.jl-mod/src
       hash: md5
-      md5: 534f271069e32fed642ffc8b6f9c36e6.dir
-      size: 2486207
+      md5: 0f2f9c0e9d5206bfae8f50afc8bfb1e8.dir
+      size: 2486088
       nfiles: 162
     - path: ClimaCore.jl-mod/ext
       hash: md5
@@ -660,16 +660,16 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/mod-nsys.out
       hash: md5
-      md5: 9b0ac3602640a9fc029d2bbac74e9230
-      size: 166622
+      md5: 852197fb32bd4b664f0f7ca52eb82c70
+      size: 162234
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: a205d349977fb546ee3a3ca081b140af
-      size: 160940176
+      md5: bfac59447c22f99c222c325ca5a6e3bd
+      size: 161149796
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: f32bca2752dd944cd93c9b603eb6ffd1
-      size: 366612480
+      md5: a070b5e6a8228d3992ead33bfaf3623f
+      size: 366833664
   mod-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep -t sqlite
       -o results/nsys/mod.sqlite"'
@@ -4716,8 +4716,8 @@ stages:
     - path: 
         .calkit/markdown/docs/experiments/occupancy-launch-model.md/analyze.py
       hash: md5
-      md5: 260eb0c344456a17a0223ae84ee77c69
-      size: 8603
+      md5: 8176f12da970cac904910dbd74004eae
+      size: 10833
     - path: results/fold-on-current-stack.json
       hash: md5
       md5: e1711a39883391308116becc2ef9bc22
@@ -4730,6 +4730,10 @@ stages:
       hash: md5
       md5: 662bf04a8d8a8604ccba210a9c811f1e
       size: 1059
+    - path: results/quadrature-registers-frames.toml
+      hash: md5
+      md5: 68f46968535260783a2e1b8bc4095eb5
+      size: 1405
     - path: results/quadrature-registers-mod.toml
       hash: md5
       md5: 521a7f23e5fb11af7ea011026660f703
@@ -4749,5 +4753,52 @@ stages:
     outs:
     - path: results/experiments/occupancy-launch-model/stats.json
       hash: md5
-      md5: d05398dd2af37facc829cd2c7c78e1b7
-      size: 12441
+      md5: 041b71654984195515b797b5062bd2ee
+      size: 12850
+  quadrature-saturation/analyze:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/experiments/quadrature-saturation.md/analyze.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: 
+        .calkit/markdown/docs/experiments/quadrature-saturation.md/analyze.py
+      hash: md5
+      md5: 1d2c4bca1cb3e970ce51ebe1fbc8be85
+      size: 1270
+    - path: results/experiments/occupancy-launch-model/stats.json
+      hash: md5
+      md5: 041b71654984195515b797b5062bd2ee
+      size: 12850
+    - path: results/nsys/baseline.sqlite
+      hash: md5
+      md5: a9578d44f6e49ca05b2ea27a33c779c6
+      size: 369397760
+    - path: results/nsys/mod.sqlite
+      hash: md5
+      md5: a070b5e6a8228d3992ead33bfaf3623f
+      size: 366833664
+    - path: results/quadrature-registers-work-baseline.toml
+      hash: md5
+      md5: 7b000f7a4a6309ca7018af690fa2cc0f
+      size: 1186
+    - path: results/quadrature-registers-work-mod-satreuse-only.toml
+      hash: md5
+      md5: df0f8d3d9e2f24899dc49fbb02c3ef86
+      size: 1473
+    - path: results/quadrature-registers-work-mod.toml
+      hash: md5
+      md5: d7c0cb04c4a3f8b7c41b0b857fea8b98
+      size: 1473
+    - path: scripts/export_quadrature_saturation.py
+      hash: md5
+      md5: 4d457da24c9dba019ab2bf9ea88c0757
+      size: 14452
+    outs:
+    - path: results/experiments/quadrature-saturation/stats.json
+      hash: md5
+      md5: 55f65088c0f16df2ebf1af02849a1e97
+      size: 6070
