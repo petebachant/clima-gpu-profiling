@@ -15,6 +15,7 @@
 # CloudMicrophysics and Thermodynamics are transitive deps of the AMIP project,
 # not direct ones, so reach them through ClimaAtmos, which imports both.
 import CUDA
+import Random
 import ClimaComms
 import ClimaCore
 import ClimaAtmos
@@ -53,26 +54,35 @@ const MomentsNT = @NamedTuple{sigma_S::FT, λ_lagrange::FT, λ_eq::FT}
 
 fill_sc(x) = (f = sc(); parent(f) .= FT(x); f)
 
-const ρf     = fill_sc(0.9)
-const Tf     = fill_sc(275)
-const wf     = fill_sc(1)
-const qtf    = fill_sc(8e-3)
-const qlf    = fill_sc(3e-4)
-const qif    = fill_sc(5e-5)
-const qrf    = fill_sc(2e-4)
-const qsf    = fill_sc(3e-5)
-const TTf    = fill_sc(1e-2)
-const qqf    = fill_sc(1e-12)
-const corrf  = fill_sc(0.6)
-const αf     = fill_sc(1)
-const λf     = fill_sc(0.5)
-const muSf   = fill_sc(1e-4)
-const pfracf = fill_sc(1)
+# `VIJFH` stores components on the fourth axis, so a scalar field is component 1.
+function fill_component!(field, k, seed, lo, hi)
+    v = view(parent(field), :, :, :, k, :)
+    h = rand(Random.MersenneTwister(seed), FT, size(v)) .* FT(hi - lo) .+ FT(lo)
+    copyto!(v, h)
+    return field
+end
+varied(seed, lo, hi) = fill_component!(sc(), 1, seed, lo, hi)
+
+const ρf     = varied(1, 0.25, 1.2)      # kg/m^3, surface to model top
+const Tf     = varied(2, 205, 300)       # K, spanning the mixed-phase band
+const wf     = varied(3, -2, 3)          # m/s
+const qtf    = varied(4, 1e-6, 2e-2)     # kg/kg
+const qlf    = varied(5, 0, 1e-3)
+const qif    = varied(6, 0, 3e-4)
+const qrf    = varied(7, 0, 1e-3)
+const qsf    = varied(8, 0, 3e-4)
+const TTf    = varied(9, 1e-4, 1e-1)     # K^2
+const qqf    = varied(10, 1e-14, 1e-10)  # (kg/kg)^2
+const corrf  = varied(11, -0.9, 0.9)
+const αf     = varied(12, 0.2, 1)
+const λf     = varied(13, 0, 1)
+const muSf   = varied(14, -5e-3, 5e-3)
+const pfracf = varied(15, 1e-2, 1)
 const momf   = st(MomentsNT)
 const out    = st(TendNT)
-# Uninitialized storage cannot change register allocation, but filling it keeps the
-# launch free of garbage that would confuse a later look at the output.
-parent(momf) .= FT(1e-5)
+fill_component!(momf, 1, 16, 1e-6, 3e-3)   # sigma_S, positive
+fill_component!(momf, 2, 17, -3e-3, 3e-3)  # λ_lagrange
+fill_component!(momf, 3, 18, -3e-3, 3e-3)  # λ_eq
 parent(out) .= FT(0)
 
 # Built through ClimaAtmos rather than from CloudMicrophysics directly: the
@@ -108,14 +118,144 @@ nonquad(dt, nsubs) = @. out = CA.microphysics_tendencies_1m(
     ρf, qtf, qlf, qif, qrf, qsf, Tf, wf, MP, TPS, dt, nsubs,
 )
 
-const CASES = [
-    ("quadrature broadcast (L1297)", quad_L1297),
-    ("non-quadrature sibling", nonquad),
-]
+# The kernel's registers are the largest frame on its call graph, not the sum of
+# its parts: the node function is `@noinline`, so `ptxas` allocates for the peak
+# of {traversal, node function}. A barrier can only split a frame, never shrink
+# one, so `max(traversal, BMT)` is the floor of every barrier arrangement
+# reachable from ClimaAtmos -- which is what these three cases price.
+#
+# None of them edits ClimaAtmos: `sum_over_conditional_nodes` takes the node
+# function as an argument, so the real traversal is measured by passing a stub in
+# its place, and the two inner frames are measured by calling them directly.
+
+# Stands in for `Microphysics1MEvaluator` to leave the traversal frame alone.
+# `@noinline` because the real node function is, and the scaled arguments are
+# consumed so that the rule's mass rescaling stays live rather than dead code.
+struct StubNodeFunction{FT}
+    λ_lagrange::FT
+    α::FT
+    shaft_frac::FT
+end
+@noinline function (s::StubNodeFunction{FT})(
+    T_hat, q_tot_hat, flag_p, q_sat_hat...,
+) where {FT}
+    return (;
+        dq_lcl_dt = s.λ_lagrange * T_hat,
+        dq_icl_dt = s.α * q_tot_hat,
+        dq_rai_dt = s.shaft_frac * FT(flag_p),
+        dq_sno_dt = zero(FT),
+    )
+end
+
+# The real conditional rule, mass rescaling, shaft fraction and node traversal,
+# with the node function replaced by the stub: everything the kernel holds live
+# across the call, including the 8-node table.
+@inline function traversal_frame(
+    ρ, T, w, q_tot, q_lcl, q_icl, q_rai, q_sno, TT, qq, corr, mom, α, dt, nsubs,
+    λ, mu_S, precip_frac, opts,
+)
+    FT = typeof(ρ)
+    a_p = max(FT(precip_frac), FT(opts.precip_frac_floor))
+    σ_S = FT(mom.sigma_S)
+    return CA._sum_over_conditional_sgs(
+        (λ_scaled, α_scaled, shaft_frac) ->
+            StubNodeFunction{FT}(λ_scaled, α_scaled, shaft_frac),
+        TPS, ρ, T, mu_S, σ_S, mom.λ_lagrange, mom.λ_eq, α, q_lcl + q_icl,
+        TT, qq, corr, FT(opts.precip_incloud_fraction),
+        CA.sgs_precip_shaft_threshold(a_p, σ_S), QUAD,
+    )
+end
+
+# One node function evaluation: the saturation, condensate reconstruction, shaft
+# placement and early-out, plus the BMT call inlined into the same frame. This is
+# the frame the barrier at the functor currently caps the kernel with.
+@inline function node_function_frame(
+    ρ, T, w, q_tot, q_lcl, q_icl, q_rai, q_sno, mom, α, dt, nsubs,
+    λ, mu_S, shaft_frac, opts,
+)
+    FT = typeof(ρ)
+    ev = CA.Microphysics1MEvaluator(
+        BMT.LinearizedAverage(), BMT.Microphysics1Moment(), MP, TPS, ρ, w,
+        q_rai, q_sno, λ, opts.ξ_liq, opts.ξ_ice, q_lcl, q_icl,
+        mom.λ_lagrange, mom.λ_eq, mu_S, α,
+        FT(opts.precip_incloud_fraction), shaft_frac, dt, nsubs, (),
+    )
+    return ev(T, q_tot, zero(FT))
+end
+
+# CloudMicrophysics' substep-averaged bulk tendency on its own, with nothing of
+# ClimaAtmos's around it. Neither arm devs CloudMicrophysics, so this frame is
+# the floor no ClimaAtmos-side change can lower.
+@inline bmt_frame(ρ, T, w, q_tot, q_lcl, q_icl, q_rai, q_sno, dt, nsubs) =
+    CA._call_bmt_1m(
+        BMT.LinearizedAverage(), BMT.Microphysics1Moment(),
+        CA._unwrapped(MP), CA._unwrapped(TPS), ρ, T, w,
+        q_tot, q_lcl, q_icl, q_rai, q_sno, dt, nsubs, (),
+    )
+
+traversal_only(dt, nsubs) = @. out = traversal_frame(
+    ρf, Tf, wf, qtf, qlf, qif, qrf, qsf, TTf, qqf, corrf, momf, αf, dt, nsubs,
+    λf, muSf, pfracf, OPTS,
+)
+node_function_only(dt, nsubs) = @. out = node_function_frame(
+    ρf, Tf, wf, qtf, qlf, qif, qrf, qsf, momf, αf, dt, nsubs,
+    λf, muSf, pfracf, OPTS,
+)
+bmt_only(dt, nsubs) = @. out = bmt_frame(
+    ρf, Tf, wf, qtf, qlf, qif, qrf, qsf, dt, nsubs,
+)
+
+# Two case sets, because the arm pair and the frame census answer different
+# questions and write different files. The arm pair is an A/B across the two
+# ClimaAtmos checkouts and its output is the record of a treatment, so it must
+# stay regenerable exactly; the frame census is one run on one arm.
+const CASE_SETS = Dict(
+    "arms" => [
+        ("quadrature broadcast (L1297)", quad_L1297),
+        ("non-quadrature sibling", nonquad),
+    ],
+    "frames" => [
+        ("quadrature broadcast (L1297)", quad_L1297),
+        ("traversal frame (stub node function)", traversal_only),
+        ("node function frame (recon + BMT)", node_function_only),
+        ("BMT frame (CloudMicrophysics only)", bmt_only),
+    ],
+)
+const CASE_SET = get(ENV, "QUAD_PROBE_CASES", "arms")
+haskey(CASE_SETS, CASE_SET) ||
+    error("QUAD_PROBE_CASES=$CASE_SET is not one of $(keys(CASE_SETS))")
+const CASES = CASE_SETS[CASE_SET]
+
+# Device time of the broadcast from CUDA events, best of `reps`: the layout is
+# the model's, so this is directly comparable to the profile's per-launch time.
+function time_ms(f; warmup = 2, reps = 7)
+    for _ in 1:warmup
+        f(FT(120), 2)
+    end
+    CUDA.synchronize()
+    best = Inf
+    for _ in 1:reps
+        best = min(best, CUDA.@elapsed f(FT(120), 2))
+    end
+    return 1e3 * best
+end
+
+# FNV-1a over the raw output bits. A treatment that only reuses a value already
+# computed is bit-for-bit by construction, and this is the statement of it that
+# an approximate comparison of 4.4 million values is not.
+function out_bits_hash(field)
+    a = Array(parent(field))
+    h = UInt64(0xcbf29ce484222325)
+    for x in reinterpret(UInt32, vec(a))
+        h = (h ⊻ UInt64(x)) * 0x100000001b3
+    end
+    return string(h, base = 16, pad = 16)
+end
 
 # Read back the kernel ClimaCore actually compiled for each case. A case may
 # launch more than one kernel; the one being measured is the register-heaviest.
 function measure(name, f)
+    parent(out) .= FT(0)
     empty!(Ext.RECORDED_KERNELS)
     Ext.RECORD_KERNELS[] = true
     try
@@ -127,8 +267,11 @@ function measure(name, f)
     isempty(Ext.RECORDED_KERNELS) && return nothing
     k = argmax(CUDA.registers, Ext.RECORDED_KERNELS)
     r = CUDA.registers(k)
+    ms = time_ms(f)
     return Dict(
         "registers" => r,
+        "device_ms" => round(ms; digits = 4),
+        "out_bits_hash" => out_bits_hash(out),
         "local_bytes" => CUDA.memory(k).local,
         "maxthreads" => CUDA.maxthreads(k),
         "warps_per_sm" => warps_per_sm(r),
@@ -141,17 +284,19 @@ results = Dict{String, Any}()
 println("\n=== SGS-quadrature microphysics: where the registers go ===")
 println("AMIP he16 layout: Nv=$Nv Nij=$Nij Nh=$Nh, $(Nv*Nij*Nij*Nh) points, $FT")
 println()
-println(rpad("case", 34), rpad("regs", 6), rpad("spill B", 9),
-        rpad("warps/SM", 10), "occupancy")
+println(rpad("case", 38), rpad("regs", 6), rpad("spill B", 9),
+        rpad("warps/SM", 10), rpad("occupancy", 11), rpad("device ms", 11),
+        "output bits")
 for (nm, f) in CASES
     d = measure(nm, f)
     if isnothing(d)
-        println(rpad(nm, 34), "(no kernel recorded)")
+        println(rpad(nm, 38), "(no kernel recorded)")
         continue
     end
     results[nm] = d
-    println(rpad(nm, 34), rpad(d["registers"], 6), rpad(d["local_bytes"], 9),
-            rpad(d["warps_per_sm"], 10), string(d["occupancy_pct"], "%"))
+    println(rpad(nm, 38), rpad(d["registers"], 6), rpad(d["local_bytes"], 9),
+            rpad(d["warps_per_sm"], 10), rpad(string(d["occupancy_pct"], "%"), 11),
+            rpad(d["device_ms"], 11), d["out_bits_hash"])
 end
 
 # The step table, so the output says how far a saving has to go to pay.
@@ -189,16 +334,24 @@ println("\narm = $ARM, ClimaAtmos at $(pkgdir(CA)) @ $CA_REF",
 import TOML
 import Dates
 mkpath(joinpath(@__DIR__, "..", "results"))
-open(joinpath(@__DIR__, "..", "results", "quadrature-registers-$ARM.toml"), "w") do io
+const LABEL = get(ENV, "QUAD_PROBE_LABEL", CASE_SET == "arms" ? ARM : CASE_SET)
+open(joinpath(@__DIR__, "..", "results", "quadrature-registers-$LABEL.toml"), "w") do io
     TOML.print(io, Dict(
-        "note" => "Compile-only register census of the SGS-quadrature " *
-                  "microphysics broadcast, read from ClimaCore's " *
-                  "RECORD_KERNELS hook on the real AMIP he16 data layout. " *
-                  "Parameters are folded into Val as the model folds them. " *
-                  "Packing the seven precomputed scratch fields into one " *
-                  "struct field moved neither registers nor spill, because " *
-                  "kernel arguments live in constant parameter space.",
+        "note" => "Compile-only census of the SGS-quadrature microphysics " *
+                  "broadcast on the real AMIP he16 data layout, with " *
+                  "parameters folded into Val as the model folds them. " *
+                  "Registers, spill and block size are read from " *
+                  "ClimaCore's RECORD_KERNELS launch record, so they are " *
+                  "the kernel the model launches. `device_ms` is the best " *
+                  "of seven CUDA-event timings of that launch on a varied " *
+                  "state in which almost every cell carries condensate, so " *
+                  "it prices the full-work path and runs about twice the " *
+                  "profile's per-launch time on the model's mixed state. " *
+                  "`out_bits_hash` is FNV-1a over the raw output bits of " *
+                  "all points, so two arms agreeing on it computed the " *
+                  "same thing exactly.",
         "arm" => ARM,
+        "case_set" => CASE_SET,
         "climaatmos_path" => pkgdir(CA),
         "climaatmos_commit" => CA_REF,
         "climaatmos_dirty" => CA_DIRTY,
