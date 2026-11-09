@@ -190,6 +190,57 @@ def main():
     gen_pre, gen_now = subtotal(pre, is_generic), subtotal(now, is_generic)
     heavy_pre, heavy_now = subtotal(pre, is_heavy), subtotal(now, is_heavy)
 
+    # A fusion's bill is what the kernels that ABSORBED the fused work did, not
+    # everything else that changed in the same pull. Charging all other growth
+    # to it swept in brand-new physics -- the implicit 1M refresh above all --
+    # and reported a ratio nearly four times the defensible one.
+    #
+    # Fusion moves work out of the broadcast machinery and into compute
+    # kernels, so a receiver's time RISES while a removed kernel's vanishes:
+    # only the net over survivors plus removals is meaningful (see the
+    # name-pairing rule in AGENTS.md). A function that is new and NAMED is new
+    # capability. A function that is new and named for a FILE AND LINE is
+    # ambiguous, because a pull that moves source lines renames exactly those,
+    # so it bounds the answer instead of deciding it.
+    def bucket(r):
+        f = r["function"]
+        if f.startswith(GENERIC):
+            return "broadcast"
+        if "rte_" in f:
+            # Byte-identical code at identical launches and registers, so this
+            # is a cloud-state difference and not attributable to the pull.
+            return "radiation"
+        if r["pre_ms"] is None:
+            return "new_anonymous" if f.startswith("_FILE_") else "new_named"
+        return "existing"
+
+    tally = {}
+    for r in rows:
+        tally[bucket(r)] = tally.get(bucket(r), 0.0) + r["delta_ms"]
+    saved = -tally.get("broadcast", 0.0)
+    bill_lo = tally.get("existing", 0.0)
+    bill_hi = bill_lo + tally.get("new_anonymous", 0.0)
+    ledger = {
+        "broadcast_machinery_saved_ms": round(saved, 1),
+        "receivers_net_ms": round(bill_lo, 1),
+        "new_anonymous_ms": round(tally.get("new_anonymous", 0.0), 1),
+        "new_named_ms": round(tally.get("new_named", 0.0), 1),
+        "radiation_unexplained_ms": round(tally.get("radiation", 0.0), 1),
+        "paid_per_ms_saved_low": round(bill_lo / max(saved, 1e-9), 2),
+        "paid_per_ms_saved_high": round(bill_hi / max(saved, 1e-9), 2),
+        "new_named_share_of_growth_pct": round(
+            100.0 * tally.get("new_named", 0.0) / grew, 1
+        ),
+        "fusion_about_break_even": bill_lo / max(saved, 1e-9) < 1.25,
+        "note": (
+            "paid_per_ms_saved_low charges the fusion only the net change of "
+            "kernels present in both profiles; _high also charges every new "
+            "anonymous broadcast, which a line move would rename. New NAMED "
+            "functions are new capability and are reported separately, not "
+            "charged to the fusion."
+        ),
+    }
+
     top = [r for r in rows if r["delta_ms"] > 0][:3]
     out = {
         "provenance": {
@@ -226,16 +277,21 @@ def main():
             "everything_else_cost_ms": round(
                 (now["summed_ms"] - gen_now["ms"]) - (pre["summed_ms"] - gen_pre["ms"]), 1
             ),
-            "paid_per_ms_saved": round(
+            # Kept so the earlier figure stays visible, renamed so it cannot be
+            # read as the fusion's cost: it charges the fusion every other
+            # change in the pull. Read `ledger` instead.
+            "all_other_growth_per_ms_saved": round(
                 ((now["summed_ms"] - gen_now["ms"]) - (pre["summed_ms"] - gen_pre["ms"]))
                 / max(gen_pre["ms"] - gen_now["ms"], 1e-9), 2
             ),
             "note": (
                 "Fewer, larger kernels: the launch count fell by a third while "
-                "device time rose. The broadcast machinery it removed is the "
-                "saving; every other kernel is the bill."
+                "device time rose. `all_other_growth_per_ms_saved` is NOT the "
+                "fusion's cost -- it charges the fusion all new physics in the "
+                "same pull. See `ledger`."
             ),
         },
+        "ledger": ledger,
         "register_pressure": {
             "threshold_registers": HEAVY_REGS,
             "pre": heavy_pre,
