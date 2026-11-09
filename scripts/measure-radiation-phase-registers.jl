@@ -93,7 +93,16 @@ cloud_state = as.cloud_state
 
 results = Dict{String, Any}()
 
-function record!(label, k)
+function record!(label, build)
+    local k
+    try
+        k = build()
+    catch err
+        msg = sprint(showerror, err)
+        results[label] = Dict{String, Any}("error" => msg)
+        Base.@printf("%-34s FAILED  %s\n", label, first(msg, 180))
+        return nothing
+    end
     r = CUDA.registers(k)
     m = CUDA.memory(k)
     w = warps_per_sm(r)
@@ -166,32 +175,32 @@ end
 println("\n=== longwave phases (target <= $TARGET_REGS registers, no spill) ===")
 record!(
     "lw_cloud_mask",
-    CUDA.@cuda launch = false always_inline = true k_lw_mask(
+    () -> CUDA.@cuda launch = false always_inline = true k_lw_mask(
         cloud_state, cloud_state.mask_lw, ncol,
     ),
 )
 record!(
     "lw_gas_aerosol_optics",
-    CUDA.@cuda launch = false always_inline = true k_lw_optics(
+    () -> CUDA.@cuda launch = false always_inline = true k_lw_optics(
         lws.op, as, lws.state_cache, lws.src, lk.lookup_lw, lk.lookup_lw_aero,
         ncol,
     ),
 )
 record!(
     "lw_cloud_optics",
-    CUDA.@cuda launch = false always_inline = true k_lw_optics_nogas(
+    () -> CUDA.@cuda launch = false always_inline = true k_lw_optics_nogas(
         lws.op, as, lk.lookup_lw_cld, cloud_state.mask_lw, ncol,
     ),
 )
 record!(
     "lw_two_stream_sweep",
-    CUDA.@cuda launch = false always_inline = true k_lw_sweep(
+    () -> CUDA.@cuda launch = false always_inline = true k_lw_sweep(
         lws.op, lws.fluxb, lws.src, lws.bcs, nlev, ncol,
     ),
 )
 record!(
     "lw_accumulate",
-    CUDA.@cuda launch = false always_inline = true k_lw_accumulate(
+    () -> CUDA.@cuda launch = false always_inline = true k_lw_accumulate(
         solver.clear_flux_acc_lw, lws.fluxb, nlev, ncol,
     ),
 )
@@ -225,13 +234,13 @@ n_gpt_sw = length(lk.lookup_sw.band_data.major_gpt2bnd)
 println("\n=== shortwave phases ===")
 record!(
     "sw_gas_aerosol_optics",
-    CUDA.@cuda launch = false always_inline = true k_sw_optics(
+    () -> CUDA.@cuda launch = false always_inline = true k_sw_optics(
         sws.op, as, sws.state_cache, lk.lookup_sw, lk.lookup_sw_aero, ncol,
     ),
 )
 record!(
     "sw_two_stream_sweep",
-    CUDA.@cuda launch = false always_inline = true k_sw_sweep(
+    () -> CUDA.@cuda launch = false always_inline = true k_sw_sweep(
         sws.op, sws.src, sws.bcs, sws.fluxb, n_gpt_sw, nlev, ncol,
     ),
 )
@@ -247,7 +256,7 @@ isnothing(ext) && error("RRTMGPCUDAExt is not loaded, so the control cannot run"
 println("\n=== whole fused kernels (control: expect the cap) ===")
 record!(
     "lw_fused_whole",
-    CUDA.@cuda launch = false always_inline = true ext.rte_lw_2stream_solve_both_skies_CUDA!(
+    () -> CUDA.@cuda launch = false always_inline = true ext.rte_lw_2stream_solve_both_skies_CUDA!(
         lws.fluxb, lws.flux, solver.clear_flux_acc_lw, nothing, lws.src,
         lws.bcs, lws.op, nlay, ncol, as, lws.state_cache, lk.lookup_lw,
         lk.lookup_lw_cld, lk.lookup_lw_aero,
@@ -255,7 +264,86 @@ record!(
 )
 record!(
     "sw_fused_whole",
-    CUDA.@cuda launch = false always_inline = true ext.rte_sw_2stream_solve_both_skies_CUDA!(
+    () -> CUDA.@cuda launch = false always_inline = true ext.rte_sw_2stream_solve_both_skies_CUDA!(
+        sws.fluxb, sws.flux, solver.clear_flux_acc_sw, nothing, sws.op,
+        sws.bcs, sws.src, nlay, ncol, as, sws.state_cache, lk.lookup_sw,
+        lk.lookup_sw_cld, lk.lookup_sw_aero,
+    ),
+)
+
+# ---------------------------------------------------------------------------
+# The grouped kernels, which are what the mod arm actually launches. The
+# ungrouped controls above are the baseline's; both profile at the cap, so this
+# records rather than discovers -- but a phase split would replace THESE.
+# ---------------------------------------------------------------------------
+
+grp_lw, grp_sw = lws.gpt_groups, sws.gpt_groups
+ngroups_lw =
+    isnothing(grp_lw) ? 0 : RRTMGP.RTE.n_gpt_groups(grp_lw)
+ngroups_sw =
+    isnothing(grp_sw) ? 0 : RRTMGP.RTE.n_gpt_groups(grp_sw)
+
+println("\n=== grouped kernels (what the mod arm launches) ===")
+if !isnothing(grp_lw)
+    record!(
+        "lw_grouped_whole",
+        () -> CUDA.@cuda launch = false always_inline = true ext.rte_lw_2stream_solve_grouped_CUDA!(
+            grp_lw.fluxb, grp_lw.acc, grp_lw.acc_clear, grp_lw.src, lws.bcs,
+            grp_lw.op, grp_lw.mask, grp_lw.cloudy, nlay, ncol, as,
+            lws.state_cache, lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero,
+            ngroups_lw,
+        ),
+    )
+end
+if !isnothing(grp_sw)
+    record!(
+        "sw_grouped_whole",
+        () -> CUDA.@cuda launch = false always_inline = true ext.rte_sw_2stream_solve_grouped_CUDA!(
+            grp_sw.fluxb, grp_sw.acc, grp_sw.acc_clear, grp_sw.src, sws.bcs,
+            grp_sw.op, grp_sw.mask, grp_sw.cloudy, nlay, ncol, as,
+            sws.state_cache, lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero,
+            ngroups_sw,
+        ),
+    )
+end
+
+# ---------------------------------------------------------------------------
+# What forcing the budget costs, as a number rather than as the memory of two
+# runs. Capping these kernels measured +3.93% and +2.91%; the reason given was
+# spill, which was never quantified. Both levers are compiled here: the hard
+# cap ptxas must honor by spilling, and the launch bounds it may instead reach
+# by rematerializing. If neither lands near 128 without spill, forcing the
+# occupancy step is closed and the split is the only route left.
+# ---------------------------------------------------------------------------
+
+println("\n=== the same kernels, forced to the 2-blocks/SM budget ===")
+record!(
+    "lw_fused_maxregs_128",
+    () -> CUDA.@cuda launch = false always_inline = true maxregs = 128 ext.rte_lw_2stream_solve_both_skies_CUDA!(
+        lws.fluxb, lws.flux, solver.clear_flux_acc_lw, nothing, lws.src,
+        lws.bcs, lws.op, nlay, ncol, as, lws.state_cache, lk.lookup_lw,
+        lk.lookup_lw_cld, lk.lookup_lw_aero,
+    ),
+)
+record!(
+    "lw_fused_launch_bounds_2",
+    () -> CUDA.@cuda launch = false always_inline = true maxthreads = 256 blocks_per_sm = 2 ext.rte_lw_2stream_solve_both_skies_CUDA!(
+        lws.fluxb, lws.flux, solver.clear_flux_acc_lw, nothing, lws.src,
+        lws.bcs, lws.op, nlay, ncol, as, lws.state_cache, lk.lookup_lw,
+        lk.lookup_lw_cld, lk.lookup_lw_aero,
+    ),
+)
+record!(
+    "sw_fused_maxregs_128",
+    () -> CUDA.@cuda launch = false always_inline = true maxregs = 128 ext.rte_sw_2stream_solve_both_skies_CUDA!(
+        sws.fluxb, sws.flux, solver.clear_flux_acc_sw, nothing, sws.op,
+        sws.bcs, sws.src, nlay, ncol, as, sws.state_cache, lk.lookup_sw,
+        lk.lookup_sw_cld, lk.lookup_sw_aero,
+    ),
+)
+record!(
+    "sw_fused_launch_bounds_2",
+    () -> CUDA.@cuda launch = false always_inline = true maxthreads = 256 blocks_per_sm = 2 ext.rte_sw_2stream_solve_both_skies_CUDA!(
         sws.fluxb, sws.flux, solver.clear_flux_acc_sw, nothing, sws.op,
         sws.bcs, sws.src, nlay, ncol, as, sws.state_cache, lk.lookup_sw,
         lk.lookup_sw_cld, lk.lookup_sw_aero,
@@ -275,8 +363,10 @@ phases_sw = ["sw_gas_aerosol_optics", "sw_two_stream_sweep"]
 # The phase that decides it: gas optics is ~99% of RRTMGP time (section 4l item
 # 5), so a split only helps if THAT phase fits. A split where the expensive
 # phase stays at the cap moves 1% of the time to higher occupancy.
-lw_optics_fits = results["lw_gas_aerosol_optics"]["reaches_target"]
-sw_optics_fits = results["sw_gas_aerosol_optics"]["reaches_target"]
+fits(p) = get(get(results, p, Dict{String, Any}()), "reaches_target", false)
+at_cap(p) = get(get(results, p, Dict{String, Any}()), "at_cap", false)
+lw_optics_fits = fits("lw_gas_aerosol_optics")
+sw_optics_fits = fits("sw_gas_aerosol_optics")
 
 results["summary"] = Dict{String, Any}(
     "ncol" => ncol,
@@ -286,14 +376,36 @@ results["summary"] = Dict{String, Any}(
     "target_registers" => TARGET_REGS,
     "target_warps_per_sm" => warps_per_sm(TARGET_REGS),
     "current_warps_per_sm" => warps_per_sm(REGISTER_CAP),
-    "control_lw_at_cap" => results["lw_fused_whole"]["at_cap"],
-    "control_sw_at_cap" => results["sw_fused_whole"]["at_cap"],
+    "control_lw_at_cap" => at_cap("lw_fused_whole"),
+    "control_sw_at_cap" => at_cap("sw_fused_whole"),
+    "control_lw_grouped_at_cap" => at_cap("lw_grouped_whole"),
+    "control_sw_grouped_at_cap" => at_cap("sw_grouped_whole"),
+    "failed" => sort([k for (k, v) in results if haskey(v, "error")]),
+    "ngroups_lw" => ngroups_lw,
+    "ngroups_sw" => ngroups_sw,
+    "forced" => Dict{String, Any}(
+        k => Dict{String, Any}(
+            "registers" => get(get(results, k, Dict()), "registers", -1),
+            "local_bytes" => get(get(results, k, Dict()), "local_bytes", -1),
+            "warps_per_sm" => get(get(results, k, Dict()), "warps_per_sm", -1),
+        ) for k in [
+            "lw_fused_maxregs_128", "lw_fused_launch_bounds_2",
+            "sw_fused_maxregs_128", "sw_fused_launch_bounds_2",
+        ]
+    ),
+    # A forced budget is only worth running if something reaches it clean.
+    "forced_budget_is_clean" => any(
+        fits(k) for k in [
+            "lw_fused_maxregs_128", "lw_fused_launch_bounds_2",
+            "sw_fused_maxregs_128", "sw_fused_launch_bounds_2",
+        ]
+    ),
     "lw_optics_phase_fits" => lw_optics_fits,
     "sw_optics_phase_fits" => sw_optics_fits,
     # The whole question, in one field.
     "split_is_viable" => lw_optics_fits || sw_optics_fits,
     "phases_that_fit" => [
-        p for p in vcat(phases_lw, phases_sw) if results[p]["reaches_target"]
+        p for p in vcat(phases_lw, phases_sw) if fits(p)
     ],
     "note" => "Each phase is compiled as its own kernel with the live " *
               "solver's argument types, which is what a split would produce. " *
