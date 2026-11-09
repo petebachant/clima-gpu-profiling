@@ -34,6 +34,10 @@ PROBES = {
     "dead_field": "results/quadrature-registers-work-mod-deadfield-only.toml",
     "both_removals": "results/quadrature-registers-work-mod.toml",
 }
+CAP = "results/quadrature-registers-cap-installed.toml"
+CAP_REGISTERS = 128
+CAP_TARGET = "quadrature broadcast (L1297)"
+CAP_THROUGH_API = "quadrature broadcast, ClimaCore cap"
 OUT = Path("results/experiments/quadrature-saturation/stats.json")
 BEFORE = "pre_treatment"
 KERNELS = ("quadrature_cache", "implicit_tendency")
@@ -242,6 +246,42 @@ def main(out=OUT):
     }
     work["calls_removed"] = work["calls_before"] - work["calls_after"]
 
+    # The register cap, measured through the API the treatment uses rather than
+    # by handing `cufunction` a budget directly: a dropped keyword would look
+    # exactly like no cap and would only surface as a wasted profiling pair.
+    cap_d = tomllib.load(open(CAP, "rb"))
+    if cap_d["climaatmos_dirty"]:
+        sys.exit(f"{CAP}: the cap probe ran on a dirty ClimaAtmos tree")
+    uncapped = cap_d["cases"][CAP_TARGET]
+    capped = cap_d["cases"][CAP_THROUGH_API]
+    cap = {
+        "climaatmos_commit": cap_d["climaatmos_commit"][:9],
+        "target_registers": CAP_REGISTERS,
+        "uncapped_registers": uncapped["registers"],
+        "capped_registers": capped["registers"],
+        "uncapped_warps_per_sm": uncapped["warps_per_sm"],
+        "capped_warps_per_sm": capped["warps_per_sm"],
+        "uncapped_local_bytes": uncapped["local_bytes"],
+        "capped_local_bytes": capped["local_bytes"],
+        "local_bytes_added": capped["local_bytes"] - uncapped["local_bytes"],
+        "uncapped_probe_ms": uncapped["device_ms"],
+        "capped_probe_ms": capped["device_ms"],
+        "probe_change_pct": pct(capped["device_ms"], uncapped["device_ms"]),
+        # The request survived every layer between the broadcast and `ptxas`.
+        "request_reaches_the_compile": capped["registers"] <= CAP_REGISTERS
+        and capped["registers"] < uncapped["registers"],
+        # A cap moves where values live and cannot move the answer; asserted,
+        # not assumed.
+        "bit_for_bit": capped["out_bits_hash"] == uncapped["out_bits_hash"],
+        "buys_a_band": capped["warps_per_sm"] > uncapped["warps_per_sm"],
+        # What a harder cap would cost, for the next person who asks.
+        "at_96_registers": {
+            "registers": uncapped["capped"]["96"]["registers"],
+            "local_bytes": uncapped["capped"]["96"]["local_bytes"],
+            "warps_per_sm": uncapped["capped"]["96"]["warps_per_sm"],
+        },
+    }
+
     doc = {
         "note": __doc__.strip().splitlines()[0],
         "provenance": {
@@ -260,7 +300,11 @@ def main(out=OUT):
         "probe_summary": probe_summary,
         "work": work,
         "frames": occ["frames"],
+        "cap": cap,
     }
+    assert cap["request_reaches_the_compile"], cap
+    assert cap["bit_for_bit"], cap
+    assert cap["buys_a_band"], cap
     out.write_text(json.dumps(doc, indent=2) + "\n")
     print(f"wrote {out}")
     for name, r in profiled.items():
