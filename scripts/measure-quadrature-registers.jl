@@ -358,7 +358,21 @@ println(rpad("case", 38), rpad("regs", 6), rpad("spill B", 9),
         rpad("warps/SM", 10), rpad("occupancy", 11), rpad("device ms", 11),
         "output bits")
 for (nm, f) in CASES
-    d = measure(nm, f)
+    # One case that cannot run must not take the others with it. A case may
+    # call an API only one arm has -- the ClimaCore cap exists on the treated
+    # branch and not on main -- and losing the whole run to that wastes a
+    # reservation for a case that was never the point. The radiation probe
+    # learned this first.
+    local d
+    try
+        d = measure(nm, f)
+    catch err
+        msg = sprint(showerror, err)
+        results[nm] = Dict{String, Any}("error" => msg)
+        println(rpad(nm, 38), "FAILED")
+        println(msg)
+        continue
+    end
     if isnothing(d)
         println(rpad(nm, 38), "(no kernel recorded)")
         continue
