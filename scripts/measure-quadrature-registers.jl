@@ -252,6 +252,25 @@ function out_bits_hash(field)
     return string(h, base = 16, pad = 16)
 end
 
+# Register caps to re-price each recorded kernel at. The quadrature broadcast
+# sits at the TOP of the 97-128 band, so ptxas choosing 130 instead of 128 costs
+# it a quarter of its occupancy (512-thread blocks and 16 warps become 384 and
+# 12). A cap is the only deterministic way back into the band: source-level
+# live-state reasoning has mispredicted this allocator twice here, once by 2
+# registers and once by 33. What a cap costs is spill, so that is what these
+# record -- 128 is the band edge and 96 is the next step down, which shows how
+# fast the spill grows and therefore whether the edge is a cliff or a slope.
+const CAPS = [128, 96]
+
+# Re-compile a recorded kernel under a register cap. `HostKernel{F, TT}` carries
+# the signature in its second type parameter, so the same specialization can be
+# handed back to `cufunction` with a cap and nothing about the broadcast has to
+# be rebuilt -- and no ClimaCore edit is needed to screen one.
+function capped_compile(k, cap)
+    tt = typeof(k).parameters[2]
+    return CUDA.cufunction(k.f, tt; always_inline = true, maxregs = cap)
+end
+
 # Read back the kernel ClimaCore actually compiled for each case. A case may
 # launch more than one kernel; the one being measured is the register-heaviest.
 function measure(name, f)
@@ -268,7 +287,25 @@ function measure(name, f)
     k = argmax(CUDA.registers, Ext.RECORDED_KERNELS)
     r = CUDA.registers(k)
     ms = time_ms(f)
+    capped = Dict{String, Any}()
+    for cap in CAPS
+        try
+            ck = capped_compile(k, cap)
+            cr = CUDA.registers(ck)
+            capped[string(cap)] = Dict{String, Any}(
+                "registers" => cr,
+                "local_bytes" => CUDA.memory(ck).local,
+                "warps_per_sm" => warps_per_sm(cr),
+                "honored" => cr <= cap,
+            )
+        catch err
+            capped[string(cap)] = Dict{String, Any}(
+                "error" => first(sprint(showerror, err), 200),
+            )
+        end
+    end
     return Dict(
+        "capped" => capped,
         "registers" => r,
         "device_ms" => round(ms; digits = 4),
         "out_bits_hash" => out_bits_hash(out),
@@ -297,6 +334,12 @@ for (nm, f) in CASES
     println(rpad(nm, 38), rpad(d["registers"], 6), rpad(d["local_bytes"], 9),
             rpad(d["warps_per_sm"], 10), rpad(string(d["occupancy_pct"], "%"), 11),
             rpad(d["device_ms"], 11), d["out_bits_hash"])
+    for cap in CAPS
+        c = d["capped"][string(cap)]
+        haskey(c, "error") && (println(rpad("  capped at $cap", 38), c["error"]); continue)
+        println(rpad("  capped at $cap", 38), rpad(c["registers"], 6),
+                rpad(c["local_bytes"], 9), rpad(c["warps_per_sm"], 10))
+    end
 end
 
 # The step table, so the output says how far a saving has to go to pay.
