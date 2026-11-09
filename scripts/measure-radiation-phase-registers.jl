@@ -33,6 +33,7 @@
 # arguments, so the types and the inlining are the model's.
 
 import CUDA
+import Printf
 import RRTMGP
 import TOML
 
@@ -100,7 +101,7 @@ function record!(label, build)
     catch err
         msg = sprint(showerror, err)
         results[label] = Dict{String, Any}("error" => msg)
-        Base.@printf("%-34s FAILED  %s\n", label, first(msg, 180))
+        Printf.@printf("%-34s FAILED  %s\n", label, first(msg, 180))
         return nothing
     end
     r = CUDA.registers(k)
@@ -113,7 +114,7 @@ function record!(label, build)
         "at_cap" => r >= REGISTER_CAP,
         "reaches_target" => r <= TARGET_REGS && m.local == 0,
     )
-    Base.@printf(
+    Printf.@printf(
         "%-34s regs=%3d  local=%6d B  warps/SM=%2d  %s\n",
         label, r, m.local, w,
         r <= TARGET_REGS ? (m.local == 0 ? "FITS" : "fits but spills") : "too big",
@@ -425,7 +426,7 @@ results["summary"] = Dict{String, Any}(
 mkpath(dirname(out_path))
 open(io -> TOML.print(io, results; sorted = true), out_path, "w")
 
-Base.@printf(
+Printf.@printf(
     "\nverdict: optics phase fits under %d regs with no spill -- longwave %s, shortwave %s\n",
     TARGET_REGS, lw_optics_fits, sw_optics_fits,
 )

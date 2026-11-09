@@ -3730,3 +3730,38 @@ caps on the radiation solvers and the two failed register treatments on the
 quadrature kernel all sit in this file, and the shape they share is a plausible
 occupancy idea that was never checked against the device's allocation rules
 before it cost a measurement. This check costs nothing and runs every pass.
+
+### 8s. A parse check does not resolve macros (2026-11-09)
+
+`scripts/measure-radiation-phase-registers.jl` was written in an earlier pass,
+parse-checked with `Meta.parseall`, and never run. It died on the GPU after
+**42 minutes** --- 18 minutes building the CoupledSimulation, the rest in the
+first step's JIT --- on `UndefVarError: @printf not defined in Base`. `@printf`
+lives in `Printf`; `Base.@printf` has never existed. The name was wrong before
+the job was ever submitted.
+
+`Meta.parseall` accepts it because parsing does not resolve macro names, and
+macro expansion happens when the enclosing definition is evaluated, which on
+this script is after the model is built. So the one check that was run could
+not have caught the one class of error present, and the failure arrived at the
+most expensive possible moment.
+
+`scripts/check-macro-references.jl` closes it: it scans for `Module.@macro`,
+imports the modules the script itself imports (including the aliased
+`import A.B as C` form these scripts use for submodules), and asserts each
+macro exists in its module. It takes a second and needs no GPU. It separates a
+**proven** failure --- the module resolves and the macro is absent --- from an
+**unchecked** reference whose module is bound in an included file and is not
+visible to a static scan; conflating those would make it unusable as a gate,
+since six legitimate references across two scripts are unchecked. A negative
+test confirms it reports `Base.@printf`.
+
+Run it, under the same project, before submitting any measurement script:
+
+    julia --project=ClimaCoupler.jl-mod/experiments/AMIP \
+        scripts/check-macro-references.jl scripts/<script>.jl
+
+This is the same shape as the AGENTS.md rule about asserting scripted edits:
+the file parsed, and parsing was not the property that mattered. Before
+spending a reservation, ask which class of error the local check can actually
+see, not whether a local check passed.
