@@ -310,6 +310,48 @@ granule = {
     ],
 }
 
+# How much of the model's device time could absorb a fusion. `ptxas` spends the
+# granule it has been charged for, so register counts cluster ON the boundaries
+# and headroom is usually zero -- which turns "add live state" into "lose a
+# fifth of the occupancy" across most of the model. Both files are committed
+# snapshots, because the profile and the pre-pull profile are both transient.
+census = json.load(open("results/register-headroom.json"))
+ledger = json.load(open("results/regression-record/fusion-ledger.json"))
+
+headroom_census = {
+    "arm": census["provenance"]["arm"],
+    "kernel_variants": census["device"]["kernel_variants"],
+    "device_total_ms": census["device"]["device_total_ms"],
+    "regs_per_allocation": census["device"]["regs_per_allocation"],
+    "regs_per_scheduler": census["device"]["regs_per_scheduler"],
+    "zero_headroom_pct": census["summary"]["zero_headroom_pct"],
+    "at_most_one_register_pct": census["summary"]["at_most_one_register_pct"],
+    "most_of_device_cannot_absorb_one_register": census["summary"][
+        "most_of_device_cannot_absorb_one_register"
+    ],
+    "useful_cap_targets": census["summary"]["useful_cap_targets"],
+    # Where a fusion is safe: the buckets with room to grow.
+    "roomy_pct": round(
+        sum(v["pct_of_device"] for k, v in census["by_headroom"].items() if int(k) >= 4),
+        1,
+    ),
+}
+
+fusion_ledger = {
+    "window_grew_pct": ledger["window_grew_pct"],
+    "launches_change_pct": ledger["launches_change_pct"],
+    "broadcast_machinery_saved_ms": ledger["broadcast_machinery_saved_ms"],
+    "receivers_net_ms": ledger["receivers_net_ms"],
+    "paid_per_ms_saved_low": ledger["paid_per_ms_saved_low"],
+    "paid_per_ms_saved_high": ledger["paid_per_ms_saved_high"],
+    "new_named_ms": ledger["new_named_ms"],
+    "new_named_share_of_growth_pct": ledger["new_named_share_of_growth_pct"],
+    "recorded_all_other_growth_per_ms_saved": ledger[
+        "recorded_all_other_growth_per_ms_saved"
+    ],
+    "fusion_about_break_even": ledger["fusion_about_break_even"],
+}
+
 out = {
     "model": {
         "device": inv["provenance"]["device"],
@@ -373,6 +415,8 @@ out = {
     "frames": frames,
     "headroom": headroom,
     "granule": granule,
+    "headroom_census": headroom_census,
+    "fusion_ledger": fusion_ledger,
     "prediction": {
         "sypd_pct_per_device_ms": SYPD_PCT_PER_MS,
         "exponent": exponent,
@@ -400,6 +444,11 @@ assert frames["bmt_in_kernels_own_band"], frames
 assert frames["frames_add_rather_than_max"], frames
 assert not frames["recovery_crosses_a_band"], frames
 assert granule["no_block_size_beats_the_band"], granule
+# The precondition for fusion, as a checked claim rather than an impression.
+assert headroom_census["most_of_device_cannot_absorb_one_register"], headroom_census
+# The ledger must still account for the window it decomposes.
+assert ledger["buckets_account_for_window"], ledger
+assert fusion_ledger["fusion_about_break_even"], fusion_ledger
 assert granule["climacore_is_optimal_everywhere"], granule
 
 json.dump(out, open("results/experiments/occupancy-launch-model/stats.json", "w"), indent=2)
@@ -517,6 +566,19 @@ It is the most consequential fact in this document, because it inverts the advic
 An A100 hands its register file out per scheduler in granules of <!-- calkit value key=granule.regs_per_allocation path=results/experiments/occupancy-launch-model/stats.json -->256<!-- /calkit value --> registers, <!-- calkit value key=granule.regs_per_scheduler path=results/experiments/occupancy-launch-model/stats.json -->16384<!-- /calkit value --> per scheduler across <!-- calkit value key=granule.schedulers_per_sm path=results/experiments/occupancy-launch-model/stats.json -->4<!-- /calkit value --> of them, and a warp's allocation is rounded up to a whole granule before a scheduler counts whether it fits.
 So the ceiling is a property of the register count alone, and sweeping every legal block size at all <!-- calkit value key=granule.checked_register_counts path=results/experiments/occupancy-launch-model/stats.json -->256<!-- /calkit value --> register counts confirms it: none of them ever beats the block ClimaCore derives, and at <!-- calkit value key=granule.over_edge_registers path=results/experiments/occupancy-launch-model/stats.json -->130<!-- /calkit value --> registers the best any block size achieves is <!-- calkit value key=granule.over_edge_best_warps_any_block path=results/experiments/occupancy-launch-model/stats.json -->12<!-- /calkit value --> warps per multiprocessor, the same <!-- calkit value key=granule.over_edge_warps path=results/experiments/occupancy-launch-model/stats.json -->12<!-- /calkit value --> the derived launch gets.
 The practical consequence is that the only register counts worth asking `ptxas` for are the granule boundaries, which on this device are <!-- calkit value key=granule.useful_caps path=results/experiments/occupancy-launch-model/stats.json -->[32, 40, 48, 56, 64, 72, 80, 96, 128]<!-- /calkit value --> --- a cap set anywhere between two of them spends registers and buys no warps.
+
+## What this says about kernel fusion
+
+ClimaAtmos #4261 proposes finding more kernel fusion, and a fusion was in fact carried out upstream between 2026-10-30 and 2026-11-03 --- ClimaCore #2710 and #2713, and ClimaAtmos #4934, "Fuse column loops and eliminate temporary global caches".
+Launch count fell <!-- calkit value key=fusion_ledger.launches_change_pct path=results/experiments/occupancy-launch-model/stats.json -->-34.1<!-- /calkit value -->% while device time rose <!-- calkit value key=fusion_ledger.window_grew_pct path=results/experiments/occupancy-launch-model/stats.json -->36.36<!-- /calkit value -->%, and this document's own register model says why that is not the paradox it looks like.
+
+**Fusion adds live state to the kernel that absorbs the work, and most of this model has nowhere to put it.** The census over all <!-- calkit value key=headroom_census.kernel_variants path=results/experiments/occupancy-launch-model/stats.json -->458<!-- /calkit value --> launch variants measures each kernel's headroom --- the registers it can gain before crossing a granule boundary --- and finds <!-- calkit value key=headroom_census.zero_headroom_pct path=results/experiments/occupancy-launch-model/stats.json -->34.5<!-- /calkit value -->% of device time at exactly zero and <!-- calkit value key=headroom_census.at_most_one_register_pct path=results/experiments/occupancy-launch-model/stats.json -->58.4<!-- /calkit value -->% with at most one register.
+That is not bad luck, it is what the allocator does: `ptxas` spends the granule it has already been charged for, so register counts cluster *on* the boundaries rather than between them, and the kernels with real room --- <!-- calkit value key=headroom_census.roomy_pct path=results/experiments/occupancy-launch-model/stats.json -->32.4<!-- /calkit value -->% of device time at four registers or more --- are the minority.
+So the precondition for a fusion to pay is that the fused kernel stays inside its granule, which is one compile to check rather than a profile, since ClimaCore's own launch record reports the register count of the kernel the model launches.
+
+**Measured, that fusion was about break-even rather than a loss, and the regression it was blamed for was mostly something else.** It removed <!-- calkit value key=fusion_ledger.broadcast_machinery_saved_ms path=results/experiments/occupancy-launch-model/stats.json -->3164.3<!-- /calkit value --> ms of broadcast machinery and the kernels that absorbed the work came to <!-- calkit value key=fusion_ledger.receivers_net_ms path=results/experiments/occupancy-launch-model/stats.json -->3220.6<!-- /calkit value --> ms net over survivors plus removals, which is <!-- calkit value key=fusion_ledger.paid_per_ms_saved_low path=results/experiments/occupancy-launch-model/stats.json -->1.02<!-- /calkit value --> to <!-- calkit value key=fusion_ledger.paid_per_ms_saved_high path=results/experiments/occupancy-launch-model/stats.json -->1.64<!-- /calkit value --> ms paid per ms saved --- the range being whether a new anonymous broadcast, which a line move renames, is charged to the fusion or treated as new work.
+The growth in the same pull is dominated instead by <!-- calkit value key=fusion_ledger.new_named_ms path=results/experiments/occupancy-launch-model/stats.json -->6165.2<!-- /calkit value --> ms of new *named* functions, <!-- calkit value key=fusion_ledger.new_named_share_of_growth_pct path=results/experiments/occupancy-launch-model/stats.json -->66.6<!-- /calkit value -->% of the window, the implicit 1M refresh above all.
+This correction matters because the figure first recorded for that pull, <!-- calkit value key=fusion_ledger.recorded_all_other_growth_per_ms_saved path=results/experiments/occupancy-launch-model/stats.json -->3.93<!-- /calkit value --> ms per ms saved, charged the fusion every other change in the window; a fusion changes the kernel inventory, which is exactly the case where a name-paired subtotal misleads, and the aggregate that survives is the net over every matching name.
 
 **The kernel's work, unlike its registers, was reachable --- and collecting it on this kernel cost more occupancy than the work was worth.** Reaching the remaining registers means devving CloudMicrophysics, which rewrites the AMIP manifest and invalidates every profiling stage; and the node count, up to sixteen evaluations of the 1M microphysics per cell, is a physics-accuracy choice rather than an implementation detail, so the largest lever left is a science question.
 This section previously stopped there, and it was wrong to: the kernel was also doing arithmetic it did not need, in the same node path whose registers had just been priced.
