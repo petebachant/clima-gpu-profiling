@@ -3676,3 +3676,36 @@ the full-work path and runs about twice the profile's per-launch time. Cells
 that take an early-out never pay the work the treatment removes, so the model's
 figure is the profiled kernel time and the probe's percentage is a ceiling on
 it, not an estimate of it.
+
+### 8r. A register band is a wall, not a detour: block size cannot get around it (2026-11-09)
+
+Section 8q recorded that the heaviest microphysics kernel sits exactly on the
+top edge of its occupancy band, so any edit to it is an occupancy change first.
+The obvious next thought --- the one this section exists to foreclose --- is that
+the edge is an artifact of ClimaCore choosing one big block, and that a kernel
+pushed over the edge could win its threads back as several smaller blocks whose
+threads sum to more. The step table invites it, because the table lists a
+different block size for every band, which reads as though the block size were
+the lever.
+
+It is not. An A100 hands its register file out per *scheduler*, in fixed
+granules, and rounds a warp's allocation up to a whole granule before asking
+whether a scheduler can hold it. The ceiling therefore belongs to the register
+count alone, and the block size only decides whether the kernel reaches that
+ceiling. `docs/experiments/occupancy-launch-model.md` now sweeps every legal
+block size at every register count the device allows and asserts that none of
+them ever beats the block ClimaCore derives --- `no_block_size_beats_the_band`
+and `climacore_is_optimal_everywhere`, both checked in the stage rather than
+argued here.
+
+Two things follow that are worth having in hand before the next attempt.
+ClimaCore's derived launch is optimal at every register count, so there is no
+launch-side tuning left on these kernels at all; and the only register counts
+worth asking `ptxas` for are the granule boundaries, since a cap set between two
+of them spends registers and buys no warps. The document lists them.
+
+The reason to write this down rather than just know it: the two failed register
+caps on the radiation solvers and the two failed register treatments on the
+quadrature kernel all sit in this file, and the shape they share is a plausible
+occupancy idea that was never checked against the device's allocation rules
+before it cost a measurement. This check costs nothing and runs every pass.

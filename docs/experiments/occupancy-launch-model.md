@@ -32,6 +32,7 @@ from measure_occupancy import (
     A100,
     WARPS_PER_SM,
     calibration,
+    max_active_blocks,
     predict_step,
     step_table,
     warps_per_sm,
@@ -212,6 +213,65 @@ headroom["warps_lost_at_edge"] = (
     headroom["warps_in_band"] - headroom["warps_one_band_down"]
 )
 
+# The obvious way out of a band is to shrink the block: a kernel that cannot fit
+# 512 threads at 130 registers might fit several smaller blocks whose threads sum
+# to more. It cannot, and the reason is that the register file is handed out per
+# scheduler in fixed granules, not per block -- a warp's registers are rounded up
+# to `regs_per_allocation`, and each of the four schedulers can hold only whole
+# warps of that size. So the ceiling belongs to the register count alone. This
+# sweeps every legal block size at every register count and checks that none of
+# them beats the block ClimaCore picks, which is what makes the band a cliff
+# rather than a step a launch can walk around.
+def best_block_warps(regs):
+    best = (0, None)
+    for blk in range(A100["threads_per_warp"], A100["max_threads_per_block"] + 1,
+                     A100["threads_per_warp"]):
+        total, _ = max_active_blocks(blk, regs, 0)
+        per_sm = total // A100["sm_count"]
+        warps = per_sm * (blk // A100["threads_per_warp"])
+        if warps > best[0]:
+            best = (warps, blk)
+    return best
+
+granule_rows = []
+for regs in range(1, A100["max_regs_per_thread"] + 1):
+    best_warps, best_blk = best_block_warps(regs)
+    granule_rows.append(
+        {
+            "registers": regs,
+            "climacore_warps": warps_per_sm(regs),
+            "best_warps_any_block": best_warps,
+            "best_block_size": best_blk,
+        }
+    )
+
+granule = {
+    "regs_per_allocation": A100["regs_per_allocation"],
+    "schedulers_per_sm": A100["schedulers_per_sm"],
+    "regs_per_scheduler": A100["max_regs_per_sm"] // A100["schedulers_per_sm"],
+    "checked_register_counts": len(granule_rows),
+    # The whole claim, in one field: no block size beats the band.
+    "no_block_size_beats_the_band": all(
+        r["best_warps_any_block"] <= r["climacore_warps"] for r in granule_rows
+    ),
+    "climacore_is_optimal_everywhere": all(
+        r["best_warps_any_block"] == r["climacore_warps"] for r in granule_rows
+    ),
+    # At the edge the kernel sits on, stated as its own numbers.
+    "edge_registers": headroom["heaviest_target_registers"],
+    "over_edge_registers": headroom["heaviest_target_registers"] + 2,
+    "edge_warps": warps_per_sm(headroom["heaviest_target_registers"]),
+    "over_edge_warps": warps_per_sm(headroom["heaviest_target_registers"] + 2),
+    "over_edge_best_warps_any_block": best_block_warps(
+        headroom["heaviest_target_registers"] + 2
+    )[0],
+    # Granule boundaries are the only cap targets worth asking ptxas for: a cap
+    # between them spends registers for no warps.
+    "useful_caps": [
+        b["max_registers"] for b in steps if b["max_registers"] <= 128
+    ],
+}
+
 out = {
     "model": {
         "device": inv["provenance"]["device"],
@@ -274,6 +334,7 @@ out = {
     "attempt": attempt,
     "frames": frames,
     "headroom": headroom,
+    "granule": granule,
     "prediction": {
         "sypd_pct_per_device_ms": SYPD_PCT_PER_MS,
         "exponent": exponent,
@@ -295,6 +356,10 @@ assert attempt["control_unchanged"], attempt
 # The census is only a closure of this lever while CloudMicrophysics' own frame
 # sits in the band the whole kernel already occupies.
 assert frames["bmt_in_kernels_own_band"], frames
+# The band is a property of the register count, not of the launch: if some block
+# size could beat it, the cliff below would be a detour rather than a wall.
+assert granule["no_block_size_beats_the_band"], granule
+assert granule["climacore_is_optimal_everywhere"], granule
 
 json.dump(out, open("results/experiments/occupancy-launch-model/stats.json", "w"), indent=2)
 ```
@@ -399,6 +464,11 @@ That is what retires the prediction above for this kernel: the saving is real ar
 **The heaviest target has zero register headroom, which this document should have said the first time it drew the step table.** It compiles to <!-- calkit value key=headroom.heaviest_target_registers path=results/experiments/occupancy-launch-model/stats.json -->128<!-- /calkit value --> registers and its band ends at <!-- calkit value key=headroom.band_max_registers path=results/experiments/occupancy-launch-model/stats.json -->128<!-- /calkit value -->, so its headroom is <!-- calkit value key=headroom.registers path=results/experiments/occupancy-launch-model/stats.json -->0<!-- /calkit value --> registers: one more and it falls from <!-- calkit value key=headroom.warps_in_band path=results/experiments/occupancy-launch-model/stats.json -->16<!-- /calkit value --> warps per multiprocessor to <!-- calkit value key=headroom.warps_one_band_down path=results/experiments/occupancy-launch-model/stats.json -->12<!-- /calkit value -->, losing <!-- calkit value key=headroom.warps_lost_at_edge path=results/experiments/occupancy-launch-model/stats.json -->4<!-- /calkit value -->.
 The table above gives the bands and the section on targets gives the counts, and the conjunction --- that the largest of them sits exactly on an edge --- was never written down.
 It is the most consequential fact in this document, because it inverts the advice: for a kernel at a band edge the first question about any edit is what it does to the register count, before anything about what the edit is for.
+
+**The edge is a wall rather than a detour: no block size can recover a band once the register count has left it.** The step table lists a different block size for every band, which invites the obvious escape --- a kernel that cannot fit <!-- calkit value key=granule.edge_warps path=results/experiments/occupancy-launch-model/stats.json -->16<!-- /calkit value --> warps as one block of <!-- calkit value key=model.current_band.block_size path=results/experiments/occupancy-launch-model/stats.json -->512<!-- /calkit value --> threads at <!-- calkit value key=granule.over_edge_registers path=results/experiments/occupancy-launch-model/stats.json -->130<!-- /calkit value --> registers might fit more total threads as several smaller blocks --- and it does not work.
+An A100 hands its register file out per scheduler in granules of <!-- calkit value key=granule.regs_per_allocation path=results/experiments/occupancy-launch-model/stats.json -->256<!-- /calkit value --> registers, <!-- calkit value key=granule.regs_per_scheduler path=results/experiments/occupancy-launch-model/stats.json -->16384<!-- /calkit value --> per scheduler across <!-- calkit value key=granule.schedulers_per_sm path=results/experiments/occupancy-launch-model/stats.json -->4<!-- /calkit value --> of them, and a warp's allocation is rounded up to a whole granule before a scheduler counts whether it fits.
+So the ceiling is a property of the register count alone, and sweeping every legal block size at all <!-- calkit value key=granule.checked_register_counts path=results/experiments/occupancy-launch-model/stats.json -->256<!-- /calkit value --> register counts confirms it: none of them ever beats the block ClimaCore derives, and at <!-- calkit value key=granule.over_edge_registers path=results/experiments/occupancy-launch-model/stats.json -->130<!-- /calkit value --> registers the best any block size achieves is <!-- calkit value key=granule.over_edge_best_warps_any_block path=results/experiments/occupancy-launch-model/stats.json -->12<!-- /calkit value --> warps per multiprocessor, the same <!-- calkit value key=granule.over_edge_warps path=results/experiments/occupancy-launch-model/stats.json -->12<!-- /calkit value --> the derived launch gets.
+The practical consequence is that the only register counts worth asking `ptxas` for are the granule boundaries, which on this device are <!-- calkit value key=granule.useful_caps path=results/experiments/occupancy-launch-model/stats.json -->[32, 40, 48, 56, 64, 72, 80, 96, 128]<!-- /calkit value --> --- a cap set anywhere between two of them spends registers and buys no warps.
 
 **The kernel's work, unlike its registers, was reachable --- and collecting it on this kernel cost more occupancy than the work was worth.** Reaching the remaining registers means devving CloudMicrophysics, which rewrites the AMIP manifest and invalidates every profiling stage; and the node count, up to sixteen evaluations of the 1M microphysics per cell, is a physics-accuracy choice rather than an implementation detail, so the largest lever left is a science question.
 This section previously stopped there, and it was wrong to: the kernel was also doing arithmetic it did not need, in the same node path whose registers had just been priced.
