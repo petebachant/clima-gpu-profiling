@@ -1,0 +1,69 @@
+gpu-guard: running on GPU(s) [2] -- OK (avoiding [])
+Loading climacommon/2025_05_15
+  Loading requirement: climaauth/2025_05_15 openmpi/4.1.5-mpitrampoline
+    julia/1.11.5 cuda/julia-pref
+┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
+│ This may cause errors.
+│ 
+│ If you're running under a profiler, this situation is expected. Otherwise,
+│ ensure that your library path environment variable (e.g., `PATH` on Windows
+│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│ 
+│ In any other case, please file an issue.
+└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+┌ Warning: CUDA runtime library `libnvJitLink.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libnvJitLink.so.13`.
+│ This may cause errors.
+│ 
+│ If you're running under a profiler, this situation is expected. Otherwise,
+│ ensure that your library path environment variable (e.g., `PATH` on Windows
+│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│ 
+│ In any other case, please file an issue.
+└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+┌ Warning: CUDA runtime library `libcusparse.so.12` was loaded from a system path, `/usr/local/cuda/lib64/libcusparse.so.12`.
+│ This may cause errors.
+│ 
+│ If you're running under a profiler, this situation is expected. Otherwise,
+│ ensure that your library path environment variable (e.g., `PATH` on Windows
+│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│ 
+│ In any other case, please file an issue.
+└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
+┌ Warning: Package cuDNN not found in current path.
+│ - Run `import Pkg; Pkg.add("cuDNN")` to install the cuDNN package, then restart julia.
+│ - If cuDNN is not installed, some Flux functionalities will not be available when running on the GPU.
+└ @ FluxCUDAExt ~/.julia/packages/Flux/YMjah/ext/FluxCUDAExt.jl:11
+
+=== SGS-quadrature microphysics: where the registers go ===
+AMIP he16 layout: Nv=79 Nij=6 Nh=1536, 4368384 points, Float32
+
+case                                  regs  spill B  warps/SM  occupancy  device ms  output bits
+quadrature broadcast (L1297)          130   296      12        18.75%     58.9251    16a4ab65a6fef839
+  capped at 128                       128   304      16        
+  capped at 96                        96    432      20        
+quadrature broadcast, ClimaCore cap   FAILED
+UndefVarError: `copyto_capped!` not defined in `ClimaCore.DataLayouts`
+Suggestion: check for spelling errors or missing imports.
+quadrature, instantaneous mode        95    296      20        31.25%     15.957     72392abf746d4a77
+  capped at 128                       101   296      16        
+  capped at 96                        92    296      20        
+non-quadrature sibling                102   32       16        25.0%      4.6735     327c0ef430000f68
+  capped at 128                       104   32       16        
+  capped at 96                        96    48       20        
+
+=== A100 occupancy steps, and what a case would need ===
+  <= 1    regs -> 64  warps/SM  (100.0%)
+  <= 32   regs -> 64  warps/SM  (100.0%)
+  <= 40   regs -> 48  warps/SM  (75.0%)
+  <= 48   regs -> 40  warps/SM  (62.5%)
+  <= 56   regs -> 36  warps/SM  (56.2%)
+  <= 64   regs -> 32  warps/SM  (50.0%)
+  <= 72   regs -> 28  warps/SM  (43.8%)
+  <= 80   regs -> 24  warps/SM  (37.5%)
+  <= 96   regs -> 20  warps/SM  (31.2%)
+  <= 128  regs -> 16  warps/SM  (25.0%)
+  <= 168  regs -> 12  warps/SM  (18.8%)
+
+arm = mod, ClimaAtmos at /home/pbachant/calkit/clima-gpu-profiling/ClimaAtmos.jl-mod @ 4ccd49c93cabc8672fdc1560c5aefe42586ca9f8
+
+PROBE DONE
