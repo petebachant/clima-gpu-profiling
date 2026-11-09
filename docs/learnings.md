@@ -3571,10 +3571,7 @@ state.
 very hard to speed the hot kernel up without decreasing accuracy, which rules
 out the node count and leaves only changes that cannot move the answer.
 
-**Measure the frames before proposing another register treatment, because a
-barrier splits a frame and never shrinks one.** A kernel whose node function is
-`@noinline` costs the largest frame on its call graph, not the sum, so the
-largest frame is the floor of every barrier arrangement available. Each frame
+**Measure the frames before proposing another register treatment.** Each frame
 compiles on its own with no edit to the package under test, because
 `sum_over_conditional_nodes` takes the node function as an argument and a stub
 can be passed in its place. Doing that put CloudMicrophysics' bulk tendency
@@ -3583,6 +3580,30 @@ is a stronger closure than "the registers are in a package neither arm devs":
 it says a ClimaAtmos-side treatment removing every register ClimaAtmos owns
 would not move the resident warps at all. Two passes of register work on this
 kernel could have been skipped for the price of three compiles.
+
+**The rule this section first used to read the census was wrong, and the census
+had already refuted it.** The claim was that an `@noinline` barrier makes a
+kernel cost the largest frame on its call graph rather than the sum, so the
+largest frame is the floor of every barrier arrangement. But the whole kernel
+compiles well above every individual frame, which a maximum cannot do: a value
+the caller holds live *across* the call cannot occupy a register the callee is
+using, so the kernel pays the caller's live-across-call state on top of the
+callee's frame. The eight-node rule is exactly such a value.
+
+The occupancy conclusion survives --- the callee's frame and the profiled count
+sit in the same band, so no ClimaAtmos-side treatment can move the resident
+warps --- but the closure is narrower than it was written as. Real registers are
+reachable, they are simply worth no occupancy on their own. What they are worth
+is *headroom*, and headroom is what the next subsection shows this kernel has
+none of, so it is the thing an edit that costs registers needs and cannot find.
+`docs/experiments/occupancy-launch-model.md` carries the counts and asserts both
+halves: that the frames add, and that recovering them crosses no band.
+
+The general lesson is about the shape of the mistake rather than the register
+model. A rule was adopted because it made a measurement decisive, and the same
+measurement contradicted it in a field that was already being printed. When a
+census closes a direction, check the closure against every number the census
+produced, not only the one the closure is about.
 
 **Having a sharp instrument narrowed the question rather than widening it.**
 Every pass over this kernel asked how much live state it holds, because that is

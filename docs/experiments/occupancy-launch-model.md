@@ -192,6 +192,44 @@ frames["bmt_in_kernels_own_band"] = (
     frames["bmt_warps_per_sm"] == frames["kernel_warps_per_sm_profiled"]
 )
 
+# The census's own numbers refute the rule first used to read it. If a barrier
+# made a kernel's registers the MAXIMUM over the frames on its call graph, the
+# whole kernel would compile at the largest frame; it compiles above every one of
+# them, because values the traversal holds live ACROSS the call cannot occupy the
+# registers the callee is using. So the frames add rather than max, and the floor
+# a ClimaAtmos-side treatment could reach is the callee's frame -- which leaves
+# real registers reachable, even though reaching them crosses no band.
+frames["largest_single_frame"] = max(
+    frames["traversal_registers"],
+    frames["node_function_registers"],
+    frames["bmt_registers"],
+)
+frames["kernel_above_largest_frame"] = (
+    frames["whole_kernel_registers"] - frames["largest_single_frame"]
+)
+frames["frames_add_rather_than_max"] = frames["kernel_above_largest_frame"] > 0
+# Registers between where the kernel compiles and the floor its callee sets.
+# This is a DIFFERENCE between two probe readings, which is what the probe is
+# good for; the band question below needs absolute counts, so it converts to the
+# profile's scale first rather than asking a band about a probe reading.
+frames["recoverable_registers"] = (
+    frames["whole_kernel_registers"] - frames["bmt_registers"]
+)
+frames["probe_error_registers"] = attempt["probe_error_registers"]
+frames["floor_registers_profile_scale"] = (
+    frames["bmt_registers"] - frames["probe_error_registers"]
+)
+# Reachable, but worth no occupancy: the floor and the kernel share a band.
+frames["recovery_crosses_a_band"] = (
+    warps_per_sm(frames["floor_registers_profile_scale"])
+    != warps_per_sm(attempt["profiled_target_registers"])
+)
+# Headroom the recovery would buy inside the band, which is what an edit that
+# costs registers needs and the kernel currently does not have.
+frames["headroom_recovery_would_buy"] = (
+    attempt["profiled_target_registers"] - frames["floor_registers_profile_scale"]
+)
+
 # How much the heaviest target could gain before it loses a band. The step table
 # above gives the bands; what it does not say on its own is where in its band
 # this kernel sits, and it sits on the edge -- so every change to it, including
@@ -358,6 +396,9 @@ assert attempt["control_unchanged"], attempt
 assert frames["bmt_in_kernels_own_band"], frames
 # The band is a property of the register count, not of the launch: if some block
 # size could beat it, the cliff below would be a detour rather than a wall.
+# The max rule would make the kernel compile at its largest frame; it does not.
+assert frames["frames_add_rather_than_max"], frames
+assert not frames["recovery_crosses_a_band"], frames
 assert granule["no_block_size_beats_the_band"], granule
 assert granule["climacore_is_optimal_everywhere"], granule
 
@@ -460,6 +501,13 @@ Each frame compiles alone, with no edit to ClimaAtmos at all, because `sum_over_
 ClimaAtmos's entire reconstruction is therefore worth <!-- calkit value key=frames.climaatmos_registers path=results/experiments/occupancy-launch-model/stats.json -->10<!-- /calkit value --> registers on top of the package it calls, and the next step up needs <!-- calkit value key=frames.step_to_gain_registers path=results/experiments/occupancy-launch-model/stats.json -->96<!-- /calkit value --> or fewer, which the bulk tendency misses on its own by <!-- calkit value key=frames.bmt_over_step path=results/experiments/occupancy-launch-model/stats.json -->6<!-- /calkit value -->.
 So the bulk tendency by itself already runs at <!-- calkit value key=frames.bmt_warps_per_sm path=results/experiments/occupancy-launch-model/stats.json -->16<!-- /calkit value --> warps per multiprocessor --- the same <!-- calkit value key=frames.kernel_warps_per_sm_profiled path=results/experiments/occupancy-launch-model/stats.json -->16<!-- /calkit value --> the whole kernel gets today at <!-- calkit value key=attempt.profiled_target_registers path=results/experiments/occupancy-launch-model/stats.json -->128<!-- /calkit value --> registers --- and a ClimaAtmos-side treatment that removed every register it owns would land in the occupancy band it started in.
 That is what retires the prediction above for this kernel: the saving is real arithmetic, but there is no arrangement of this stack that collects it.
+
+**The census closes the occupancy lever, and the rule used to read it was wrong --- the frames add rather than max.** The paragraph above argues that an `@noinline` barrier makes a kernel's register count the largest frame on its call graph, so the largest frame is the floor of every arrangement.
+The census's own numbers refute it: the largest single frame is <!-- calkit value key=frames.largest_single_frame path=results/experiments/occupancy-launch-model/stats.json -->112<!-- /calkit value --> registers and the whole kernel compiles at <!-- calkit value key=frames.whole_kernel_registers path=results/experiments/occupancy-launch-model/stats.json -->130<!-- /calkit value -->, which is <!-- calkit value key=frames.kernel_above_largest_frame path=results/experiments/occupancy-launch-model/stats.json -->18<!-- /calkit value --> above it.
+The reason is that a value the traversal holds live *across* the call cannot sit in a register the callee is using, so the kernel pays the caller's live-across-call state on top of the callee's frame instead of the larger of the two --- and the eight-node rule is exactly such a value, held live across every one of the calls it drives.
+What that changes is narrow but useful. The floor a ClimaAtmos-side treatment could reach is the callee's frame, <!-- calkit value key=frames.floor_registers_profile_scale path=results/experiments/occupancy-launch-model/stats.json -->100<!-- /calkit value --> registers once the probe's offset of <!-- calkit value key=frames.probe_error_registers path=results/experiments/occupancy-launch-model/stats.json -->2<!-- /calkit value --> is taken out, which leaves <!-- calkit value key=frames.recoverable_registers path=results/experiments/occupancy-launch-model/stats.json -->28<!-- /calkit value --> registers genuinely reachable rather than none.
+It changes nothing about occupancy, because that floor and the profiled count sit in the same band, which is checked here rather than asserted.
+It changes the headroom, which is the thing the section below shows this kernel has none of: shedding caller-live state would buy up to <!-- calkit value key=frames.headroom_recovery_would_buy path=results/experiments/occupancy-launch-model/stats.json -->28<!-- /calkit value --> registers of room inside the band, and room inside the band is precisely what an edit that costs registers needs and cannot currently find.
 
 **The heaviest target has zero register headroom, which this document should have said the first time it drew the step table.** It compiles to <!-- calkit value key=headroom.heaviest_target_registers path=results/experiments/occupancy-launch-model/stats.json -->128<!-- /calkit value --> registers and its band ends at <!-- calkit value key=headroom.band_max_registers path=results/experiments/occupancy-launch-model/stats.json -->128<!-- /calkit value -->, so its headroom is <!-- calkit value key=headroom.registers path=results/experiments/occupancy-launch-model/stats.json -->0<!-- /calkit value --> registers: one more and it falls from <!-- calkit value key=headroom.warps_in_band path=results/experiments/occupancy-launch-model/stats.json -->16<!-- /calkit value --> warps per multiprocessor to <!-- calkit value key=headroom.warps_one_band_down path=results/experiments/occupancy-launch-model/stats.json -->12<!-- /calkit value -->, losing <!-- calkit value key=headroom.warps_lost_at_edge path=results/experiments/occupancy-launch-model/stats.json -->4<!-- /calkit value -->.
 The table above gives the bands and the section on targets gives the counts, and the conjunction --- that the largest of them sits exactly on an edge --- was never written down.
