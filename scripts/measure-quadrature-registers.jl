@@ -132,6 +132,17 @@ quad_capped(dt, nsubs) = ClimaCore.DataLayouts.copyto_capped!(
     Val(128),
 )
 
+# The same quadrature with `BMT.Instantaneous()`, which is the dispatch
+# `update_implicit_1m_tendency!` calls inside the Newton loop -- and the kernel
+# the removals pay off on. The hash of THIS case is what makes the bit-for-bit
+# claim cover the kernel the headline number comes from; the averaged case above
+# exercises a different method of the same node path.
+quad_instantaneous(dt, nsubs) = @. out = CA.microphysics_tendencies_1m(
+    BMT.Microphysics1Moment(), QUAD, MP, TPS, ρf, Tf, wf,
+    qtf, qlf, qif, qrf, qsf, TTf, qqf, corrf, momf, αf, dt, nsubs,
+    λf, muSf, pfracf, OPTS, BMT.Instantaneous(),
+)
+
 # The 12-argument form the updraft loop calls, for reference: the profile's
 # `update_implicit_1m_tendency` runs at 114 registers.
 nonquad(dt, nsubs) = @. out = CA.microphysics_tendencies_1m(
@@ -233,6 +244,7 @@ const CASE_SETS = Dict(
     "arms" => [
         ("quadrature broadcast (L1297)", quad_L1297),
         ("quadrature broadcast, ClimaCore cap", quad_capped),
+        ("quadrature, instantaneous mode", quad_instantaneous),
         ("non-quadrature sibling", nonquad),
     ],
     "frames" => [
