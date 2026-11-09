@@ -119,7 +119,7 @@ quad_L1297(dt, nsubs) = @. out = CA.microphysics_tendencies_1m(
 # `foreach_slice_with_options` -> `with_register_cap` and reaches the compile.
 # A silently dropped keyword would look exactly like no cap at all, and would
 # only show up as a wasted profiling pair.
-quad_capped(dt, nsubs) = copyto!(
+quad_capped(dt, nsubs) = ClimaCore.Fields.copyto_capped!(
     out,
     Base.Broadcast.instantiate(
         Base.broadcasted(
@@ -128,8 +128,8 @@ quad_capped(dt, nsubs) = copyto!(
             qtf, qlf, qif, qrf, qsf, TTf, qqf, corrf, momf, αf, dt, nsubs,
             λf, muSf, pfracf, OPTS,
         ),
-    );
-    maxregs = Val(128),
+    ),
+    Val(128),
 )
 
 # The 12-argument form the updraft loop calls, for reference: the profile's
