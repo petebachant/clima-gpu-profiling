@@ -21,6 +21,7 @@ The slug is the stable name the analysis and the prose refer to, so it does not
 move when a commit is rewritten; the label is the human description.
 """
 
+import hashlib
 import json
 import re
 import sqlite3
@@ -94,6 +95,61 @@ def read(path):
     return out
 
 
+# The arms a variant was measured against. A variant's own ClimaAtmos revision
+# is recorded already; what was missing is everything AROUND it, and two
+# variants measured against different upstreams are not comparable even where
+# their own diff is identical. `results/sypd-repeats.json` groups by diff digest
+# for the same reason: an upstream pull starts a fresh group rather than
+# extending the old one.
+STACK_SUBMODULES = (
+    "ClimaAtmos.jl",
+    "ClimaCore.jl",
+    "ClimaCore.jl-mod",
+    "RRTMGP.jl",
+    "RRTMGP.jl-mod",
+)
+
+
+def stack_at(superproject_commit):
+    """The arms' revisions as of a superproject commit, and a digest of them.
+
+    Derived from the recorded commit rather than from the working tree, so every
+    entry -- including ones written before this existed -- gets the same answer
+    every time it is recomputed.
+    """
+    revs = {}
+    for sm in STACK_SUBMODULES:
+        out = git("ls-tree", superproject_commit, sm)
+        revs[sm] = out.split()[2][:9] if out else None
+    digest = hashlib.sha256(
+        "\n".join(f"{k}={revs[k]}" for k in sorted(revs)).encode()
+    ).hexdigest()[:12]
+    return revs, digest
+
+
+def backfill():
+    """Recompute every entry's stack without adding one.
+
+    The stack of an entry written before `stack_at` existed is recoverable from
+    its own `superproject_commit`, so this is exact rather than a guess. Split
+    out from `main` because it needs no profile: the mod sqlite is transient and
+    is usually the wrong variant's by the time a backfill is wanted.
+    """
+    doc = json.loads(OUT.read_text())
+    for v in doc["variants"].values():
+        sp = v.get("superproject_commit")
+        v["stack"], v["stack_digest"] = (
+            stack_at(sp) if sp else (None, "unknown")
+        )
+    OUT.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
+    groups = {}
+    for v in doc["variants"].values():
+        groups.setdefault(v["stack_digest"], []).append(v["variant"])
+    print(f"backfilled {OUT}")
+    for d, names in sorted(groups.items()):
+        print(f"  {d}  {sorted(names)}")
+
+
 def main(variant, label=None):
     ref = git("-C", "ClimaAtmos.jl-mod", "rev-parse", "HEAD")
     dirty = git("-C", "ClimaAtmos.jl-mod", "status", "--porcelain")
@@ -116,6 +172,16 @@ def main(variant, label=None):
     entry["label"] = label or variant
     entry["variant"] = variant
     doc["variants"][variant] = entry
+
+    # Recompute every entry's stack, so entries written before this existed are
+    # backfilled from their own recorded superproject commit rather than left
+    # indistinguishable from the current one.
+    for v in doc["variants"].values():
+        sp = v.get("superproject_commit")
+        if not sp:
+            v["stack"], v["stack_digest"] = None, "unknown"
+            continue
+        v["stack"], v["stack_digest"] = stack_at(sp)
     OUT.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
 
     print(f"wrote {OUT}: variant {variant} ({entry['label']}) at {ref[:9]}")
@@ -124,9 +190,18 @@ def main(variant, label=None):
         print(f"  {tag:18} {e['total_ms']:8} ms  {e['registers']:3} regs  "
               f"block {e['block_size']:4}  {e['warps_per_sm']:2} warps/SM")
     print(f"  device total       {entry['device_total_ms']} ms")
+    groups = {}
+    for v in doc["variants"].values():
+        groups.setdefault(v["stack_digest"], []).append(v["variant"])
+    print(f"  stack {entry['stack_digest']}; groups present:")
+    for d, names in sorted(groups.items()):
+        print(f"    {d}  {sorted(names)}")
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         sys.exit(__doc__)
-    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None)
+    if sys.argv[1] == "--backfill":
+        backfill()
+    else:
+        main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None)

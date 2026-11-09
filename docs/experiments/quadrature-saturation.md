@@ -31,6 +31,10 @@ stats = main("results/experiments/quadrature-saturation/stats.json")
 
 # The whole claim of this treatment is that the answer did not change, so assert
 # it rather than render a boolean and hope a reader checks it.
+# Variants measured against different upstreams are not comparable, so the
+# table must rest on one stack and must know which.
+assert stats["stack"]["reference_stack_known"], stats["stack"]
+assert not stats["stack"]["variants_on_other_stacks"], stats["stack"]
 assert stats["probe_summary"]["bit_for_bit"], stats["probe_summary"]
 assert stats["probe_summary"]["control_bit_for_bit"], stats["probe_summary"]
 # The probe's figure is an arithmetic measurement only because it compiled the

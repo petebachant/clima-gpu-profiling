@@ -63,6 +63,22 @@ def main(out=OUT):
     profiles = json.load(open(PROFILES))["variants"]
     if BEFORE not in profiles:
         sys.exit(f"{PROFILES}: no '{BEFORE}' entry to compare against")
+
+    # Only variants measured against the SAME arms are comparable. An upstream
+    # pull changes the physics under both kernels -- the 2026-11-09 one moved a
+    # 1M default onto the precipitation shaft -- so a variant from before it is
+    # not a control for one after, however identical its own diff. The group is
+    # the one the reference entry belongs to; the rest are reported as dropped
+    # rather than silently averaged in.
+    stack = profiles[BEFORE].get("stack_digest", "unknown")
+    other_stacks = sorted(
+        n for n, v in profiles.items()
+        if v.get("stack_digest", "unknown") != stack
+    )
+    profiles = {
+        n: v for n, v in profiles.items()
+        if v.get("stack_digest", "unknown") == stack
+    }
     base = profiles[BEFORE]
 
     # Every profiled variant against this arm before the treatment. Device time
@@ -296,6 +312,15 @@ def main(out=OUT):
         "headline": headline,
         "attribution": attribution,
         "profiled": profiled,
+        "stack": {
+            "digest": stack,
+            "arms": base.get("stack"),
+            "variants_compared": sorted(profiled),
+            "variants_on_other_stacks": other_stacks,
+            # A reference entry with no stack recorded would compare anything
+            # with anything, so say so rather than proceed quietly.
+            "reference_stack_known": stack != "unknown",
+        },
         "probe": probe,
         "probe_summary": probe_summary,
         "work": work,
@@ -317,6 +342,9 @@ def main(out=OUT):
               f"{r['device_change_ms']} ms = {r['sypd_points']} points")
     print(f"  probe {probe_summary['saved_pct']}, bit-for-bit "
           f"{probe_summary['bit_for_bit']}")
+    print(f"  stack {stack}: compared {sorted(profiled)}")
+    if other_stacks:
+        print(f"  dropped (other stacks): {other_stacks}")
     return doc
 
 
