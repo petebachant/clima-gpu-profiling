@@ -112,6 +112,26 @@ quad_L1297(dt, nsubs) = @. out = CA.microphysics_tendencies_1m(
     λf, muSf, pfracf, OPTS,
 )
 
+# The same broadcast asking ClimaCore for the cap, through the API the treatment
+# uses rather than through `cufunction` directly. The capped recompiles below
+# prove only that `ptxas` CAN fit this body in 128 registers; this proves the
+# request survives `Base.copyto!` -> `DataLayouts.copyto!` ->
+# `foreach_slice_with_options` -> `with_register_cap` and reaches the compile.
+# A silently dropped keyword would look exactly like no cap at all, and would
+# only show up as a wasted profiling pair.
+quad_capped(dt, nsubs) = copyto!(
+    out,
+    Base.Broadcast.instantiate(
+        Base.broadcasted(
+            CA.microphysics_tendencies_1m,
+            BMT.Microphysics1Moment(), QUAD, MP, TPS, ρf, Tf, wf,
+            qtf, qlf, qif, qrf, qsf, TTf, qqf, corrf, momf, αf, dt, nsubs,
+            λf, muSf, pfracf, OPTS,
+        ),
+    );
+    maxregs = Val(128),
+)
+
 # The 12-argument form the updraft loop calls, for reference: the profile's
 # `update_implicit_1m_tendency` runs at 114 registers.
 nonquad(dt, nsubs) = @. out = CA.microphysics_tendencies_1m(
@@ -212,6 +232,7 @@ bmt_only(dt, nsubs) = @. out = bmt_frame(
 const CASE_SETS = Dict(
     "arms" => [
         ("quadrature broadcast (L1297)", quad_L1297),
+        ("quadrature broadcast, ClimaCore cap", quad_capped),
         ("non-quadrature sibling", nonquad),
     ],
     "frames" => [
