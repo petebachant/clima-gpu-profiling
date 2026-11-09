@@ -176,34 +176,34 @@ end
 println("\n=== longwave phases (target <= $TARGET_REGS registers, no spill) ===")
 record!(
     "lw_cloud_mask",
-    () -> CUDA.@cuda launch = false always_inline = true k_lw_mask(
+    () -> (CUDA.@cuda launch = false always_inline = true k_lw_mask(
         cloud_state, cloud_state.mask_lw, ncol,
-    ),
+    )),
 )
 record!(
     "lw_gas_aerosol_optics",
-    () -> CUDA.@cuda launch = false always_inline = true k_lw_optics(
+    () -> (CUDA.@cuda launch = false always_inline = true k_lw_optics(
         lws.op, as, lws.state_cache, lws.src, lk.lookup_lw, lk.lookup_lw_aero,
         ncol,
-    ),
+    )),
 )
 record!(
     "lw_cloud_optics",
-    () -> CUDA.@cuda launch = false always_inline = true k_lw_optics_nogas(
+    () -> (CUDA.@cuda launch = false always_inline = true k_lw_optics_nogas(
         lws.op, as, lk.lookup_lw_cld, cloud_state.mask_lw, ncol,
-    ),
+    )),
 )
 record!(
     "lw_two_stream_sweep",
-    () -> CUDA.@cuda launch = false always_inline = true k_lw_sweep(
+    () -> (CUDA.@cuda launch = false always_inline = true k_lw_sweep(
         lws.op, lws.fluxb, lws.src, lws.bcs, nlev, ncol,
-    ),
+    )),
 )
 record!(
     "lw_accumulate",
-    () -> CUDA.@cuda launch = false always_inline = true k_lw_accumulate(
+    () -> (CUDA.@cuda launch = false always_inline = true k_lw_accumulate(
         solver.clear_flux_acc_lw, lws.fluxb, nlev, ncol,
-    ),
+    )),
 )
 
 # ---------------------------------------------------------------------------
@@ -235,15 +235,15 @@ n_gpt_sw = length(lk.lookup_sw.band_data.major_gpt2bnd)
 println("\n=== shortwave phases ===")
 record!(
     "sw_gas_aerosol_optics",
-    () -> CUDA.@cuda launch = false always_inline = true k_sw_optics(
+    () -> (CUDA.@cuda launch = false always_inline = true k_sw_optics(
         sws.op, as, sws.state_cache, lk.lookup_sw, lk.lookup_sw_aero, ncol,
-    ),
+    )),
 )
 record!(
     "sw_two_stream_sweep",
-    () -> CUDA.@cuda launch = false always_inline = true k_sw_sweep(
+    () -> (CUDA.@cuda launch = false always_inline = true k_sw_sweep(
         sws.op, sws.src, sws.bcs, sws.fluxb, n_gpt_sw, nlev, ncol,
-    ),
+    )),
 )
 
 # ---------------------------------------------------------------------------
@@ -257,19 +257,19 @@ isnothing(ext) && error("RRTMGPCUDAExt is not loaded, so the control cannot run"
 println("\n=== whole fused kernels (control: expect the cap) ===")
 record!(
     "lw_fused_whole",
-    () -> CUDA.@cuda launch = false always_inline = true ext.rte_lw_2stream_solve_both_skies_CUDA!(
+    () -> (CUDA.@cuda launch = false always_inline = true ext.rte_lw_2stream_solve_both_skies_CUDA!(
         lws.fluxb, lws.flux, solver.clear_flux_acc_lw, nothing, lws.src,
         lws.bcs, lws.op, nlay, ncol, as, lws.state_cache, lk.lookup_lw,
         lk.lookup_lw_cld, lk.lookup_lw_aero,
-    ),
+    )),
 )
 record!(
     "sw_fused_whole",
-    () -> CUDA.@cuda launch = false always_inline = true ext.rte_sw_2stream_solve_both_skies_CUDA!(
+    () -> (CUDA.@cuda launch = false always_inline = true ext.rte_sw_2stream_solve_both_skies_CUDA!(
         sws.fluxb, sws.flux, solver.clear_flux_acc_sw, nothing, sws.op,
         sws.bcs, sws.src, nlay, ncol, as, sws.state_cache, lk.lookup_sw,
         lk.lookup_sw_cld, lk.lookup_sw_aero,
-    ),
+    )),
 )
 
 # ---------------------------------------------------------------------------
@@ -288,23 +288,23 @@ println("\n=== grouped kernels (what the mod arm launches) ===")
 if !isnothing(grp_lw)
     record!(
         "lw_grouped_whole",
-        () -> CUDA.@cuda launch = false always_inline = true ext.rte_lw_2stream_solve_grouped_CUDA!(
+        () -> (CUDA.@cuda launch = false always_inline = true ext.rte_lw_2stream_solve_grouped_CUDA!(
             grp_lw.fluxb, grp_lw.acc, grp_lw.acc_clear, grp_lw.src, lws.bcs,
             grp_lw.op, grp_lw.mask, grp_lw.cloudy, nlay, ncol, as,
             lws.state_cache, lk.lookup_lw, lk.lookup_lw_cld, lk.lookup_lw_aero,
             ngroups_lw,
-        ),
+        )),
     )
 end
 if !isnothing(grp_sw)
     record!(
         "sw_grouped_whole",
-        () -> CUDA.@cuda launch = false always_inline = true ext.rte_sw_2stream_solve_grouped_CUDA!(
+        () -> (CUDA.@cuda launch = false always_inline = true ext.rte_sw_2stream_solve_grouped_CUDA!(
             grp_sw.fluxb, grp_sw.acc, grp_sw.acc_clear, grp_sw.src, sws.bcs,
             grp_sw.op, grp_sw.mask, grp_sw.cloudy, nlay, ncol, as,
             sws.state_cache, lk.lookup_sw, lk.lookup_sw_cld, lk.lookup_sw_aero,
             ngroups_sw,
-        ),
+        )),
     )
 end
 
@@ -320,35 +320,35 @@ end
 println("\n=== the same kernels, forced to the 2-blocks/SM budget ===")
 record!(
     "lw_fused_maxregs_128",
-    () -> CUDA.@cuda launch = false always_inline = true maxregs = 128 ext.rte_lw_2stream_solve_both_skies_CUDA!(
+    () -> (CUDA.@cuda launch = false always_inline = true maxregs = 128 ext.rte_lw_2stream_solve_both_skies_CUDA!(
         lws.fluxb, lws.flux, solver.clear_flux_acc_lw, nothing, lws.src,
         lws.bcs, lws.op, nlay, ncol, as, lws.state_cache, lk.lookup_lw,
         lk.lookup_lw_cld, lk.lookup_lw_aero,
-    ),
+    )),
 )
 record!(
     "lw_fused_launch_bounds_2",
-    () -> CUDA.@cuda launch = false always_inline = true maxthreads = 256 blocks_per_sm = 2 ext.rte_lw_2stream_solve_both_skies_CUDA!(
+    () -> (CUDA.@cuda launch = false always_inline = true maxthreads = 256 blocks_per_sm = 2 ext.rte_lw_2stream_solve_both_skies_CUDA!(
         lws.fluxb, lws.flux, solver.clear_flux_acc_lw, nothing, lws.src,
         lws.bcs, lws.op, nlay, ncol, as, lws.state_cache, lk.lookup_lw,
         lk.lookup_lw_cld, lk.lookup_lw_aero,
-    ),
+    )),
 )
 record!(
     "sw_fused_maxregs_128",
-    () -> CUDA.@cuda launch = false always_inline = true maxregs = 128 ext.rte_sw_2stream_solve_both_skies_CUDA!(
+    () -> (CUDA.@cuda launch = false always_inline = true maxregs = 128 ext.rte_sw_2stream_solve_both_skies_CUDA!(
         sws.fluxb, sws.flux, solver.clear_flux_acc_sw, nothing, sws.op,
         sws.bcs, sws.src, nlay, ncol, as, sws.state_cache, lk.lookup_sw,
         lk.lookup_sw_cld, lk.lookup_sw_aero,
-    ),
+    )),
 )
 record!(
     "sw_fused_launch_bounds_2",
-    () -> CUDA.@cuda launch = false always_inline = true maxthreads = 256 blocks_per_sm = 2 ext.rte_sw_2stream_solve_both_skies_CUDA!(
+    () -> (CUDA.@cuda launch = false always_inline = true maxthreads = 256 blocks_per_sm = 2 ext.rte_sw_2stream_solve_both_skies_CUDA!(
         sws.fluxb, sws.flux, solver.clear_flux_acc_sw, nothing, sws.op,
         sws.bcs, sws.src, nlay, ncol, as, sws.state_cache, lk.lookup_sw,
         lk.lookup_sw_cld, lk.lookup_sw_aero,
-    ),
+    )),
 )
 
 # ---------------------------------------------------------------------------

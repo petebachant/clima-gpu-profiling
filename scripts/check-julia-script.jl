@@ -1,4 +1,19 @@
-# Does every `Module.@macro` a script names actually exist in that module?
+# Will `julia script.jl` get as far as running this script?
+#
+# Two checks, each added after it cost a GPU reservation on 2026-11-09:
+#
+#  1. INCREMENTAL PARSE, which is what Julia actually does -- it parses and
+#     evaluates one top-level expression at a time, so a syntax error late in
+#     the file surfaces only after everything before it has already run.
+#     `Meta.parseall` parses the whole file as one block and ACCEPTS input that
+#     the incremental parse rejects: `() -> CUDA.@cuda launch = false f(x)` as
+#     a call argument, where `launch = false` reads as a keyword of the
+#     enclosing call. parseall said OK; the job died 38 minutes in.
+#
+#  2. QUALIFIED MACRO REFERENCES: does every `Module.@macro` exist in that
+#     module? Parsing never resolves macro names, and expansion happens when
+#     the enclosing definition is evaluated -- after the model is built. That
+#     is how `Base.@printf`, which has never existed, cost 42 minutes.
 #
 # `Meta.parseall` does not expand macros, so a parse check accepts
 # `Base.@printf` -- which does not exist, since `@printf` lives in `Printf`.
@@ -62,8 +77,31 @@ end
 # absent -- that is the `Base.@printf` case. A module this session cannot see
 # (one bound in an included file, or aliased inside a function) is UNCHECKED,
 # not wrong, and conflating the two would make the gate unusable.
+# Parse the file the way `julia file.jl` parses it: one top-level expression at
+# a time, each one evaluated before the next is read.
+function incremental_parse(src)
+    pos, n = 1, 0
+    while pos <= lastindex(src)
+        local ex
+        try
+            (ex, pos) = Meta.parse(src, pos; greedy = true, raise = true)
+        catch err
+            return (n, first(sprint(showerror, err), 400))
+        end
+        ex === nothing && break
+        n += 1
+    end
+    return (n, nothing)
+end
+
 function check(path)
     src = read(path, String)
+    (nexprs, parse_err) = incremental_parse(src)
+    if !isnothing(parse_err)
+        println("$path: INCREMENTAL PARSE FAILED after $nexprs expressions")
+        return (["$path  incremental parse failed after $nexprs expressions:\n$parse_err"], String[])
+    end
+    println("$path: $nexprs top-level expressions parse incrementally")
     import_script_modules(src)
     refs = qualified_macro_references(src)
     problems, unchecked = String[], String[]

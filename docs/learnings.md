@@ -3731,7 +3731,7 @@ quadrature kernel all sit in this file, and the shape they share is a plausible
 occupancy idea that was never checked against the device's allocation rules
 before it cost a measurement. This check costs nothing and runs every pass.
 
-### 8s. A parse check does not resolve macros (2026-11-09)
+### 8s. `Meta.parseall` is not the parse Julia performs (2026-11-09)
 
 `scripts/measure-radiation-phase-registers.jl` was written in an earlier pass,
 parse-checked with `Meta.parseall`, and never run. It died on the GPU after
@@ -3756,12 +3756,35 @@ visible to a static scan; conflating those would make it unusable as a gate,
 since six legitimate references across two scripts are unchecked. A negative
 test confirms it reports `Base.@printf`.
 
-Run it, under the same project, before submitting any measurement script:
+**Then the fixed script died a second time, 38 minutes in, on a ParseError ---
+and `Meta.parseall` still said the file was fine.** `julia file.jl` parses and
+evaluates **one top-level expression at a time**, so a syntax error late in a
+file surfaces only after everything before it has run; and `parseall`, which
+parses the whole file as a single block, *accepts input that the incremental
+parse rejects*. The construct was
+`() -> CUDA.@cuda launch = false always_inline = true f(x)` passed as a call
+argument, where `launch = false` reads as a keyword of the **enclosing** call.
+Parenthesizing the macro call fixes it. Both failures were reproduced locally
+afterwards, in a second, with no GPU.
+
+So the check is the incremental parse, not `parseall`:
+
+    pos = 1
+    while pos <= lastindex(src)
+        (ex, pos) = Meta.parse(src, pos; greedy = true, raise = true)
+        ...
+    end
+
+`scripts/check-julia-script.jl` does both --- the incremental parse and the
+macro resolution --- and is negative-tested against each real failure. Run it,
+under the same project, before submitting any measurement script:
 
     julia --project=ClimaCoupler.jl-mod/experiments/AMIP \
-        scripts/check-macro-references.jl scripts/<script>.jl
+        scripts/check-julia-script.jl scripts/<script>.jl
 
-This is the same shape as the AGENTS.md rule about asserting scripted edits:
-the file parsed, and parsing was not the property that mattered. Before
-spending a reservation, ask which class of error the local check can actually
-see, not whether a local check passed.
+The lesson is not about either bug. Twice in one morning a local check passed
+and the job died anyway, because the check tested a property adjacent to the
+one that mattered. Before spending a reservation, ask what the local check can
+actually see --- and prefer a check that does the same thing the real run does
+over one that merely sounds equivalent. `parseall` sounds equivalent to parsing
+the file. It is not.
