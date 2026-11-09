@@ -1,5 +1,5 @@
 diff --git a/ClimaAtmos.jl/src/cache/microphysics_cache.jl b/ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl
-index c12aadb..f2676c5 100644
+index c12aadb..06b3419 100644
 --- a/ClimaAtmos.jl/src/cache/microphysics_cache.jl
 +++ b/ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl
 @@ -133,6 +133,14 @@ function set_precipitation_velocities!(
@@ -54,11 +54,152 @@ index c12aadb..f2676c5 100644
          ρ,
          q,
      )
+@@ -1294,11 +1310,21 @@ function set_microphysics_tendency_cache!(
+     else
+         (; ᶜT′T′, ᶜq′q′, ᶜcorr_Tq, ᶜα, ᶜsgs_moments, ᶜprecip_frac) = p.precomputed
+         opts = sgs_microphysics_options(p.params)
+-        @. ᶜmp_tendency⁰ = microphysics_tendencies_1m(
+-            BMT.Microphysics1Moment(), sgs_quad, vcmp, vthp, ᶜρ⁰, ᶜT⁰, ᶜw⁰_air,
+-            ᶜq_tot_nonneg⁰, ᶜq_lcl⁰, ᶜq_icl⁰, ᶜq_rai⁰, ᶜq_sno⁰,
+-            ᶜT′T′, ᶜq′q′, ᶜcorr_Tq, ᶜsgs_moments, ᶜα, dt, nsubs_quad,
+-            ᶜλ⁰, ᶜmu_S⁰, ᶜprecip_frac, opts,
++        # 128 registers per thread is the top of this kernel's A100 occupancy
++        # band, and it compiles within two of the edge, so the cap keeps the
++        # 512-thread blocks that 16 resident warps need.
++        copyto!(
++            ᶜmp_tendency⁰,
++            Base.Broadcast.instantiate(
++                Base.broadcasted(
++                    microphysics_tendencies_1m,
++                    BMT.Microphysics1Moment(), sgs_quad, vcmp, vthp, ᶜρ⁰, ᶜT⁰,
++                    ᶜw⁰_air, ᶜq_tot_nonneg⁰, ᶜq_lcl⁰, ᶜq_icl⁰, ᶜq_rai⁰, ᶜq_sno⁰,
++                    ᶜT′T′, ᶜq′q′, ᶜcorr_Tq, ᶜsgs_moments, ᶜα, dt, nsubs_quad,
++                    ᶜλ⁰, ᶜmu_S⁰, ᶜprecip_frac, opts,
++                ),
++            );
++            maxregs = Val(128),
+         )
+     end
+ 
 diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/conditional_nodes.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/conditional_nodes.jl
-index d0ff776..3e1244a 100644
+index d0ff776..7f6eb02 100644
 --- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/conditional_nodes.jl
 +++ b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/conditional_nodes.jl
-@@ -388,29 +388,28 @@ end
+@@ -150,14 +150,14 @@ end
+ """
+     ConditionalNode{FT}
+ 
+-One node of the conditional-moment rule: the state `(T, q)` [K, kg/kg] the
+-evaluator receives, the centred saturation excess `S′` [kg/kg] it recovers
+-from that state, the probability weight `w`, and the shaft flag (`1` inside
+-the precipitation shaft, `0` outside).
++One node of the conditional-moment rule: its temperature `T` [K], the centred
++saturation excess `S′` [kg/kg] the evaluator recovers at it, the probability
++weight `w`, and the shaft flag (`1` inside the precipitation shaft, `0`
++outside). The total water the evaluator receives is set per temperature point
++by `_point_value`, which is also where the node's `S′` is recovered from.
+ """
+ struct ConditionalNode{FT}
+     T::FT
+-    q::FT
+     S′::FT
+     w::FT
+     shaft::FT
+@@ -203,19 +203,17 @@ The three values in nondecreasing order.
+ end
+ 
+ """
+-    _conditional_interval_nodes(thp, ρ, T, mu_S, σ_S, β_T, lo, hi, Qlo, Qhi, cloudy, shaft, T_min, q_max)
++    _conditional_interval_nodes(T, σ_S, β_T, lo, hi, Qlo, Qhi, cloudy, shaft, T_min)
+ 
+ The two nodes of the rule on the interval `[lo, hi]` of the centred saturation
+ excess, with the upper tail probabilities `Qlo`, `Qhi` of its standardized
+ edges: the two-point Gauss rule where the interval carries actual cloud
+ (`cloudy`), otherwise one node at the conditional mean with the full weight
+ and a second node of zero weight. The node temperature is the regression
+-`T + β_T S′` floored at `T_min`, and the node total water is set so that the
+-evaluator, which recovers `S′ = q − q_sat(T_node, ρ) − μ_S`, lands on the
+-node's `S′` exactly; `q` is clamped to `[0, q_max]`.
++`T + β_T S′` floored at `T_min`.
+ """
+ @inline function _conditional_interval_nodes(
+-    thp, ρ, T, mu_S, σ_S, β_T, lo, hi, Qlo, Qhi, cloudy, shaft, T_min, q_max,
++    T, σ_S, β_T, lo, hi, Qlo, Qhi, cloudy, shaft, T_min,
+ )
+     FT = typeof(σ_S)
+     (w, x₁, p₁, x₂, p₂) = _truncated_normal_gauss2(lo / σ_S, hi / σ_S, Qlo, Qhi)
+@@ -226,38 +224,30 @@ node's `S′` exactly; `q` is clamped to `[0, q_max]`.
+     w₁ = w * ifelse(cloudy, p₁, one(FT))
+     w₂ = w * ifelse(cloudy, p₂, zero(FT))
+     return (
+-        _conditional_node(thp, ρ, T, mu_S, β_T, S′₁, w₁, shaft, T_min, q_max),
+-        _conditional_node(thp, ρ, T, mu_S, β_T, S′₂, w₂, shaft, T_min, q_max),
++        _conditional_node(T, β_T, S′₁, w₁, shaft, T_min),
++        _conditional_node(T, β_T, S′₂, w₂, shaft, T_min),
+     )
+ end
+ 
+ """
+-    _conditional_node(thp, ρ, T, mu_S, β_T, S′, w, shaft, T_min, q_max)
++    _conditional_node(T, β_T, S′, w, shaft, T_min)
+ 
+ The `ConditionalNode` at centred saturation excess `S′` [kg/kg] with
+ probability weight `w`: its temperature is the regression on `S′`,
+-`T + β_T S′` floored at `T_min` [K], and its total water is set so that the
+-evaluator, which recovers `S′ = q − q_sat(T_node, ρ) − μ_S`, lands on the
+-node's `S′` exactly, clamped to `[0, q_max]` [kg/kg]. The Boolean `shaft` becomes
+-the node's shaft flag, `1` or `0`.
++`T + β_T S′` floored at `T_min` [K]. The Boolean `shaft` becomes the node's
++shaft flag, `1` or `0`.
+ """
+-@inline function _conditional_node(thp, ρ, T, mu_S, β_T, S′, w, shaft, T_min, q_max)
++@inline function _conditional_node(T, β_T, S′, w, shaft, T_min)
+     FT = typeof(S′)
+     T_node = max(T_min, T + β_T * S′)
+-    q_node = clamp(
+-        TD.q_vap_saturation(_unwrapped(thp), T_node, ρ) + mu_S + S′, zero(FT), q_max,
+-    )
+-    return ConditionalNode(T_node, q_node, S′, w, ifelse(shaft, one(FT), zero(FT)))
++    return ConditionalNode(T_node, S′, w, ifelse(shaft, one(FT), zero(FT)))
+ end
+ 
+ """
+-    conditional_rule(
+-        thp, ρ, T, mu_S, σ_S, β_T, t_a, t_e, t_p, T_min, q_max,
+-    )
++    conditional_rule(T, σ_S, β_T, t_a, t_e, t_p, T_min)
+ 
+-The `ConditionalRule` of a cell with mean temperature `T` [K], density `ρ`,
+-linearized mean saturation excess `mu_S` [kg/kg], linearized width `σ_S` [kg/kg]
+-of the centred excess `S′`, temperature regression slope `β_T`
++The `ConditionalRule` of a cell with mean temperature `T` [K], linearized width
++`σ_S` [kg/kg] of the centred excess `S′`, temperature regression slope `β_T`
+ (`sgs_temperature_regression`) and the thresholds on `S′` [kg/kg], each of
+ which may be infinite:
+ 
+@@ -271,9 +261,7 @@ The thresholds, sorted, bound four intervals; each gets the nodes of
+ one node at its conditional mean otherwise, for eight node slots in all. The
+ weights sum to one; an interval of zero width contributes zero weight.
+ """
+-@inline function conditional_rule(
+-    thp, ρ, T, mu_S, σ_S, β_T, t_a, t_e, t_p, T_min, q_max,
+-)
++@inline function conditional_rule(T, σ_S, β_T, t_a, t_e, t_p, T_min)
+     FT = typeof(σ_S)
+     # A sliver interval between nearly coincident actual and equilibrium
+     # cloud edges, |t_e − t_a| < 10⁻³ σ_S, collapses onto the actual edge. Its
+@@ -303,8 +291,8 @@ weights sum to one; an interval of zero width contributes zero weight.
+         # an interval between sorted thresholds lies entirely on one side of
+         # each threshold, so its lower bound decides every flag
+         _conditional_interval_nodes(
+-            thp, ρ, T, mu_S, σ_S, β_T, lo, hi, Qs[i], Qs[i + 1],
+-            lo >= t_a, lo >= t_p, T_min, q_max,
++            T, σ_S, β_T, lo, hi, Qs[i], Qs[i + 1],
++            lo >= t_a, lo >= t_p, T_min,
+         )
+     end
+     return ConditionalRule(
+@@ -388,29 +376,28 @@ end
  """
      _point_value(f, n, t, spread)
  
@@ -102,7 +243,7 @@ index d0ff776..3e1244a 100644
  (`_temperature_points`, with the `TemperatureSpread` `spread`); a point's
  total water is set so that the evaluator recovers the node's `S′`. The first
 diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
-index 783a31d..2f53595 100644
+index 783a31d..31ed4ea 100644
 --- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
 +++ b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
 @@ -386,7 +386,7 @@ share has mean `λ q_c = q_lcl` (resp. `(1 − λ) q_c = q_icl`) by construction
@@ -155,6 +296,17 @@ index 783a31d..2f53595 100644
      S′_hat = q_tot_hat - q_sat_hat - eval.mu_S
      αS′_hat = eval.α * S′_hat
      shifted_excess = max(FT(0), eval.λ_lagrange + αS′_hat)
+@@ -699,9 +708,7 @@ tendency SGS integration).
+     t_e = -FT(λ_eq)
+     t_p = ifelse(β_precip > zero(FT), S_star, FT(Inf))
+     β_T = sgs_temperature_regression(thp, T, ρ, σ_S, T′T′, q′q′, corr_Tq)
+-    rule = conditional_rule(
+-        thp, ρ, T, mu_S, σ_S, β_T, t_a, t_e, t_p, sgs_quad.T_min, sgs_quad.q_max,
+-    )
++    rule = conditional_rule(T, σ_S, β_T, t_a, t_e, t_p, sgs_quad.T_min)
+     # Scale (λ, α) together so the node mean of the actual condensate is q_c
+     # to rounding; the cloud edge −λ/α is unchanged by a common factor.
+     g = conditional_rule_mean(NodeCondensate(FT(λ_lagrange), α_safe), rule)
 diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/terminal_velocity_utils.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/terminal_velocity_utils.jl
 index 0ebd57e..42cad34 100644
 --- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/terminal_velocity_utils.jl
@@ -235,10 +387,77 @@ index 0ebd57e..42cad34 100644
  """
      gs_terminal_velocity(
 diff --git a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/conditional_nodes.jl b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/conditional_nodes.jl
-index bccdb68..512af1a 100644
+index bccdb68..ae4223e 100644
 --- a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/conditional_nodes.jl
 +++ b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/conditional_nodes.jl
-@@ -288,9 +288,9 @@ const CA = ClimaAtmos
+@@ -74,7 +74,7 @@ const CA = ClimaAtmos
+                 a_p = FT(0.3)
+                 t_p = CA.sgs_precip_shaft_threshold(a_p, σ_S)
+                 rule = CA.conditional_rule(
+-                    thp, ρ, T, mu_S, σ_S, β_T, -λ / α, -mu_S, t_p, FT(150), FT(0.05),
++                    T, σ_S, β_T, -λ / α, -mu_S, t_p, FT(150),
+                 )
+                 @test rule isa CA.ConditionalRule{8, FT}
+                 # the weights are differences of tail probabilities from two
+@@ -82,10 +82,16 @@ const CA = ClimaAtmos
+                 @test sum(n.w for n in rule.nodes) ≈ 1 atol = (FT == Float32 ? 1e-6 : 1e-8)
+                 @test all(n.w >= 0 for n in rule.nodes)
+                 @test rule.nodes[1].w > 0
+-                # the evaluator recovers S′ = q − q_sat(T, ρ) − μ_S at each node
++                # the evaluator recovers S′ = q − q_sat − μ_S at each node, from
++                # the point state and saturation `_point_value` hands it
++                unsplit_pt = CA.TemperatureSpread(
++                    thp, ρ, mu_S, FT(0), FT(273.16), FT(150), FT(0.05),
++                )
+                 for n in rule.nodes
+-                    S′ = n.q - TD.q_vap_saturation(thp, n.T, ρ) - mu_S
+-                    @test S′ ≈ n.S′ atol = 64 * eps(FT) * (abs(n.q) + σ_S)
++                    S′ = CA._point_value(
++                        (T, q, s, q_sat) -> q - q_sat - mu_S, n, FT(0), unsplit_pt,
++                    )
++                    @test S′ ≈ n.S′ atol = 64 * eps(FT) * (FT(0.05) + σ_S)
+                 end
+                 # the node means of the linear condensates are the continuous
+                 # ones, to the accuracy of the Φ approximations in the tail
+@@ -120,26 +126,24 @@ const CA = ClimaAtmos
+             t_a = -mu_S
+             t_p = CA.sgs_precip_shaft_threshold(FT(0.3), σ_S)
+             rule_ref = CA.conditional_rule(
+-                thp, ρ, T, mu_S, σ_S, β_T, t_a, t_a, t_p, FT(150), FT(0.05),
++                T, σ_S, β_T, t_a, t_a, t_p, FT(150),
+             )
+             # an equilibrium edge within 10⁻³ σ_S of the actual edge gives the
+             # rule of coincident edges, so no node is built from the rounding
+             # noise of a sliver interval's moments
+             for δ in FT[1e-4, -1e-4, 1e-7]
+                 rule = CA.conditional_rule(
+-                    thp, ρ, T, mu_S, σ_S, β_T, t_a, t_a + δ * σ_S, t_p,
+-                    FT(150), FT(0.05),
++                    T, σ_S, β_T, t_a, t_a + δ * σ_S, t_p, FT(150),
+                 )
+                 @test all(
+-                    n.S′ == m.S′ && n.w == m.w && n.T == m.T && n.q == m.q
++                    n.S′ == m.S′ && n.w == m.w && n.T == m.T
+                     for (n, m) in zip(rule.nodes, rule_ref.nodes)
+                 )
+             end
+             # an equilibrium edge well apart from the actual edge keeps its
+             # own interval
+             rule_apart = CA.conditional_rule(
+-                thp, ρ, T, mu_S, σ_S, β_T, t_a, t_a + σ_S / 2, t_p,
+-                FT(150), FT(0.05),
++                T, σ_S, β_T, t_a, t_a + σ_S / 2, t_p, FT(150),
+             )
+             @test any(
+                 n.w != m.w for (n, m) in zip(rule_apart.nodes, rule_ref.nodes)
+@@ -282,15 +286,14 @@ const CA = ClimaAtmos
+             )
+             t_p = CA.sgs_precip_shaft_threshold(FT(0.5), σ_S)
+             rule = CA.conditional_rule(
+-                thp, ρ, T_frz + FT(0.2), mu_S, σ_S, β_T, -λ, -mu_S, t_p, FT(150),
+-                FT(0.05),
++                T_frz + FT(0.2), σ_S, β_T, -λ, -mu_S, t_p, FT(150),
+             )
              σ⊥ = CA.sgs_temperature_spread_at_fixed_excess(FT(1), β_T, σ_S)
              @test (β_T * σ_S)^2 + σ⊥^2 ≈ 1
              spread = CA.TemperatureSpread(thp, ρ, mu_S, σ⊥, T_frz, FT(150), FT(0.05))
@@ -251,3 +470,17 @@ index bccdb68..512af1a 100644
              # the unsplit rule: no spread at fixed S′
              unsplit = CA.TemperatureSpread(thp, ρ, mu_S, FT(0), T_frz, FT(150), FT(0.05))
              @test CA.sum_over_conditional_nodes(one_f, rule, spread) ≈
+diff --git a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/microphysics_wrappers.jl b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/microphysics_wrappers.jl
+index 6821e13..e83afeb 100644
+--- a/ClimaAtmos.jl/test/parameterized_tendencies/microphysics/microphysics_wrappers.jl
++++ b/ClimaAtmos.jl-mod/test/parameterized_tendencies/microphysics/microphysics_wrappers.jl
+@@ -570,8 +570,7 @@ import ClimaAtmos:
+                     for (a_p, σ_S) in
+                         ((FT(0.3), FT(2e-4)), (FT(0.15), FT(5e-5)), (FT(1), FT(1e-4)))
+                         rule = ClimaAtmos.conditional_rule(
+-                            thp, ρ, T, mu_S, σ_S, FT(0), -q_c, -mu_S, st(a_p, σ_S),
+-                            FT(150), FT(0.05),
++                            T, σ_S, FT(0), -q_c, -mu_S, st(a_p, σ_S), FT(150),
+                         )
+                         frac = ClimaAtmos.conditional_rule_shaft_fraction(rule)
+                         # exact up to the quantile approximation of the threshold:
