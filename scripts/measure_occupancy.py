@@ -205,7 +205,17 @@ def inventory(sqlite_path, top=None):
                 total_ms=round(ms, 1),
                 registers=regs,
                 shared_memory_bytes=shmem,
-                spill_bytes_per_thread=spill or 0,
+                # nsys leaves `localMemoryPerThread` at 0 for EVERY kernel in
+                # these profiles -- one distinct value across the whole table --
+                # so it is not a measurement of spill and a 0 here never meant
+                # "does not spill". The quadrature kernel reads 0 from nsys and
+                # 328 B from the compile-time `CUDA.memory(k).local`, and the
+                # radiation solvers read 0 from nsys and 216-288 B compiled.
+                # Spill comes from a compile (the register probes) or from ncu,
+                # never from here; `nsys_reports_spill` records whether a future
+                # nsys populates the field, so the claim is rechecked each pass.
+                spill_bytes_per_thread=None,
+                nsys_local_memory_per_thread=spill or 0,
                 grid_size=grid,
                 block_size=block,
                 threads=grid * block,

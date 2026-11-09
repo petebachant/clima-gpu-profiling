@@ -3788,3 +3788,60 @@ one that mattered. Before spending a reservation, ask what the local check can
 actually see --- and prefer a check that does the same thing the real run does
 over one that merely sounds equivalent. `parseall` sounds equivalent to parsing
 the file. It is not.
+
+### 8t. nsys does not measure spill, and the radiation cap is now priced (2026-11-09)
+
+Two results from one compile-only job (`results/radiation-phase-registers.toml`).
+
+**`localMemoryPerThread` from nsys is 0 for every kernel in the profile** --- a
+single distinct value across the whole table --- so it is not populated and a
+zero there never meant a kernel does not spill. This document asserted "they
+spill nothing" about the microphysics targets on exactly that evidence, and used
+it to argue `ptxas` was unconstrained. The conclusion survives on other grounds
+(no cap is set and the counts sit far below the 255 ceiling); the evidence did
+not, and the claim is withdrawn in
+`docs/experiments/occupancy-launch-model.md`. `nsys_reports_spill` is now a
+recorded field so a future nsys that populates it is noticed.
+
+What replaces it is weaker than it looks. `CUDA.memory(k).local` at the compile
+IS populated, but it covers the `@noinline` call frame and local arrays as well
+as spilled registers --- the low-register cache variants in the ncu table carry
+1024 B of stack with zero spill requests --- so it **bounds** spill rather than
+measuring it. `ncu` separates them and `results/kernel-resources.csv` has the
+fields, but those stages are frozen at a revision where the kernel compiled to
+255 registers, so the table describes different code. Spill on the current
+microphysics kernels is therefore unmeasured, and saying so is the honest state.
+
+**The radiation register cap is priced for the first time.** Section 4k rejected
+2 blocks/SM at 128 registers (+3.93%) and 128-thread blocks at 168 (+2.91%),
+attributing both to spill without ever measuring it. Compiled:
+
+| | registers | local B/thread | warps/SM |
+|---|---|---|---|
+| longwave grouped (what the mod arm runs) | 255 | 248 | 8 |
+| shortwave grouped | 255 | 288 | 8 |
+| longwave forced to 2 blocks/SM | 128 | **576** | 16 |
+| shortwave forced to 2 blocks/SM | 128 | **600** | 16 |
+
+So the budget roughly 2.3x the local memory --- +328 B per thread longwave,
++312 B shortwave --- on kernels whose stall is already 57-60% long-scoreboard
+with nothing to hide it behind. That is the quantity the two rejections were
+blamed on, and it is now a number.
+
+**`maxregs` and launch bounds are identical here, which contradicts 8-prior
+guidance.** `launch-bounds-vs-maxregs` recorded that launch bounds are preferred
+because they give the allocator an occupancy goal it can also reach by
+rematerializing, where a hard cap must spill. On these kernels
+`maxregs = 128` and `maxthreads = 256, blocks_per_sm = 2` produce **the same
+register count and the same local memory, byte for byte, in both solvers**. The
+distinction is real in general and absent here, so prefer whichever is
+convenient on this family and do not expect launch bounds to rescue a budget a
+cap cannot meet.
+
+**The phase-split question remains unanswered.** All seven phase compiles failed
+with `InvalidIRError`, because the stubs called the per-column bodies outside
+`@inbounds` while every real kernel calls them inside one, so a bounds-check
+throw path reached codegen. The per-case `try` is what let the controls above
+survive the run and is worth keeping on any probe that compiles many variants.
+The run also truncated each error to 180 characters, which discarded the `Reason`
+line that says what could not be compiled --- print the whole error.

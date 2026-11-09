@@ -101,7 +101,11 @@ function record!(label, build)
     catch err
         msg = sprint(showerror, err)
         results[label] = Dict{String, Any}("error" => msg)
-        Printf.@printf("%-34s FAILED  %s\n", label, first(msg, 180))
+        # Print the whole thing: an InvalidIRError says what it could not
+        # compile several lines in, and truncating it to a summary line threw
+        # away the only diagnostic the run produced.
+        println(rpad(label, 34), " FAILED")
+        println(msg)
         return nothing
     end
     r = CUDA.registers(k)
@@ -130,7 +134,7 @@ end
 function k_lw_mask(cloud_state, mask_store, ncol)
     gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
     if gcol <= ncol
-        RTESolver._build_cloud_mask!(
+        @inbounds RTESolver._build_cloud_mask!(
             cloud_state, Val(:mask_lw), gcol, 1, mask_store, gcol,
         )
     end
@@ -140,7 +144,7 @@ end
 function k_lw_optics(op, as, state_cache, src, lkp, lkp_aero, ncol)
     gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
     if gcol <= ncol
-        Optics.compute_optical_props!(
+        @inbounds Optics.compute_optical_props!(
             op, as, state_cache, src, gcol, 1, lkp, nothing, lkp_aero, gcol,
         )
     end
@@ -150,7 +154,7 @@ end
 function k_lw_optics_nogas(op, as, lkp_cld, mask_store, ncol)
     gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
     if gcol <= ncol
-        Optics.add_cloud_optics_lw!(op, as, gcol, lkp_cld, 1, mask_store, gcol)
+        @inbounds Optics.add_cloud_optics_lw!(op, as, gcol, lkp_cld, 1, mask_store, gcol)
     end
     return nothing
 end
@@ -158,7 +162,7 @@ end
 function k_lw_sweep(op, flux, src, bcs, nlev, ncol)
     gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
     if gcol <= ncol
-        RTESolver.rte_lw_2stream!(
+        @inbounds RTESolver.rte_lw_2stream!(
             op, flux, src, bcs, gcol, 1, 1, nlev, ncol, gcol,
         )
     end
@@ -168,7 +172,7 @@ end
 function k_lw_accumulate(acc, flux, nlev, ncol)
     gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
     if gcol <= ncol
-        RTESolver._accumulate_fluxes!(acc, flux, gcol, nlev, 1, 1)
+        @inbounds RTESolver._accumulate_fluxes!(acc, flux, gcol, nlev, 1, 1)
     end
     return nothing
 end
@@ -213,7 +217,7 @@ record!(
 function k_sw_optics(op, as, state_cache, lkp, lkp_aero, ncol)
     gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
     if gcol <= ncol
-        Optics.compute_optical_props!(
+        @inbounds Optics.compute_optical_props!(
             op, as, state_cache, gcol, 1, lkp, nothing, lkp_aero, gcol, true,
         )
     end
@@ -223,7 +227,7 @@ end
 function k_sw_sweep(op, src, bcs, flux, n_gpt, nlev, ncol)
     gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
     if gcol <= ncol
-        RTESolver.rte_sw_2stream!(
+        @inbounds RTESolver.rte_sw_2stream!(
             op, src, bcs, flux, 1.0f0, 1, n_gpt, 1, nlev, gcol, gcol,
         )
     end

@@ -63,6 +63,13 @@ cap = [
 ]
 targets = [r for r in cap if r["warps_per_sm"] == current["warps_per_sm"]]
 counted = [r for r in targets if r["block_size"] == 512]
+
+# nsys's local-memory-per-thread field, under either spelling the inventory has
+# used. It is reported, never treated as a spill measurement: see below.
+def nsys_local(r):
+    v = r.get("nsys_local_memory_per_thread", r.get("spill_bytes_per_thread"))
+    return 0 if v is None else v
+
 target_ms = round(sum(r["total_ms"] for r in counted), 1)
 
 cal = calibration()
@@ -390,7 +397,14 @@ out = {
         "registers": sorted(r["registers"] for r in counted),
         "max_registers": max(r["registers"] for r in counted),
         "min_registers": min(r["registers"] for r in counted),
-        "spill_bytes_per_thread": sorted({r["spill_bytes_per_thread"] for r in counted}),
+        # nsys does not populate this field, so it is reported as what it is
+        # rather than as a spill measurement; see the prose below. The committed
+        # snapshot predates the rename, so both spellings are accepted.
+        "nsys_local_memory_per_thread": sorted(
+            {nsys_local(r) for r in counted}
+        ),
+        "nsys_reports_spill": any(nsys_local(r) for r in base["top_kernels"]),
+        "probe_local_memory_bytes": attempt["eager_spill_bytes"],
         "threads": counted[0]["threads"],
         "block_size": counted[0]["block_size"],
         "grid_size": counted[0]["grid_size"],
@@ -483,7 +497,11 @@ Another <!-- calkit value key=inventory.above_one_wave_variants path=results/exp
 
 The targets are the <!-- calkit value key=targets.n path=results/experiments/occupancy-launch-model/stats.json -->3<!-- /calkit value --> kernels that sit in the widest band, at <!-- calkit value key=targets.warps_per_sm path=results/experiments/occupancy-launch-model/stats.json -->16<!-- /calkit value --> of 64 warps, or <!-- calkit value key=targets.occupancy_pct path=results/experiments/occupancy-launch-model/stats.json -->25.0<!-- /calkit value -->% occupancy, and they are the three heaviest kernels on the device at <!-- calkit value key=targets.total_ms path=results/experiments/occupancy-launch-model/stats.json -->10200.2<!-- /calkit value --> ms, or <!-- calkit value key=targets.pct_of_device path=results/experiments/occupancy-launch-model/stats.json -->29.36<!-- /calkit value -->% of device time.
 Their register counts are <!-- calkit value key=targets.registers path=results/experiments/occupancy-launch-model/stats.json -->[114, 116, 128]<!-- /calkit value -->, all launched as <!-- calkit value key=targets.grid_size path=results/experiments/occupancy-launch-model/stats.json -->108<!-- /calkit value --> blocks of <!-- calkit value key=targets.block_size path=results/experiments/occupancy-launch-model/stats.json -->512<!-- /calkit value --> threads, which is <!-- calkit value key=targets.threads path=results/experiments/occupancy-launch-model/stats.json -->55296<!-- /calkit value --> threads and the source of the one-thread-per-column misreading.
-They spill nothing: local memory per thread is <!-- calkit value key=targets.spill_bytes_per_thread path=results/experiments/occupancy-launch-model/stats.json -->[0]<!-- /calkit value --> bytes, so `ptxas` was not fighting a cap --- it was free to use as many registers as it liked, nothing asked it to economize, and it chose these.
+Nothing asked `ptxas` to economize: no cap is set at these call sites and the counts sit far below the 255-register ceiling, so it was free to use as many registers as it liked and chose these.
+This document previously added "and they spill nothing", citing nsys's local memory per thread.
+That was not a measurement: nsys leaves `localMemoryPerThread` at **0 for every kernel in the profile**, one distinct value across the whole table, so a zero there never meant a kernel does not spill --- which `nsys_reports_spill` now records as <!-- calkit value key=targets.nsys_reports_spill path=results/experiments/occupancy-launch-model/stats.json -->false<!-- /calkit value --> so a future nsys that does populate it is noticed.
+What spill these kernels actually carry is unmeasured here. The register probe reads <!-- calkit value key=targets.probe_local_memory_bytes path=results/experiments/occupancy-launch-model/stats.json -->328<!-- /calkit value --> bytes of local memory per thread at the compile, but that figure covers the `@noinline` call frame and any local arrays as well as spilled registers, so it bounds spill rather than measuring it.
+`ncu` separates them, and `results/kernel-resources.csv` has the fields --- but those stages are frozen at a revision where this kernel compiled to 255 registers, so the table describes different code and cannot answer it.
 
 **The trap is the width of the band.** The band these kernels sit in runs from <!-- calkit value key=model.current_band.min_registers path=results/experiments/occupancy-launch-model/stats.json -->97<!-- /calkit value --> to <!-- calkit value key=model.current_band.max_registers path=results/experiments/occupancy-launch-model/stats.json -->128<!-- /calkit value --> registers, so the next step up requires reaching <!-- calkit value key=model.next_step.max_registers path=results/experiments/occupancy-launch-model/stats.json -->96<!-- /calkit value --> and the heaviest kernel can shed <!-- calkit value key=targets.max_dead_headroom_registers path=results/experiments/occupancy-launch-model/stats.json -->31<!-- /calkit value --> registers before anything at all changes.
 A change that cuts fifteen registers off a 114-register kernel is a change that does nothing, and it will read as a null result rather than as a near miss.
