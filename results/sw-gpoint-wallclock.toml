@@ -1,50 +1,50 @@
-block_iqr_pct = 21.5628308633351
-block_max_s = 98.202224505
-block_median_s = 57.129310071
-block_min_s = 52.767518572
-block_rel_se_pct = 6.338898211662318
-block_seconds = [52.767518572, 52.787502456, 52.957198943, 55.08613951, 56.68161471, 57.129310071, 60.732884208, 64.923904345, 65.275895447, 65.581046239, 68.198291995, 98.202224505]
-block_seconds_in_order = [60.732884208, 56.68161471, 52.957198943, 98.202224505, 64.923904345, 52.787502456, 55.08613951, 65.581046239, 68.198291995, 57.129310071, 52.767518572, 65.275895447]
-block_spread_pct = 79.52958976142719
+block_iqr_pct = 3.0992837996816647
+block_max_s = 93.255718293
+block_median_s = 51.184194786
+block_min_s = 50.730824718
+block_rel_se_pct = 7.00748831618358
+block_seconds = [50.730824718, 50.761251336, 50.894530829, 50.910206493, 50.931531836, 51.184194786, 51.285810882, 51.332557365, 52.480874286, 63.058885713, 63.305294598, 93.255718293]
+block_seconds_in_order = [52.480874286, 50.894530829, 51.285810882, 93.255718293, 50.910206493, 51.332557365, 50.761251336, 63.305294598, 50.931531836, 51.184194786, 50.730824718, 63.058885713]
+block_spread_pct = 83.08207983498744
 block_steps = 180
 blocks = 12
 default_ngpt_groups = 16
-default_sypd_gain_pct = 0.5723360735798098
+default_sypd_gain_pct = 1.3565268679796953
 dt_cpl_s = 120.0
 note = "sypd_grouped is measured: a block of real coupler steps with the live solver, timed with the wall clock the coupler's own SYPD is defined on. Note what the live solver now is: the longwave split is already in it, so these blocks are faster than the longwave sweep's and the two runs' block times are not comparable. Each sweep is in-block, so that does not affect either gain. sypd_ungrouped adds the in-block solve saving back rather than differencing a second run, because the AMIP pair cannot resolve a sub-percent effect: one arm wandered 7.73% between two runs of identical code. It is a steady-state figure and is NOT comparable to the pipeline's end-to-end SYPD, which includes first-call compilation. Blocks are a whole number of radiation periods so each carries the same radiation work; the daily diagnostics write falls in one block in every write_period_steps / block_steps, which is why the median is quoted and the full spread reported beside it. gain_below_block_iqr is deliberately not reported here: it compares a ratio against a difference-of-blocks spread, which reads a resolved gain as unresolved."
 rad_period_steps = 30
 radiation_events_per_block = 6
-step_ms = 317.38505595
+step_ms = 284.3566377
 write_period_steps = 720
 
 [arms.16]
 ngroups = 16
-saved_per_block_s = 0.3269716501235962
-solve_saved_per_event_ms = 54.495275020599365
-sypd_gain_pct = 0.5723360735798098
-sypd_grouped = 1.0351530051484523
-sypd_ungrouped = 1.0292621664779895
+saved_per_block_s = 0.6943273544311523
+solve_saved_per_event_ms = 115.72122573852539
+sypd_gain_pct = 1.3565268679796953
+sypd_grouped = 1.1553874638314876
+sypd_ungrouped = 1.139924087312521
 
 [arms.32]
 ngroups = 32
-saved_per_block_s = 0.40860700607299805
-solve_saved_per_event_ms = 68.10116767883301
-sypd_gain_pct = 0.7152318233235855
-sypd_grouped = 1.0351530051484523
-sypd_ungrouped = 1.0278018393129806
+saved_per_block_s = 0.7507047057151794
+solve_saved_per_event_ms = 125.11745095252991
+sypd_gain_pct = 1.4666728837952017
+sypd_grouped = 1.1553874638314876
+sypd_ungrouped = 1.1386866554249748
 
 [arms.4]
 ngroups = 4
-saved_per_block_s = 0.08468270301818848
-solve_saved_per_event_ms = 14.113783836364746
-sypd_gain_pct = 0.1482298716944862
-sypd_grouped = 1.0351530051484523
-sypd_ungrouped = 1.0336208702586605
+saved_per_block_s = 0.3398308753967285
+solve_saved_per_event_ms = 56.638479232788086
+sypd_gain_pct = 0.6639371329715237
+sypd_grouped = 1.1553874638314876
+sypd_ungrouped = 1.1477670124359276
 
 [arms.8]
 ngroups = 8
-saved_per_block_s = 0.13705408573150635
-solve_saved_per_event_ms = 22.842347621917725
-sypd_gain_pct = 0.23990152438595228
-sypd_grouped = 1.0351530051484523
-sypd_ungrouped = 1.0326756006405537
+saved_per_block_s = 0.586045503616333
+solve_saved_per_event_ms = 97.67425060272217
+sypd_gain_pct = 1.1449735725385082
+sypd_grouped = 1.1553874638314876
+sypd_ungrouped = 1.1423083352756764

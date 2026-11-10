@@ -1,4 +1,4 @@
-gpu-guard: running on GPU(s) [6] -- OK (avoiding [])
+gpu-guard: running on GPU(s) [0] -- OK (avoiding [])
 Loading climacommon/2025_05_15
   Loading requirement: climaauth/2025_05_15 openmpi/4.1.5-mpitrampoline
     julia/1.11.5 cuda/julia-pref
@@ -31,16 +31,16 @@ Loading climacommon/2025_05_15
 │ In any other case, please file an issue.
 └ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
 Precompiling ClimaAtmos...
-   2263.4 ms  ✓ RRTMGP → RRTMGPNCDatasetsExt
-  82802.3 ms  ✓ ClimaCore
-   8682.7 ms  ✓ ClimaCore → KrylovExt
-   8781.6 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreExt
-  11797.6 ms  ✓ ClimaTimeSteppers → ClimaTimeSteppersClimaCoreExt
-   8469.3 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreNCDatasetsExt
-   9040.3 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreInterpolationsExt
-  11159.6 ms  ✓ ClimaDiagnostics
-  34893.5 ms  ✓ ClimaAtmos
-  9 dependencies successfully precompiled in 148 seconds. 297 already precompiled.
+   1643.6 ms  ✓ RRTMGP → RRTMGPNCDatasetsExt
+  74909.8 ms  ✓ ClimaCore
+   6853.3 ms  ✓ ClimaCore → KrylovExt
+   7023.1 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreExt
+  11083.5 ms  ✓ ClimaTimeSteppers → ClimaTimeSteppersClimaCoreExt
+   9172.8 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreNCDatasetsExt
+   9814.7 ms  ✓ ClimaUtilities → ClimaUtilitiesClimaCoreInterpolationsExt
+   8576.2 ms  ✓ ClimaDiagnostics
+  29078.0 ms  ✓ ClimaAtmos
+  9 dependencies successfully precompiled in 128 seconds. 296 already precompiled.
 Precompiling ClimaCoreCUDAExt...
 Info Given ClimaCoreCUDAExt was explicitly requested, output will be shown live [0K
 [0K┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
@@ -70,8 +70,8 @@ Info Given ClimaCoreCUDAExt was explicitly requested, output will be shown live 
 [0K│ 
 [0K│ In any other case, please file an issue.
 [0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-  11492.8 ms  ✓ ClimaCore → ClimaCoreCUDAExt
-  1 dependency successfully precompiled in 15 seconds. 172 already precompiled.
+   9859.7 ms  ✓ ClimaCore → ClimaCoreCUDAExt
+  1 dependency successfully precompiled in 12 seconds. 172 already precompiled.
   1 dependency had output during precompilation:
 ┌ ClimaCore → ClimaCoreCUDAExt
 │  [Output was shown above]
@@ -105,8 +105,8 @@ Info Given RRTMGPCUDAExt was explicitly requested, output will be shown live [0
 [0K│ 
 [0K│ In any other case, please file an issue.
 [0K└ @ CUDA ~/.julia/packages/CUDA/FQwqy/src/initialization.jl:198
-   5541.1 ms  ✓ RRTMGP → RRTMGPCUDAExt
-  1 dependency successfully precompiled in 8 seconds. 94 already precompiled.
+   4795.8 ms  ✓ RRTMGP → RRTMGPCUDAExt
+  1 dependency successfully precompiled in 6 seconds. 94 already precompiled.
   1 dependency had output during precompilation:
 ┌ RRTMGP → RRTMGPCUDAExt
 │  [Output was shown above]
@@ -116,12 +116,12 @@ Info Given RRTMGPCUDAExt was explicitly requested, output will be shown live [0
 │ - If cuDNN is not installed, some Flux functionalities will not be available when running on the GPU.
 └ @ FluxCUDAExt ~/.julia/packages/Flux/YMjah/ext/FluxCUDAExt.jl:11
 variant=unfolded rep=1  TV=288 B isbits=true  CMP=364 B isbits=true
-liquid_stokes    compile=  0.643 s  regs= 32  local=  32 B  warps/SM=16
-ice_chen2022     compile=  0.304 s  regs= 40  local=  32 B  warps/SM=16
-rain_chen2022    compile=  0.277 s  regs= 40  local=  32 B  warps/SM=16
-snow_chen2022    compile=  0.262 s  regs= 40  local=  32 B  warps/SM=16
+liquid_stokes    compile=  0.589 s  regs= 32  local=  32 B  warps/SM=16
+ice_chen2022     compile=  0.249 s  regs= 40  local=  32 B  warps/SM=16
+rain_chen2022    compile=  0.260 s  regs= 40  local=  32 B  warps/SM=16
+snow_chen2022    compile=  0.283 s  regs= 40  local=  32 B  warps/SM=16
 
-unfolded rep 1: 1.486 s over 4 paths
+unfolded rep 1: 1.381 s over 4 paths
 wrote results/fold-compile-cost/unfolded-1.toml
 === folded rep 1 ===
 ┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
@@ -156,12 +156,12 @@ wrote results/fold-compile-cost/unfolded-1.toml
 │ - If cuDNN is not installed, some Flux functionalities will not be available when running on the GPU.
 └ @ FluxCUDAExt ~/.julia/packages/Flux/YMjah/ext/FluxCUDAExt.jl:11
 variant=folded rep=1  TV=288 B isbits=true  CMP=364 B isbits=true
-liquid_stokes    compile=  3.784 s  regs= 32  local=  32 B  warps/SM=16
-ice_chen2022     compile=  0.225 s  regs= 32  local=  32 B  warps/SM=16
-rain_chen2022    compile=  0.322 s  regs= 40  local=  32 B  warps/SM=16
-snow_chen2022    compile=  0.263 s  regs= 40  local=  32 B  warps/SM=16
+liquid_stokes    compile=  3.439 s  regs= 32  local=  32 B  warps/SM=16
+ice_chen2022     compile=  0.198 s  regs= 32  local=  32 B  warps/SM=16
+rain_chen2022    compile=  0.302 s  regs= 40  local=  32 B  warps/SM=16
+snow_chen2022    compile=  0.240 s  regs= 40  local=  32 B  warps/SM=16
 
-folded rep 1: 4.593 s over 4 paths
+folded rep 1: 4.178 s over 4 paths
 wrote results/fold-compile-cost/folded-1.toml
 === folded rep 2 ===
 ┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
@@ -196,12 +196,12 @@ wrote results/fold-compile-cost/folded-1.toml
 │ - If cuDNN is not installed, some Flux functionalities will not be available when running on the GPU.
 └ @ FluxCUDAExt ~/.julia/packages/Flux/YMjah/ext/FluxCUDAExt.jl:11
 variant=folded rep=2  TV=288 B isbits=true  CMP=364 B isbits=true
-liquid_stokes    compile=  3.880 s  regs= 32  local=  32 B  warps/SM=16
-ice_chen2022     compile=  0.265 s  regs= 32  local=  32 B  warps/SM=16
-rain_chen2022    compile=  0.329 s  regs= 40  local=  32 B  warps/SM=16
-snow_chen2022    compile=  0.257 s  regs= 40  local=  32 B  warps/SM=16
+liquid_stokes    compile=  3.523 s  regs= 32  local=  32 B  warps/SM=16
+ice_chen2022     compile=  0.204 s  regs= 32  local=  32 B  warps/SM=16
+rain_chen2022    compile=  0.306 s  regs= 40  local=  32 B  warps/SM=16
+snow_chen2022    compile=  0.246 s  regs= 40  local=  32 B  warps/SM=16
 
-folded rep 2: 4.731 s over 4 paths
+folded rep 2: 4.279 s over 4 paths
 wrote results/fold-compile-cost/folded-2.toml
 === unfolded rep 2 ===
 ┌ Warning: CUDA runtime library `libcublasLt.so.13` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.13`.
@@ -236,10 +236,10 @@ wrote results/fold-compile-cost/folded-2.toml
 │ - If cuDNN is not installed, some Flux functionalities will not be available when running on the GPU.
 └ @ FluxCUDAExt ~/.julia/packages/Flux/YMjah/ext/FluxCUDAExt.jl:11
 variant=unfolded rep=2  TV=288 B isbits=true  CMP=364 B isbits=true
-liquid_stokes    compile=  0.634 s  regs= 32  local=  32 B  warps/SM=16
-ice_chen2022     compile=  0.273 s  regs= 40  local=  32 B  warps/SM=16
-rain_chen2022    compile=  0.277 s  regs= 40  local=  32 B  warps/SM=16
-snow_chen2022    compile=  0.260 s  regs= 40  local=  32 B  warps/SM=16
+liquid_stokes    compile=  0.539 s  regs= 32  local=  32 B  warps/SM=16
+ice_chen2022     compile=  0.237 s  regs= 40  local=  32 B  warps/SM=16
+rain_chen2022    compile=  0.259 s  regs= 40  local=  32 B  warps/SM=16
+snow_chen2022    compile=  0.246 s  regs= 40  local=  32 B  warps/SM=16
 
-unfolded rep 2: 1.444 s over 4 paths
+unfolded rep 2: 1.281 s over 4 paths
 wrote results/fold-compile-cost/unfolded-2.toml
