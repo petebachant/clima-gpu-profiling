@@ -7,6 +7,10 @@ from typing import Literal
 
 # The coupler defines SYPD as (t_end - t_start) / walltime / 365.25.
 DAYS_PER_YEAR = 365.25
+# The arms' kernel-activity spans must stay within this factor of each other.
+# The honest gap is about 0.75 (the mod arm finishes the same window sooner);
+# the truncation this guards against came in at 0.018.
+MIN_TRACE_SPAN_RATIO = 0.5
 
 fpath_in_baseline = "results/nsys/baseline.sqlite"
 fpath_in_mod = "results/nsys/mod.sqlite"
@@ -28,6 +32,26 @@ def get_nsys_summary(fpath_in) -> dict:
     # TODO: Extract the top 3 most expensive kernels by total time
     conn.close()
     return summary
+
+
+def get_trace_coverage(fpath_in) -> dict:
+    """What the trace actually holds, which `ANALYSIS_DETAILS` cannot say.
+
+    On 2026-11-11 a baseline profile exited 0 and updated `dvc.lock` while every
+    CUPTI table stopped 0.850 s after the capture range opened -- two of the 120
+    steps, every per-step kernel at 1/57 of its real launch count, and nothing
+    in the log saying so. `duration` still reported the whole 51.6 s session, so
+    the session metadata is blind to it; the span of the kernel records is not.
+    """
+    conn = sqlite3.connect(fpath_in)
+    span_ns, launches = conn.execute(
+        "SELECT MAX(end) - MIN(start), COUNT(*) FROM CUPTI_ACTIVITY_KIND_KERNEL"
+    ).fetchone()
+    conn.close()
+    return {
+        "kernel_span_s": span_ns / 1e9,
+        "kernel_launches": launches,
+    }
 
 
 def get_run_summary(case_name: Literal["baseline", "mod"]) -> dict:
@@ -83,8 +107,31 @@ def get_run_summary(case_name: Literal["baseline", "mod"]) -> dict:
 with open(fpath_step_cmp) as f:
     step_cmp = json.load(f)
 
-baseline = get_nsys_summary(fpath_in_baseline) | get_run_summary("baseline")
-mod = get_nsys_summary(fpath_in_mod) | get_run_summary("mod")
+baseline = (
+    get_nsys_summary(fpath_in_baseline)
+    | get_trace_coverage(fpath_in_baseline)
+    | get_run_summary("baseline")
+)
+mod = (
+    get_nsys_summary(fpath_in_mod)
+    | get_trace_coverage(fpath_in_mod)
+    | get_run_summary("mod")
+)
+
+# Both arms profile the same 120 steps, so their traces must cover comparable
+# spans -- the honest device difference between them is tens of percent, never a
+# factor. Checked before anything is written, because a truncated trace keeps
+# every per-kernel average plausible while the totals are short by the
+# truncation factor, which reads as a treatment.
+spans = (baseline["kernel_span_s"], mod["kernel_span_s"])
+if min(spans) < MIN_TRACE_SPAN_RATIO * max(spans):
+    raise SystemExit(
+        f"trace spans disagree: baseline {spans[0]:.3f} s"
+        f" ({baseline['kernel_launches']} launches), mod {spans[1]:.3f} s"
+        f" ({mod['kernel_launches']} launches). One arm's collection stopped"
+        " early; re-measure it with CALKIT_FORCE=1 calkit dvc repro"
+        " --single-item --force <arm>-nsys"
+    )
 
 results = {
     "nsys_speedup_pct": (1 - mod["nsys_duration"] / baseline["nsys_duration"])
