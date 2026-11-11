@@ -1,0 +1,217 @@
+{
+ "note": "Register, stack-frame and spill measurements for the CloudMicrophysics 1M evaluation across four revisions, read from `ptxas -v` on PTX compiled for sm_80. Accumulated by hand: this is an ad-hoc probe run outside the pipeline, not a stage, because the branches measured are not dev'd by either arm and pointing the AMIP manifest at them would invalidate every profiling stage. It needs promoting to an experiment document with its own stage before any figure here is quoted in an answer.",
+ "why": "docs/learnings.md section 6 recorded pb/1m-spill as 'spilling its way down rather than fitting' on the strength of 480 bytes of local memory from CUDA.memory().local. ptxas separates stack frame from spill and reports zero spill at every revision here, so that reading was wrong: the 480 bytes is the Float32 LinearizedAverage stack frame. See `corrects`.",
+ "corrects": {
+  "file": "docs/learnings.md",
+  "section": "6. Where the remaining headroom is -- 'Check the current tip before building on it'",
+  "claim": "pb/1m-spill is spilling its way down rather than fitting",
+  "verdict": "wrong: 0 spill bytes at every revision; the 480 bytes is stack frame"
+ },
+ "method": {
+  "target_arch": "sm_80",
+  "instrument": "test/gpu_kernel_resources.jl from pb/1m-spill-fuse, which emits PTX via code_ptx(dump_module=true) and reads ptxas -v; extended here with a LinearizedAverage kernel, which the shipped harness does not compile",
+  "spill_onset": "highest -maxrregcount budget at which ptxas still spills; NOT a register count and may exceed the unconstrained one",
+  "stack_frame_is_not_spill": true
+ },
+ "provenance": {
+  "measured": "2026-11-10",
+  "pipeline_stage": null,
+  "slurm_jobs": {
+   "instantaneous_and_2m": 272856,
+   "linearized_average_three_revs": 272869,
+   "fusion_isolation": 272875
+  },
+  "host_gpus": {
+   "272856": 4,
+   "272869": 3,
+   "272875": 3
+  },
+  "julia": "1.13.3",
+  "cuda_runtime": "13.4.0",
+  "module": "climacommon/2026_11_06-1.13.3",
+  "superproject_commit": "736f6e558bda5ccecb38341c4c402685ef1de04c",
+  "baselines_in_harness_are_stale": "the untouched 2M control reads 57 against a pinned 74 (Float32) and 92 against 118 (Float64), so TOOLKIT_BASELINES predate this toolchain and only within-run comparisons are valid"
+ },
+ "revisions": {
+  "merge_base": {
+   "sha": "cf58726fe058e58ae36bbeb73c124d13dcd0085f",
+   "what": "main at the branch point (control)"
+  },
+  "rematerialize": {
+   "sha": "cbfc595453",
+   "what": "pb/1m-spill tip: removes the hoisted size_distr_parameters"
+  },
+  "fuse_only": {
+   "sha": "2d583673a24aa52ee10c599b7e9109aa708f1197",
+   "what": "the fusion commit alone, parent is pb/1m-spill tip"
+  },
+  "fuse_tip": {
+   "sha": "68a217d261aa6e29e30f2f3814e32c9a7d604c06",
+   "what": "pb/1m-spill-fuse tip: fuse_only plus a later main merge"
+  }
+ },
+ "linearized_average_1m": {
+  "merge_base": {
+   "Float32": {
+    "registers": 120,
+    "stack_frame": 136,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 114
+   },
+   "Float64": {
+    "registers": 255,
+    "stack_frame": 256,
+    "spill_st": 12,
+    "spill_ld": 20,
+    "onset": 295
+   }
+  },
+  "rematerialize": {
+   "Float32": {
+    "registers": 97,
+    "stack_frame": 480,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 87
+   },
+   "Float64": {
+    "registers": 182,
+    "stack_frame": 928,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 174
+   }
+  },
+  "fuse_only": {
+   "Float32": {
+    "registers": 112,
+    "stack_frame": 536,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 104
+   },
+   "Float64": {
+    "registers": 210,
+    "stack_frame": 1032,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 202
+   }
+  },
+  "fuse_tip": {
+   "Float32": {
+    "registers": 112,
+    "stack_frame": 536,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 104
+   },
+   "Float64": {
+    "registers": 210,
+    "stack_frame": 1032,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 202
+   }
+  }
+ },
+ "instantaneous_1m": {
+  "merge_base": {
+   "Float32": {
+    "registers": 93,
+    "stack_frame": 136,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 85
+   }
+  },
+  "rematerialize": {
+   "Float32": {
+    "registers": 56,
+    "stack_frame": 136,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 54
+   },
+   "Float64": {
+    "registers": 114,
+    "stack_frame": 240,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 110
+   }
+  },
+  "fuse_tip": {
+   "Float32": {
+    "registers": 56,
+    "stack_frame": 136,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 54
+   },
+   "Float64": {
+    "registers": 114,
+    "stack_frame": 240,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 110
+   }
+  }
+ },
+ "control_2m_untouched": {
+  "merge_base": {
+   "Float32": {
+    "registers": 57,
+    "stack_frame": 384,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 39
+   }
+  },
+  "rematerialize": {
+   "Float32": {
+    "registers": 57,
+    "stack_frame": 384,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 39
+   },
+   "Float64": {
+    "registers": 92,
+    "stack_frame": 744,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 84
+   }
+  },
+  "fuse_tip": {
+   "Float32": {
+    "registers": 57,
+    "stack_frame": 384,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 39
+   },
+   "Float64": {
+    "registers": 92,
+    "stack_frame": 744,
+    "spill_st": 0,
+    "spill_ld": 0,
+    "onset": 84
+   }
+  }
+ },
+ "not_captured": [
+  "instantaneous_1m.merge_base.Float64 -- clipped by the log tail in job 272856"
+ ],
+ "findings": {
+  "spill_anywhere_unconstrained": false,
+  "rematerialize_float32_la_registers_saved": 23,
+  "fusion_float32_la_registers_cost": 15,
+  "fusion_attributable": "fuse_only and fuse_tip are identical in every slot, and fuse_only's parent is the rematerialize tip, so the +15 registers is the fusion commit and not the main merge that followed it",
+  "fusion_is_a_regression_on_the_model_path": true,
+  "float64_spill_fixed_by_rematerialize": true,
+  "band_note": "97 is the bottom edge of the 97-128 band, so the rematerialization's 23 registers buy no occupancy step at the CM layer on its own; whether the ClimaCore-wrapped kernel steps needs the real broadcast compiled, not a standalone kernel"
+ }
+}

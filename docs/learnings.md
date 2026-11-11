@@ -1754,15 +1754,34 @@ Ordered by preference — ClimaCore first, then ClimaAtmos, then CloudMicrophysi
    `_microphysics_source_terms` + `_linearize` remain as the tested reference
    for the `Instantaneous` paths.
 
-   **Check the current tip before building on it.** `pb/1m-spill` at
-   `cbfc59545` ("Merge main into pb/1m-spill; re-apply 1M guards on the new rate
-   API") measures 112 registers with **480 bytes** of local memory, against
-   `68007fb10`'s 163 registers with **32 bytes**. Registers fell 31% while local
-   memory rose 15×: the branch is now spilling its way down rather than fitting,
-   which is the opposite of what it exists to do. Re-measure both revisions
-   before reopening — `cm-registers` runs in minutes — and record `local_bytes`
-   alongside `registers` every time, because a falling register count with
-   rising local memory reads as progress if you only look at one column.
+   **SUPERSEDED 2026-11-10: the tip fits, and the fusion is the regression.**
+   This paragraph read 480 bytes of `CUDA.memory().local` as spilling and
+   concluded `pb/1m-spill` was "spilling its way down rather than fitting".
+   `ptxas -v` separates the stack frame from spill and reports **zero spill
+   bytes at every revision measured**, so that conclusion was an artifact of the
+   instrument: the 480 bytes is the Float32 `LinearizedAverage` stack frame.
+   Rematerialization fits, takes 23 registers off the path the hot quadrature
+   kernel compiles, and removes the one real spill in the sweep — the Float64
+   path, which is otherwise pinned at the 255 cap. Fusing on top of it gives 15
+   of those registers back, and that cost isolates to the fusion commit rather
+   than to the main merge above it. So the ordering this section implies is
+   inverted: build on the rematerialization, not on `pb/1m-spill-fuse`. Figures
+   and provenance in `results/cm-register-probe.json`, which is an ad-hoc probe
+   and not a stage, so promote it to an experiment document before quoting any
+   figure in an answer.
+
+   Three instrument lessons sit behind that, all cheap to repeat and expensive
+   to skip. `CUDA.memory(k).local` is dominated by the stack frame of the
+   returned `NamedTuple` and is not a spill measurement — the harness
+   `pb/1m-spill-fuse` ships says exactly that in its own header, which is where
+   it should have been read instead of inferred. That harness compiles only the
+   `Instantaneous` path, where the fusion is invisible because `_linearize` is
+   reached solely through `LinearizedAverage`, so measuring the four kernels it
+   defines reports the fusion as precisely neutral. And its `TOOLKIT_BASELINES`
+   predate the current toolchain: the untouched 2M control moves 74 → 57
+   registers under Julia 1.13.3 / CUDA 13.4, so every absolute register figure
+   in this section is toolchain-bound and only comparisons made inside one run
+   are valid.
 
    **It is written, not merged, and not currently in either arm.** The mechanism
    lives on `ClimaCore.jl-mod` branch `pb/launch-bounds` (ClimaCore PR 2601) as
