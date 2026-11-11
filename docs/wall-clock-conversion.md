@@ -27,8 +27,8 @@ null_step = load("results/null-record/step-comparison.json")
 null_fold = load("results/null-record/param-fold.json")
 repeat_record = load("results/sypd-repeats.json")
 current = repeat_record["latest_treatment"]
-# Order and GPU assignment can only be read off a group with several pairs, and
-# the re-baselined stack has one, so take the richest group of this treatment.
+# Order and GPU assignment are read off the richest group of this treatment,
+# which carries the most pairs and the only pairs that shared a GPU.
 repeats = repeat_record["most_repeated_treatment"]
 census = load("results/null-census.json")
 # The live files describe whatever ran last, which is the pair the `current`
@@ -135,6 +135,8 @@ out = {
         "effect_below_arm_spread": current.get("effect_below_arm_spread"),
         "fwd_pct": current.get("by_order", {}).get("baseline_first", {}).get("mean_pct"),
         "rev_pct": current.get("by_order", {}).get("mod_first", {}).get("mean_pct"),
+        "order_effect_points": current.get("order_effect_points"),
+        "corrected_pct": current.get("order_corrected_pct"),
     },
     "repeats": {
         "n": repeats["n_pairs"],
@@ -227,13 +229,14 @@ The device chain agrees it is zero where it should --- <!-- calkit value key=nul
 Repeating a pair says what kind of floor this is, and the answer is not the one this project assumed for months.
 The treatment measured here --- the updraft cache, not the fold above --- has been run end to end <!-- calkit value key=repeats.n -->3<!-- /calkit value --> times on one stack and one set of committed code, giving <!-- calkit value key=repeats.min_pct -->4.847<!-- /calkit value -->% to <!-- calkit value key=repeats.max_pct -->5.354<!-- /calkit value -->%: a mean of <!-- calkit value key=repeats.mean_pct -->5.086<!-- /calkit value -->% and a spread of <!-- calkit value key=repeats.spread_points -->0.507<!-- /calkit value --> points.
 Re-baselining onto a newer upstream main changes the code of both arms, so `record-treatment` files the result as a new group rather than a fourth repeat; the re-baseline's own pair was a null test, because upstream had merged the treatment and the two arms were identical, and it is the second of the two draws that set this window's floor below.
-The current group is the one after it --- this pass's arm, carrying the SGS node removals, the pointwise register cap and the g-point groups, with the sedimentation fold now upstream in both arms --- and it holds <!-- calkit value key=current.n -->1<!-- /calkit value --> pair of one set of committed code returning <!-- calkit value key=current.fwd_pct -->6.384<!-- /calkit value -->%, with `is_null` recording <!-- calkit value key=current.is_null -->false<!-- /calkit value -->.
-One pair has no within-group spread to read, so this group's run-order and arm-wander fields are empty and the three repeats above remain the only measurement of either.
+The current group is the one after it --- this pass's arm, carrying the SGS node removals, the pointwise register cap and the g-point groups, with the sedimentation fold now upstream in both arms --- and it holds <!-- calkit value key=current.n -->2<!-- /calkit value --> pairs of one set of committed code, <!-- calkit value key=current.fwd_pct -->6.384<!-- /calkit value -->% with the baseline first and <!-- calkit value key=current.rev_pct -->7.084<!-- /calkit value -->% with the mod first, a mean of <!-- calkit value key=current.mean_pct -->6.734<!-- /calkit value -->% over a spread of <!-- calkit value key=current.spread_points -->0.7<!-- /calkit value --> points, with `is_null` recording <!-- calkit value key=current.is_null -->false<!-- /calkit value -->.
+Each arm's own wander across the two pairs is <!-- calkit value key=current.arm_spread_baseline_pct -->1.396<!-- /calkit value -->% for the baseline and <!-- calkit value key=current.arm_spread_mod_pct -->0.637<!-- /calkit value -->% for the mod, the <!-- calkit value key=current.widest_arm -->baseline<!-- /calkit value --> being the widest, and the effect clears both --- `effect_below_arm_spread` records <!-- calkit value key=current.effect_below_arm_spread -->false<!-- /calkit value -->.
 A pair differences two runs, so it cannot resolve an effect smaller than the wander of the runs it differences --- and this is the first entry in this record where it comfortably can, the effect being several times the <!-- calkit value key=repeats.spread_points -->0.507<!-- /calkit value --> points those repeats spread over.
-The device side agrees with it rather than arbitrating between draws: it prices this arm's treatments on this stack at <!-- calkit value key=current.device_predicted_pct -->6.19<!-- /calkit value -->% of wall clock, against the pair's <!-- calkit value key=current.mean_pct -->6.384<!-- /calkit value -->%.
+The device side agrees with it rather than arbitrating between draws: it prices this arm's treatments on this stack at <!-- calkit value key=current.device_predicted_pct -->6.1<!-- /calkit value -->% of wall clock, against the pair's <!-- calkit value key=current.mean_pct -->6.734<!-- /calkit value -->%.
 Those two sit well inside the null census's own <!-- calkit value key=census.current_spread_points -->1.196<!-- /calkit value --> points of spread, so `exceeds_device_prediction` records <!-- calkit value key=current.exceeds_device_prediction -->false<!-- /calkit value -->, which here means the device chain and the unprofiled pair agree rather than disagree.
-The reversed order is predicted to return <!-- calkit value key=current.predicted_pct -->1.45<!-- /calkit value -->% if run order explains the null, so that draw is on the record as a prediction before the repeat that would test it.
-What is still missing is a null on this stack and a reversed-order repeat of this pair, so the order effect here is predicted rather than measured.
+The reversed order was predicted to return <!-- calkit value key=current.predicted_pct -->1.45<!-- /calkit value -->% if run order explains the null --- a prediction committed before the repeat that tests it --- and it returned <!-- calkit value key=current.rev_pct -->7.084<!-- /calkit value -->%, above the forward draw rather than below it.
+Running second is worth <!-- calkit value key=current.order_effect_points -->-0.35<!-- /calkit value --> points on this stack and the order-corrected figure is <!-- calkit value key=current.corrected_pct -->6.734<!-- /calkit value -->%, so the order effect here is measured, and this is the second stack on which run order fails to explain the null.
+What is still missing is a null on this stack.
 
 Run-to-run repeatability is therefore about half a point, several times tighter than the <!-- calkit value key=census.current_mean_pct -->1.87<!-- /calkit value -->% the null tests find between two IDENTICAL arms.
 Those two figures cannot both be jitter.
