@@ -1,8 +1,8 @@
 diff --git a/ClimaAtmos.jl/src/cache/microphysics_cache.jl b/ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl
-index f2676c5..a98ae01 100644
+index e261fec..1c4183f 100644
 --- a/ClimaAtmos.jl/src/cache/microphysics_cache.jl
 +++ b/ClimaAtmos.jl-mod/src/cache/microphysics_cache.jl
-@@ -1310,11 +1310,21 @@ function set_microphysics_tendency_cache!(
+@@ -1350,11 +1350,21 @@ function set_microphysics_tendency_cache!(
      else
          (; ᶜT′T′, ᶜq′q′, ᶜcorr_Tq, ᶜα, ᶜsgs_moments, ᶜprecip_frac) = p.precomputed
          opts = sgs_microphysics_options(p.params)
@@ -191,7 +191,7 @@ index d0ff776..7f6eb02 100644
  (`_temperature_points`, with the `TemperatureSpread` `spread`); a point's
  total water is set so that the evaluator recovers the node's `S′`. The first
 diff --git a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
-index 783a31d..31ed4ea 100644
+index 2d6c923..07101df 100644
 --- a/ClimaAtmos.jl/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
 +++ b/ClimaAtmos.jl-mod/src/parameterized_tendencies/microphysics/microphysics_wrappers.jl
 @@ -386,7 +386,7 @@ share has mean `λ q_c = q_lcl` (resp. `(1 − λ) q_c = q_icl`) by construction
@@ -244,7 +244,7 @@ index 783a31d..31ed4ea 100644
      S′_hat = q_tot_hat - q_sat_hat - eval.mu_S
      αS′_hat = eval.α * S′_hat
      shifted_excess = max(FT(0), eval.λ_lagrange + αS′_hat)
-@@ -699,9 +708,7 @@ tendency SGS integration).
+@@ -716,9 +725,7 @@ tendency SGS integration).
      t_e = -FT(λ_eq)
      t_p = ifelse(β_precip > zero(FT), S_star, FT(Inf))
      β_T = sgs_temperature_regression(thp, T, ρ, σ_S, T′T′, q′q′, corr_Tq)
