@@ -1,51 +1,51 @@
 {
   "device_total": {
-    "baseline_elapsed_ms": 34901.0,
+    "baseline_elapsed_ms": 44201.6,
     "baseline_summed_equals_elapsed": true,
-    "baseline_summed_ms": 34901.0,
+    "baseline_summed_ms": 44201.6,
     "carries_other_treatments": true,
-    "change_pct": -7.08,
-    "change_pct_if_summed": -7.08,
+    "change_pct": -5.44,
+    "change_pct_if_summed": -5.44,
     "mod_concurrency_inflation_ms": 0.0,
-    "mod_elapsed_ms": 32430.0,
-    "mod_summed_ms": 32430.0
+    "mod_elapsed_ms": 41796.3,
+    "mod_summed_ms": 41796.3
   },
   "longwave": {
     "baseline": {
       "block": 256,
       "blocks_per_sm": 0.89,
-      "elapsed_ms": 2699.7,
+      "elapsed_ms": 2700.5,
       "grid": 96,
       "launches": 4,
       "name": "rte_lw_2stream_solve_both_skies_CUDA_",
       "registers": 255,
-      "summed_ms": 2699.7,
+      "summed_ms": 2700.5,
       "summed_over_elapsed": 1.0,
       "warps_per_sm": 8
     },
-    "change_pct": -10.3,
-    "change_pct_if_summed": -10.3,
+    "change_pct": -10.34,
+    "change_pct_if_summed": -10.34,
     "mod": {
       "block": 256,
       "blocks_per_sm": 14.22,
-      "elapsed_ms": 2419.3,
+      "elapsed_ms": 2419.2,
       "grid": 1536,
       "launches": 4,
       "name": "rte_lw_2stream_solve_grouped_CUDA_",
       "registers": 255,
-      "summed_ms": 2419.3,
+      "summed_ms": 2419.2,
       "summed_over_elapsed": 1.0,
       "warps_per_sm": 8
     },
-    "mod_charged_ms": 2421.5,
-    "mod_overhead_ms": 2.2,
-    "pct_of_device_baseline": 7.74,
-    "saved_ms": 278.2,
-    "saved_pct_of_device": 0.797
+    "mod_charged_ms": 2421.3,
+    "mod_overhead_ms": 2.1,
+    "pct_of_device_baseline": 6.11,
+    "saved_ms": 279.2,
+    "saved_pct_of_device": 0.632
   },
   "noise": {
     "untreated_kernels_compared": 22,
-    "worst_untreated_kernel_delta_ms": 1060.1
+    "worst_untreated_kernel_delta_ms": 1258.0
   },
   "note": "All device shares are ELAPSED time -- the union of the kernel intervals -- not `SUM(end-start)`, which counts a moment once per resident kernel and so is not elapsed time once a treatment launches concurrently. `change_pct_if_summed` is what the summed figure would have claimed, and for longwave it has the opposite sign. Both bands are treated as of 2026-11-05, and each is charged for its own reduction and hoisted aerosol mask; neither is a control any more, so each saving is resolved against the untreated kernels alone. The mod arm's solve kernels are different kernels from the baseline's, so the arms are paired by role. `waves` is a tested prediction, not an explanation: it rose from below one to many at unchanged blocks per SM and the longwave time did not move, and a concurrent-launch build of the same split measured the same saving at a low overlap factor. The device total carries the sedimentation fold as well and is not this treatment's figure.",
   "overhead": {
@@ -64,12 +64,12 @@
     "reduction": {
       "block": 256,
       "blocks_per_sm": 72.0,
-      "elapsed_ms": 1.6,
+      "elapsed_ms": 1.5,
       "grid": 7776,
       "launches": 4,
       "name": "_reduce_lw_groups_CUDA_",
       "registers": 32,
-      "summed_ms": 1.6,
+      "summed_ms": 1.5,
       "summed_over_elapsed": 1.0,
       "warps_per_sm": 64
     }
@@ -101,45 +101,45 @@
     }
   },
   "provenance": {
-    "baseline_db_sha256_16": "a8781b7af5cc4c12",
+    "baseline_db_sha256_16": "c775613bfbc9eeae",
     "baseline_ref": "a64796f870c318b855bba4afbecced7e586fdaa0",
-    "mod_db_sha256_16": "2e54815f5fb3dfdb",
+    "mod_db_sha256_16": "b2d4c036bf58d152",
     "mod_ref": "87e41de098aa72c5e0cbbe77df6a797351cffd98",
-    "source_commit": "cfbff9a2beb8cd897b0a64d35d8daefedb6b2e73"
+    "source_commit": "a881133cfe17862c466493f25c85286f415afd60"
   },
   "saving_resolved_against_controls": false,
   "shortwave": {
     "baseline": {
       "block": 256,
       "blocks_per_sm": 0.89,
-      "elapsed_ms": 2474.0,
+      "elapsed_ms": 2484.3,
       "grid": 96,
       "launches": 4,
       "name": "rte_sw_2stream_solve_both_skies_CUDA_",
       "registers": 255,
-      "summed_ms": 2474.0,
+      "summed_ms": 2484.3,
       "summed_over_elapsed": 1.0,
       "warps_per_sm": 8
     },
-    "change_pct": -18.72,
-    "change_pct_if_summed": -18.72,
+    "change_pct": -19.0,
+    "change_pct_if_summed": -19.0,
     "mod": {
       "block": 256,
       "blocks_per_sm": 14.22,
-      "elapsed_ms": 2008.1,
+      "elapsed_ms": 2009.4,
       "grid": 1536,
       "launches": 4,
       "name": "rte_sw_2stream_solve_grouped_CUDA_",
       "registers": 255,
-      "summed_ms": 2008.1,
+      "summed_ms": 2009.4,
       "summed_over_elapsed": 1.0,
       "warps_per_sm": 8
     },
-    "mod_charged_ms": 2010.9,
+    "mod_charged_ms": 2012.2,
     "mod_overhead_ms": 2.8,
-    "pct_of_device_baseline": 7.09,
-    "saved_ms": 463.1,
-    "saved_pct_of_device": 1.327,
+    "pct_of_device_baseline": 5.62,
+    "saved_ms": 472.1,
+    "saved_pct_of_device": 1.068,
     "treated": true
   },
   "sw_saving_resolved_against_controls": false,
