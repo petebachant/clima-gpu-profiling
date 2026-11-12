@@ -110,7 +110,7 @@ export TMPDIR=$NSIGHT_COMPUTE_TMP
 mkdir -p "$NSIGHT_COMPUTE_TMP"
 
 module purge
-module load climacommon/2025_05_15
+module load climacommon/2026_11_06-1.13.3
 
 # Set environmental variable for julia to not use global packages for
 # reproducibility

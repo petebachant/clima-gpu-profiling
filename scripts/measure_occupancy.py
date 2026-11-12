@@ -334,7 +334,7 @@ def predict_step(total_ms, warps_before, warps_after, exponent):
     )
 
 
-def calibration(fold_path="results/sedimentation-fold.json"):
+def calibration(fold_path="results/retired/sedimentation-fold.json"):
     """Occupancy-step calibration points from the sedimentation fold.
 
     The fold is the only treatment this repo has measured that moved a kernel

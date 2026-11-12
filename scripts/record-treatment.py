@@ -69,7 +69,7 @@ def dev_packages(coupler):
     reach the run. Everything else comes from the registry, no matter what is
     checked out.
     """
-    manifest = ROOT / coupler / "experiments" / "AMIP" / "Manifest-v1.11.toml"
+    manifest = ROOT / coupler / "experiments" / "AMIP" / "Manifest-v1.13.toml"
     if not manifest.exists():
         return {"dev": [], "pinned": {}, "note": "manifest missing"}
     text = manifest.read_text()

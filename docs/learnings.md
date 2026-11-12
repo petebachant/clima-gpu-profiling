@@ -2008,7 +2008,7 @@ A first explanation -- that manifests are machine-dependent -- was wrong. They
 contain versions and tree hashes, no absolute paths, and the committed AMIP
 manifest uses relative `path` entries. What breaks the hash is that upstream
 CliMA repos gitignore the package-root manifests, so a fresh clone has no copy.
-The manifest that does determine the run, `experiments/AMIP/Manifest-v1.11.toml`,
+The manifest that does determine the run, `experiments/AMIP/Manifest-v1.13.toml`,
 is committed and separately declared by 13 stages, and is deliberately not
 covered by the ignore patterns.
 

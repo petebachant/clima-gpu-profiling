@@ -12,7 +12,7 @@ The coincidence is arithmetic --- <!-- calkit value key=model.sm_count path=resu
 ## Why this experiment declares no profiling stages
 
 Every figure here comes from profiles that have already been paid for, so this experiment costs no GPU time and declares no `clima` stage.
-What it declares instead is an analysis over two committed snapshots: `results/launch-inventory.json` for the launch geometry and `results/sedimentation-fold.json` for the calibration.
+What it declares instead is an analysis over two committed snapshots: `results/launch-inventory.json` for the launch geometry and `results/retired/sedimentation-fold.json` for the calibration.
 
 That indirection is required rather than convenient.
 `results/nsys/baseline.sqlite` holds whichever experiment profiled last, so it cannot be a stage dependency --- the pipeline would regenerate it and the write-up would silently restate itself against a different run.
@@ -23,7 +23,7 @@ Freezing exists to stop a document being regenerated against a profile it did no
 
 ## Analysis
 
-```python calkit stage name=analyze environment=py outputs=[{path: results/experiments/occupancy-launch-model/stats.json, storage: git}] inputs=[scripts/measure_occupancy.py, results/launch-inventory.json, results/sedimentation-fold.json, results/fold-on-current-stack.json, results/regression-record/attribution-1103.json, results/quadrature-registers-baseline.toml, results/quadrature-registers-mod.toml, results/quadrature-registers-frames.toml]
+```python calkit stage name=analyze environment=py outputs=[{path: results/experiments/occupancy-launch-model/stats.json, storage: git}] inputs=[scripts/measure_occupancy.py, results/launch-inventory.json, results/retired/sedimentation-fold.json, results/retired/fold-on-current-stack.json, results/regression-record/attribution-1103.json, results/quadrature-registers-baseline.toml, results/quadrature-registers-mod.toml, results/quadrature-registers-frames.toml]
 import json
 import sys
 
@@ -42,7 +42,7 @@ inv = json.load(open("results/launch-inventory.json"))
 base = inv["arms"]["baseline"]
 
 # Device ms to points of SYPD, measured on this stack rather than assumed.
-SYPD_PCT_PER_MS = json.load(open("results/fold-on-current-stack.json"))["device"][
+SYPD_PCT_PER_MS = json.load(open("results/retired/fold-on-current-stack.json"))["device"][
     "sypd_pct_per_device_ms"
 ]
 
@@ -481,7 +481,7 @@ On the <!-- calkit value key=validation.checked path=results/experiments/occupan
 It gets the block *shape* right <!-- calkit value key=validation.block_shape_agree_pct path=results/experiments/occupancy-launch-model/stats.json -->93.05<!-- /calkit value -->% of the time, and all <!-- calkit value key=validation.shape_only_mismatches path=results/experiments/occupancy-launch-model/stats.json -->13<!-- /calkit value --> misses are shape alone with the thread count intact: they are the loops that hand a slice to a sub-block rather than a thread, which ask for a coarser granularity and so spread the same threads over more, smaller blocks.
 
 A second check comes from outside this document.
-`results/sedimentation-fold.json` recorded warps per multiprocessor for two kernels in two arms back in October, computed by a different script from the nsys launch records, and the model reproduces all four values from the register count alone --- `all_model_agrees` is <!-- calkit value key=calibration.all_model_agrees path=results/experiments/occupancy-launch-model/stats.json -->true<!-- /calkit value -->.
+`results/retired/sedimentation-fold.json` recorded warps per multiprocessor for two kernels in two arms back in October, computed by a different script from the nsys launch records, and the model reproduces all four values from the register count alone --- `all_model_agrees` is <!-- calkit value key=calibration.all_model_agrees path=results/experiments/occupancy-launch-model/stats.json -->true<!-- /calkit value -->.
 
 ## How much of the device this governs
 

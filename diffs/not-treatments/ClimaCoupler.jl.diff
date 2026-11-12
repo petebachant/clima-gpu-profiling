@@ -1,8 +1,17 @@
-diff --git a/ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml b/ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-index bc6652f..38b475b 100644
---- a/ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml
-+++ b/ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml
-@@ -404,7 +404,7 @@ weakdeps = ["GeoMakie", "Makie"]
+diff --git a/ClimaCoupler.jl/experiments/AMIP/Manifest-v1.13.toml b/ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+index 80f48a3..640063e 100644
+--- a/ClimaCoupler.jl/experiments/AMIP/Manifest-v1.13.toml
++++ b/ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+@@ -2,7 +2,7 @@
+ 
+ julia_version = "1.13.3"
+ manifest_format = "2.1"
+-project_hash = "49bc98d511bd64b0be1fe754285dd96b161b6499"
++project_hash = "c3bee22f217e45e054356d45fbe89e5b5c868863"
+ 
+ [[deps.ADTypes]]
+ deps = ["PrecompileTools"]
+@@ -464,7 +464,7 @@ weakdeps = ["GeoMakie", "Makie"]
  
  [[deps.ClimaAtmos]]
  deps = ["Adapt", "ArgParse", "Artifacts", "ClimaComms", "ClimaCore", "ClimaDiagnostics", "ClimaInitialConditions", "ClimaInterpolations", "ClimaParams", "ClimaTimeSteppers", "ClimaUtilities", "CloudMicrophysics", "Dates", "Flux", "ForwardDiff", "Insolation", "Interpolations", "JLD2", "LazyArtifacts", "LazyBroadcast", "LinearAlgebra", "Logging", "NCDatasets", "NVTX", "NullBroadcasts", "RRTMGP", "Random", "SparseMatrixColorings", "StaticArrays", "Statistics", "SurfaceFluxes", "Thermodynamics", "UnrolledUtilities", "YAML"]
@@ -11,7 +20,7 @@ index bc6652f..38b475b 100644
  uuid = "b2c96348-7fb7-4fe0-8da9-78d88439e717"
  version = "0.42.18"
  
-@@ -443,7 +443,7 @@ version = "0.6.13"
+@@ -505,7 +505,7 @@ version = "0.6.13"
  
  [[deps.ClimaCore]]
  deps = ["Adapt", "BandedMatrices", "BlockArrays", "ClimaComms", "ClimaInterpolations", "CubedSphere", "DataStructures", "ForwardDiff", "GaussQuadrature", "GilbertCurves", "HDF5", "InteractiveUtils", "IntervalSets", "KrylovKit", "LLVM", "LazyBroadcast", "LinearAlgebra", "MultiBroadcastFusion", "NVTX", "PkgVersion", "Random", "RootSolvers", "SparseArrays", "StaticArrays", "Statistics", "UnrolledUtilities"]
@@ -20,7 +29,7 @@ index bc6652f..38b475b 100644
  uuid = "d414da3d-4745-48bb-8d80-42e94e092884"
  version = "1.0.8"
  weakdeps = ["CUDA", "Krylov", "Makie", "RecipesBase"]
-@@ -2509,7 +2509,7 @@ version = "1.11.0"
+@@ -2851,7 +2851,7 @@ version = "1.11.0"
  
  [[deps.RRTMGP]]
  deps = ["Adapt", "Artifacts", "ClimaComms", "PrecompileTools", "Serialization"]
@@ -29,3 +38,21 @@ index bc6652f..38b475b 100644
  uuid = "a01a1ee8-cea4-48fc-987c-fc7878d79da1"
  version = "1.1.1"
  weakdeps = ["CUDA", "ClimaParams", "NCDatasets"]
+diff --git a/ClimaCoupler.jl/experiments/AMIP/Project.toml b/ClimaCoupler.jl-mod/experiments/AMIP/Project.toml
+index e53cb30..a456e25 100644
+--- a/ClimaCoupler.jl/experiments/AMIP/Project.toml
++++ b/ClimaCoupler.jl-mod/experiments/AMIP/Project.toml
+@@ -36,10 +36,10 @@ Thermodynamics = "b60c26fb-14c3-4610-9d3e-2d17fe7ff00c"
+ YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
+ 
+ [sources]
+-ClimaAtmos = {path = "../../../ClimaAtmos.jl"}
+-ClimaCore = {path = "../../../ClimaCore.jl"}
++ClimaAtmos = {path = "../../../ClimaAtmos.jl-mod"}
++ClimaCore = {path = "../../../ClimaCore.jl-mod"}
+ ClimaCoupler = {path = "../.."}
+-RRTMGP = {path = "../../../RRTMGP.jl"}
++RRTMGP = {path = "../../../RRTMGP.jl-mod"}
+ 
+ [compat]
+ CUDA = "6"

@@ -22,7 +22,7 @@ fi
 PROJECT_DIR=${1:?usage: $0 <project_dir> <out_dir>}
 OUT_DIR=${2:?usage: $0 <project_dir> <out_dir>}
 module purge
-module load climacommon/2025_05_15
+module load climacommon/2026_11_06-1.13.3
 export CLIMACOMMS_DEVICE=CUDA
 export JULIA_LOAD_PATH=@:@stdlib
 mkdir -p "$OUT_DIR"

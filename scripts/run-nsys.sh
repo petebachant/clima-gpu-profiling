@@ -43,7 +43,7 @@ mkdir -p "$OUTPUT_DIR"
 
 # Load modules
 module purge
-module load climacommon/2025_05_15
+module load climacommon/2026_11_06-1.13.3
 
 # Set environment variables for GPU usage
 export CLIMACOMMS_DEVICE=CUDA

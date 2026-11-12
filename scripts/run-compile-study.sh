@@ -47,7 +47,7 @@ CONFIG_FILE=$2
 OUT_TOML=$3
 
 module purge
-module load climacommon/2025_05_15
+module load climacommon/2026_11_06-1.13.3
 export CLIMACOMMS_DEVICE=CUDA
 export JULIA_LOAD_PATH=@:@stdlib
 

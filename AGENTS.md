@@ -365,7 +365,7 @@ running the pipeline so we ensure it's reproducible.
 ## Updating ClimaCoupler to reflect the latest `main`
 
 We are running on branches that should be identical to `main` except for the
-changes to their `experiments/AMIP/Manifest-v1.11.toml` files,
+changes to their `experiments/AMIP/Manifest-v1.13.toml` files,
 which dev in the local packages in the submodules.
 So we can `cd` into each Coupler submodule and run
 

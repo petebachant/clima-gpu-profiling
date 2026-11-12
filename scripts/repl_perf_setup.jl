@@ -5,11 +5,11 @@
 # the point where a run is worth spending.
 #
 # Prerequisites (mirror the `mod-nsys` stage; see scripts/run-nsys.sh):
-#   - Inside a GPU allocation with `climacommon/2025_05_15` loaded. Allocation and
+#   - Inside a GPU allocation with `climacommon/2026_11_06-1.13.3` loaded. Allocation and
 #     `module load` are shell-level, so they cannot be done from Julia:
 #
 #         srun-gpu                    # alias for: srun --gpus=1 --mpi=none --time=180 --pty bash
-#         module purge && module load climacommon/2025_05_15
+#         module purge && module load climacommon/2026_11_06-1.13.3
 #         echo $CUDA_VISIBLE_DEVICES  # see AGENTS.md on known-bad GPUs
 #
 #   - Do NOT override JULIA_LOAD_PATH — run-nsys.sh sets @:@stdlib for reproducibility,

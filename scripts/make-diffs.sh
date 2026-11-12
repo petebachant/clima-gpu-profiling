@@ -13,7 +13,12 @@ set -euo pipefail
 rm -rf diffs
 mkdir -p diffs/not-treatments
 
-MANIFEST_PATH="experiments/AMIP/Manifest-v1.11.toml"
+# Where the arms' dev paths live. Julia 1.13's Pkg writes them into the AMIP
+# `Project.toml`'s `[sources]` table as well as the manifest, so wiring spans two
+# files now; checking only the manifest reported the Coupler as "Under test" on
+# the strength of the rewiring alone.
+WIRING_PATHS="experiments/AMIP/Manifest-v1.13.toml experiments/AMIP/Project.toml"
+WIRING_RE="^(experiments/AMIP/Manifest-v1\\.13\\.toml|experiments/AMIP/Project\\.toml)$"
 
 # Paths no stage reads, so an arm difference in them cannot reach a run. Upstream's
 # own CI configuration is the case in hand: on 2026-10-19 a one-line bump to
@@ -68,7 +73,7 @@ for repo in ClimaAtmos.jl ClimaCore.jl ClimaCoupler.jl RRTMGP.jl; do
 
     # Which files the diff actually touches, as paths inside the package.
     changed=$(grep '^diff --git ' "${tmp}" | sed -E "s|^diff --git a/${base}/||; s| b/.*$||" | sort -u || true)
-    other=$(printf '%s\n' "${changed}" | grep -v "^${MANIFEST_PATH}$" | grep -v '^$' || true)
+    other=$(printf '%s\n' "${changed}" | grep -Ev "${WIRING_RE}" | grep -v '^$' || true)
     n_files=$(printf '%s\n' "${changed}" | grep -c '[^[:space:]]' || true)
     n_lines=$(grep -c '^[+-][^+-]' "${tmp}" || true)
 
@@ -77,7 +82,7 @@ for repo in ClimaAtmos.jl ClimaCore.jl ClimaCoupler.jl RRTMGP.jl; do
         index="${index}- **${repo}** --- identical in both arms, so no diff file.${skip_note}\n"
     elif [ -z "${other}" ]; then
         mv "${tmp}" "diffs/not-treatments/${repo}.diff"
-        index="${index}- **${repo}** --- not-treatments/${repo}.diff: ${n_lines} changed lines, all in ${MANIFEST_PATH}. This is the dev-path rewiring that points the mod arm at the -mod submodules. It is how the arm is built, not what is under test.${skip_note}\n"
+        index="${index}- **${repo}** --- not-treatments/${repo}.diff: ${n_lines} changed lines, all in ${WIRING_PATHS}. This is the dev-path rewiring that points the mod arm at the -mod submodules. It is how the arm is built, not what is under test.${skip_note}\n"
     else
         mv "${tmp}" "diffs/${repo}.diff"
         index="${index}- **${repo}** --- ${repo}.diff: ${n_lines} changed lines across ${n_files} file(s). **Under test.**${skip_note}\n"
@@ -89,10 +94,10 @@ done
 # sitting beside the results reads as a treatment. Say so in the index instead
 # of writing a file that has to be opened to learn it is not a diff.
 if ! grep -q 'path = "../../../CloudMicrophysics.jl-mod"' \
-    ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml; then
+    ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml; then
     index="${index}- **CloudMicrophysics.jl** --- not dev'd by either arm, so its submodule does not reach the run and there is no arm difference to report. Both arms take the version pinned in the Coupler AMIP manifest.\n"
 else
-    CM_MANIFEST="ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml"
+    CM_MANIFEST="ClimaCoupler.jl/experiments/AMIP/Manifest-v1.13.toml"
     CM_TREE=$(awk '
         /^\[\[deps\.CloudMicrophysics\]\]/ { f = 1; next }
         f && /^git-tree-sha1/ { print; exit }

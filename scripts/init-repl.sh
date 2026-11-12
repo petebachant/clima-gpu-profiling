@@ -8,7 +8,7 @@ PROJECT_DIR=ClimaCoupler.jl-mod/experiments/AMIP
 CONFIG_FILE=ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
 
 module purge
-module load climacommon/2025_05_15
+module load climacommon/2026_11_06-1.13.3
 
 export CLIMACOMMS_DEVICE=CUDA
 export CLIMA_NAME_CUDA_KERNELS_FROM_STACK_TRACE=true

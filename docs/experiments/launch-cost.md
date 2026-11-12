@@ -16,12 +16,12 @@ Both profiles are therefore declared in this document, run adjacently from one
 invocation, and written to paths this experiment owns, so no later experiment can
 overwrite them and no cross-session comparison can creep in.
 
-```sh calkit stage name=baseline environment=clima outputs=[results/experiments/launch-cost/baseline.nsys-rep, results/experiments/launch-cost/baseline.sqlite] inputs=[scripts/run-nsys.sh, scripts/run.jl, ClimaCoupler.jl/src, ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml, ClimaCoupler.jl/experiments/AMIP/Manifest-v1.11.toml, ClimaCoupler.jl/experiments/AMIP/code_loading.jl, ClimaCore.jl/src, ClimaCore.jl/ext, ClimaAtmos.jl/src, RRTMGP.jl/src] scheduler={options: [--gpus=1, --time=180]}
+```sh calkit stage name=baseline environment=clima outputs=[results/experiments/launch-cost/baseline.nsys-rep, results/experiments/launch-cost/baseline.sqlite] inputs=[scripts/run-nsys.sh, scripts/run.jl, ClimaCoupler.jl/src, ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml, ClimaCoupler.jl/experiments/AMIP/Manifest-v1.13.toml, ClimaCoupler.jl/experiments/AMIP/code_loading.jl, ClimaCore.jl/src, ClimaCore.jl/ext, ClimaAtmos.jl/src, RRTMGP.jl/src] scheduler={options: [--gpus=1, --time=180]}
 #!/usr/bin/env bash
 bash scripts/run-nsys.sh results/experiments/launch-cost/baseline ClimaCoupler.jl/experiments/AMIP ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
 ```
 
-```sh calkit stage name=probe environment=clima outputs=[results/experiments/launch-cost/probe.nsys-rep, results/experiments/launch-cost/probe.sqlite] inputs=[scripts/run-nsys.sh, scripts/run.jl, ClimaCoupler.jl-mod/src, ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml, ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.11.toml, ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl, ClimaCore.jl-mod/src, ClimaCore.jl-mod/ext, ClimaAtmos.jl-mod/src, RRTMGP.jl-mod/src] scheduler={options: [--gpus=1, --time=180]}
+```sh calkit stage name=probe environment=clima outputs=[results/experiments/launch-cost/probe.nsys-rep, results/experiments/launch-cost/probe.sqlite] inputs=[scripts/run-nsys.sh, scripts/run.jl, ClimaCoupler.jl-mod/src, ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml, ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml, ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl, ClimaCore.jl-mod/src, ClimaCore.jl-mod/ext, ClimaAtmos.jl-mod/src, RRTMGP.jl-mod/src] scheduler={options: [--gpus=1, --time=180]}
 #!/usr/bin/env bash
 bash scripts/run-nsys.sh results/experiments/launch-cost/probe ClimaCoupler.jl-mod/experiments/AMIP ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
 ```

@@ -15,7 +15,7 @@ fi
 
 # Load modules
 module purge
-module load climacommon/2025_05_15
+module load climacommon/2026_11_06-1.13.3
 
 export CLIMACOMMS_DEVICE=CUDA
 

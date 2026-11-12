@@ -12,7 +12,11 @@ import tomllib
 
 BASELINE = "results/step-breakdown-baseline.toml"
 MOD = "results/step-breakdown.toml"
-FOLD = "results/param-fold.json"
+# The archived fold measurement, not a live one. The two step breakdowns above
+# are frozen stages from the fold's own stack, so a live device saving would
+# divide one pass's wall clock by another's device time -- and once the fold
+# went upstream into both arms it would divide by nearly zero.
+FOLD = "results/retired/param-fold.json"
 OUT = "results/step-comparison.json"
 
 # Periodic work, by step index: dt_rad=1hours and the daily diagnostics write, at
