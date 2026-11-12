@@ -208,10 +208,10 @@ function sweep()
     for n in GROUPS
         @info "ngpt_groups = $n"
         CUDA.reclaim()
-        free_before = CUDA.available_memory()
+        free_before = CUDA.free_memory()
         groups = n > 1 ? RTE.LWGptGroups(gp, n; params = solver.params) : nothing
         CUDA.synchronize()
-        bytes = free_before - CUDA.available_memory()
+        bytes = free_before - CUDA.free_memory()
 
         lw = with_groups(lws, groups)
         t = timed_ms(() -> lw_solve!(lw))
