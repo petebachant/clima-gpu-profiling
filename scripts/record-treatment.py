@@ -21,6 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "results" / "treatment.json"
 COUPLERS = {"baseline": "ClimaCoupler.jl", "mod": "ClimaCoupler.jl-mod"}
+STACK_FILE = ".stack"
 
 
 def git(*args, cwd=ROOT):
@@ -115,10 +116,48 @@ def diff_digest():
         return None
     h = hashlib.sha256()
     for f in sorted(d.rglob("*")):
-        if f.is_file():
+        # `.stack` is provenance, not a diff. Digesting it would make every
+        # digest unique to its stack and so uncomparable with those already
+        # recorded, which is the opposite of what the digest is for.
+        if f.is_file() and f.name != STACK_FILE:
             h.update(f.relative_to(d).as_posix().encode())
             h.update(f.read_bytes())
     return h.hexdigest()[:16]
+
+
+def check_diffs_fresh(subs):
+    """Refuse to record a digest from a `diffs/` built off other submodules.
+
+    `diff_digest` reads diffs/, which make-diffs writes, while everything else
+    here reads the live trees. Run the two out of order -- which
+    `calkit dvc repro --single-item` permits -- and the record pairs this stack
+    with the previous one's digest. On 2026-11-11 that keyed an AMIP pair to the
+    superseded treatment, and `record-sypd-repeat` stores a pair's digest the
+    first time it sees the pair and never revisits it, so the error was
+    permanent in a committed results file.
+    """
+    prov = ROOT / "diffs" / STACK_FILE
+    if not prov.is_file():
+        return
+    stale = []
+    for line in prov.read_text().splitlines():
+        repo, sha, state = line.split()
+        if (info := subs.get(repo)) is None:
+            continue
+        now = str(info["sha"])
+        if now != sha or info["dirty"] != (state == "dirty"):
+            here = "dirty" if info["dirty"] else "clean"
+            stale.append(
+                f"{repo}: diffs built from {sha[:9]} ({state}),"
+                f" tree is {now[:9]} ({here})"
+            )
+    if stale:
+        raise SystemExit(
+            "diffs/ does not describe the submodules being recorded:\n  "
+            + "\n  ".join(stale)
+            + "\nRebuild it first:"
+            " calkit dvc repro --single-item make-diffs"
+        )
 
 
 def tree_digest(path):
@@ -145,6 +184,7 @@ def tree_digest(path):
 
 def main():
     subs = {p: describe_submodule(p) for p in submodule_paths()}
+    check_diffs_fresh(subs)
     envs = {arm: dev_packages(c) for arm, c in COUPLERS.items()}
 
     # The comparison is only meaningful if the two arms differ in a way we can

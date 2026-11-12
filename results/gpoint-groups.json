@@ -1,11 +1,11 @@
 {
   "device_total": {
-    "baseline_elapsed_ms": 44201.6,
+    "baseline_elapsed_ms": 42583.5,
     "baseline_summed_equals_elapsed": true,
-    "baseline_summed_ms": 44201.6,
+    "baseline_summed_ms": 42583.5,
     "carries_other_treatments": true,
-    "change_pct": -5.44,
-    "change_pct_if_summed": -5.44,
+    "change_pct": -1.85,
+    "change_pct_if_summed": -1.85,
     "mod_concurrency_inflation_ms": 0.0,
     "mod_elapsed_ms": 41796.3,
     "mod_summed_ms": 41796.3
@@ -14,17 +14,17 @@
     "baseline": {
       "block": 256,
       "blocks_per_sm": 0.89,
-      "elapsed_ms": 2700.5,
+      "elapsed_ms": 2701.0,
       "grid": 96,
       "launches": 4,
       "name": "rte_lw_2stream_solve_both_skies_CUDA_",
       "registers": 255,
-      "summed_ms": 2700.5,
+      "summed_ms": 2701.0,
       "summed_over_elapsed": 1.0,
       "warps_per_sm": 8
     },
-    "change_pct": -10.34,
-    "change_pct_if_summed": -10.34,
+    "change_pct": -10.36,
+    "change_pct_if_summed": -10.36,
     "mod": {
       "block": 256,
       "blocks_per_sm": 14.22,
@@ -39,13 +39,13 @@
     },
     "mod_charged_ms": 2421.3,
     "mod_overhead_ms": 2.1,
-    "pct_of_device_baseline": 6.11,
-    "saved_ms": 279.2,
-    "saved_pct_of_device": 0.632
+    "pct_of_device_baseline": 6.34,
+    "saved_ms": 279.7,
+    "saved_pct_of_device": 0.657
   },
   "noise": {
     "untreated_kernels_compared": 22,
-    "worst_untreated_kernel_delta_ms": 1258.0
+    "worst_untreated_kernel_delta_ms": 8.1
   },
   "note": "All device shares are ELAPSED time -- the union of the kernel intervals -- not `SUM(end-start)`, which counts a moment once per resident kernel and so is not elapsed time once a treatment launches concurrently. `change_pct_if_summed` is what the summed figure would have claimed, and for longwave it has the opposite sign. Both bands are treated as of 2026-11-05, and each is charged for its own reduction and hoisted aerosol mask; neither is a control any more, so each saving is resolved against the untreated kernels alone. The mod arm's solve kernels are different kernels from the baseline's, so the arms are paired by role. `waves` is a tested prediction, not an explanation: it rose from below one to many at unchanged blocks per SM and the longwave time did not move, and a concurrent-launch build of the same split measured the same saving at a low overlap factor. The device total carries the sedimentation fold as well and is not this treatment's figure.",
   "overhead": {
@@ -101,28 +101,28 @@
     }
   },
   "provenance": {
-    "baseline_db_sha256_16": "c775613bfbc9eeae",
+    "baseline_db_sha256_16": "c9aa9b1eae7263c8",
     "baseline_ref": "a64796f870c318b855bba4afbecced7e586fdaa0",
     "mod_db_sha256_16": "b2d4c036bf58d152",
     "mod_ref": "87e41de098aa72c5e0cbbe77df6a797351cffd98",
-    "source_commit": "a881133cfe17862c466493f25c85286f415afd60"
+    "source_commit": "8acc62e88c721c4926790eb2e1617a5335718d76"
   },
-  "saving_resolved_against_controls": false,
+  "saving_resolved_against_controls": true,
   "shortwave": {
     "baseline": {
       "block": 256,
       "blocks_per_sm": 0.89,
-      "elapsed_ms": 2484.3,
+      "elapsed_ms": 2479.8,
       "grid": 96,
       "launches": 4,
       "name": "rte_sw_2stream_solve_both_skies_CUDA_",
       "registers": 255,
-      "summed_ms": 2484.3,
+      "summed_ms": 2479.8,
       "summed_over_elapsed": 1.0,
       "warps_per_sm": 8
     },
-    "change_pct": -19.0,
-    "change_pct_if_summed": -19.0,
+    "change_pct": -18.86,
+    "change_pct_if_summed": -18.86,
     "mod": {
       "block": 256,
       "blocks_per_sm": 14.22,
@@ -137,12 +137,12 @@
     },
     "mod_charged_ms": 2012.2,
     "mod_overhead_ms": 2.8,
-    "pct_of_device_baseline": 5.62,
-    "saved_ms": 472.1,
-    "saved_pct_of_device": 1.068,
+    "pct_of_device_baseline": 5.82,
+    "saved_ms": 467.6,
+    "saved_pct_of_device": 1.098,
     "treated": true
   },
-  "sw_saving_resolved_against_controls": false,
+  "sw_saving_resolved_against_controls": true,
   "waves": {
     "baseline": {
       "blocks": 96,

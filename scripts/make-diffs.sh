@@ -131,6 +131,19 @@ fi
 
 rmdir diffs/not-treatments 2>/dev/null || true
 
+# What the diffs were generated from, so a stage recording a diff digest can
+# assert the digest describes the submodules recorded beside it. A pointer move
+# with a stale diffs/ pairs a live stack with the previous stack's digest, and
+# the AMIP pair recorded from that keys to the wrong treatment permanently.
+for repo in ClimaAtmos.jl ClimaAtmos.jl-mod ClimaCore.jl ClimaCore.jl-mod \
+    ClimaCoupler.jl ClimaCoupler.jl-mod RRTMGP.jl RRTMGP.jl-mod \
+    CloudMicrophysics.jl-mod; do
+    [ -d "${repo}" ] || continue
+    state=clean
+    [ -z "$(git -C "${repo}" status --porcelain)" ] || state=dirty
+    echo "${repo} $(git -C "${repo}" rev-parse HEAD) ${state}"
+done > diffs/.stack
+
 {
     echo "# What differs between the two arms"
     echo
