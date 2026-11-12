@@ -1,0 +1,95 @@
+diff --git a/ClimaCore.jl/ext/cuda/cuda_utils.jl b/ClimaCore.jl-mod/ext/cuda/cuda_utils.jl
+index e486d55..b7410ff 100644
+--- a/ClimaCore.jl/ext/cuda/cuda_utils.jl
++++ b/ClimaCore.jl-mod/ext/cuda/cuda_utils.jl
+@@ -508,6 +508,7 @@ const CLIMACORE_IGNORE_FUNCS = (
+     :materialize,
+     :materialize!,
+     :copyto!,
++    :copyto_capped!,
+     :foreach,
+     :unrolled_foreach,
+     Symbol("macro expansion"),
+diff --git a/ClimaCore.jl/src/DataLayouts/loops.jl b/ClimaCore.jl-mod/src/DataLayouts/loops.jl
+index 864a065..ca73a54 100644
+--- a/ClimaCore.jl/src/DataLayouts/loops.jl
++++ b/ClimaCore.jl-mod/src/DataLayouts/loops.jl
+@@ -833,17 +833,39 @@ end
+     return dest
+ end
+ 
+-@inline function Base.copyto!(
++@inline Base.copyto!(
+     dest::DataLayout,
+     arg::MaybeLazyDataLayout,
+     mask::DataMask = NoMask(),
++) = copyto_capped!(dest, arg, nothing, mask)
++
++"""
++    copyto_capped!(dest, arg, maxregs, mask = NoMask())
++
++Copy `arg` into `dest` with the register cap `maxregs` (see `maxregs` in
++[`foreach_slice`](@ref)), or without one when it is `nothing`.
++
++A call site that knows its kernel sits at the top of an occupancy band can ask
++for the band's register count here, so that `ptxas` meets the budget instead of
++choosing one or two registers past the edge and costing the launch a quarter of
++its resident warps. The cap is positional rather than a keyword because a
++keyword adds a `Core.kwcall` method instance to every pointwise copy and stops
++the entry point inlining.
++"""
++@inline function copyto_capped!(
++    dest::DataLayout,
++    arg::MaybeLazyDataLayout,
++    maxregs,
++    mask::DataMask = NoMask(),
+ )
+     scope = DataScope(dest, arg)
+     dest_and_arg = Broadcast.broadcasted(tuple, written_layout(dest), arg)
+     size(dest) == size(dest_and_arg) ||
+         throw(DimensionMismatch("DataLayout broadcast result exceeds destination size"))
+     synchronize_shared_points(scope, dest, arg)
+-    _foreach_slice(
++    foreach_slice_with_options(
++        nothing,
++        maxregs,
+         view,
+         dest_and_arg_point -> begin
+             @inbounds (dest_point, arg_point) = dest_and_arg_point.args
+diff --git a/ClimaCore.jl/src/Fields/broadcast.jl b/ClimaCore.jl-mod/src/Fields/broadcast.jl
+index 90fd4f1..ec43540 100644
+--- a/ClimaCore.jl/src/Fields/broadcast.jl
++++ b/ClimaCore.jl-mod/src/Fields/broadcast.jl
+@@ -323,12 +323,30 @@ Base.similar(bc::LazyField, ::Type{T}) where {T} =
+ 
+ # The mask is an optional positional argument, as for DataLayouts (see the
+ # copyto! methods in DataLayouts/loops.jl).
+-@inline function Base.copyto!(
++@inline Base.copyto!(
+     dest::Field,
+     bc::LazyField,
+     mask::DataLayouts.DataMask = get_mask(axes(dest)),
++) = copyto_capped!(dest, bc, nothing, mask)
++
++"""
++    copyto_capped!(dest, bc, maxregs, mask = get_mask(axes(dest)))
++
++Evaluate `bc` into `dest` under the register cap `maxregs`; see
++[`DataLayouts.copyto_capped!`](@ref).
++"""
++@inline function copyto_capped!(
++    dest::Field,
++    bc::LazyField,
++    maxregs,
++    mask::DataLayouts.DataMask = get_mask(axes(dest)),
+ )
+-    copyto!(field_values(dest), Base.Broadcast.instantiate(field_values(bc)), mask)
++    DataLayouts.copyto_capped!(
++        field_values(dest),
++        Base.Broadcast.instantiate(field_values(bc)),
++        maxregs,
++        mask,
++    )
+     return dest
+ end
+ 
