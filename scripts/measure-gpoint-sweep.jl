@@ -31,21 +31,19 @@ include(joinpath(project_dir, "code_loading.jl"))
 const RTE = RRTMGP.RTE
 const RTESolver = RRTMGP.RTESolver
 
-out_path = "results/gpoint-sweep.toml"
-let i = findfirst(==("--out"), ARGS)
-    if !isnothing(i)
-        out_path = ARGS[i + 1]
-        deleteat!(ARGS, i:(i + 1))
-    end
+# `let` is a hard scope, so assigning `out_path` inside one makes a local and
+# leaves the global at its default: the flag parses and is then discarded.
+function arg_value(flag, default)
+    i = findfirst(==(flag), ARGS)
+    isnothing(i) && return default
+    value = ARGS[i + 1]
+    deleteat!(ARGS, i:(i + 1))
+    return value
 end
 
-wall_path = "results/gpoint-wallclock.toml"
-let i = findfirst(==("--out-wallclock"), ARGS)
-    if !isnothing(i)
-        wall_path = ARGS[i + 1]
-        deleteat!(ARGS, i:(i + 1))
-    end
-end
+out_path = arg_value("--out", "results/gpoint-sweep.toml")
+
+wall_path = arg_value("--out-wallclock", "results/gpoint-wallclock.toml")
 
 const GROUPS = [1, 4, 8, 16, 32, 64]
 const REPEATS = 7

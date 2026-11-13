@@ -36,13 +36,17 @@ import ClimaAtmos as CA
 project_dir = dirname(Base.active_project())
 include(joinpath(project_dir, "code_loading.jl"))
 
-out_path = "results/sgs-substeps.toml"
-let i = findfirst(==("--out"), ARGS)
-    if !isnothing(i)
-        out_path = ARGS[i + 1]
-        deleteat!(ARGS, i:(i + 1))
-    end
+# `let` is a hard scope, so assigning `out_path` inside one makes a local and
+# leaves the global at its default: the flag parses and is then discarded.
+function arg_value(flag, default)
+    i = findfirst(==(flag), ARGS)
+    isnothing(i) && return default
+    value = ARGS[i + 1]
+    deleteat!(ARGS, i:(i + 1))
+    return value
 end
+
+out_path = arg_value("--out", "results/sgs-substeps.toml")
 
 const SUBSTEPS = [1, 2, 3, 4]
 const REPEATS = 7
