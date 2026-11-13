@@ -4806,3 +4806,91 @@ stages:
       hash: md5
       md5: d9003af8f2f58916e463de5613832851
       size: 9158
+  sgs-substep-cost/sgs-substep-sweep:
+    cmd: calkit scheduler batch --name sgs-substep-cost/sgs-substep-sweep 
+      --environment clima --dep scripts/measure-sgs-substeps.jl --dep 
+      scripts/run-julia-script.sh --dep ClimaAtmos.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml 
+      --dep .calkit/env-locks/clima --out 
+      results/experiments/sgs-substep-cost/substeps.toml --option --gpus=1 
+      --option --time=90 -- 
+      .calkit/markdown/docs/experiments/sgs-substep-cost.md/sgs-substep-sweep.sh
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: 
+        .calkit/markdown/docs/experiments/sgs-substep-cost.md/sgs-substep-sweep.sh
+      hash: md5
+      md5: 024da4b2afa36ddc18dd570534f68aeb
+      size: 295
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: 1dee7b4bc45e18d80500a37a70473f28.dir
+      size: 2702209
+      nfiles: 178
+    - path: ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      hash: md5
+      md5: 66e9712dfb39a09d73ab08e096b614db
+      size: 1114
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 3974e589a2618f7adb8c0164acb5807b
+      size: 855
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      hash: md5
+      md5: 15f62060eba963817bee4af7e3e51817
+      size: 139651
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: scripts/measure-sgs-substeps.jl
+      hash: md5
+      md5: 116081dcc93a468e5396c2b221d82aa0
+      size: 9910
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: 2b491e48a8f15c4ea7ff76d19d95f830
+      size: 1040
+    outs:
+    - path: .calkit/scheduler/logs/sgs-substep-cost/sgs-substep-sweep.out
+      hash: md5
+      md5: 52a3393ced28e963201e08a983248072
+      size: 39625
+    - path: results/experiments/sgs-substep-cost/substeps.toml
+      hash: md5
+      md5: dae0fa4282cf63177d372ac2f3e5c114
+      size: 3100
+  sgs-substep-cost/values:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/experiments/sgs-substep-cost.md/values.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: .calkit/markdown/docs/experiments/sgs-substep-cost.md/values.py
+      hash: md5
+      md5: 67a8060965e66a05c9f66d3477e5a55d
+      size: 5135
+    - path: results/experiments/sgs-substep-cost/substeps.toml
+      hash: md5
+      md5: dae0fa4282cf63177d372ac2f3e5c114
+      size: 3100
+    - path: results/top-kernels.csv
+      hash: md5
+      md5: 47496988f2d806ddf9a662cc3e239af9
+      size: 3581
+    outs:
+    - path: results/docs/sgs-substep-cost.json
+      hash: md5
+      md5: 5b8808299f0671784623c26eb77f3ae0
+      size: 1633

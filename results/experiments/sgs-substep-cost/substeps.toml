@@ -1,0 +1,85 @@
+compaction_ceiling_of_cm_pct = 42.124412699217494
+condensate_free_fraction = 0.4355813843288502
+condensate_free_points = 845683
+config_file = "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml"
+float_type = "Float32"
+fully_clear_warp_fraction = 0.02477254746835443
+fully_clear_warps = 1503
+has_implicit_path = true
+n_substeps = 3
+note = "Each point calls the live `set_environment_1m_tendency!` on one simulation state with a different `n_substeps_quad`, so the points differ by the substep count and nothing else and no two runs are differenced. per_substep_ms is the fitted slope: one CM `_substep_1m` over the whole environment field, under the warp divergence the real field has. fixed_ms is the intercept -- the conditional-moment rule, the per-node saturation calls, the column loop that materializes the environment, and the data movement. The implicit arm runs BMT.Instantaneous(), which has no substep loop, so its slope is a control and should be flat. condensate_free_fraction is per point and fully_clear_warp_fraction is per 32 consecutive points of the layout the pointwise kernel indexes: the gap between them is the divergence, and compaction_ceiling_of_cm_pct is the share of the CM calls a perfect gather could remove."
+points = 1941504
+repeats = 7
+substep_counts = [1, 2, 3, 4]
+warmup_steps = 3
+warps = 60672
+
+[explicit]
+fit_r2 = 0.9988384207692869
+fixed_ms = 3.698687069118023
+ms_in_use = 16.234494745731354
+n_substeps_quad_in_use = 2
+per_substep_ms = 6.158950459212065
+repeat_spread_pct = 1.475969925060476
+saving_one_fewer_substep_pct = 37.93743233574595
+slope_resolved = true
+substep_share_pct = 75.8748646714919
+
+    [explicit.points.1]
+    ms = 9.62867122143507
+    ms_max = 9.655295871198177
+    ms_min = 9.584639221429825
+    n_substeps_quad = 1
+
+    [explicit.points.2]
+    ms = 16.234494745731354
+    ms_max = 16.398336738348007
+    ms_min = 16.15872047841549
+    n_substeps_quad = 2
+
+    [explicit.points.3]
+    ms = 22.426623851060867
+    ms_max = 22.537216544151306
+    ms_min = 22.302718833088875
+    n_substeps_quad = 3
+
+    [explicit.points.4]
+    ms = 28.094463050365448
+    ms_max = 28.142591938376427
+    ms_min = 27.941888198256493
+    n_substeps_quad = 4
+
+[implicit]
+fit_r2 = 0.6677733950596253
+fixed_ms = 3.6464640870690346
+ms_in_use = 3.6341759841889143
+n_substeps_quad_in_use = 2
+per_substep_ms = -0.0052224379032850266
+repeat_spread_pct = 1.3806688296957068
+saving_one_fewer_substep_pct = -0.14370349498775264
+slope_resolved = false
+substep_share_pct = -0.2874069899755053
+
+    [implicit.points.1]
+    ms = 3.644416108727455
+    ms_max = 3.6823039408773184
+    ms_min = 3.6208638921380043
+    n_substeps_quad = 1
+
+    [implicit.points.2]
+    ms = 3.6341759841889143
+    ms_max = 3.66284791380167
+    ms_min = 3.6126719787716866
+    n_substeps_quad = 2
+
+    [implicit.points.3]
+    ms = 3.624959848821163
+    ms_max = 3.645440097898245
+    ms_min = 3.6055040545761585
+    n_substeps_quad = 3
+
+    [implicit.points.4]
+    ms = 3.6300800275057554
+    ms_max = 3.718144027516246
+    ms_min = 3.610624000430107
+    n_substeps_quad = 4
