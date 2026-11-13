@@ -425,10 +425,27 @@ job's environment rather than its inputs.
 **Reclaim order on `/home`, cheapest first:** `uv cache prune` (6.0 GiB, pure
 download cache), then `calkit dvc gc --workspace` once the artifacts are pushed
 (3.2 GB, and see the force-cancel warning above --- check nothing is mid-run
-first), then `output/`, which holds 52 GB across four run directories and is
-the only remaining headroom. The first two reconstruct themselves and the third
-does not, so ask before touching it. Both gc passes are one-shot: a second run
-in the same session reports `No unused 'repo' cache to remove`.
+first), then `output/`, which held 52 GB and is the
+only large reclaim. Both gc passes are one-shot: a second run in the same
+session reports `No unused 'repo' cache to remove`.
+
+**`output/` is not referenced by the pipeline at all** --- zero mentions in
+`dvc.yaml` and `calkit.yaml`, and it is gitignored --- so model run directories
+are working files, not the record. The record is the scheduler logs, the
+results JSONs and the DVC-tracked profiles. Clearing it on 2026-11-12 returned
+52 GB and restaled nothing.
+
+The one hazard is deleting the directory a running job is writing. Identify it
+by mtime rather than by name, because the active run is not always the
+highest-numbered one:
+
+```sh
+find output -type f -printf '%TY-%Tm-%Td %TH:%TM %p\n' | sort -r | head
+```
+
+The Julia-script stages create a fresh `output_NNNN` per run and never clean up,
+which is where the bulk accumulates: 91 directories had collected there, 90 of
+them stale, against about 0.22 GB each.
 
 ## Use `calkit push`, not `git push`
 
