@@ -45,7 +45,7 @@ let i = findfirst(==("--out-wallclock"), ARGS)
     end
 end
 
-const GROUPS = [1, 4, 8, 16, 32]
+const GROUPS = [1, 4, 8, 16, 32, 64]
 const REPEATS = 7
 const WARMUP_STEPS = 3
 
@@ -220,8 +220,27 @@ function sweep()
 
     for n in GROUPS
         @info "ngpt_groups = $n"
+        # The accumulators alone, from their shapes, are a floor under the
+        # workspace: two `(ncol * ngroups, nlev, 4)` arrays. The rest of the
+        # widening is the optics, sources, band fluxes and cloud mask.
+        acc_bytes = n > 1 ? 2 * (ncol * n) * (nlay + 1) * 4 * sizeof(FT) : 0
         CUDA.reclaim()
         free_before = CUDA.free_memory()
+        # A workspace that does not fit kills the job after the model has
+        # already spun up, so predict it and skip the point instead. The
+        # measured points run about 2.6x the accumulator floor, so budget 3x
+        # plus a 4 GiB margin for the solve's own temporaries.
+        needed = n > 1 ? 3 * acc_bytes + 4 * 2^30 : 0
+        if free_before < needed
+            @warn "skipping ngpt_groups = $n" needed free_before
+            points[string(n)] = Dict{String, Any}(
+                "ngroups" => n,
+                "skipped_out_of_memory" => true,
+                "predicted_bytes" => needed,
+                "free_bytes" => free_before,
+            )
+            continue
+        end
         groups = n > 1 ? RTE.SWGptGroups(gp, n) : nothing
         CUDA.synchronize()
         bytes = free_before - CUDA.free_memory()
@@ -236,11 +255,6 @@ function sweep()
             reference_aod = aod
             reference_ms = t.median
         end
-
-        # The accumulators alone, from their shapes, as a floor under `bytes`:
-        # two `(ncol * ngroups, nlev, 4)` arrays. The rest of the widening is
-        # the optics, sources, band fluxes and cloud mask.
-        acc_bytes = n > 1 ? 2 * (ncol * n) * (nlay + 1) * 4 * sizeof(FT) : 0
 
         points[string(n)] = Dict{String, Any}(
             "ngroups" => n,
@@ -270,10 +284,14 @@ points = sweep()
 spread_pct =
     100.0 * (points["1"]["solve_ms_max"] - points["1"]["solve_ms_min"]) /
     points["1"]["solve_ms"]
-best = minimum(points[string(n)]["change_pct"] for n in GROUPS)
+# A point whose workspace did not fit has no timing, so every aggregate below
+# runs over the counts that were actually measured.
+measured =
+    [n for n in GROUPS if !get(points[string(n)], "skipped_out_of_memory", false)]
+best = minimum(points[string(n)]["change_pct"] for n in measured)
 sufficient =
-    minimum(n for n in GROUPS if points[string(n)]["change_pct"] <= best + spread_pct)
-all_aod_identical = all(points[string(n)]["aod_bit_identical"] for n in GROUPS)
+    minimum(n for n in measured if points[string(n)]["change_pct"] <= best + spread_pct)
+all_aod_identical = all(points[string(n)]["aod_bit_identical"] for n in measured)
 
 results = Dict{String, Any}(
     "ncol" => ncol,
@@ -284,10 +302,11 @@ results = Dict{String, Any}(
     "warmup_steps" => WARMUP_STEPS,
     "config_file" => config_file,
     "group_counts" => GROUPS,
+    "measured_group_counts" => measured,
     "repeat_spread_pct" => spread_pct,
     "best_change_pct" => best,
     "sufficient_ngroups" => sufficient,
-    "sufficient_is_sweep_maximum" => sufficient == maximum(GROUPS),
+    "sufficient_is_sweep_maximum" => sufficient == maximum(measured),
     "default_ngpt_groups" => RTE.DEFAULT_NGPT_GROUPS,
     "default_is_sufficient_only" => RTE.DEFAULT_NGPT_GROUPS == sufficient,
     "aod_bit_identical_at_every_count" => all_aod_identical,
@@ -307,7 +326,10 @@ results = Dict{String, Any}(
               "read-modify-write with one nominated writer, so any " *
               "difference there is groups interleaving and not roundoff. " *
               "sufficient_is_sweep_maximum says whether the sweep found a " *
-              "knee or only moved the bound to its own endpoint.",
+              "knee or only moved the bound to its own endpoint. A group " *
+              "count whose predicted workspace does not fit the device is " *
+              "skipped rather than run, and carries skipped_out_of_memory " *
+              "instead of a timing.",
 )
 
 mkpath(dirname(out_path))
@@ -333,7 +355,7 @@ function wallclock_results(seconds, points)
     sypd(w) = sim_seconds / w / 365.25
 
     arms = Dict{String, Any}()
-    for g in GROUPS
+    for g in measured
         g == 1 && continue
         per_event = points["1"]["solve_ms"] - points[string(g)]["solve_ms"]
         saved = events * per_event / 1e3
