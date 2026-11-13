@@ -393,6 +393,43 @@ is a check, not a guard — the guard is running the two stages as a pair.
 
 The same applies to any future pair of arm-specific stages.
 
+## A full disk fails a stage where it is cheapest to misread
+
+Two different disks filled on 2026-11-12, hours apart, with two unrelated
+signatures and one shared consequence: a GPU reservation spent before the
+failure appeared.
+
+  * **`/tmp` is 40 GB, node-local, and shared by every user of this cluster.**
+    `sw-gpoint-sweep` died on `opening file "/tmp/jl_E9QDgxUjUB.ptx": No space
+    left on device` --- GPUCompiler writes each kernel's PTX through Julia's
+    `tempname()`, so a full `/tmp` kills a job during compilation, after the
+    model has already spun up. It is also not ours to clean: of the 40 GB in
+    use, `du` can read 3.2 GB and the rest sits inside other users'
+    directories. Our own stale footprint was 0.156 GB.
+  * **`/home` is an NFS export with a server-side quota.** It reports
+    `OSError: [Errno 122] Disk quota exceeded` while `df` still shows hundreds
+    of GB free on the mount and `quota -s` reports no quota at all, so neither
+    obvious check says what is wrong. It took out a NetCDF write inside a sweep
+    job, then blocked `git commit` itself: `Unable to create
+    '.git/index.lock': Disk quota exceeded`.
+
+**The fix for `/tmp` is `TMPDIR`, and it belongs in `scripts/gpu-guard.sh`.**
+`/scratch` is 70 TB. The obvious home for the export is the three run scripts
+that need it, and that is the expensive mistake: `run-julia-script.sh` is a
+dependency of `amip-baseline` and `amip-mod`, so exporting a variable there
+restales the AMIP pair --- about four GPU hours for a change that cannot move a
+measurement. `gpu-guard.sh` is sourced by all three and is deliberately not a
+stage dependency, which makes it the right place for anything that configures a
+job's environment rather than its inputs.
+
+**Reclaim order on `/home`, cheapest first:** `uv cache prune` (6.0 GiB, pure
+download cache), then `calkit dvc gc --workspace` once the artifacts are pushed
+(3.2 GB, and see the force-cancel warning above --- check nothing is mid-run
+first), then `output/`, which holds 52 GB across four run directories and is
+the only remaining headroom. The first two reconstruct themselves and the third
+does not, so ask before touching it. Both gc passes are one-shot: a second run
+in the same session reports `No unused 'repo' cache to remove`.
+
 ## Use `calkit push`, not `git push`
 
 **Enforced by a hook.** Run `bash scripts/install-git-hooks.sh` once per clone.
