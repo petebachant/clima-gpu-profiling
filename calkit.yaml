@@ -220,13 +220,13 @@ questions:
   - question: >-
       Does the longwave g-point split need 16 groups, or is the default just the first count that worked?
     answer: >-
-      No: {sufficient_ngroups} groups is the smallest count that reaches the best measured saving of {best_change_pct:.2f}%, so the shipped default of 16 is not the knee -- and {sufficient_ngroups} is again the largest count swept, so the bound has moved rather than closed.
-      Timed on real coupler steps the split is worth {sypd_gain_pct:.3f}% of SYPD at the shipped default, which is measured rather than converted from device time, though most of the solve-time saving turns out to be wave quantization rather than the split itself.
-      Both figures are reproducible to a fraction of a percent at a fixed atmospheric state and to about a point across states, which is the limit of the method and not of the repeats.
+      No, and three sweeps have now failed to find a knee: {sufficient_ngroups} groups is the smallest count reaching the best measured saving of {best_change_pct:.2f}%, which is again the largest count swept, so a rule asking for the smallest sufficient count only returns wherever the sweep stopped.
+      The count is a price rather than a threshold, and the price is small: moving the default to 32 is worth {decision_32_pct:.3f}% of device time for {decision_32_gib:.2f} GiB of extra workspace across both solves, while the further doubling to 64 costs {decision_marginal_gib:.2f} GiB more for {decision_marginal_pct:.3f} points, so 32 is the setting.
+      Timed on real coupler steps the split itself is worth {sypd_gain_pct:.3f}% of SYPD at the shipped default, measured rather than converted, though most of the solve-time saving is wave quantization rather than the split.
     evidence:
       - kind: document
         path: docs/experiments/gpoint-group-count.md
-        section: "Wave quantization accounts for the jump and not for the rest"
+        section: "What a default change is worth against the device budget"
         explanation: >-
           The sweep, the quantization model it is read against, and the two
           cross-checks against the nsys pass. Live on main rather than pinned,
@@ -257,6 +257,10 @@ questions:
         path: results/docs/gpoint-group-count.json
         values:
           sypd_gain_pct: wallclock.arms.16.gain_steady_pct
+          decision_32_pct: decision.points.32.pct_of_device
+          decision_32_gib: decision.points.32.extra_gib
+          decision_marginal_pct: decision.marginal_pct_of_device
+          decision_marginal_gib: decision.marginal_gib
         explanation: >-
           The derived file the document's values stage writes, cited here
           rather than the raw results/gpoint-wallclock.toml because the SYPD

@@ -1,18 +1,19 @@
 aod_bit_identical_at_every_count = true
-best_change_pct = -21.946926987069872
+best_change_pct = -22.205117914999587
 config_file = "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml"
 default_is_sufficient_only = false
 default_ngpt_groups = 16
 float_type = "Float32"
-group_counts = [1, 4, 8, 16, 32]
+group_counts = [1, 4, 8, 16, 32, 64]
+measured_group_counts = [1, 4, 8, 16, 32, 64]
 n_gpt_sw = 224
 ncol = 24576
 nlay = 80
-note = "solve_ms times the whole shortwave both-skies solve, so it charges the grouped path for its reduction, its hoisted aerosol mask and its state refresh -- it is the net figure, not the kernel's. Every point shares one simulation's state and buffers and differs only in group count, so these are in-block comparisons and not a difference of runs. worst_flux_deviation is against ngroups = 1, the ungrouped specialization, and covers the direct beam as well as up, down and net in both skies: the split is not bit-for-bit, since a g-point sum taken in N partials is a different summation order. aod_bit_identical is equality rather than a tolerance because the 550 nm optical depth is a per-column read-modify-write with one nominated writer, so any difference there is groups interleaving and not roundoff. sufficient_is_sweep_maximum says whether the sweep found a knee or only moved the bound to its own endpoint."
-repeat_spread_pct = 0.10242608406139152
+note = "solve_ms times the whole shortwave both-skies solve, so it charges the grouped path for its reduction, its hoisted aerosol mask and its state refresh -- it is the net figure, not the kernel's. Every point shares one simulation's state and buffers and differs only in group count, so these are in-block comparisons and not a difference of runs. worst_flux_deviation is against ngroups = 1, the ungrouped specialization, and covers the direct beam as well as up, down and net in both skies: the split is not bit-for-bit, since a g-point sum taken in N partials is a different summation order. aod_bit_identical is equality rather than a tolerance because the 550 nm optical depth is a per-column read-modify-write with one nominated writer, so any difference there is groups interleaving and not roundoff. sufficient_is_sweep_maximum says whether the sweep found a knee or only moved the bound to its own endpoint. A group count whose predicted workspace does not fit the device is skipped rather than run, and carries skipped_out_of_memory instead of a timing."
+repeat_spread_pct = 0.19317749030058862
 repeats = 7
 sufficient_is_sweep_maximum = true
-sufficient_ngroups = 32
+sufficient_ngroups = 64
 warmup_steps = 3
 
 [points.1]
@@ -20,9 +21,9 @@ accumulator_bytes = 0
 aod_bit_identical = true
 change_pct = 0.0
 ngroups = 1
-solve_ms = 620.8593845367432
-solve_ms_max = 621.3662624359131
-solve_ms_min = 620.7303404808044
+solve_ms = 617.5600290298462
+solve_ms_max = 618.2225942611694
+solve_ms_min = 617.02960729599
 workspace_bytes = 0
 workspace_gib = 0.0
 worst_flux_deviation = 0.0
@@ -30,11 +31,11 @@ worst_flux_deviation = 0.0
 [points.16]
 accumulator_bytes = 1019215872
 aod_bit_identical = true
-change_pct = -20.411735769312152
+change_pct = -19.854046998447437
 ngroups = 16
-solve_ms = 494.1312074661255
-solve_ms_max = 494.2479133605957
-solve_ms_min = 493.8332140445709
+solve_ms = 494.9493706226349
+solve_ms_max = 495.03129720687866
+solve_ms_min = 494.33496594429016
 workspace_bytes = 2199912448
 workspace_gib = 2.048828125
 worst_flux_deviation = 0.0013427734375
@@ -42,11 +43,11 @@ worst_flux_deviation = 0.0013427734375
 [points.32]
 accumulator_bytes = 2038431744
 aod_bit_identical = true
-change_pct = -21.946926987069872
+change_pct = -21.352009827681623
 ngroups = 32
-solve_ms = 484.5998287200928
-solve_ms_max = 484.77903008461
-solve_ms_min = 484.47489738464355
+solve_ms = 485.69855093955994
+solve_ms_max = 485.8931303024292
+solve_ms_min = 485.3678047657013
 workspace_bytes = 4397727744
 workspace_gib = 4.095703125
 worst_flux_deviation = 0.00152587890625
@@ -54,23 +55,35 @@ worst_flux_deviation = 0.00152587890625
 [points.4]
 accumulator_bytes = 254803968
 aod_bit_identical = true
-change_pct = -10.951853116252886
+change_pct = -10.497003263604125
 ngroups = 4
-solve_ms = 552.8637766838074
-solve_ms_max = 553.3101558685303
-solve_ms_min = 550.9713888168335
-workspace_bytes = 559939584
-workspace_gib = 0.521484375
+solve_ms = 552.7347326278687
+solve_ms_max = 553.2200932502747
+solve_ms_min = 552.2381067276001
+workspace_bytes = 557842432
+workspace_gib = 0.51953125
 worst_flux_deviation = 0.00128173828125
+
+[points.64]
+accumulator_bytes = 4076863488
+aod_bit_identical = true
+change_pct = -22.205117914999587
+ngroups = 64
+solve_ms = 480.43009638786316
+solve_ms_max = 480.54271936416626
+solve_ms_min = 480.28364777565
+workspace_bytes = 8782872576
+workspace_gib = 8.1796875
+worst_flux_deviation = 0.001708984375
 
 [points.8]
 accumulator_bytes = 509607936
 aod_bit_identical = true
-change_pct = -17.60738850254966
+change_pct = -16.982979726352962
 ngroups = 8
-solve_ms = 511.54226064682007
-solve_ms_max = 511.6313695907593
-solve_ms_min = 510.05232334136963
+solve_ms = 512.679934501648
+solve_ms_max = 513.5533809661865
+solve_ms_min = 512.2857093811035
 workspace_bytes = 1107296256
 workspace_gib = 1.03125
 worst_flux_deviation = 0.00128173828125

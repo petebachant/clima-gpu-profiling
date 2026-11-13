@@ -2,7 +2,7 @@
 
 The longwave g-point split widens every workspace the solve indexes by column from `ncol` to `ncol * ngpt_groups`, and `RRTMGP.RTE.DEFAULT_NGPT_GROUPS` was set to 16 because 16 was the first group count that worked.
 This experiment sweeps the group count to find where the saving stops, and converts it to SYPD by timing real coupler steps in the same process.
-Two results: the saving does not stop at 16, and the split is worth <!-- calkit value key=wallclock.arms.16.gain_steady_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->0.72<!-- /calkit value -->% of SYPD at the current default.
+Two results: the saving does not stop at 16, and the split is worth <!-- calkit value key=wallclock.arms.16.gain_steady_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->0.74<!-- /calkit value -->% of SYPD at the current default.
 
 ## Why this is an in-block comparison and not a difference of runs
 
@@ -10,12 +10,13 @@ Two results: the saving does not stop at 16, and the split is worth <!-- calkit 
 All points are taken in one process against one settled AMIP state, rebuilding only the longwave RTE's group workspaces between them.
 Everything the solve reads -- atmospheric state, lookups, boundary conditions, and the narrow optics, sources and flux buffers the ungrouped path uses -- is the live simulation's own, so two points differ by the group count and by nothing else.
 This matters because the alternative, running the model once per group count and differencing, cannot resolve the effect: one arm of this stack wandered 7.73% between two runs of identical code, which is most of the way to the whole quantity being measured.
-The in-block design replaces that noise with a repeat spread of <!-- calkit value key=sweep.repeat_spread_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.599<!-- /calkit value -->%, so the best saving is resolved <!-- calkit value key=sweep.resolution_vs_spread format="{:.0f}" path=results/docs/gpoint-group-count.json -->21<!-- /calkit value --> times over the sweep's own scatter.
+The in-block design replaces that noise with a repeat spread of <!-- calkit value key=sweep.repeat_spread_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.165<!-- /calkit value -->%, so the best saving is resolved <!-- calkit value key=sweep.resolution_vs_spread format="{:.0f}" path=results/docs/gpoint-group-count.json -->82<!-- /calkit value --> times over the sweep's own scatter.
 
 `ngroups = 1` passes `nothing` and takes the ungrouped specialization, so the baseline is a point in the same sweep rather than a separate measurement.
 The timing covers the whole both-skies solve, which charges the grouped path for the reduction and the aerosol mask it adds, so these are net figures and not the kernel's alone.
 
-```python calkit stage name=values environment=py outputs=[{path: results/docs/gpoint-group-count.json, storage: git}] inputs=[results/gpoint-sweep.toml, results/gpoint-wallclock.toml, results/gpoint-groups.json, results/gpoint-record/prediction.json]
+```python calkit stage name=values environment=py outputs=[{path: results/docs/gpoint-group-count.json, storage: git}] inputs=[results/gpoint-sweep.toml, results/gpoint-wallclock.toml, results/gpoint-groups.json, results/gpoint-record/prediction.json, results/sw-gpoint-sweep.toml, results/top-kernels.csv, results/null-census.json]
+import csv
 import json
 import math
 import tomllib
@@ -24,6 +25,10 @@ sweep = tomllib.load(open("results/gpoint-sweep.toml", "rb"))
 wall = tomllib.load(open("results/gpoint-wallclock.toml", "rb"))
 prior = json.load(open("results/gpoint-record/prediction.json"))
 nsys = json.load(open("results/gpoint-groups.json"))
+# The noise floor an identical-arm pair reproduces to, which is what says
+# whether a default change could be confirmed by running the model at all.
+nulls = json.load(open("results/null-census.json"))
+sw = tomllib.load(open("results/sw-gpoint-sweep.toml", "rb"))
 
 counts = sweep["group_counts"]
 pts = sweep["points"]
@@ -219,6 +224,106 @@ def prediction():
     }
 
 
+# The claim the correctness section makes is that the deviation does not
+# accumulate with the number of partials, so what is checked is monotonicity
+# across the counts and not the size of the worst one.
+def correctness():
+    grouped = [n for n in counts if n > 1]
+    devs = [pts[str(n)]["worst_flux_deviation"] for n in grouped]
+    return {
+        "grouped_counts": len(grouped),
+        "min_deviation": min(devs),
+        "max_deviation": max(devs),
+        "spread_pct": round(100.0 * (max(devs) - min(devs)) / min(devs), 1),
+        "rises_with_count": devs == sorted(devs),
+        "worst_at_largest": devs[-1] == max(devs),
+    }
+
+
+# What a change to the default is worth against the whole device budget, which
+# is the figure it has to justify. One default sets the group count for both
+# solves, so both are priced. The sweeps time one solve in isolation and the
+# profile says how many solves the window runs and how large the budget is, so
+# the conversion is absolute milliseconds times launches rather than a share of
+# a share -- the mistake that read a per-call share as a device share once here
+# already.
+def decision():
+    rows = {}
+    for r in csv.DictReader(open("results/top-kernels.csv")):
+        for band, prefix in (
+            ("lw", "rte_lw_2stream_solve_grouped"),
+            ("sw", "rte_sw_2stream_solve_grouped"),
+        ):
+            if r["kernel"].startswith(prefix):
+                rows[band] = r
+    assert set(rows) == {"lw", "sw"}, f"profile has {sorted(rows)}, not both grouped solves"
+
+    # The budget, derived from each row's time and its own share of it. The two
+    # rows agreeing is the check that they came from one profile.
+    budgets = {
+        b: 100.0 * float(r["total_ms_mod"]) / float(r["pct_of_gpu_time_mod"])
+        for b, r in rows.items()
+    }
+    device_ms = sum(budgets.values()) / len(budgets)
+    assert abs(budgets["lw"] - budgets["sw"]) / device_ms < 0.01, "rows disagree on the device total"
+
+    bands = {"lw": pts, "sw": sw["points"]}
+    launches = {b: float(rows[b]["invocations_mod"]) for b in rows}
+    default = sweep["default_ngpt_groups"]
+    assert sw["default_ngpt_groups"] == default, "the two sweeps disagree on the default"
+    above = [n for n in counts if n > default]
+    assert len(above) >= 2, "needs two counts above the default to price a second doubling"
+
+    def at(n):
+        saved = {
+            b: bands[b][str(default)]["solve_ms"] - bands[b][str(n)]["solve_ms"] for b in bands
+        }
+        window_ms = sum(saved[b] * launches[b] for b in bands)
+        gib = sum(
+            bands[b][str(n)]["workspace_gib"] - bands[b][str(default)]["workspace_gib"]
+            for b in bands
+        )
+        return {
+            "ngroups": n,
+            "lw_saved_per_solve_ms": round(saved["lw"], 1),
+            "sw_saved_per_solve_ms": round(saved["sw"], 1),
+            "window_saved_ms": round(window_ms, 1),
+            "pct_of_device": round(100.0 * window_ms / device_ms, 3),
+            "extra_gib": round(gib, 2),
+            "device_pct_per_gib": round(100.0 * window_ms / device_ms / gib, 4) if gib else None,
+        }
+
+    first, last = at(above[0]), at(above[-1])
+    marg_pct = last["pct_of_device"] - first["pct_of_device"]
+    marg_gib = last["extra_gib"] - first["extra_gib"]
+    return {
+        "device_ms": round(device_ms, 1),
+        "default_ngroups": default,
+        "default_gib": round(
+            sum(bands[b][str(default)]["workspace_gib"] for b in bands), 2
+        ),
+        "launches": int(launches["lw"]),
+        # The conversion rests on the sweep and the profile describing the same
+        # kernel, at different states, so the gap between them is recorded.
+        "profile_vs_sweep_pct": {
+            b: round(
+                100.0
+                * (float(rows[b]["mean_ms_mod"]) - bands[b][str(default)]["solve_ms"])
+                / bands[b][str(default)]["solve_ms"],
+                1,
+            )
+            for b in bands
+        },
+        "points": {str(n): at(n) for n in above},
+        "marginal_pct_of_device": round(marg_pct, 3),
+        "marginal_gib": round(marg_gib, 2),
+        "marginal_device_pct_per_gib": round(marg_pct / marg_gib, 4),
+        "per_gib_ratio": round(first["device_pct_per_gib"] / (marg_pct / marg_gib), 1),
+        "null_floor_pct": nulls["current_window_mean_pct"],
+        "best_below_null_floor": last["pct_of_device"] < nulls["current_window_mean_pct"],
+    }
+
+
 out = {
     "sweep": {
         "ncol": sweep["ncol"],
@@ -249,6 +354,8 @@ out = {
         "next": next_point,
     },
     "wallclock": wallclock(),
+    "correctness": correctness(),
+    "decision": decision(),
     "prediction": prediction(),
     "nsys": {
         "baseline_per_launch_ms": round(per_launch, 1),
@@ -269,51 +376,54 @@ json.dump(out, open("results/docs/gpoint-group-count.json", "w"), indent=2)
 
 ## The curve
 
-The sweep ran <!-- calkit value key=sweep.repeats path=results/docs/gpoint-group-count.json -->7<!-- /calkit value --> timed repeats per point at group counts <!-- calkit value key=sweep.group_counts path=results/docs/gpoint-group-count.json -->1, 4, 8, 16, 32<!-- /calkit value -->, on <!-- calkit value key=sweep.ncol format="{:,}" path=results/docs/gpoint-group-count.json -->24,576<!-- /calkit value --> columns and <!-- calkit value key=sweep.nlay path=results/docs/gpoint-group-count.json -->80<!-- /calkit value --> layers at <!-- calkit value key=sweep.n_gpt_lw path=results/docs/gpoint-group-count.json -->256<!-- /calkit value --> longwave g-points.
+The sweep ran <!-- calkit value key=sweep.repeats path=results/docs/gpoint-group-count.json -->7<!-- /calkit value --> timed repeats per point at group counts <!-- calkit value key=sweep.group_counts path=results/docs/gpoint-group-count.json -->1, 4, 8, 16, 32, 64<!-- /calkit value -->, on <!-- calkit value key=sweep.ncol format="{:,}" path=results/docs/gpoint-group-count.json -->24,576<!-- /calkit value --> columns and <!-- calkit value key=sweep.nlay path=results/docs/gpoint-group-count.json -->80<!-- /calkit value --> layers at <!-- calkit value key=sweep.n_gpt_lw path=results/docs/gpoint-group-count.json -->256<!-- /calkit value --> longwave g-points.
 
 | groups | g-points each | solve (ms) | change | workspace (GiB) | per GiB |
 |---|---|---|---|---|---|
-| 1 | <!-- calkit value key=points.1.gpt_per_group path=results/docs/gpoint-group-count.json -->256<!-- /calkit value --> | <!-- calkit value key=points.1.solve_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->669.1<!-- /calkit value --> | -- | 0 | -- |
-| 4 | <!-- calkit value key=points.4.gpt_per_group path=results/docs/gpoint-group-count.json -->64<!-- /calkit value --> | <!-- calkit value key=points.4.solve_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->649.2<!-- /calkit value --> | <!-- calkit value key=points.4.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-2.98<!-- /calkit value -->% | <!-- calkit value key=points.4.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->0.46<!-- /calkit value --> | <!-- calkit value key=points.4.pct_per_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->6.49<!-- /calkit value -->%/GiB |
-| 8 | <!-- calkit value key=points.8.gpt_per_group path=results/docs/gpoint-group-count.json -->32<!-- /calkit value --> | <!-- calkit value key=points.8.solve_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->639.2<!-- /calkit value --> | <!-- calkit value key=points.8.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-4.47<!-- /calkit value -->% | <!-- calkit value key=points.8.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->0.91<!-- /calkit value --> | <!-- calkit value key=points.8.pct_per_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->4.89<!-- /calkit value -->%/GiB |
-| 16 | <!-- calkit value key=points.16.gpt_per_group path=results/docs/gpoint-group-count.json -->16<!-- /calkit value --> | <!-- calkit value key=points.16.solve_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->602.6<!-- /calkit value --> | <!-- calkit value key=points.16.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-9.94<!-- /calkit value -->% | <!-- calkit value key=points.16.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->1.81<!-- /calkit value --> | <!-- calkit value key=points.16.pct_per_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->5.48<!-- /calkit value -->%/GiB |
-| 32 | <!-- calkit value key=points.32.gpt_per_group path=results/docs/gpoint-group-count.json -->8<!-- /calkit value --> | <!-- calkit value key=points.32.solve_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->585.6<!-- /calkit value --> | <!-- calkit value key=points.32.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-12.48<!-- /calkit value -->% | <!-- calkit value key=points.32.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.62<!-- /calkit value --> | <!-- calkit value key=points.32.pct_per_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.44<!-- /calkit value -->%/GiB |
+| 1 | <!-- calkit value key=points.1.gpt_per_group path=results/docs/gpoint-group-count.json -->256<!-- /calkit value --> | <!-- calkit value key=points.1.solve_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->671.4<!-- /calkit value --> | -- | 0 | -- |
+| 4 | <!-- calkit value key=points.4.gpt_per_group path=results/docs/gpoint-group-count.json -->64<!-- /calkit value --> | <!-- calkit value key=points.4.solve_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->651.3<!-- /calkit value --> | <!-- calkit value key=points.4.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-2.99<!-- /calkit value -->% | <!-- calkit value key=points.4.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->0.46<!-- /calkit value --> | <!-- calkit value key=points.4.pct_per_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->6.50<!-- /calkit value -->%/GiB |
+| 8 | <!-- calkit value key=points.8.gpt_per_group path=results/docs/gpoint-group-count.json -->32<!-- /calkit value --> | <!-- calkit value key=points.8.solve_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->640.4<!-- /calkit value --> | <!-- calkit value key=points.8.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-4.61<!-- /calkit value -->% | <!-- calkit value key=points.8.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->0.91<!-- /calkit value --> | <!-- calkit value key=points.8.pct_per_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->5.04<!-- /calkit value -->%/GiB |
+| 16 | <!-- calkit value key=points.16.gpt_per_group path=results/docs/gpoint-group-count.json -->16<!-- /calkit value --> | <!-- calkit value key=points.16.solve_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->603.9<!-- /calkit value --> | <!-- calkit value key=points.16.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-10.05<!-- /calkit value -->% | <!-- calkit value key=points.16.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->1.81<!-- /calkit value --> | <!-- calkit value key=points.16.pct_per_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->5.54<!-- /calkit value -->%/GiB |
+| 32 | <!-- calkit value key=points.32.gpt_per_group path=results/docs/gpoint-group-count.json -->8<!-- /calkit value --> | <!-- calkit value key=points.32.solve_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->586.3<!-- /calkit value --> | <!-- calkit value key=points.32.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-12.67<!-- /calkit value -->% | <!-- calkit value key=points.32.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.62<!-- /calkit value --> | <!-- calkit value key=points.32.pct_per_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.50<!-- /calkit value -->%/GiB |
 
-## The default is not the knee
+## The sweep has no knee, and after three tries that is the result
 
-The smallest group count within one repeat spread of the best saving is <!-- calkit value key=sweep.sufficient_ngroups path=results/docs/gpoint-group-count.json -->32<!-- /calkit value -->, against a default of <!-- calkit value key=sweep.default_ngpt_groups path=results/docs/gpoint-group-count.json -->16<!-- /calkit value -->, so `default_is_sufficient_only` is <!-- calkit value key=sweep.default_is_sufficient_only path=results/docs/gpoint-group-count.json -->false<!-- /calkit value -->.
-Thirty-two groups reach <!-- calkit value key=points.32.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-12.48<!-- /calkit value -->% where sixteen reach <!-- calkit value key=points.16.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-9.94<!-- /calkit value -->%, so the default gives back about a fifth of the available saving.
-The threshold is measured rather than assumed: a point counts as sufficient if it is within <!-- calkit value key=sweep.repeat_spread_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.599<!-- /calkit value -->% of the best, which puts the bar at <!-- calkit value key=sweep.threshold_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-11.88<!-- /calkit value -->% and only 32 clears it.
+The smallest group count within one repeat spread of the best saving is <!-- calkit value key=sweep.sufficient_ngroups path=results/docs/gpoint-group-count.json -->64<!-- /calkit value -->, against a default of <!-- calkit value key=sweep.default_ngpt_groups path=results/docs/gpoint-group-count.json -->16<!-- /calkit value -->, so `default_is_sufficient_only` is <!-- calkit value key=sweep.default_is_sufficient_only path=results/docs/gpoint-group-count.json -->false<!-- /calkit value -->.
+Sixty-four groups reach <!-- calkit value key=points.64.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-13.53<!-- /calkit value -->% where sixteen reach <!-- calkit value key=points.16.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-10.05<!-- /calkit value -->%, so the default gives back about a quarter of the saving this sweep can reach.
+The threshold is measured rather than assumed: a point counts as sufficient if it is within <!-- calkit value key=sweep.repeat_spread_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.165<!-- /calkit value -->% of the best, which puts the bar at <!-- calkit value key=sweep.threshold_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-13.37<!-- /calkit value -->% and only 64 clears it.
 
-The honest reading stops short of a recommendation, because `sufficient_is_sweep_maximum` is <!-- calkit value key=sweep.sufficient_is_sweep_maximum path=results/docs/gpoint-group-count.json -->true<!-- /calkit value --> for the second time.
-"Smallest sufficient" is bounded by what was swept, and it has again landed on the largest count measured, so this sweep has still not found a knee -- it has moved the bound from 16-or-beyond to 32-or-beyond.
-What has changed is that the memory is now clearly getting worse value: the per-GiB column peaks below 16 and <!-- calkit value key=points.32.pct_per_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.44<!-- /calkit value -->%/GiB at 32 groups is the worst on the curve, against <!-- calkit value key=points.16.pct_per_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->5.48<!-- /calkit value -->%/GiB at 16.
+`sufficient_is_sweep_maximum` is <!-- calkit value key=sweep.sufficient_is_sweep_maximum path=results/docs/gpoint-group-count.json -->true<!-- /calkit value --> for the third sweep running, and the third time stops being a caveat and becomes the finding.
+"Smallest sufficient" is bounded by what was swept, so landing on the largest count measured says only that the curve is still falling at the endpoint: the bound has moved from 16-or-beyond to 32-or-beyond to 64-or-beyond, and the rule will go on returning whatever count the sweep stopped at.
+A threshold cannot answer this question, because the saving does not saturate before the memory does -- the per-GiB column falls monotonically past 16, from <!-- calkit value key=points.16.pct_per_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->5.54<!-- /calkit value -->%/GiB there to <!-- calkit value key=points.32.pct_per_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.50<!-- /calkit value --> at 32 and <!-- calkit value key=points.64.pct_per_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->1.87<!-- /calkit value --> at 64.
+So the group count is a price to pay or not, and it is priced below against the device budget instead of against the sweep's own best.
 
 ## The increments rise to 16 and then fall
 
 | step | change in saving |
 |---|---|
-| 1 to 4 | <!-- calkit value key=increments.1_to_4 format="{:.2f}" path=results/docs/gpoint-group-count.json -->-2.98<!-- /calkit value --> points |
-| 4 to 8 | <!-- calkit value key=increments.4_to_8 format="{:.2f}" path=results/docs/gpoint-group-count.json -->-1.49<!-- /calkit value --> points |
-| 8 to 16 | <!-- calkit value key=increments.8_to_16 format="{:.2f}" path=results/docs/gpoint-group-count.json -->-5.47<!-- /calkit value --> points |
-| 16 to 32 | <!-- calkit value key=increments.16_to_32 format="{:.2f}" path=results/docs/gpoint-group-count.json -->-2.54<!-- /calkit value --> points |
+| 1 to 4 | <!-- calkit value key=increments.1_to_4 format="{:.2f}" path=results/docs/gpoint-group-count.json -->-2.99<!-- /calkit value --> points |
+| 4 to 8 | <!-- calkit value key=increments.4_to_8 format="{:.2f}" path=results/docs/gpoint-group-count.json -->-1.62<!-- /calkit value --> points |
+| 8 to 16 | <!-- calkit value key=increments.8_to_16 format="{:.2f}" path=results/docs/gpoint-group-count.json -->-5.44<!-- /calkit value --> points |
+| 16 to 32 | <!-- calkit value key=increments.16_to_32 format="{:.2f}" path=results/docs/gpoint-group-count.json -->-2.62<!-- /calkit value --> points |
+| 32 to 64 | <!-- calkit value key=increments.32_to_64 format="{:.2f}" path=results/docs/gpoint-group-count.json -->-0.86<!-- /calkit value --> points |
 
-The earlier sweep stopped at 16 and so saw only the rising half, which read as a curve that was still accelerating.
-With 32 measured the shape is a hump: the step into 16 is the largest, and the step into 32 is less than half of it.
-That is the first evidence of saturation anywhere in this experiment, and it arrives one point after the sweep that could not see it.
+The earliest sweep stopped at 16 and so saw only the rising half, which read as a curve that was still accelerating.
+With 32 and 64 measured the shape is a hump: the step into 16 is the largest, the step into 32 is less than half of it, and the step into 64 is <!-- calkit value key=increments.32_to_64 format="{:.2f}" path=results/docs/gpoint-group-count.json -->-0.86<!-- /calkit value --> points, a third of the step before it.
+Saturation is real and slow, and it took two points past the sweep that could not see it to show up.
 
 ## Wave quantization accounts for the jumps and not the rest
 
 The grid is linear in the group count -- <!-- calkit value key=quantization.blocks_per_group path=results/docs/gpoint-group-count.json -->96<!-- /calkit value --> blocks ungrouped, checked in the values block against the count recorded at sixteen groups rather than assumed -- and one block is resident per SM at 255 registers.
 So a point's time is its wave count rounded up to a whole wave times its per-block work, and per-block work falls as 1/n because each group covers one nth of the g-points.
-On <!-- calkit value key=quantization.sms path=results/docs/gpoint-group-count.json -->108<!-- /calkit value --> SMs that model predicts nothing at all for 4 and 8 groups, whose block counts divide into whole waves, and a step at 16 and again at 32, where the rounding up starts to cost less than the extra parallelism buys.
+On <!-- calkit value key=quantization.sms path=results/docs/gpoint-group-count.json -->108<!-- /calkit value --> SMs that model predicts nothing at all for 4 and 8 groups, whose block counts divide into whole waves, and a step at 16, again at 32 and a smaller one at 64, where the rounding up costs progressively less than the extra parallelism buys.
 
 | groups | blocks | waves | predicted | measured | residual |
 |---|---|---|---|---|---|
-| 4 | <!-- calkit value key=quantization.points.4.blocks format="{:,}" path=results/docs/gpoint-group-count.json -->384<!-- /calkit value --> | <!-- calkit value key=quantization.points.4.waves format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.56<!-- /calkit value --> | <!-- calkit value key=quantization.points.4.predicted_change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->0.00<!-- /calkit value -->% | <!-- calkit value key=points.4.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-2.98<!-- /calkit value -->% | <!-- calkit value key=quantization.points.4.residual_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-2.98<!-- /calkit value --> |
-| 8 | <!-- calkit value key=quantization.points.8.blocks format="{:,}" path=results/docs/gpoint-group-count.json -->768<!-- /calkit value --> | <!-- calkit value key=quantization.points.8.waves format="{:.2f}" path=results/docs/gpoint-group-count.json -->7.11<!-- /calkit value --> | <!-- calkit value key=quantization.points.8.predicted_change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->0.00<!-- /calkit value -->% | <!-- calkit value key=points.8.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-4.47<!-- /calkit value -->% | <!-- calkit value key=quantization.points.8.residual_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-4.47<!-- /calkit value --> |
-| 16 | <!-- calkit value key=quantization.points.16.blocks format="{:,}" path=results/docs/gpoint-group-count.json -->1,536<!-- /calkit value --> | <!-- calkit value key=quantization.points.16.waves format="{:.2f}" path=results/docs/gpoint-group-count.json -->14.22<!-- /calkit value --> | <!-- calkit value key=quantization.points.16.predicted_change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-6.25<!-- /calkit value -->% | <!-- calkit value key=points.16.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-9.94<!-- /calkit value -->% | <!-- calkit value key=quantization.points.16.residual_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-3.69<!-- /calkit value --> |
-| 32 | <!-- calkit value key=quantization.points.32.blocks format="{:,}" path=results/docs/gpoint-group-count.json -->3,072<!-- /calkit value --> | <!-- calkit value key=quantization.points.32.waves format="{:.2f}" path=results/docs/gpoint-group-count.json -->28.44<!-- /calkit value --> | <!-- calkit value key=quantization.points.32.predicted_change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-9.38<!-- /calkit value -->% | <!-- calkit value key=points.32.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-12.48<!-- /calkit value -->% | <!-- calkit value key=quantization.points.32.residual_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-3.10<!-- /calkit value --> |
+| 4 | <!-- calkit value key=quantization.points.4.blocks format="{:,}" path=results/docs/gpoint-group-count.json -->384<!-- /calkit value --> | <!-- calkit value key=quantization.points.4.waves format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.56<!-- /calkit value --> | <!-- calkit value key=quantization.points.4.predicted_change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->0.00<!-- /calkit value -->% | <!-- calkit value key=points.4.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-2.99<!-- /calkit value -->% | <!-- calkit value key=quantization.points.4.residual_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-2.99<!-- /calkit value --> |
+| 8 | <!-- calkit value key=quantization.points.8.blocks format="{:,}" path=results/docs/gpoint-group-count.json -->768<!-- /calkit value --> | <!-- calkit value key=quantization.points.8.waves format="{:.2f}" path=results/docs/gpoint-group-count.json -->7.11<!-- /calkit value --> | <!-- calkit value key=quantization.points.8.predicted_change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->0.00<!-- /calkit value -->% | <!-- calkit value key=points.8.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-4.61<!-- /calkit value -->% | <!-- calkit value key=quantization.points.8.residual_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-4.61<!-- /calkit value --> |
+| 16 | <!-- calkit value key=quantization.points.16.blocks format="{:,}" path=results/docs/gpoint-group-count.json -->1,536<!-- /calkit value --> | <!-- calkit value key=quantization.points.16.waves format="{:.2f}" path=results/docs/gpoint-group-count.json -->14.22<!-- /calkit value --> | <!-- calkit value key=quantization.points.16.predicted_change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-6.25<!-- /calkit value -->% | <!-- calkit value key=points.16.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-10.05<!-- /calkit value -->% | <!-- calkit value key=quantization.points.16.residual_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-3.80<!-- /calkit value --> |
+| 32 | <!-- calkit value key=quantization.points.32.blocks format="{:,}" path=results/docs/gpoint-group-count.json -->3,072<!-- /calkit value --> | <!-- calkit value key=quantization.points.32.waves format="{:.2f}" path=results/docs/gpoint-group-count.json -->28.44<!-- /calkit value --> | <!-- calkit value key=quantization.points.32.predicted_change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-9.38<!-- /calkit value -->% | <!-- calkit value key=points.32.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-12.67<!-- /calkit value -->% | <!-- calkit value key=quantization.points.32.residual_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-3.30<!-- /calkit value --> |
+| 64 | <!-- calkit value key=quantization.points.64.blocks format="{:,}" path=results/docs/gpoint-group-count.json -->6,144<!-- /calkit value --> | <!-- calkit value key=quantization.points.64.waves format="{:.2f}" path=results/docs/gpoint-group-count.json -->56.89<!-- /calkit value --> | <!-- calkit value key=quantization.points.64.predicted_change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-10.94<!-- /calkit value -->% | <!-- calkit value key=points.64.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-13.53<!-- /calkit value -->% | <!-- calkit value key=quantization.points.64.residual_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-2.59<!-- /calkit value --> |
 
 The residual is a few points at every count above one and does not grow with the count, so most of what the increments do is quantization and the rest is something flat that arrives as soon as there is more than one group.
 This sweep does not isolate that part.
@@ -326,18 +436,18 @@ That prediction is read here out of a committed snapshot of the earlier run rath
 | | |
 |---|---|
 | predicted | <!-- calkit value key=prediction.predicted_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-12.08<!-- /calkit value -->% |
-| measured | <!-- calkit value key=prediction.measured_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-12.48<!-- /calkit value -->% |
-| error | <!-- calkit value key=prediction.error_pts format="{:.2f}" path=results/docs/gpoint-group-count.json -->-0.40<!-- /calkit value --> points |
+| measured | <!-- calkit value key=prediction.measured_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-12.67<!-- /calkit value -->% |
+| error | <!-- calkit value key=prediction.error_pts format="{:.2f}" path=results/docs/gpoint-group-count.json -->-0.59<!-- /calkit value --> points |
 | predicted workspace | <!-- calkit value key=prediction.predicted_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.63<!-- /calkit value --> GiB |
 | measured workspace | <!-- calkit value key=prediction.measured_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.62<!-- /calkit value --> GiB |
 
 The memory prediction was essentially exact, which is unsurprising since it is arithmetic on shapes.
-The timing prediction came within <!-- calkit value key=prediction.error_pts format="{:.2f}" path=results/docs/gpoint-group-count.json -->-0.40<!-- /calkit value --> points, and the right way to score that is against the method's own reproducibility rather than against zero.
-Between the two sweeps the 16-group figure itself moved from <!-- calkit value key=prediction.prior_16_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-8.95<!-- /calkit value -->% to <!-- calkit value key=prediction.current_16_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-9.94<!-- /calkit value -->%, a shift of <!-- calkit value key=prediction.state_shift_pts format="{:.2f}" path=results/docs/gpoint-group-count.json -->-0.99<!-- /calkit value --> points, because the second sweep was taken after the timed blocks at a different atmospheric state.
+The timing prediction came within <!-- calkit value key=prediction.error_pts format="{:.2f}" path=results/docs/gpoint-group-count.json -->-0.59<!-- /calkit value --> points, and the right way to score that is against the method's own reproducibility rather than against zero.
+Between the two sweeps the 16-group figure itself moved from <!-- calkit value key=prediction.prior_16_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-8.95<!-- /calkit value -->% to <!-- calkit value key=prediction.current_16_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-10.05<!-- /calkit value -->%, a shift of <!-- calkit value key=prediction.state_shift_pts format="{:.2f}" path=results/docs/gpoint-group-count.json -->-1.10<!-- /calkit value --> points, because the second sweep was taken after the timed blocks at a different atmospheric state.
 So `error_within_state_shift` is <!-- calkit value key=prediction.error_within_state_shift path=results/docs/gpoint-group-count.json -->true<!-- /calkit value -->: the prediction is confirmed at about the precision this method actually has, which is set by the state and not by the repeat spread.
 
 That last point is worth holding onto, because it bounds every percentage in this document.
-The repeat spread of <!-- calkit value key=sweep.repeat_spread_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.599<!-- /calkit value -->% is the scatter of seven timings of one state, and it is nearly four times smaller than the <!-- calkit value key=prediction.state_shift_pts format="{:.2f}" path=results/docs/gpoint-group-count.json -->-0.99<!-- /calkit value --> points the same quantity moved between two states.
+The repeat spread of <!-- calkit value key=sweep.repeat_spread_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.165<!-- /calkit value -->% is the scatter of seven timings of one state, and it is nearly four times smaller than the <!-- calkit value key=prediction.state_shift_pts format="{:.2f}" path=results/docs/gpoint-group-count.json -->-1.10<!-- /calkit value --> points the same quantity moved between two states.
 A figure here is reproducible to a fraction of a percent at a fixed state and to about a point across states.
 
 ## What it is worth in SYPD, measured
@@ -353,45 +463,66 @@ SYPD has three defensible denominators and they differ by more than the effect, 
 
 | basis | step (ms) | gain at 16 groups |
 |---|---|---|
-| ordinary steps, between writes | <!-- calkit value key=wallclock.ordinary_step_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->289.2<!-- /calkit value --> | <!-- calkit value key=wallclock.arms.16.gain_ordinary_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.766<!-- /calkit value -->% |
-| steady state, writes at their cadence | <!-- calkit value key=wallclock.steady_step_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->305.8<!-- /calkit value --> | <!-- calkit value key=wallclock.arms.16.gain_steady_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.725<!-- /calkit value -->% |
-| the timed window exactly as it ran | -- | <!-- calkit value key=wallclock.arms.16.gain_window_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.685<!-- /calkit value -->% |
+| ordinary steps, between writes | <!-- calkit value key=wallclock.ordinary_step_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->288.9<!-- /calkit value --> | <!-- calkit value key=wallclock.arms.16.gain_ordinary_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.779<!-- /calkit value -->% |
+| steady state, writes at their cadence | <!-- calkit value key=wallclock.steady_step_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->304.9<!-- /calkit value --> | <!-- calkit value key=wallclock.arms.16.gain_steady_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.738<!-- /calkit value -->% |
+| the timed window exactly as it ran | -- | <!-- calkit value key=wallclock.arms.16.gain_window_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.700<!-- /calkit value -->% |
 
-The steady-state row is the one to quote: the daily diagnostics write lands in <!-- calkit value key=wallclock.write_blocks path=results/docs/gpoint-group-count.json -->3<!-- /calkit value --> of the <!-- calkit value key=wallclock.blocks path=results/docs/gpoint-group-count.json -->12<!-- /calkit value --> blocks and costs <!-- calkit value key=wallclock.write_overhead_pct format="{:.1f}" path=results/docs/gpoint-group-count.json -->23.0<!-- /calkit value -->% on the block it falls in, so a basis that excludes it is too fast and the raw window is too slow.
-The raw window is too slow because the first write also compiles its path: that block took <!-- calkit value key=wallclock.first_write_block_s format="{:.1f}" path=results/docs/gpoint-group-count.json -->102.3<!-- /calkit value --> s against <!-- calkit value key=wallclock.steady_write_block_s format="{:.1f}" path=results/docs/gpoint-group-count.json -->64.0<!-- /calkit value --> s for the later ones, a one-off a long run amortizes away.
+The steady-state row is the one to quote: the daily diagnostics write lands in <!-- calkit value key=wallclock.write_blocks path=results/docs/gpoint-group-count.json -->3<!-- /calkit value --> of the <!-- calkit value key=wallclock.blocks path=results/docs/gpoint-group-count.json -->12<!-- /calkit value --> blocks and costs <!-- calkit value key=wallclock.write_overhead_pct format="{:.1f}" path=results/docs/gpoint-group-count.json -->22.1<!-- /calkit value -->% on the block it falls in, so a basis that excludes it is too fast and the raw window is too slow.
+The raw window is too slow because the first write also compiles its path: that block took <!-- calkit value key=wallclock.first_write_block_s format="{:.1f}" path=results/docs/gpoint-group-count.json -->99.5<!-- /calkit value --> s against <!-- calkit value key=wallclock.steady_write_block_s format="{:.1f}" path=results/docs/gpoint-group-count.json -->63.5<!-- /calkit value --> s for the later ones, a one-off a long run amortizes away.
 
-On the steady-state basis the split takes SYPD from <!-- calkit value key=wallclock.arms.16.sypd_steady_ungrouped format="{:.4f}" path=results/docs/gpoint-group-count.json -->1.0665<!-- /calkit value --> to <!-- calkit value key=wallclock.arms.16.sypd_steady format="{:.4f}" path=results/docs/gpoint-group-count.json -->1.0742<!-- /calkit value --> at the default 16 groups, a gain of <!-- calkit value key=wallclock.arms.16.gain_steady_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.725<!-- /calkit value -->%.
-At 32 groups it would be <!-- calkit value key=wallclock.arms.32.gain_steady_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.910<!-- /calkit value -->%, from a solve saving of <!-- calkit value key=wallclock.arms.32.saved_per_event_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->83.5<!-- /calkit value --> ms per radiation event against <!-- calkit value key=wallclock.arms.16.saved_per_event_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->66.5<!-- /calkit value --> ms at 16.
+On the steady-state basis the split takes SYPD from <!-- calkit value key=wallclock.arms.16.sypd_steady_ungrouped format="{:.4f}" path=results/docs/gpoint-group-count.json -->1.0697<!-- /calkit value --> to <!-- calkit value key=wallclock.arms.16.sypd_steady format="{:.4f}" path=results/docs/gpoint-group-count.json -->1.0776<!-- /calkit value --> at the default 16 groups, a gain of <!-- calkit value key=wallclock.arms.16.gain_steady_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.738<!-- /calkit value -->%.
+At 32 groups it would be <!-- calkit value key=wallclock.arms.32.gain_steady_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.930<!-- /calkit value -->%, from a solve saving of <!-- calkit value key=wallclock.arms.32.saved_per_event_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->85.1<!-- /calkit value --> ms per radiation event against <!-- calkit value key=wallclock.arms.16.saved_per_event_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->67.5<!-- /calkit value --> ms at 16.
 
-The uncertainty on that gain is <!-- calkit value key=wallclock.arms.16.gain_steady_uncertainty_pts format="{:.4f}" path=results/docs/gpoint-group-count.json -->0.0037<!-- /calkit value --> percentage points, which is smaller than it looks like it should be, and the reason is worth stating.
-The gain is a ratio of a measured saving to a measured wall clock, not a difference of two runs, so the denominator's relative error scales the gain instead of adding to it: <!-- calkit value key=wallclock.ordinary_rel_se_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.515<!-- /calkit value -->% of <!-- calkit value key=wallclock.arms.16.gain_steady_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.725<!-- /calkit value -->% is a few thousandths of a point.
+The uncertainty on that gain is <!-- calkit value key=wallclock.arms.16.gain_steady_uncertainty_pts format="{:.4f}" path=results/docs/gpoint-group-count.json -->0.0032<!-- /calkit value --> percentage points, which is smaller than it looks like it should be, and the reason is worth stating.
+The gain is a ratio of a measured saving to a measured wall clock, not a difference of two runs, so the denominator's relative error scales the gain instead of adding to it: <!-- calkit value key=wallclock.ordinary_rel_se_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.436<!-- /calkit value -->% of <!-- calkit value key=wallclock.arms.16.gain_steady_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.738<!-- /calkit value -->% is a few thousandths of a point.
 The `gain_below_block_iqr` flag the measurement script writes is therefore true and should not be read as "unresolved" -- it compares a gain against a block-to-block spread as though the gain had been obtained by differencing blocks, which is exactly what this method avoids.
 
 These SYPD figures are steady-state rates measured mid-run and are **not** comparable to the pipeline's end-to-end SYPD, which includes first-call compilation over the whole job.
-For orientation, the same window read as a single measurement gives <!-- calkit value key=wallclock.window_sypd format="{:.4f}" path=results/docs/gpoint-group-count.json -->1.0154<!-- /calkit value -->, and it carries that one-off compile.
+For orientation, the same window read as a single measurement gives <!-- calkit value key=wallclock.window_sypd format="{:.4f}" path=results/docs/gpoint-group-count.json -->1.0218<!-- /calkit value -->, and it carries that one-off compile.
 
 ## What it costs
 
-Sixteen groups take <!-- calkit value key=points.16.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->1.81<!-- /calkit value --> GiB of wide longwave workspace and thirty-two take <!-- calkit value key=points.32.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.62<!-- /calkit value --> GiB, measured as a free-memory delta across the workspace construction rather than computed from shapes.
+Sixteen groups take <!-- calkit value key=points.16.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->1.81<!-- /calkit value --> GiB of wide longwave workspace, thirty-two take <!-- calkit value key=points.32.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.62<!-- /calkit value --> and sixty-four take <!-- calkit value key=points.64.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->7.23<!-- /calkit value -->, measured as a free-memory delta across the workspace construction rather than computed from shapes.
 That is the whole cost of the treatment and it scales linearly in the group count, so this is the constraint that decides how far the count can go.
-The model predicts <!-- calkit value key=quantization.next.ngroups path=results/docs/gpoint-group-count.json -->64<!-- /calkit value --> groups at <!-- calkit value key=quantization.next.predicted_total_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-14.04<!-- /calkit value -->% for <!-- calkit value key=quantization.next.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->7.25<!-- /calkit value --> GiB, which is <!-- calkit value key=quantization.next.predicted_gain_pts format="{:.2f}" path=results/docs/gpoint-group-count.json -->-1.56<!-- /calkit value --> points of quantization gain for another doubling of memory.
-Given that the measured step from 16 to 32 already fell to <!-- calkit value key=increments.16_to_32 format="{:.2f}" path=results/docs/gpoint-group-count.json -->-2.54<!-- /calkit value --> points, the curve and the memory are now pulling in the same direction and 64 is unlikely to be worth it.
+The model predicts <!-- calkit value key=quantization.next.ngroups path=results/docs/gpoint-group-count.json -->128<!-- /calkit value --> groups at <!-- calkit value key=quantization.next.predicted_total_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-13.53<!-- /calkit value -->% for <!-- calkit value key=quantization.next.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->14.46<!-- /calkit value --> GiB, which is <!-- calkit value key=quantization.next.predicted_gain_pts format="{:.2f}" path=results/docs/gpoint-group-count.json -->0.00<!-- /calkit value --> points of quantization gain for another doubling of memory: past 64 the wave count's rounding stops changing at all, so the model says its half of the curve is finished.
+
+Before 64 was measured, this document predicted at `9e2bfcc` that "the curve and the memory are now pulling in the same direction and 64 is unlikely to be worth it".
+The measurement bears that out, and the section below prices both doublings in device time rather than in points of one solve.
+
+## What a default change is worth against the device budget
+
+Points of a solve are not the unit a default change is decided in, and one default sets the group count for both the longwave and the shortwave, so both are priced here.
+The sweeps time one solve in isolation and the profile says how many of them the window runs and how large the budget is, so the conversion is absolute milliseconds times launch count rather than a share of a share.
+It rests on the sweep and the profile describing the same kernel, which is checked rather than assumed: the profiled mod arm's per-solve cost differs from the sweep's by <!-- calkit value key=decision.profile_vs_sweep_pct.lw format="{:+.1f}" path=results/docs/gpoint-group-count.json -->-1.4<!-- /calkit value -->% in the longwave and <!-- calkit value key=decision.profile_vs_sweep_pct.sw format="{:+.1f}" path=results/docs/gpoint-group-count.json -->-1.4<!-- /calkit value -->% in the shortwave, at a different atmospheric state.
+
+| groups | longwave | shortwave | over the window | of device | extra workspace |
+|---|---|---|---|---|---|
+| 32 | <!-- calkit value key=decision.points.32.lw_saved_per_solve_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->17.6<!-- /calkit value --> ms | <!-- calkit value key=decision.points.32.sw_saved_per_solve_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->9.3<!-- /calkit value --> ms | <!-- calkit value key=decision.points.32.window_saved_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->107.4<!-- /calkit value --> ms | <!-- calkit value key=decision.points.32.pct_of_device format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.323<!-- /calkit value -->% | <!-- calkit value key=decision.points.32.extra_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.86<!-- /calkit value --> GiB |
+| 64 | <!-- calkit value key=decision.points.64.lw_saved_per_solve_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->23.4<!-- /calkit value --> ms | <!-- calkit value key=decision.points.64.sw_saved_per_solve_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->14.5<!-- /calkit value --> ms | <!-- calkit value key=decision.points.64.window_saved_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->151.5<!-- /calkit value --> ms | <!-- calkit value key=decision.points.64.pct_of_device format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.455<!-- /calkit value -->% | <!-- calkit value key=decision.points.64.extra_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->11.55<!-- /calkit value --> GiB |
+
+Against a device budget of <!-- calkit value key=decision.device_ms format="{:,.0f}" path=results/docs/gpoint-group-count.json -->33,306<!-- /calkit value --> ms, thirty-two groups are worth <!-- calkit value key=decision.points.32.pct_of_device format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.323<!-- /calkit value -->% for <!-- calkit value key=decision.points.32.extra_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.86<!-- /calkit value --> GiB on top of the default's <!-- calkit value key=decision.default_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.86<!-- /calkit value --> GiB -- the same figure twice, because the workspace is linear in the count and doubling it doubles the workspace.
+Sixty-four are worth <!-- calkit value key=decision.points.64.pct_of_device format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.455<!-- /calkit value -->%, so the second doubling adds <!-- calkit value key=decision.marginal_pct_of_device format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.132<!-- /calkit value --> points of device time for <!-- calkit value key=decision.marginal_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->7.69<!-- /calkit value --> GiB -- <!-- calkit value key=decision.per_gib_ratio format="{:.1f}" path=results/docs/gpoint-group-count.json -->4.9<!-- /calkit value --> times worse per GiB than the first.
+Both figures are small enough that they cannot be confirmed by running the model: `best_below_null_floor` is <!-- calkit value key=decision.best_below_null_floor path=results/docs/gpoint-group-count.json -->true<!-- /calkit value -->, because even 64 groups come to a fraction of the <!-- calkit value key=decision.null_floor_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->1.869<!-- /calkit value -->% that two identical arms of this stack reproduce each other to.
+They also inherit this experiment's state dependence: the 16-group figure itself moved <!-- calkit value key=prediction.state_shift_pts format="{:.2f}" path=results/docs/gpoint-group-count.json -->-1.10<!-- /calkit value --> points between the two states sweeps have been taken at, so read the device shares as good to roughly a tenth of themselves rather than to the digits they are printed with.
 
 ## Correctness
 
 The split is not bit-for-bit and cannot be, because a g-point sum taken in N partials is a different summation order.
-The worst flux deviation from the ungrouped path is <!-- calkit value key=points.32.flux_deviation format="{:.2e}" path=results/docs/gpoint-group-count.json -->7.93e-04<!-- /calkit value --> W/m2 at 32 groups, against fluxes of order a few hundred W/m2, and it does not grow with the group count: 4 and 8 groups both sit at <!-- calkit value key=points.4.flux_deviation format="{:.2e}" path=results/docs/gpoint-group-count.json -->8.24e-04<!-- /calkit value --> W/m2 and 16 and 32 are identical to each other.
+The worst flux deviation from the ungrouped path over the <!-- calkit value key=correctness.grouped_counts path=results/docs/gpoint-group-count.json -->5<!-- /calkit value --> grouped counts is <!-- calkit value key=correctness.max_deviation format="{:.2e}" path=results/docs/gpoint-group-count.json -->8.24e-04<!-- /calkit value --> W/m2, against fluxes of order a few hundred W/m2, and it does not grow with the group count.
+The five points span only <!-- calkit value key=correctness.spread_pct format="{:.1f}" path=results/docs/gpoint-group-count.json -->8.0<!-- /calkit value -->% of their own smallest value, <!-- calkit value key=correctness.min_deviation format="{:.2e}" path=results/docs/gpoint-group-count.json -->7.63e-04<!-- /calkit value --> W/m2, and `rises_with_count` is <!-- calkit value key=correctness.rises_with_count path=results/docs/gpoint-group-count.json -->false<!-- /calkit value -->: the worst value does sit at 64 groups, but 4 groups ties it exactly and 8 and 16 are the lowest on the curve.
 A reordering error that accumulated with the number of partials would rise across the sweep, and this one is flat, which is the expected behavior for <!-- calkit value key=sweep.float_type path=results/docs/gpoint-group-count.json -->Float32<!-- /calkit value --> rounding rather than for a bug in the reduction.
 
 ## Two independent cross-checks against the nsys pass
 
 The sweep and the profiling pass measure the same solve by different means, on different stacks and at different points in the simulation, so agreement is a check on both.
-The nsys baseline arm spent <!-- calkit value key=nsys.baseline_per_launch_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->665.6<!-- /calkit value --> ms per launch in the ungrouped longwave kernel, against the sweep's <!-- calkit value key=nsys.sweep_ungrouped_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->669.1<!-- /calkit value --> ms for its ungrouped point, a gap of <!-- calkit value key=nsys.per_launch_gap_pct format="{:.1f}" path=results/docs/gpoint-group-count.json -->-0.5<!-- /calkit value -->%.
+The nsys baseline arm spent <!-- calkit value key=nsys.baseline_per_launch_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->665.6<!-- /calkit value --> ms per launch in the ungrouped longwave kernel, against the sweep's <!-- calkit value key=nsys.sweep_ungrouped_ms format="{:.1f}" path=results/docs/gpoint-group-count.json -->671.4<!-- /calkit value --> ms for its ungrouped point, a gap of <!-- calkit value key=nsys.per_launch_gap_pct format="{:.1f}" path=results/docs/gpoint-group-count.json -->-0.9<!-- /calkit value -->%.
 That is closer than the previous sweep managed, and for a reason that is not to anyone's credit: this sweep ran after <!-- calkit value key=wallclock.timed_steps format="{:,}" path=results/docs/gpoint-group-count.json -->2,160<!-- /calkit value --> steps rather than after <!-- calkit value key=sweep.warmup_steps path=results/docs/gpoint-group-count.json -->3<!-- /calkit value -->, so its state is nearer the profiled window's than the earlier one's was.
-The saving agrees too: the pass measured <!-- calkit value key=nsys.window_change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-10.43<!-- /calkit value -->% at 16 groups over its window, against the sweep's in-block <!-- calkit value key=points.16.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-9.94<!-- /calkit value -->% at the same group count.
+The saving agrees too: the pass measured <!-- calkit value key=nsys.window_change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-10.43<!-- /calkit value -->% at 16 groups over its window, against the sweep's in-block <!-- calkit value key=points.16.change_pct format="{:.2f}" path=results/docs/gpoint-group-count.json -->-10.05<!-- /calkit value -->% at the same group count.
 
 ## Verdict
 
-The split is worth <!-- calkit value key=wallclock.arms.16.gain_steady_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.725<!-- /calkit value -->% of SYPD at the shipped default, measured rather than converted, and `DEFAULT_NGPT_GROUPS = 16` is no longer the smallest sufficient count now that 32 has been measured.
-Whether to move the default to 32 is a memory decision and not a performance one: it buys <!-- calkit value key=increments.16_to_32 format="{:.2f}" path=results/docs/gpoint-group-count.json -->-2.54<!-- /calkit value --> points of solve time and <!-- calkit value key=wallclock.arms.32.gain_steady_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.910<!-- /calkit value -->% of SYPD for another <!-- calkit value key=points.16.workspace_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->1.81<!-- /calkit value --> GiB, at the worst per-GiB return on the curve.
+The split is worth <!-- calkit value key=wallclock.arms.16.gain_steady_pct format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.738<!-- /calkit value -->% of SYPD at the shipped default, measured rather than converted, and that remains the result worth quoting.
+Raising the default is worth having and worth very little: thirty-two groups is the setting, at <!-- calkit value key=decision.points.32.pct_of_device format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.323<!-- /calkit value -->% of device time for <!-- calkit value key=decision.points.32.extra_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->3.86<!-- /calkit value --> GiB, and the last doubling to 64 costs <!-- calkit value key=decision.marginal_gib format="{:.2f}" path=results/docs/gpoint-group-count.json -->7.69<!-- /calkit value --> GiB more for <!-- calkit value key=decision.marginal_pct_of_device format="{:.3f}" path=results/docs/gpoint-group-count.json -->0.132<!-- /calkit value --> points, <!-- calkit value key=decision.per_gib_ratio format="{:.1f}" path=results/docs/gpoint-group-count.json -->4.9<!-- /calkit value --> times worse per GiB.
+Since neither figure can be resolved by running the model, the change should ride along with the next pass that re-profiles for some other reason rather than spend a reservation to re-measure the arms around it.
+The edit is no longer a constant, either: on `pb/gpoint-groups` the 16 this sweep measured has been replaced by a grid-sized default, `clamp(cld(TARGET_GPT_GROUP_COLUMNS, ncol), 1, MAX_NGPT_GROUPS)`, which at this grid's <!-- calkit value key=sweep.ncol format="{:,}" path=results/docs/gpoint-group-count.json -->24,576<!-- /calkit value --> columns evaluates to the same 16, so raising it means doubling both of those and not editing one number.
 What this document still does not establish is a knee, a mechanism for the flat residual, or any figure reproducible across atmospheric states to better than about a point.
