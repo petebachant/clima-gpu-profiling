@@ -447,6 +447,25 @@ The Julia-script stages create a fresh `output_NNNN` per run and never clean up,
 which is where the bulk accumulates: 91 directories had collected there, 90 of
 them stale, against about 0.22 GB each.
 
+**`output/` is now a symlink to `/scratch/pbachant/clima-gpu-profiling/output`,
+and it has to be recreated by hand on any other machine.** It is gitignored, so
+a fresh clone gets a real directory on that machine's home instead and fills it
+silently. Recreate it before the first run:
+
+```sh
+mkdir -p /scratch/${USER}/clima-gpu-profiling/output
+rmdir output 2>/dev/null
+ln -s /scratch/${USER}/clima-gpu-profiling/output output
+```
+
+The declarative version of this belongs in the `clima` environment, and cannot
+go there yet. `.calkit/env-locks/clima/info.json` is the environment definition
+serialized, and every GPU stage declares it as an input, so adding a
+`default_setup` that exports `TMPDIR` restales the AMIP pair --- and calkit is
+right to hash `default_setup`, because the `module load` line that selects the
+Julia toolchain lives there and moves every register count. Tracked as
+calkit/calkit#2069.
+
 ## Use `calkit push`, not `git push`
 
 **Enforced by a hook.** Run `bash scripts/install-git-hooks.sh` once per clone.
