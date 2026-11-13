@@ -4,11 +4,11 @@
     "baseline_summed_equals_elapsed": true,
     "baseline_summed_ms": 34914.4,
     "carries_other_treatments": true,
-    "change_pct": -2.25,
-    "change_pct_if_summed": -2.25,
+    "change_pct": -4.61,
+    "change_pct_if_summed": -4.61,
     "mod_concurrency_inflation_ms": 0.0,
-    "mod_elapsed_ms": 34130.4,
-    "mod_summed_ms": 34130.4
+    "mod_elapsed_ms": 33305.9,
+    "mod_summed_ms": 33305.9
   },
   "longwave": {
     "baseline": {
@@ -23,29 +23,29 @@
       "summed_over_elapsed": 1.0,
       "warps_per_sm": 8
     },
-    "change_pct": -10.44,
-    "change_pct_if_summed": -10.44,
+    "change_pct": -10.43,
+    "change_pct_if_summed": -10.43,
     "mod": {
       "block": 256,
       "blocks_per_sm": 14.22,
-      "elapsed_ms": 2382.0,
+      "elapsed_ms": 2382.3,
       "grid": 1536,
       "launches": 4,
       "name": "rte_lw_2stream_solve_grouped_CUDA_",
       "registers": 255,
-      "summed_ms": 2382.0,
+      "summed_ms": 2382.3,
       "summed_over_elapsed": 1.0,
       "warps_per_sm": 8
     },
-    "mod_charged_ms": 2384.4,
+    "mod_charged_ms": 2384.7,
     "mod_overhead_ms": 2.4,
     "pct_of_device_baseline": 7.63,
-    "saved_ms": 278.0,
-    "saved_pct_of_device": 0.796
+    "saved_ms": 277.7,
+    "saved_pct_of_device": 0.795
   },
   "noise": {
-    "untreated_kernels_compared": 23,
-    "worst_untreated_kernel_delta_ms": 15.7
+    "untreated_kernels_compared": 19,
+    "worst_untreated_kernel_delta_ms": 4.3
   },
   "note": "All device shares are ELAPSED time -- the union of the kernel intervals -- not `SUM(end-start)`, which counts a moment once per resident kernel and so is not elapsed time once a treatment launches concurrently. `change_pct_if_summed` is what the summed figure would have claimed, and for longwave it has the opposite sign. Both bands are treated as of 2026-11-05, and each is charged for its own reduction and hoisted aerosol mask; neither is a control any more, so each saving is resolved against the untreated kernels alone. The mod arm's solve kernels are different kernels from the baseline's, so the arms are paired by role. `waves` is a tested prediction, not an explanation: it rose from below one to many at unchanged blocks per SM and the longwave time did not move, and a concurrent-launch build of the same split measured the same saving at a low overlap factor. The device total carries the sedimentation fold as well and is not this treatment's figure.",
   "overhead": {
@@ -103,9 +103,9 @@
   "provenance": {
     "baseline_db_sha256_16": "78210aaba60a20de",
     "baseline_ref": "a64796f870c318b855bba4afbecced7e586fdaa0",
-    "mod_db_sha256_16": "f82de86cbb15096a",
+    "mod_db_sha256_16": "fcacc45f3689306b",
     "mod_ref": "87e41de098aa72c5e0cbbe77df6a797351cffd98",
-    "source_commit": "d605162084ea50fbc74ee980a92b1c0b1f31177d"
+    "source_commit": "d7100f5ad2bc99e9c03dfb87021f2a0853df3bf2"
   },
   "saving_resolved_against_controls": true,
   "shortwave": {
@@ -121,25 +121,25 @@
       "summed_over_elapsed": 1.0,
       "warps_per_sm": 8
     },
-    "change_pct": -19.96,
-    "change_pct_if_summed": -19.96,
+    "change_pct": -19.84,
+    "change_pct_if_summed": -19.84,
     "mod": {
       "block": 256,
       "blocks_per_sm": 14.22,
-      "elapsed_ms": 1948.5,
+      "elapsed_ms": 1951.5,
       "grid": 1536,
       "launches": 4,
       "name": "rte_sw_2stream_solve_grouped_CUDA_",
       "registers": 255,
-      "summed_ms": 1948.5,
+      "summed_ms": 1951.5,
       "summed_over_elapsed": 1.0,
       "warps_per_sm": 8
     },
-    "mod_charged_ms": 1951.4,
+    "mod_charged_ms": 1954.4,
     "mod_overhead_ms": 2.9,
     "pct_of_device_baseline": 6.98,
-    "saved_ms": 486.7,
-    "saved_pct_of_device": 1.394,
+    "saved_ms": 483.7,
+    "saved_pct_of_device": 1.385,
     "treated": true
   },
   "sw_saving_resolved_against_controls": true,
