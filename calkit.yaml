@@ -991,6 +991,14 @@ pipeline:
       # Its values stage converts that TOML to JSON because value markers read
       # JSON only, and derives the per-GiB and increment columns the prose
       # argues from.
+    sgs-substep-cost:
+      kind: markdown
+      target_path: docs/experiments/sgs-substep-cost.md
+      environment: py
+      # Declares its own GPU stage, per the template, because it is the first
+      # experiment to take ClimaAtmos.jl-mod/src as an input: the closure it
+      # measures is that code, so a microphysics edit moves the answer and has
+      # to restale it. Freeze it on main once it has run and been tagged.
     wall-clock-conversion-doc:
       kind: markdown
       target_path: docs/wall-clock-conversion.md

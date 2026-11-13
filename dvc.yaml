@@ -829,6 +829,51 @@ stages:
           persist: false
     desc: Automatically generated from the 'gpoint-group-count-doc/values' stage
       in calkit.yaml. Changes made here will be overwritten.
+  sgs-substep-cost/sgs-substep-sweep:
+    cmd: calkit scheduler batch --name sgs-substep-cost/sgs-substep-sweep
+      --environment clima --dep scripts/measure-sgs-substeps.jl --dep
+      scripts/run-julia-script.sh --dep ClimaAtmos.jl-mod/src --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      --dep .calkit/env-locks/clima --out
+      results/experiments/sgs-substep-cost/substeps.toml --option --gpus=1
+      --option --time=90 --
+      .calkit/markdown/docs/experiments/sgs-substep-cost.md/sgs-substep-sweep.sh
+    deps:
+      - .calkit/markdown/docs/experiments/sgs-substep-cost.md/sgs-substep-sweep.sh
+      - scripts/measure-sgs-substeps.jl
+      - scripts/run-julia-script.sh
+      - ClimaAtmos.jl-mod/src
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      - .calkit/env-locks/clima
+    outs:
+      - results/experiments/sgs-substep-cost/substeps.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/sgs-substep-cost/sgs-substep-sweep.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'sgs-substep-cost/sgs-substep-sweep'
+      stage in calkit.yaml. Changes made here will be overwritten.
+  sgs-substep-cost/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/sgs-substep-cost.md/values.py
+    deps:
+      - .calkit/markdown/docs/experiments/sgs-substep-cost.md/values.py
+      - results/experiments/sgs-substep-cost/substeps.toml
+      - results/top-kernels.csv
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/sgs-substep-cost.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'sgs-substep-cost/values' stage in
+      calkit.yaml. Changes made here will be overwritten.
   wall-clock-conversion-doc/values:
     cmd: calkit xenv -n py --no-check -- python
       .calkit/markdown/docs/wall-clock-conversion.md/values.py
