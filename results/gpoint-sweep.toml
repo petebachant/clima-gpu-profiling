@@ -1,0 +1,69 @@
+best_change_pct = -12.479736392717127
+config_file = "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml"
+default_is_sufficient_only = false
+default_ngpt_groups = 16
+float_type = "Float32"
+group_counts = [1, 4, 8, 16, 32]
+n_gpt_lw = 256
+ncol = 24576
+nlay = 80
+note = "solve_ms times the whole longwave both-skies solve, so it charges the grouped path for its reduction and its state refresh -- it is the net figure, not the kernel's. Every point shares one simulation's state and buffers and differs only in group count, so these are in-block comparisons and not a difference of runs. worst_flux_deviation is against ngroups = 1, which is the ungrouped specialization: the split is not bit-for-bit, since a g-point sum taken in N partials is a different summation order. workspace_bytes is the device memory the group workspace took, measured as a free-memory delta across its construction."
+repeat_spread_pct = 0.598844268421198
+repeats = 7
+sufficient_ngroups = 32
+warmup_steps = 3
+
+[points.1]
+accumulator_bytes = 0
+change_pct = 0.0
+ngroups = 1
+solve_ms = 669.1092252731323
+solve_ms_max = 671.8791723251343
+solve_ms_min = 667.8722500801086
+workspace_bytes = 0
+workspace_gib = 0.0
+worst_flux_deviation = 0.0
+
+[points.16]
+accumulator_bytes = 764411904
+change_pct = -9.936681516401073
+ngroups = 16
+solve_ms = 602.6219725608826
+solve_ms_max = 602.892279624939
+solve_ms_min = 602.1099090576172
+workspace_bytes = 1948254208
+workspace_gib = 1.814453125
+worst_flux_deviation = 0.000762939453125
+
+[points.32]
+accumulator_bytes = 1528823808
+change_pct = -12.479736392717127
+ngroups = 32
+solve_ms = 585.6061577796936
+solve_ms_max = 585.9553217887878
+solve_ms_min = 585.3645205497742
+workspace_bytes = 3890216960
+workspace_gib = 3.623046875
+worst_flux_deviation = 0.00079345703125
+
+[points.4]
+accumulator_bytes = 191102976
+change_pct = -2.97890838863011
+ngroups = 4
+solve_ms = 649.177074432373
+solve_ms_max = 650.3465175628662
+solve_ms_min = 648.5791206359863
+workspace_bytes = 492830720
+workspace_gib = 0.458984375
+worst_flux_deviation = 0.000823974609375
+
+[points.8]
+accumulator_bytes = 382205952
+change_pct = -4.466447350253301
+ngroups = 8
+solve_ms = 639.2238140106201
+solve_ms_max = 639.9703025817871
+solve_ms_min = 638.5285258293152
+workspace_bytes = 981467136
+workspace_gib = 0.9140625
+worst_flux_deviation = 0.000762939453125

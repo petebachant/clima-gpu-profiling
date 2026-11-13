@@ -30,6 +30,23 @@
 # emptying the list costs nothing.
 BAD_GPUS=""
 
+# Keep Julia's temporaries off the node's /tmp. It is a 40 GB volume shared by
+# every user of this single-node cluster, and it has reached 100% full mid-job:
+# GPUCompiler writes each kernel's PTX through `tempname()`, so a full /tmp
+# fails a stage after the model has already spun up and the GPU hours are spent.
+# /scratch is 70 TB.
+#
+# This belongs here rather than in the three run scripts that source this file,
+# because those are stage dependencies and editing them would invalidate the
+# AMIP pair for a change that cannot affect a measurement.
+__clima_tmpdir="/scratch/${USER}/tmp"
+if mkdir -p "${__clima_tmpdir}" 2>/dev/null; then
+    export TMPDIR="${__clima_tmpdir}"
+    export TMP="${__clima_tmpdir}"
+    export TEMP="${__clima_tmpdir}"
+fi
+unset __clima_tmpdir
+
 # Give up after this many requeues so a fully bad node can't loop forever.
 GPU_GUARD_MAX_RETRIES="${GPU_GUARD_MAX_RETRIES:-8}"
 
