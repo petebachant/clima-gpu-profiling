@@ -510,6 +510,17 @@ deliberate:
     saving measured there reports a fraction of itself, silently. Fixed in
     CliMA/ClimaAtmos.jl#4900; the window no longer depends on the threshold
     either way.
+  * **That mirror is currently broken, and it has to stay broken until someone
+    chooses otherwise.** ClimaCoupler `4e766870c` moved the nightly and weekly
+    AMIP configs to dt = 180 s; the benchmark config here stays at 120 s, which
+    is what every SYPD figure in this repo was measured at. Following upstream
+    is a re-baseline and not an optimization -- a third fewer steps per
+    simulated hour raises SYPD by about half with nothing running faster, which
+    is exactly the shape described below. `update-coupler-to-main.sh` guards the
+    accidental version: it restores the benchmark config from HEAD after
+    checking out main and then asserts the two arms are byte-identical. So the
+    divergence persists by default. Adopt it only as a deliberate pass, and only
+    with a note that figures either side of the boundary are incomparable.
   * 120 profiled steps = four simulated hours, a whole number of radiation
     (30-step), cloud-fraction (30-step) and gravity-wave (15-step) cycles, so
     each fires its exact long-run share wherever the window starts and the
