@@ -2080,6 +2080,37 @@ Consequence: skip-based optimizations for this kernel are capped near 4% and
 the remaining headroom is in register pressure. Do not spend another experiment
 on smarter early-outs here.
 
+#### The heading above is wrong, and the measurement under it is not (2026-11-13)
+
+Everything measured in 4r holds. The inference does not, and the error is one
+this file states the rule for three sections earlier: a fraction of POINTS is
+not a fraction of WARPS.
+
+"Skipping the call at 88.31% of points buys 3.27%" was read as "the call is
+~3.7% of the kernel". That step needs the per-point cost to be uniform. It is
+not: the guard fires where the call returns early and is cheap, and under SIMT
+a warp runs the cloudy path if any ONE of its 32 lanes is cloudy, so at that
+clear rate nearly every warp pays it whatever the points do. The 3.27% is what
+SKIPPING buys. It never bounded what the call COSTS.
+
+Measured directly, by fitting the kernel against `n_substeps_quad` -- CM runs
+`_substep_1m` exactly `nsub` times per node and nothing else reads the count,
+so the slope is one CM evaluation over the whole field and the intercept is
+everything else -- the CM calls are three quarters of the explicit kernel, not
+4%. `docs/experiments/sgs-substep-cost.md` has the figures, the flat implicit
+control, and the reconstruction that ties the probe to the profiled kernel
+within a percent.
+
+So the kernel IS bound by microphysics. What 4r correctly rules out is
+early-outs, because an early-out is a per-point mechanism against a per-warp
+cost. What it does not rule out, and what it was taken to, is changing which
+LANES run the call: the same document measures the clear fraction per point and
+per 32 consecutive points of the layout the kernel indexes, and the gap between
+them is the whole treatment.
+
+The general rule, which 4 already states and 4r did not apply to itself: before
+turning any fraction of points into a saving, raise it to the 32nd power.
+
 ### 4s. Caching the longwave layer coefficients buys nothing
 
 `rte_lw_2stream!` evaluates `lw_2stream_coeffs` twice per layer with identical
