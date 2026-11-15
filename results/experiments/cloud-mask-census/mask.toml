@@ -1,0 +1,269 @@
+cells = 1941504
+config_file = "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml"
+edge_sigmas = [2, 4, 6, 8]
+eq_nonfinite_cells = 1278519
+explicit_call_ms = 16.23244769871235
+explicit_call_ms_max = 16.248833388090134
+explicit_call_ms_min = 16.1628145724535
+float_type = "Float32"
+group_sizes = [32, 128, 256]
+n_substeps_quad = 2
+nlev = 79
+note = "Every mask is over environment cells of one settled AMIP state, read from the scratch fields the explicit closure call just materialized. guard_live is the condition `_sum_1m_over_sgs` tests before returning a zero tendency, so its cell_fraction is the rate at which the closure's own early-out fires; eq_nonfinite_cells is the `!isfinite(λ_eq)` term on its own. edges_beyond_K_sigma replaces that term with the distance of the node rule's two cloud edges, `min(-λ_lagrange/α, -λ_eq)/σ_S`, which is what decides whether any node of a dry cell carries weight: skipping such a cell is not bit-for-bit, since the outermost interval keeps two nodes of weight Q(K), so K is swept rather than chosen. Each mask is censused under two thread orders and three group sizes: a group is skippable only when every lane is, and all_skippable_fraction at 32 is the warp rate a treatment would have to move. The saving fractions are relative to the current order's warp rate, which is what is being paid now; compaction_saving_fraction is the per-cell bound no order reaches."
+orders = ["vertical_fastest", "level_aligned"]
+repeats = 7
+sgs_displacement_truncation = 3.0
+sgs_variance_curvature = false
+warmup_steps = 3
+
+[masks.edges_beyond_2_sigma]
+cell_fraction = 0.23118520487209915
+compaction_saving_fraction = 0.22877002661949009
+level_aligned_saving_fraction = 0.0998644224728018
+vertical_fastest_saving_fraction = 0.0
+
+    [masks.edges_beyond_2_sigma.orders.level_aligned.128]
+    all_skippable = 1186
+    all_skippable_fraction = 0.07819092827004219
+    groups = 15168
+
+    [masks.edges_beyond_2_sigma.orders.level_aligned.256]
+    all_skippable = 508
+    all_skippable_fraction = 0.0669831223628692
+    groups = 7584
+
+    [masks.edges_beyond_2_sigma.orders.level_aligned.32]
+    all_skippable = 6230
+    all_skippable_fraction = 0.1026832805907173
+    groups = 60672
+
+    [masks.edges_beyond_2_sigma.orders.vertical_fastest.128]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 15168
+
+    [masks.edges_beyond_2_sigma.orders.vertical_fastest.256]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 7584
+
+    [masks.edges_beyond_2_sigma.orders.vertical_fastest.32]
+    all_skippable = 190
+    all_skippable_fraction = 0.0031315928270042193
+    groups = 60672
+
+[masks.edges_beyond_4_sigma]
+cell_fraction = 0.22952051605353377
+compaction_saving_fraction = 0.22711288709224076
+level_aligned_saving_fraction = 0.09978010350015698
+vertical_fastest_saving_fraction = 0.0
+
+    [masks.edges_beyond_4_sigma.orders.level_aligned.128]
+    all_skippable = 1183
+    all_skippable_fraction = 0.0779931434599156
+    groups = 15168
+
+    [masks.edges_beyond_4_sigma.orders.level_aligned.256]
+    all_skippable = 507
+    all_skippable_fraction = 0.0668512658227848
+    groups = 7584
+
+    [masks.edges_beyond_4_sigma.orders.level_aligned.32]
+    all_skippable = 6224
+    all_skippable_fraction = 0.102584388185654
+    groups = 60672
+
+    [masks.edges_beyond_4_sigma.orders.vertical_fastest.128]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 15168
+
+    [masks.edges_beyond_4_sigma.orders.vertical_fastest.256]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 7584
+
+    [masks.edges_beyond_4_sigma.orders.vertical_fastest.32]
+    all_skippable = 189
+    all_skippable_fraction = 0.003115110759493671
+    groups = 60672
+
+[masks.edges_beyond_6_sigma]
+cell_fraction = 0.229094557621308
+compaction_saving_fraction = 0.22668559760593887
+level_aligned_saving_fraction = 0.09978010350015698
+vertical_fastest_saving_fraction = 0.0
+
+    [masks.edges_beyond_6_sigma.orders.level_aligned.128]
+    all_skippable = 1183
+    all_skippable_fraction = 0.0779931434599156
+    groups = 15168
+
+    [masks.edges_beyond_6_sigma.orders.level_aligned.256]
+    all_skippable = 507
+    all_skippable_fraction = 0.0668512658227848
+    groups = 7584
+
+    [masks.edges_beyond_6_sigma.orders.level_aligned.32]
+    all_skippable = 6224
+    all_skippable_fraction = 0.102584388185654
+    groups = 60672
+
+    [masks.edges_beyond_6_sigma.orders.vertical_fastest.128]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 15168
+
+    [masks.edges_beyond_6_sigma.orders.vertical_fastest.256]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 7584
+
+    [masks.edges_beyond_6_sigma.orders.vertical_fastest.32]
+    all_skippable = 189
+    all_skippable_fraction = 0.003115110759493671
+    groups = 60672
+
+[masks.edges_beyond_8_sigma]
+cell_fraction = 0.0
+compaction_saving_fraction = 0.0
+level_aligned_saving_fraction = 0.0
+vertical_fastest_saving_fraction = 0.0
+
+    [masks.edges_beyond_8_sigma.orders.level_aligned.128]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 15168
+
+    [masks.edges_beyond_8_sigma.orders.level_aligned.256]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 7584
+
+    [masks.edges_beyond_8_sigma.orders.level_aligned.32]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 60672
+
+    [masks.edges_beyond_8_sigma.orders.vertical_fastest.128]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 15168
+
+    [masks.edges_beyond_8_sigma.orders.vertical_fastest.256]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 7584
+
+    [masks.edges_beyond_8_sigma.orders.vertical_fastest.32]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 60672
+
+[masks.guard_live]
+cell_fraction = 0.22910176852584388
+compaction_saving_fraction = 0.22669283104343363
+level_aligned_saving_fraction = 0.09978010350015698
+vertical_fastest_saving_fraction = 0.0
+
+    [masks.guard_live.orders.level_aligned.128]
+    all_skippable = 1183
+    all_skippable_fraction = 0.0779931434599156
+    groups = 15168
+
+    [masks.guard_live.orders.level_aligned.256]
+    all_skippable = 507
+    all_skippable_fraction = 0.0668512658227848
+    groups = 7584
+
+    [masks.guard_live.orders.level_aligned.32]
+    all_skippable = 6224
+    all_skippable_fraction = 0.102584388185654
+    groups = 60672
+
+    [masks.guard_live.orders.vertical_fastest.128]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 15168
+
+    [masks.guard_live.orders.vertical_fastest.256]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 7584
+
+    [masks.guard_live.orders.vertical_fastest.32]
+    all_skippable = 189
+    all_skippable_fraction = 0.003115110759493671
+    groups = 60672
+
+[masks.no_condensate]
+cell_fraction = 0.4355813843288502
+compaction_saving_fraction = 0.42124412699217495
+level_aligned_saving_fraction = 0.24164680829488416
+vertical_fastest_saving_fraction = 0.0
+
+    [masks.no_condensate.orders.level_aligned.128]
+    all_skippable = 3534
+    all_skippable_fraction = 0.23299050632911392
+    groups = 15168
+
+    [masks.no_condensate.orders.level_aligned.256]
+    all_skippable = 1700
+    all_skippable_fraction = 0.22415611814345993
+    groups = 7584
+
+    [masks.no_condensate.orders.level_aligned.32]
+    all_skippable = 15801
+    all_skippable_fraction = 0.2604331487341772
+    groups = 60672
+
+    [masks.no_condensate.orders.vertical_fastest.128]
+    all_skippable = 57
+    all_skippable_fraction = 0.0037579113924050634
+    groups = 15168
+
+    [masks.no_condensate.orders.vertical_fastest.256]
+    all_skippable = 18
+    all_skippable_fraction = 0.0023734177215189874
+    groups = 7584
+
+    [masks.no_condensate.orders.vertical_fastest.32]
+    all_skippable = 1503
+    all_skippable_fraction = 0.02477254746835443
+    groups = 60672
+
+[masks.temperature_band]
+cell_fraction = 0.5180643459915611
+compaction_saving_fraction = 0.46898154874328046
+level_aligned_saving_fraction = 0.3709320063925613
+vertical_fastest_saving_fraction = 0.0
+
+    [masks.temperature_band.orders.level_aligned.128]
+    all_skippable = 5415
+    all_skippable_fraction = 0.357001582278481
+    groups = 15168
+
+    [masks.temperature_band.orders.level_aligned.256]
+    all_skippable = 2371
+    all_skippable_fraction = 0.3126318565400844
+    groups = 7584
+
+    [masks.temperature_band.orders.level_aligned.32]
+    all_skippable = 26033
+    all_skippable_fraction = 0.4290776635021097
+    groups = 60672
+
+    [masks.temperature_band.orders.vertical_fastest.128]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 15168
+
+    [masks.temperature_band.orders.vertical_fastest.256]
+    all_skippable = 0
+    all_skippable_fraction = 0.0
+    groups = 7584
+
+    [masks.temperature_band.orders.vertical_fastest.32]
+    all_skippable = 5608
+    all_skippable_fraction = 0.09243143459915612
+    groups = 60672
