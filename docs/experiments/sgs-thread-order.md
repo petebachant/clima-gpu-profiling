@@ -1,8 +1,8 @@
 # A level-aligned thread order on the SGS closure
 
 `cloud-mask-census` found an early-out that is paid for and never collected.
-`_sum_1m_over_sgs` returns a zero tendency at 22.91% of environment cells, and under the order the launch uses — the parent layout's own, vertical fastest, so a warp is 32 levels of one column — those cells fill a warp 0.31% of the time, because precipitation threads down a column and a 32-level run almost always contains one cloudy cell.
-Reordered so that a warp is two spectral elements at one level, the same cells fill 10.26% of warps and 7.80% of 128-thread blocks, which is 44% of what a perfect gather of them could reach.
+`_sum_1m_over_sgs` returns a zero tendency at <!-- calkit value key=guard.cell_pct format="{:.2f}" path=results/docs/cloud-mask-census.json -->22.91<!-- /calkit value -->% of environment cells, and under the order the launch uses — the parent layout's own, vertical fastest, so a warp is 32 levels of one column — those cells fill a warp <!-- calkit value key=live.vertical_fastest.warp_pct format="{:.2f}" path=results/docs/cloud-mask-census.json -->0.31<!-- /calkit value -->% of the time, because precipitation threads down a column and a 32-level run almost always contains one cloudy cell.
+Reordered so that a warp is two spectral elements at one level, the same cells fill <!-- calkit value key=live.level_aligned.warp_pct format="{:.2f}" path=results/docs/cloud-mask-census.json -->10.26<!-- /calkit value -->% of warps and <!-- calkit value key=live.level_aligned.block_pct format="{:.2f}" path=results/docs/cloud-mask-census.json -->7.80<!-- /calkit value -->% of <!-- calkit value key=block_width path=results/docs/cloud-mask-census.json -->128<!-- /calkit value -->-thread blocks, which is <!-- calkit value key=reorder_share_of_compaction_pct path=results/docs/cloud-mask-census.json -->44<!-- /calkit value -->% of what a perfect gather of them could reach.
 
 This experiment applies that order and measures what it is worth.
 
@@ -42,8 +42,9 @@ bash scripts/run-julia-script.sh \
 
 ## Analysis
 
-```python calkit stage name=values environment=py outputs=[{path: results/docs/sgs-thread-order.json, storage: git}] inputs=[results/experiments/sgs-thread-order/order.toml, results/top-kernels.csv, results/null-census.json]
+```python calkit stage name=values environment=py outputs=[{path: results/docs/sgs-thread-order.json, storage: git}] inputs=[results/experiments/sgs-thread-order/order.toml, results/top-kernels.csv, results/null-census.json, results/docs/cloud-mask-census.json]
 import json
+import statistics
 import tomllib
 
 d = tomllib.load(open("results/experiments/sgs-thread-order/order.toml", "rb"))
@@ -72,6 +73,8 @@ ARMS = ["explicit"] + (["implicit"] if d["has_implicit_path"] else [])
 
 def arm(name):
     a = d[name]
+    ds = a["order_effect"]["production"]["differences_ms"]
+    third = len(ds) // 3
     return {
         "calls_per_step": a["calls_per_step"],
         "vertical_ms": round(a["vertical_ms"], 2),
@@ -89,6 +92,15 @@ def arm(name):
         "rounds_agreeing": a["order_effect"]["production"]["rounds_agreeing"],
         "rounds_compared": a["order_effect"]["production"]["rounds_compared"],
         "sign_test_p": a["order_effect"]["production"]["sign_test_p"],
+        # Does the effect hold still across the run? The device drifts, so an
+        # effect whose magnitude grows over the rounds is pinned to a sign
+        # rather than to a size, however many rounds agree on the sign.
+        "saved_first_third_pct": round(
+            100.0 * statistics.median(ds[:third]) / a["vertical_ms"], 2
+        ),
+        "saved_last_third_pct": round(
+            100.0 * statistics.median(ds[-third:]) / a["vertical_ms"], 2
+        ),
         "window_saved_ms": round(a["window_saved_ms"], 1),
         "device_pct": round(100.0 * a["window_saved_ms"] / device_ms, 3),
         # The same effect read at the other destination, which is what says the
@@ -97,9 +109,11 @@ def arm(name):
         # And what the probe's own choice of field is worth at the order the
         # model uses today, which a single-block design reads as a treatment.
         "destination_pct": round(a["destination_effect"]["vertical"]["pct"], 2),
-        "destination_sign_consistent": a["destination_effect"]["vertical"][
-            "sign_consistent"
+        "destination_rounds_agreeing": a["destination_effect"]["vertical"][
+            "rounds_agreeing"
         ],
+        "destination_sign_test_p": a["destination_effect"]["vertical"]["sign_test_p"],
+        "destination_resolved": a["destination_effect"]["vertical"]["resolved"],
         "bitwise_identical": a["bitwise_identical"],
         "values_compared": a["values_compared"],
         "values_differing": a["values_differing"],
@@ -165,8 +179,51 @@ json.dump(out, open("results/docs/sgs-thread-order.json", "w"), indent=2)
 
 ## Result
 
-To be written against the measurement.
+The explicit call takes <!-- calkit value key=arms.explicit.vertical_ms -->16.32<!-- /calkit value --> ms under the order the launch takes unasked and <!-- calkit value key=arms.explicit.level_aligned_ms -->13.89<!-- /calkit value --> ms under the level-aligned one, a saving of <!-- calkit value key=arms.explicit.saved_ms_per_call -->2.429<!-- /calkit value --> ms per call, or <!-- calkit value key=arms.explicit.saved_pct -->14.88<!-- /calkit value -->%.
+All <!-- calkit value key=arms.explicit.rounds_agreeing -->31<!-- /calkit value --> of <!-- calkit value key=arms.explicit.rounds_compared -->31<!-- /calkit value --> rounds put the difference the same way, which a two-sided sign test prices at p = <!-- calkit value key=arms.explicit.sign_test_p format="{:.1e}" -->9.3e-10<!-- /calkit value -->, and the second destination field puts the same effect at <!-- calkit value key=arms.explicit.saved_pct_fresh -->15.03<!-- /calkit value -->%.
+The implicit call moves the other way by more: <!-- calkit value key=arms.implicit.vertical_ms -->3.63<!-- /calkit value --> ms becomes <!-- calkit value key=arms.implicit.level_aligned_ms -->4.33<!-- /calkit value --> ms, <!-- calkit value key=arms.implicit.saved_pct -->-18.47<!-- /calkit value -->% per call, again every round of <!-- calkit value key=arms.implicit.rounds_compared -->31<!-- /calkit value --> and again reproduced at the other destination at <!-- calkit value key=arms.implicit.saved_pct_fresh -->-18.25<!-- /calkit value -->%.
+So the thing the design was built around holds, and holds at a size worth targeting rather than at a rounding error: the order is a gain on the heavy call and a loss on the light one.
+
+The treatment is exact, which it had to be.
+On each path, <!-- calkit value key=arms.explicit.values_compared format="{:,}" -->7,766,016<!-- /calkit value --> values were compared as integers on the field's own storage, with <!-- calkit value key=arms.explicit.values_differing -->0<!-- /calkit value --> differing and a worst absolute difference of <!-- calkit value key=arms.explicit.worst_abs_difference -->0.0<!-- /calkit value -->.
+
+What ships is the order at the explicit site and nothing at the implicit one, which is <!-- calkit value key=shipped_window_ms -->582.9<!-- /calkit value --> ms of the <!-- calkit value key=steps -->120<!-- /calkit value -->-step window — <!-- calkit value key=shipped_device_pct -->1.75<!-- /calkit value -->% of the <!-- calkit value key=device.device_ms format="{:,}" -->33,306.1<!-- /calkit value --> ms device budget, and <!-- calkit value key=shipped_closure_pct -->8.93<!-- /calkit value -->% of the closure's own <!-- calkit value key=device.closure_ms format="{:,}" -->6,527.9<!-- /calkit value --> ms.
+Applied everywhere instead, which is the obvious thing to do with a default and is what a probe that timed only the explicit path would have recommended, it comes to <!-- calkit value key=blanket_device_pct -->0.302<!-- /calkit value -->%.
+So measuring the second call site is worth <!-- calkit value key=blanket_cost_pct -->1.448<!-- /calkit value -->% of device, which is several times the blanket figure it replaces.
+
+The probe describes the kernel the pipeline profiles, which is worth checking rather than assuming, because the profile charges one row for all eight calls.
+Reconstructing that row from the per-call times and the launch counts gives <!-- calkit value key=profile.reconstructed_ms format="{:,}" -->6,527.9<!-- /calkit value --> ms against <!-- calkit value key=profile.kernel_ms format="{:,}" -->6,550.0<!-- /calkit value --> ms measured, a residual of <!-- calkit value key=profile.reconstruction_residual_pct -->-0.34<!-- /calkit value -->%, and the row's <!-- calkit value key=profile.calls_per_step -->8<!-- /calkit value --> calls per step match the <!-- calkit value key=arms.explicit.calls_per_step -->2<!-- /calkit value --> + <!-- calkit value key=arms.implicit.calls_per_step -->6<!-- /calkit value --> the probe times.
+
+Two of the four effects reported here are the ones the earlier designs got wrong, and they are now unresolved rather than large.
+Timing each configuration in its own block had made the probe's choice of destination field look worth about a fifth of the call on one arm and a fifth the other way on the other arm — opposite signs for one factor on two arms of the same probe, which is what a device drift read as an effect looks like.
+Interleaved, that factor is <!-- calkit value key=arms.explicit.destination_pct -->0.11<!-- /calkit value -->% on the explicit arm and <!-- calkit value key=arms.implicit.destination_pct -->0.25<!-- /calkit value -->% on the implicit one, and neither is resolved: <!-- calkit value key=arms.explicit.destination_rounds_agreeing -->19<!-- /calkit value --> and <!-- calkit value key=arms.implicit.destination_rounds_agreeing -->18<!-- /calkit value --> rounds of <!-- calkit value key=rounds -->31<!-- /calkit value --> agree on a sign, at p = <!-- calkit value key=arms.explicit.destination_sign_test_p format="{:.2f}" -->0.28<!-- /calkit value --> and p = <!-- calkit value key=arms.implicit.destination_sign_test_p format="{:.2f}" -->0.47<!-- /calkit value -->.
+
+One figure here is pinned to its sign and not to its size.
+The explicit arm's effect is flat across the run, <!-- calkit value key=arms.explicit.saved_first_third_pct -->15.03<!-- /calkit value -->% over the first third of the rounds against <!-- calkit value key=arms.explicit.saved_last_third_pct -->15.01<!-- /calkit value -->% over the last.
+The implicit arm's grows, from <!-- calkit value key=arms.implicit.saved_first_third_pct -->-11.17<!-- /calkit value -->% to <!-- calkit value key=arms.implicit.saved_last_third_pct -->-19.22<!-- /calkit value -->%, which is why a shorter pass over the same code reported a smaller regression.
+Every round agreeing establishes that the light call loses under the order; it does not establish by how much, and the blanket cost above inherits that looseness.
 
 ## Verdict
 
-To be written against the measurement.
+### The thread order is a per-call-site argument, not a default
+
+The same reorder, of the same function, over the same cells, is worth <!-- calkit value key=arms.explicit.saved_pct -->14.88<!-- /calkit value -->% at one call site and <!-- calkit value key=arms.implicit.saved_pct -->-18.47<!-- /calkit value -->% at another, both resolved by every round of <!-- calkit value key=rounds -->31<!-- /calkit value -->.
+Nothing about the field changed between those two statements; what changed is how much arithmetic the kernel had to hide the strided reads behind, and §2a's reading of a mostly-idle memory system was taken on the <!-- calkit value key=arms.explicit.vertical_ms -->16.32<!-- /calkit value --> ms call, not the <!-- calkit value key=arms.implicit.vertical_ms -->3.63<!-- /calkit value --> ms one.
+A reorder whose whole justification is spare bandwidth is only justified where the bandwidth is spare, so the order belongs in the call, which is where `set_environment_1m_tendency!` now takes it.
+
+That is also the general form of the finding, and it is cheap to get wrong in the other direction.
+`LevelAlignedOrder` is a `DataMask`, so any ClimaCore pointwise loop can ask for it, and the temptation is to make it the layout's order or a space's property.
+Measured per site, it pays <!-- calkit value key=shipped_device_pct -->1.75<!-- /calkit value -->% of device here and would have paid <!-- calkit value key=blanket_device_pct -->0.302<!-- /calkit value -->% as a default.
+
+### Below the null floor is not the same as unmeasured
+
+What ships is <!-- calkit value key=shipped_device_pct -->1.75<!-- /calkit value -->% of device, which is below the <!-- calkit value key=null_floor_pct -->1.869<!-- /calkit value -->% the current window's null census reports, so `below_null_floor` is <!-- calkit value key=below_null_floor -->true<!-- /calkit value -->.
+That does not weaken this measurement, because it is not a SYPD difference: it is device time taken in-block with CUDA events over <!-- calkit value key=rounds -->31<!-- /calkit value --> interleaved rounds on one simulation state, where the quantity and the noise are both visible.
+What it says is that an AMIP pair would not confirm it — the pair's own arms wander further than the treatment moves — which is worth knowing before spending the reservations to ask.
+
+### What is left in this kernel
+
+The closure is <!-- calkit value key=device.closure_pct -->19.6<!-- /calkit value -->% of device and the order collects <!-- calkit value key=shipped_closure_pct -->8.93<!-- /calkit value -->% of it, so the kernel is still the largest single item in the budget after this pass.
+`cloud-mask-census` says where the rest of that early-out went: the guard fires at <!-- calkit value key=guard.cell_pct format="{:.2f}" path=results/docs/cloud-mask-census.json -->22.91<!-- /calkit value -->% of cells, the level-aligned order gathers them into <!-- calkit value key=live.level_aligned.warp_pct format="{:.2f}" path=results/docs/cloud-mask-census.json -->10.26<!-- /calkit value -->% of warps, and a perfect gather would reach <!-- calkit value key=live.compaction_saving_pct format="{:.1f}" path=results/docs/cloud-mask-census.json -->22.7<!-- /calkit value -->%, so this treatment collects about <!-- calkit value key=shipped_closure_pct -->8.93<!-- /calkit value -->% of the closure out of a ceiling nearer twice that.
+The remaining lever is the criterion rather than the layout — testing a dry cell's excess against ice saturation at its coldest node instead of against the mixed-phase band.
+`cloud-mask-census` prices it at <!-- calkit value key=widening_floor_pct format="{:.2f}" path=results/docs/cloud-mask-census.json -->1.25<!-- /calkit value -->% of device, and it gives up a tail weight, so unlike this pass it needs an accuracy case before it needs a timing.

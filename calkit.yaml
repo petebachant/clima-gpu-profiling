@@ -410,6 +410,13 @@ questions:
       compiles to {kernel_registers:.0f} registers and its occupancy band ends
       there, so its headroom is {headroom:.0f} and every edit to it, including
       one that removes work, is an occupancy change before it is anything else.
+      A second exact saving in the same kernel needs no edit to its body at
+      all: giving a warp one model level instead of 32 levels of one column
+      gathers a live clear-air early-out from {guard_warp_before:.2f}% of warps
+      to {guard_warp_after:.2f}% and is worth {order_device_pct:.2f}% of
+      device, bit-for-bit. It is an argument to the call rather than a default,
+      because the same reorder is worth {order_implicit_pct:.1f}% on the
+      lighter sibling.
     evidence:
       - kind: document
         path: docs/experiments/quadrature-saturation.md
@@ -442,6 +449,48 @@ questions:
           and then profiled within one arm, against that arm before the
           treatment rather than against the baseline arm, which differs by the
           sedimentation fold as well.
+      - kind: document
+        path: docs/experiments/cloud-mask-census.md
+        git_ref: meas/2026-11-14-cloud-mask-census
+        section: Why the thread order is the variable
+        explanation: >-
+          Why the early-out is paid for and never collected: the guard is live
+          and fires at a fifth of cells, but the launch gives a warp 32 levels
+          of one column and precipitation threads down a column, so a 32-level
+          run almost always holds one cloudy cell. Also corrects this repo's
+          own claim that the guard was dead code -- the docstring's default is
+          stale and the running model resolves the truncation that arms it.
+      - kind: document
+        path: docs/experiments/sgs-thread-order.md
+        section: The thread order is a per-call-site argument, not a default
+        explanation: >-
+          The treatment and why the sign reverses between the two call sites:
+          the reorder spends bandwidth the heavy call has spare, and the light
+          instantaneous sibling charges the same strided reads against a fifth
+          of the arithmetic. Also records the measurement design, since timing
+          each configuration in its own block read the device's own drift as a
+          treatment effect.
+      - kind: result
+        path: results/docs/cloud-mask-census.json
+        git_ref: meas/2026-11-14-cloud-mask-census
+        values:
+          guard_warp_before: live.vertical_fastest.warp_pct
+          guard_warp_after: live.level_aligned.warp_pct
+        explanation: >-
+          The census of the skip criterion over one live simulation state,
+          counting the guard's own condition at every environment cell and then
+          grouping those cells into warps under each thread order.
+      - kind: result
+        path: results/docs/sgs-thread-order.json
+        values:
+          order_device_pct: shipped_device_pct
+          order_implicit_pct: arms.implicit.saved_pct
+        explanation: >-
+          Both call sites timed in-block with CUDA events over 31 interleaved
+          rounds, the effect taken as the median of the per-round differences
+          and resolved by a two-sided sign test rather than against a spread
+          the device's drift sets. The device figure is what ships, so it sums
+          only the site where the order is a resolved gain.
 
 tables:
   - path: results/top-kernels.csv

@@ -5055,8 +5055,8 @@ stages:
       size: 889
     - path: scripts/measure-thread-order.jl
       hash: md5
-      md5: 158fb76d3b0100ebd38c391575f0a2c8
-      size: 12057
+      md5: a1c12345f5dc5ff3118e963b05f42d37
+      size: 13025
     - path: scripts/run-julia-script.sh
       hash: md5
       md5: 2b491e48a8f15c4ea7ff76d19d95f830
@@ -5064,9 +5064,43 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/sgs-thread-order/thread-order.out
       hash: md5
-      md5: bf8e822bd04184e388987491ca22a7c4
-      size: 39104
+      md5: 879f6dce0de8892439b4f5741cb248ee
+      size: 39101
     - path: results/experiments/sgs-thread-order/order.toml
       hash: md5
-      md5: 2b16ee23c8027ee2b21a0a8135bf02df
-      size: 5078
+      md5: fe1ded4abc27196f1e475774dea5e536
+      size: 11537
+  sgs-thread-order/values:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/experiments/sgs-thread-order.md/values.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: .calkit/markdown/docs/experiments/sgs-thread-order.md/values.py
+      hash: md5
+      md5: 97e57efee2a858b413acb3aae92ecf3e
+      size: 6415
+    - path: results/docs/cloud-mask-census.json
+      hash: md5
+      md5: c62fc0ebca1f96326ea8024934450a26
+      size: 4156
+    - path: results/experiments/sgs-thread-order/order.toml
+      hash: md5
+      md5: fe1ded4abc27196f1e475774dea5e536
+      size: 11537
+    - path: results/null-census.json
+      hash: md5
+      md5: d9cf08faa89fb2705fba87bf4efe4da1
+      size: 2548
+    - path: results/top-kernels.csv
+      hash: md5
+      md5: 47496988f2d806ddf9a662cc3e239af9
+      size: 3581
+    outs:
+    - path: results/docs/sgs-thread-order.json
+      hash: md5
+      md5: 6d4ef0a95efdfc32a84923a96b7a753d
+      size: 2441
