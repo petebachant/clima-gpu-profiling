@@ -466,6 +466,30 @@ right to hash `default_setup`, because the `module load` line that selects the
 Julia toolchain lives there and moves every register count. Tracked as
 calkit/calkit#2069.
 
+## A stale NFS lock looks like a broken pipeline, not a broken lock
+
+Every DVC command, including `calkit status`, failed with
+
+    OSError: [Errno 116] Stale file handle
+
+raised from `zc/lockfile/__init__.py` closing `.dvc/tmp/rwlock.lock`. Nothing
+in the message names the lock, and `calkit run` reports it as
+`failed to reproduce '<the first stage>'`, so it reads as that stage being
+broken --- running the stage's command by hand then succeeds, which makes it
+read as a DVC bug.
+
+`/home` here is an NFS export, and the lock files under `.dvc/tmp` are opened
+and unlinked on every pass; a handle the server has forgotten gives ESTALE on
+close however current the file looks to `ls`. The files are transient state,
+not data: with nothing in the queue and no DVC process running, move
+`.dvc/tmp/rwlock`, `.dvc/tmp/rwlock.lock` and `.dvc/tmp/lock` aside and the
+next command recreates them.
+
+Check both before touching them --- `calkit sch q` for a job that is mid-write
+and `pgrep -u $USER -af "dvc|calkit"` for a pass still running --- because
+clearing a lock that something holds is how two writers get into `dvc.lock` at
+once.
+
 ## Use `calkit push`, not `git push`
 
 **Enforced by a hook.** Run `bash scripts/install-git-hooks.sh` once per clone.
