@@ -73,6 +73,15 @@ end
 # The register count a piece must reach for the next occupancy step.
 const TARGET_REGS = A100_REGS_PER_SM ÷ (2 * BLOCK)
 
+# The same question at 128 threads per block, where the ladder is finer: three
+# blocks fit at 170 registers, so a phase that cannot reach 128 may still gain
+# a step. At the cap both block sizes give 8 warps, so this costs nothing to
+# ask and is the nearer bar.
+const ALT_BLOCK = 128
+const ALT_TARGET_REGS = A100_REGS_PER_SM ÷ (3 * ALT_BLOCK)
+const BASE_WARPS = warps_per_sm(REGISTER_CAP, BLOCK)
+const ALT_BASE_WARPS = warps_per_sm(REGISTER_CAP, ALT_BLOCK)
+
 config_file = Input.parse_commandline(Input.argparse_settings())["config_file"]
 cs = CoupledSimulation(config_file)
 
@@ -117,22 +126,33 @@ function record!(label, build)
         "warps_per_sm" => w,
         "at_cap" => r >= REGISTER_CAP,
         "reaches_target" => r <= TARGET_REGS && m.local == 0,
+        "warps_per_sm_b128" => warps_per_sm(r, ALT_BLOCK),
+        # A step is gained only without spill: forcing the budget with one is
+        # what measured +3.93% and +2.91% on these kernels.
+        "gains_step" => warps_per_sm(r, BLOCK) > BASE_WARPS && m.local == 0,
+        "gains_step_b128" =>
+            warps_per_sm(r, ALT_BLOCK) > ALT_BASE_WARPS && m.local == 0,
     )
     Printf.@printf(
         "%-34s regs=%3d  local=%6d B  warps/SM=%2d  %s\n",
         label, r, m.local, w,
-        r <= TARGET_REGS ? (m.local == 0 ? "FITS" : "fits but spills") : "too big",
+        r <= TARGET_REGS ? (m.local == 0 ? "FITS" : "fits but spills") :
+        (r <= ALT_TARGET_REGS && m.local == 0 ? "gains a step at 128 threads" :
+         "too big"),
     )
     return r
 end
 
 # ---------------------------------------------------------------------------
 # Longwave phases. Each is the body a split would put in its own kernel, called
-# exactly as the fused kernel calls it.
+# exactly as the fused kernel calls it. The intrinsics are qualified because
+# this file imports CUDA rather than using it, and a bare `threadIdx()` here
+# compiles to an undefined name whose dynamic dispatch buries every later
+# Reason line in the error.
 # ---------------------------------------------------------------------------
 
 function k_lw_mask(cloud_state, mask_store, ncol)
-    gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
+    gcol = CUDA.threadIdx().x + (CUDA.blockIdx().x - 1) * CUDA.blockDim().x
     if gcol <= ncol
         @inbounds RTESolver._build_cloud_mask!(
             cloud_state, Val(:mask_lw), gcol, 1, mask_store, gcol,
@@ -142,7 +162,7 @@ function k_lw_mask(cloud_state, mask_store, ncol)
 end
 
 function k_lw_optics(op, as, state_cache, src, lkp, lkp_aero, ncol)
-    gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
+    gcol = CUDA.threadIdx().x + (CUDA.blockIdx().x - 1) * CUDA.blockDim().x
     if gcol <= ncol
         @inbounds Optics.compute_optical_props!(
             op, as, state_cache, src, gcol, 1, lkp, nothing, lkp_aero, gcol,
@@ -152,7 +172,7 @@ function k_lw_optics(op, as, state_cache, src, lkp, lkp_aero, ncol)
 end
 
 function k_lw_optics_nogas(op, as, lkp_cld, mask_store, ncol)
-    gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
+    gcol = CUDA.threadIdx().x + (CUDA.blockIdx().x - 1) * CUDA.blockDim().x
     if gcol <= ncol
         @inbounds Optics.add_cloud_optics_lw!(op, as, gcol, lkp_cld, 1, mask_store, gcol)
     end
@@ -160,7 +180,7 @@ function k_lw_optics_nogas(op, as, lkp_cld, mask_store, ncol)
 end
 
 function k_lw_sweep(op, flux, src, bcs, nlev, ncol)
-    gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
+    gcol = CUDA.threadIdx().x + (CUDA.blockIdx().x - 1) * CUDA.blockDim().x
     if gcol <= ncol
         @inbounds RTESolver.rte_lw_2stream!(
             op, flux, src, bcs, gcol, 1, 1, nlev, ncol, gcol,
@@ -170,7 +190,7 @@ function k_lw_sweep(op, flux, src, bcs, nlev, ncol)
 end
 
 function k_lw_accumulate(acc, flux, nlev, ncol)
-    gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
+    gcol = CUDA.threadIdx().x + (CUDA.blockIdx().x - 1) * CUDA.blockDim().x
     if gcol <= ncol
         @inbounds RTESolver._accumulate_fluxes!(acc, flux, gcol, nlev, 1, 1)
     end
@@ -215,7 +235,7 @@ record!(
 # ---------------------------------------------------------------------------
 
 function k_sw_optics(op, as, state_cache, lkp, lkp_aero, ncol)
-    gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
+    gcol = CUDA.threadIdx().x + (CUDA.blockIdx().x - 1) * CUDA.blockDim().x
     if gcol <= ncol
         @inbounds Optics.compute_optical_props!(
             op, as, state_cache, gcol, 1, lkp, nothing, lkp_aero, gcol, true,
@@ -225,7 +245,7 @@ function k_sw_optics(op, as, state_cache, lkp, lkp_aero, ncol)
 end
 
 function k_sw_sweep(op, src, bcs, flux, n_gpt, nlev, ncol)
-    gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
+    gcol = CUDA.threadIdx().x + (CUDA.blockIdx().x - 1) * CUDA.blockDim().x
     if gcol <= ncol
         @inbounds RTESolver.rte_sw_2stream!(
             op, src, bcs, flux, 1.0f0, 1, n_gpt, 1, nlev, gcol, gcol,
@@ -372,6 +392,9 @@ fits(p) = get(get(results, p, Dict{String, Any}()), "reaches_target", false)
 at_cap(p) = get(get(results, p, Dict{String, Any}()), "at_cap", false)
 lw_optics_fits = fits("lw_gas_aerosol_optics")
 sw_optics_fits = fits("sw_gas_aerosol_optics")
+gains(p) = get(get(results, p, Dict{String, Any}()), "gains_step_b128", false)
+lw_optics_gains = gains("lw_gas_aerosol_optics")
+sw_optics_gains = gains("sw_gas_aerosol_optics")
 
 results["summary"] = Dict{String, Any}(
     "ncol" => ncol,
@@ -381,6 +404,10 @@ results["summary"] = Dict{String, Any}(
     "target_registers" => TARGET_REGS,
     "target_warps_per_sm" => warps_per_sm(TARGET_REGS),
     "current_warps_per_sm" => warps_per_sm(REGISTER_CAP),
+    "alt_block_size" => ALT_BLOCK,
+    "alt_target_registers" => ALT_TARGET_REGS,
+    "alt_target_warps_per_sm" => warps_per_sm(ALT_TARGET_REGS, ALT_BLOCK),
+    "alt_current_warps_per_sm" => ALT_BASE_WARPS,
     "control_lw_at_cap" => at_cap("lw_fused_whole"),
     "control_sw_at_cap" => at_cap("sw_fused_whole"),
     "control_lw_grouped_at_cap" => at_cap("lw_grouped_whole"),
@@ -409,8 +436,16 @@ results["summary"] = Dict{String, Any}(
     "sw_optics_phase_fits" => sw_optics_fits,
     # The whole question, in one field.
     "split_is_viable" => lw_optics_fits || sw_optics_fits,
+    # And the same question against the nearer bar, which a split can clear
+    # without reaching the budget two forced attempts already lost on.
+    "lw_optics_phase_gains_step_b128" => lw_optics_gains,
+    "sw_optics_phase_gains_step_b128" => sw_optics_gains,
+    "split_gains_a_step_b128" => lw_optics_gains || sw_optics_gains,
     "phases_that_fit" => [
         p for p in vcat(phases_lw, phases_sw) if fits(p)
+    ],
+    "phases_that_gain_a_step_b128" => [
+        p for p in vcat(phases_lw, phases_sw) if gains(p)
     ],
     "note" => "Each phase is compiled as its own kernel with the live " *
               "solver's argument types, which is what a split would produce. " *

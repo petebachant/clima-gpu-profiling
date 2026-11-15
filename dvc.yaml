@@ -977,6 +977,51 @@ stages:
           persist: false
     desc: Automatically generated from the 'sgs-thread-order/values' stage in
       calkit.yaml. Changes made here will be overwritten.
+  radiation-phase-split/phases:
+    cmd: calkit scheduler batch --name radiation-phase-split/phases
+      --environment clima --dep scripts/measure-radiation-phase-registers.jl
+      --dep scripts/run-julia-script.sh --dep RRTMGP.jl-mod/src --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      --dep .calkit/env-locks/clima --out
+      results/experiments/radiation-phase-split/phases.toml --option --gpus=1
+      --option --time=60 --
+      .calkit/markdown/docs/experiments/radiation-phase-split.md/phases.sh
+    deps:
+      - .calkit/markdown/docs/experiments/radiation-phase-split.md/phases.sh
+      - scripts/measure-radiation-phase-registers.jl
+      - scripts/run-julia-script.sh
+      - RRTMGP.jl-mod/src
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      - .calkit/env-locks/clima
+    outs:
+      - results/experiments/radiation-phase-split/phases.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/radiation-phase-split/phases.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'radiation-phase-split/phases' stage
+      in calkit.yaml. Changes made here will be overwritten.
+  radiation-phase-split/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/radiation-phase-split.md/values.py
+    deps:
+      - .calkit/markdown/docs/experiments/radiation-phase-split.md/values.py
+      - results/experiments/radiation-phase-split/phases.toml
+      - results/top-kernels.csv
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/radiation-phase-split.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'radiation-phase-split/values' stage
+      in calkit.yaml. Changes made here will be overwritten.
   wall-clock-conversion-doc/values:
     cmd: calkit xenv -n py --no-check -- python
       .calkit/markdown/docs/wall-clock-conversion.md/values.py
