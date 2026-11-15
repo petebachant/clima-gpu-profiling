@@ -3969,6 +3969,17 @@ does not --- one round landing while something else is on the device reverses a
 single difference and says nothing about the effect, and an all-or-nothing test
 reports a replicated result as unresolved.
 
+And what that test establishes is a sign, not a size. Both of this experiment's
+effects were put the same way by every one of its rounds, at a sign-test
+probability of order a billion to one, and only one of them held its magnitude
+across the run: the heavy call's gain was the same over the first third of the
+rounds as over the last, while the light call's loss roughly doubled between
+them. So a shorter pass over identical code had reported about half of it. The
+interleaving removes the drift from the comparison, which is what makes the
+sign trustworthy; it does not make the device stationary, so a magnitude read
+off a drifting arm is worth what its own stability says and no more. Split the
+rounds and report both halves of any figure a decision rests on.
+
 ### And S8s was in this file the whole time
 
 Four measurement scripts in this pass were checked with `Meta.parseall` before
