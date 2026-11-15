@@ -1,0 +1,53 @@
+config_file = "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml"
+float_type = "Float32"
+has_implicit_path = true
+n_substeps_quad = 2
+note = "Each point calls the live `set_environment_1m_tendency!` on one simulation state with a different thread order and nothing else changed, so the points differ by the order and no two runs are differenced. `vertical` is `DataLayouts.NoMask()`, the order the launch uses unasked: the parent layout's own, with the vertical fastest, so a warp is 32 levels of one column. `level_aligned` is `DataLayouts.LevelAlignedOrder()`, which gives a warp the cells of one level. Both mark every point active and evaluate the same function at the same cells with no reduction between them, so they must agree to the bit; bitwise_identical is that check, taken on the fields' own storage reinterpreted as integers so a NaN cannot pass as equal. The saving is a per call figure and window_saved_ms scales it by the calls a step makes and the 120 steps the profile covers. The guard the order collects is live on both paths, since `mode` binds the positional argument ahead of `args...`."
+orders = ["vertical", "level_aligned"]
+repeats = 7
+steps = 120
+warmup_steps = 3
+
+[explicit]
+bitwise_identical = true
+calls_per_step = 2
+repeat_spread_ms = 0.5990397185087204
+resolved = true
+saved_ms_per_call = 6.168576888740063
+saved_pct = 30.772378233825993
+values_compared = 7766016
+values_differing = 0
+window_saved_ms = 1480.458453297615
+worst_abs_difference = 0.0
+
+    [explicit.points.level_aligned]
+    ms = 13.877247460186481
+    ms_max = 14.361599460244179
+    ms_min = 13.762559741735458
+
+    [explicit.points.vertical]
+    ms = 20.045824348926544
+    ms_max = 20.12467198073864
+    ms_min = 19.976193085312843
+
+[implicit]
+bitwise_identical = true
+calls_per_step = 6
+repeat_spread_ms = 0.11571170762181282
+resolved = false
+saved_ms_per_call = -0.70348777808249
+saved_pct = -19.34121037179885
+values_compared = 7766016
+values_differing = 0
+window_saved_ms = -506.5112002193928
+worst_abs_difference = 0.0
+
+    [implicit.points.level_aligned]
+    ms = 4.340735729783773
+    ms_max = 4.404223989695311
+    ms_min = 4.288512282073498
+
+    [implicit.points.vertical]
+    ms = 3.6372479517012835
+    ms_max = 3.7027839571237564
+    ms_min = 3.598335897549987

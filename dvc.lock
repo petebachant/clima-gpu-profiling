@@ -4997,3 +4997,76 @@ stages:
       hash: md5
       md5: c62fc0ebca1f96326ea8024934450a26
       size: 4156
+  sgs-thread-order/thread-order:
+    cmd: calkit scheduler batch --name sgs-thread-order/thread-order 
+      --environment clima --dep scripts/measure-thread-order.jl --dep 
+      scripts/run-julia-script.sh --dep ClimaAtmos.jl-mod/src --dep 
+      ClimaCore.jl-mod/src --dep ClimaCore.jl-mod/ext --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml 
+      --dep .calkit/env-locks/clima --out 
+      results/experiments/sgs-thread-order/order.toml --option --gpus=1 --option
+      --time=90 -- 
+      .calkit/markdown/docs/experiments/sgs-thread-order.md/thread-order.sh
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: 
+        .calkit/markdown/docs/experiments/sgs-thread-order.md/thread-order.sh
+      hash: md5
+      md5: f2b6b90acc0c1ffa31a27b509bcc79c4
+      size: 292
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: 5941fac78485b40d870852fb06334c8f.dir
+      size: 2703108
+      nfiles: 178
+    - path: ClimaCore.jl-mod/ext
+      hash: md5
+      md5: dfda47183ee65af8f841ae8b5b13f230.dir
+      size: 224478
+      nfiles: 26
+    - path: ClimaCore.jl-mod/src
+      hash: md5
+      md5: 7223f454bb6456abd42901d1be34837e.dir
+      size: 1480321
+      nfiles: 105
+    - path: ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      hash: md5
+      md5: 66e9712dfb39a09d73ab08e096b614db
+      size: 1114
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 3974e589a2618f7adb8c0164acb5807b
+      size: 855
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      hash: md5
+      md5: 15f62060eba963817bee4af7e3e51817
+      size: 139651
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: scripts/measure-thread-order.jl
+      hash: md5
+      md5: c41e6fa20b4fe36c738fb87fbd2591aa
+      size: 8628
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: 2b491e48a8f15c4ea7ff76d19d95f830
+      size: 1040
+    outs:
+    - path: .calkit/scheduler/logs/sgs-thread-order/thread-order.out
+      hash: md5
+      md5: e6890fecb71d6127df39c0d8e895e600
+      size: 40302
+    - path: results/experiments/sgs-thread-order/order.toml
+      hash: md5
+      md5: baa46a70e8b2d9a4fdc4162249e32900
+      size: 2300
