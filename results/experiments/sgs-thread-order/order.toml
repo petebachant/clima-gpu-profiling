@@ -3,78 +3,130 @@ destinations = ["production", "fresh"]
 float_type = "Float32"
 has_implicit_path = true
 n_substeps_quad = 2
-note = "Each point calls the live `set_environment_1m_tendency!` on one simulation state with a different thread order and nothing else changed, so the points differ by the order and no two runs are differenced. `vertical` is `DataLayouts.NoMask()`, the order the launch uses unasked: the parent layout's own, with the vertical fastest, so a warp is 32 levels of one column. `level_aligned` is `DataLayouts.LevelAlignedOrder()`, which gives a warp the cells of one level. Both mark every point active and evaluate the same function at the same cells with no reduction between them, so they must agree to the bit; bitwise_identical is that check, taken on the fields' own storage reinterpreted as integers so a NaN cannot pass as equal. The saving is a per call figure and window_saved_ms scales it by the calls a step makes and the 120 steps the profile covers. The guard the order collects is live on both paths, since `mode` binds the positional argument ahead of `args...`. Both destinations are timed because they are not interchangeable: `production` is the precomputed field the model writes and `fresh` is a `similar` allocation, and fresh_vs_production_pct is what the choice alone costs at the order in use today. Every figure outside `points` is read off the production destination."
+note = "Each configuration calls the live `set_environment_1m_tendency!` on one simulation state, so the configurations differ by the thread order and the destination field and no two runs are differenced. `vertical` is `DataLayouts.NoMask()`, the order the launch uses unasked: the parent layout's own, with the vertical fastest, so a warp is 32 levels of one column. `level_aligned` is `DataLayouts.LevelAlignedOrder()`, which gives a warp the cells of one level. Both mark every point active and evaluate the same function at the same cells with no reduction between them, so they must agree to the bit; bitwise_identical is that check, taken on the production field's own storage reinterpreted as integers so a NaN cannot pass as equal. The device drifts during a run, so the configurations are interleaved: one round visits all four, the visiting order rotates each round, and an effect is the median of the per-round differences with sign_consistent saying whether every round agreed on its direction. A per-block spread is not quoted as an error bar because the drift sets it. Figures outside `configs` are read off the production destination, and destination_effect is what the probe's own choice of field is worth. window_saved_ms scales the per-call figure by the calls a step makes and the 120 steps the profile covers. The guard the order collects is live on both paths, since `mode` binds the positional argument ahead of `args...`."
 orders = ["vertical", "level_aligned"]
-repeats = 7
+rounds = 15
 steps = 120
 warmup_steps = 3
 
 [explicit]
 bitwise_identical = true
 calls_per_step = 2
-fresh_vs_production_pct = -19.03326907557213
-level_aligned_ms = 16.899073496460915
-repeat_spread_ms = 3.305472433567047
+level_aligned_ms = 13.944831676781178
 resolved = false
-saved_ms_per_call = 3.1416304409503937
-saved_pct = 15.676247953973833
+saved_ms_per_call = 2.3449594154953957
+saved_pct = 14.414298423282883
 values_compared = 7766016
 values_differing = 0
-vertical_ms = 20.04070393741131
-window_saved_ms = 753.9913058280945
+vertical_ms = 16.268286854028702
+window_saved_ms = 562.790259718895
 worst_abs_difference = 0.0
 
-    [explicit.points.fresh.level_aligned]
-    ms = 13.888511806726456
-    ms_max = 14.006271958351135
-    ms_min = 13.787136413156986
+    [explicit.configs."fresh/level_aligned"]
+    ms = 13.894655741751194
+    ms_max = 17.113087698817253
+    ms_min = 13.797375373542309
 
-    [explicit.points.fresh.vertical]
-    ms = 16.226302832365036
-    ms_max = 16.362495720386505
-    ms_min = 16.19558408856392
+    [explicit.configs."fresh/vertical"]
+    ms = 16.264192759990692
+    ms_max = 20.251648500561714
+    ms_min = 16.134144738316536
 
-    [explicit.points.production.level_aligned]
-    ms = 16.899073496460915
-    ms_max = 17.189888283610344
-    ms_min = 13.884415850043297
+    [explicit.configs."production/level_aligned"]
+    ms = 13.944831676781178
+    ms_max = 17.27180927991867
+    ms_min = 13.79327941685915
 
-    [explicit.points.production.vertical]
-    ms = 20.04070393741131
-    ms_max = 20.207617431879044
-    ms_min = 19.979262724518776
+    [explicit.configs."production/vertical"]
+    ms = 16.268286854028702
+    ms_max = 20.088832825422287
+    ms_min = 16.193537041544914
+
+    [explicit.destination_effect.level_aligned]
+    max_ms = 0.23244693875312805
+    median_ms = 0.009216368198394775
+    min_ms = -3.1989775598049164
+    pct = 0.06633030979458583
+    sign_consistent = false
+
+    [explicit.destination_effect.vertical]
+    max_ms = 3.5256315022706985
+    median_ms = 0.016383826732635498
+    min_ms = -0.10035373270511627
+    pct = 0.1007355666180931
+    sign_consistent = false
+
+    [explicit.order_effect.fresh]
+    max_ms = 5.8839041739702225
+    median_ms = 2.3797759786248207
+    min_ms = 2.2200318053364754
+    pct = 14.631995659071263
+    sign_consistent = true
+
+    [explicit.order_effect.production]
+    max_ms = 2.9788166284561157
+    median_ms = 2.3449594154953957
+    min_ms = -0.8407048881053925
+    pct = 14.414298423282883
+    sign_consistent = false
 
 [implicit]
 bitwise_identical = true
 calls_per_step = 6
-fresh_vs_production_pct = 22.476682465612704
-level_aligned_ms = 4.839424043893814
-repeat_spread_ms = 0.10854378342628479
+level_aligned_ms = 4.792319610714912
 resolved = true
-saved_ms_per_call = -1.21753616258502
-saved_pct = -33.6160643974726
+saved_ms_per_call = -0.40140748023986816
+saved_pct = -9.063571679114302
 values_compared = 7766016
 values_differing = 0
-vertical_ms = 3.621887881308794
-window_saved_ms = -876.6260370612144
+vertical_ms = 4.428800195455551
+window_saved_ms = -289.0133857727051
 worst_abs_difference = 0.0
 
-    [implicit.points.fresh.level_aligned]
-    ms = 4.811776336282492
-    ms_max = 4.916224163025618
-    ms_min = 4.768767859786749
+    [implicit.configs."fresh/level_aligned"]
+    ms = 4.809728357940912
+    ms_max = 4.871168173849583
+    ms_min = 4.2700800113379955
 
-    [implicit.points.fresh.vertical]
-    ms = 4.435968119651079
-    ms_max = 4.463615827262402
-    ms_min = 4.4052479788661
+    [implicit.configs."fresh/vertical"]
+    ms = 4.421631805598736
+    ms_max = 4.4564479030668736
+    ms_min = 3.6433921195566654
 
-    [implicit.points.production.level_aligned]
-    ms = 4.839424043893814
-    ms_max = 4.894719924777746
-    ms_min = 4.786176141351461
+    [implicit.configs."production/level_aligned"]
+    ms = 4.792319610714912
+    ms_max = 4.865024238824844
+    ms_min = 4.3028476648032665
 
-    [implicit.points.production.vertical]
-    ms = 3.621887881308794
-    ms_max = 3.6792319733649492
-    ms_min = 3.60038410872221
+    [implicit.configs."production/vertical"]
+    ms = 4.428800195455551
+    ms_max = 4.46975976228714
+    ms_min = 3.6270080599933863
+
+    [implicit.destination_effect.level_aligned]
+    max_ms = 0.19251182675361633
+    median_ms = 0.012287404388189316
+    min_ms = -0.1034238375723362
+    pct = 0.25546982020102404
+    sign_consistent = false
+
+    [implicit.destination_effect.vertical]
+    max_ms = 0.7905280217528343
+    median_ms = -0.007168389856815338
+    min_ms = -0.08601648733019829
+    pct = -0.16212091309228002
+    sign_consistent = false
+
+    [implicit.order_effect.fresh]
+    max_ms = -0.061439815908670425
+    median_ms = -0.42086420580744743
+    min_ms = -0.6932476535439491
+    pct = -9.51830058021889
+    sign_consistent = true
+
+    [implicit.order_effect.production]
+    max_ms = -0.2887682057917118
+    median_ms = -0.40140748023986816
+    min_ms = -0.711680157110095
+    pct = -9.063571679114302
+    sign_consistent = true

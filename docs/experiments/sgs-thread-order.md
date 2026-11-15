@@ -84,6 +84,11 @@ def arm(name):
         "saved_max_ms": round(a["order_effect"]["production"]["max_ms"], 3),
         "resolved": a["resolved"],
         "helps": a["saved_ms_per_call"] > 0 and a["resolved"],
+        # The resolution test: how many of the rounds put the difference the
+        # same way, and the two-sided sign-test probability of that.
+        "rounds_agreeing": a["order_effect"]["production"]["rounds_agreeing"],
+        "rounds_compared": a["order_effect"]["production"]["rounds_compared"],
+        "sign_test_p": a["order_effect"]["production"]["sign_test_p"],
         "window_saved_ms": round(a["window_saved_ms"], 1),
         "device_pct": round(100.0 * a["window_saved_ms"] / device_ms, 3),
         # The same effect read at the other destination, which is what says the

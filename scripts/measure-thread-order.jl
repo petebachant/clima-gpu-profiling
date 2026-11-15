@@ -60,7 +60,7 @@ end
 
 out_path = arg_value("--out", "results/thread-order.toml")
 
-const ROUNDS = 15
+const ROUNDS = 31
 const WARMUP_STEPS = 3
 const STEPS = 120
 const EXPLICIT_CALLS_PER_STEP = 2
@@ -123,6 +123,21 @@ implicit!(dest, order) = CA.set_environment_1m_tendency!(
 
 median(xs) = (s = sort(xs); s[(length(s) + 1) ÷ 2])
 
+# Two-sided sign test on the per-round differences. A contended round can put
+# one difference the wrong way round without the effect being in doubt, so the
+# claim is that the rounds agree more often than chance allows rather than that
+# they all agree -- and the alternative, a spread, is set by the drift the
+# rounds exist to cancel.
+function sign_test(ds)
+    pos = count(>(0), ds)
+    neg = count(<(0), ds)
+    n = pos + neg
+    n == 0 && return (; agreeing = 0, trials = 0, p = 1.0)
+    k = max(pos, neg)
+    tail = sum(binomial(n, i) for i in k:n)
+    return (; agreeing = k, trials = n, p = min(1.0, 2.0 * tail / 2.0^n))
+end
+
 # Bitwise, not approximate: a reorder that changes a value has a bug, and a
 # float comparison would hide a NaN moving. The integers are the field's own
 # storage reinterpreted, so padding is compared too.
@@ -181,14 +196,18 @@ function arm(call!, production, calls_per_step)
         ds = [round[a] - round[b] for round in rounds]
         med = median(ds)
         base = median([round[a] for round in rounds])
+        (; agreeing, trials, p) = sign_test(ds)
         return Dict{String, Any}(
             "median_ms" => med,
             "min_ms" => minimum(ds),
             "max_ms" => maximum(ds),
             "pct" => 100.0 * med / base,
-            # Every round agreeing on the sign is the claim; a spread the drift
-            # sets is not an error bar.
-            "sign_consistent" => minimum(ds) > 0 || maximum(ds) < 0,
+            "differences_ms" => ds,
+            "rounds_agreeing" => agreeing,
+            "rounds_compared" => trials,
+            "sign_test_p" => p,
+            "sign_consistent" => agreeing == trials,
+            "resolved" => p < 0.01,
         )
     end
 
@@ -228,7 +247,7 @@ function arm(call!, production, calls_per_step)
         "saved_ms_per_call" => saved,
         "saved_pct" => headline["pct"],
         "window_saved_ms" => saved * calls_per_step * STEPS,
-        "resolved" => headline["sign_consistent"],
+        "resolved" => headline["resolved"],
         "values_compared" => values,
         "values_differing" => differing,
         "bitwise_identical" => differing == 0,
@@ -265,9 +284,12 @@ results = Dict{String, Any}(
               "device drifts during a run, so the configurations are " *
               "interleaved: one round visits all four, the visiting order " *
               "rotates each round, and an effect is the median of the " *
-              "per-round differences with sign_consistent saying whether " *
-              "every round agreed on its direction. A per-block spread is not " *
-              "quoted as an error bar because the drift sets it. Figures " *
+              "per-round differences. resolved is a two-sided sign test on " *
+              "those differences at p < 0.01 rather than a comparison against " *
+              "a spread, because the drift sets the spread and one contended " *
+              "round can reverse a single difference without putting the " *
+              "effect in doubt; rounds_agreeing and sign_test_p carry the " *
+              "test and differences_ms the differences themselves. Figures " *
               "outside `configs` are read off the production destination, and " *
               "destination_effect is what the probe's own choice of field is " *
               "worth. window_saved_ms scales the per-call figure by the calls " *
