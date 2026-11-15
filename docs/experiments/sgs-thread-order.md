@@ -25,7 +25,11 @@ So the probe writes each order into its own destination field and compares the t
 
 The closure runs eight times a step: twice on the explicit path and six times on the implicit one.
 `sgs-substep-cost` could price only the explicit calls, because its handle was the substep count and `BMT.Instantaneous` has no substep loop to fit, which is why its compaction ceiling was stated as a floor across the closure.
-The early-out the order collects is in `_sum_1m_over_sgs` ahead of the node rule and is reached whichever mode is passed — `mode` binds the positional argument before `args...`, so `isempty(args)` holds on both paths — so the implicit path is not a control here but the larger half of the prize, and timing it needs no fit.
+The early-out the order collects is in `_sum_1m_over_sgs` ahead of the node rule and is reached whichever mode is passed — `mode` binds the positional argument before `args...`, so `isempty(args)` holds on both paths — so the implicit calls are not a control here but a second site to decide, and timing them needs no fit.
+
+They are decided the other way, and that is the result that makes the order a per-call-site choice rather than a default.
+An `Instantaneous` call costs a fifth of a `LinearizedAverage` one, so the same point body is a far smaller share of its own kernel: the strided reads a level-aligned order implies are charged against a kernel with much less arithmetic to hide them behind, and §2a's reading of 4.7% of DRAM peak was taken on the heavy one.
+So both sites are timed and the order is asked for only where it is a resolved gain, which is why the probe also reports what a blanket default would have cost.
 
 ```sh calkit stage name=thread-order environment=clima outputs=[{path: results/experiments/sgs-thread-order/order.toml, storage: git}] inputs=[scripts/measure-thread-order.jl, scripts/run-julia-script.sh, ClimaAtmos.jl-mod/src, ClimaCore.jl-mod/src, ClimaCore.jl-mod/ext, ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml, ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl, ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml, ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml] scheduler={options: [--gpus=1, --time=90]}
 #!/usr/bin/env bash
@@ -68,17 +72,20 @@ ARMS = ["explicit"] + (["implicit"] if d["has_implicit_path"] else [])
 
 def arm(name):
     a = d[name]
-    pts = a["points"]
     return {
         "calls_per_step": a["calls_per_step"],
-        "vertical_ms": round(pts["vertical"]["ms"], 2),
-        "level_aligned_ms": round(pts["level_aligned"]["ms"], 2),
+        "vertical_ms": round(a["vertical_ms"], 2),
+        "level_aligned_ms": round(a["level_aligned_ms"], 2),
         "saved_ms_per_call": round(a["saved_ms_per_call"], 3),
         "saved_pct": round(a["saved_pct"], 2),
         "repeat_spread_ms": round(a["repeat_spread_ms"], 3),
         "resolved": a["resolved"],
+        "helps": a["saved_ms_per_call"] > 0 and a["resolved"],
         "window_saved_ms": round(a["window_saved_ms"], 1),
         "device_pct": round(100.0 * a["window_saved_ms"] / device_ms, 3),
+        # A probe that times into a fresh field instead of the one the model
+        # writes is measuring this as well as the treatment.
+        "fresh_vs_production_pct": round(a["fresh_vs_production_pct"], 2),
         "bitwise_identical": a["bitwise_identical"],
         "values_compared": a["values_compared"],
         "values_differing": a["values_differing"],
@@ -87,44 +94,54 @@ def arm(name):
 
 
 arms = {name: arm(name) for name in ARMS}
-window_ms = sum(arms[name]["window_saved_ms"] for name in ARMS)
-closure_ms = sum(
-    d[name]["points"]["vertical"]["ms"] * d[name]["calls_per_step"] * d["steps"]
-    for name in ARMS
-)
+closure_ms = sum(d[name]["vertical_ms"] * d[name]["calls_per_step"] * d["steps"] for name in ARMS)
 
-# Does the probe describe the kernel the pipeline profiles? The profile charges
-# one row for all eight calls over the window, so reconstruct it from the
-# per-call times and the launch counts and compare. A large residual means the
-# probe is timing something other than what the pipeline measured.
+# What ships: the order is asked for at the call sites where it is a resolved
+# gain and not at the others, so the device figure is the sum over those rather
+# than over the closure. The blanket figure is carried beside it, because a
+# default applied everywhere is the obvious thing to do and is worse.
+helped = [name for name in ARMS if arms[name]["helps"]]
+hurt = [name for name in ARMS if not arms[name]["helps"]]
+shipped_ms = sum(arms[name]["window_saved_ms"] for name in helped)
+blanket_ms = sum(arms[name]["window_saved_ms"] for name in ARMS)
+
 out = {
     "arms": arms,
     "steps": d["steps"],
     "orders": d["orders"],
+    "destinations": d["destinations"],
     "bitwise_identical": all(arms[name]["bitwise_identical"] for name in ARMS),
     "all_resolved": all(arms[name]["resolved"] for name in ARMS),
-    "window_saved_ms": round(window_ms, 1),
-    "device_pct": round(100.0 * window_ms / device_ms, 3),
-    "closure_saved_pct": round(100.0 * window_ms / closure_ms, 2),
+    "helped_arms": len(helped),
+    "hurt_arms": len(hurt),
+    "shipped_window_ms": round(shipped_ms, 1),
+    "shipped_device_pct": round(100.0 * shipped_ms / device_ms, 3),
+    "shipped_closure_pct": round(100.0 * shipped_ms / closure_ms, 2),
+    "blanket_window_ms": round(blanket_ms, 1),
+    "blanket_device_pct": round(100.0 * blanket_ms / device_ms, 3),
+    # What the blanket default gives up against the targeted one, which is the
+    # cost of not measuring the second call site.
+    "blanket_cost_pct": round(100.0 * (shipped_ms - blanket_ms) / device_ms, 3),
     "device": {
         "device_ms": round(device_ms, 1),
         "closure_ms": round(closure_ms, 1),
         "closure_pct": round(100.0 * closure_ms / device_ms, 2),
     },
+    # Does the probe describe the kernel the pipeline profiles? The profile
+    # charges one row for all eight calls over the window, so reconstruct it
+    # from the per-call times and the launch counts and compare.
     "profile": {
         "kernel_ms": round(kernel_ms, 1),
         "kernel_pct_of_device": kernel_pct,
         "calls_per_step": kernel_launches // d["steps"],
         "reconstructed_ms": round(closure_ms, 1),
-        "reconstruction_residual_pct": round(
-            100.0 * (closure_ms - kernel_ms) / kernel_ms, 2
-        ),
+        "reconstruction_residual_pct": round(100.0 * (closure_ms - kernel_ms) / kernel_ms, 2),
     },
     # A device-time change is measured on the device and needs no SYPD floor to
     # be believed, but whether an AMIP pair could confirm it is a separate
     # question and the null census is what answers it.
     "null_floor_pct": nulls["current_window_mean_pct"],
-    "below_null_floor": 100.0 * window_ms / device_ms < nulls["current_window_mean_pct"],
+    "below_null_floor": 100.0 * shipped_ms / device_ms < nulls["current_window_mean_pct"],
 }
 json.dump(out, open("results/docs/sgs-thread-order.json", "w"), indent=2)
 ```

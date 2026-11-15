@@ -27,6 +27,15 @@
 # Every point runs against one settled AMIP state in one process, which is the
 # only way to resolve a change of this size on a machine where one arm wandered
 # 7.73% between two runs of identical code.
+#
+# The destination field is a factor and not a convenience. A probe reaches for
+# `similar(...)`; the model writes the precomputed field, and the two are not
+# interchangeable -- timed into a fresh field the explicit call takes 20.05 ms
+# against the 16.23 ms that `sgs-substep-cost` and `cloud-mask-census` both
+# measured into the precomputed one, which is about the cost of an occupancy
+# step on a kernel that sits at the top of its band (learnings 8q). So both
+# destinations are timed, the saving is read off the production one, and the gap
+# between them is reported rather than left in the baseline.
 
 import CUDA
 import TOML
@@ -94,6 +103,9 @@ const ORDERS = (
     "level_aligned" => DataLayouts.LevelAlignedOrder(),
 )
 
+# The precomputed field the model writes, and a fresh allocation beside it.
+const DESTS = ("production", "fresh")
+
 explicit!(dest, order) = CA.set_environment_1m_tendency!(
     dest, Y, p, tm, cmp, thp, dt_explicit, nsubs, nsubs_quad, (), order,
 )
@@ -131,40 +143,60 @@ function agreement(a, b)
     return (; values = length(ia), differing, worst)
 end
 
-function arm(call!, template, calls_per_step)
-    dests = Dict(name => similar(template) for (name, _) in ORDERS)
+function arm(call!, production, calls_per_step)
+    dests = Dict("production" => production, "fresh" => similar(production))
     points = Dict{String, Any}()
-    for (name, order) in ORDERS
-        @info "order $name"
-        t = timed_ms(() -> call!(dests[name], order))
-        points[name] = Dict{String, Any}(
-            "ms" => t.median,
-            "ms_min" => t.min,
-            "ms_max" => t.max,
-        )
-        @info "  $(t.median) ms"
+    for dest in DESTS
+        by_order = Dict{String, Any}()
+        for (name, order) in ORDERS
+            @info "$dest destination, $name order"
+            t = timed_ms(() -> call!(dests[dest], order))
+            by_order[name] = Dict{String, Any}(
+                "ms" => t.median,
+                "ms_min" => t.min,
+                "ms_max" => t.max,
+            )
+            @info "  $(t.median) ms"
+        end
+        points[dest] = by_order
     end
-    base = points["vertical"]
-    best = points["level_aligned"]
+    # The treatment is read off the destination the model writes.
+    base = points["production"]["vertical"]
+    best = points["production"]["level_aligned"]
     saved = base["ms"] - best["ms"]
     spread = max(
         base["ms_max"] - base["ms_min"],
         best["ms_max"] - best["ms_min"],
     )
-    (; values, differing, worst) = agreement(
-        Array(parent(dests["vertical"])),
-        Array(parent(dests["level_aligned"])),
-    )
+    # Agreement, taken on the production field: the two orders run into it in
+    # turn and the result is copied out between them, so the values compared are
+    # the ones the model would go on to use.
+    snapshots = Dict{String, Any}()
+    for (name, order) in ORDERS
+        call!(production, order)
+        CUDA.synchronize()
+        snapshots[name] = Array(parent(production))
+    end
+    (; values, differing, worst) =
+        agreement(snapshots["vertical"], snapshots["level_aligned"])
     return Dict{String, Any}(
         "points" => points,
         "calls_per_step" => calls_per_step,
+        "vertical_ms" => base["ms"],
+        "level_aligned_ms" => best["ms"],
         "saved_ms_per_call" => saved,
         "saved_pct" => 100.0 * saved / base["ms"],
         "window_saved_ms" => saved * calls_per_step * STEPS,
         "repeat_spread_ms" => spread,
-        # The saving has to exceed the scatter of the two timings it is a
-        # difference of, or it is not a measurement.
-        "resolved" => saved > spread,
+        # The change has to exceed the scatter of the two timings it is a
+        # difference of, or it is not a measurement. Taken on the magnitude,
+        # because a resolved regression is a result and a one-sided test would
+        # report it as noise.
+        "resolved" => abs(saved) > spread,
+        # What the destination alone is worth, at the order the model uses
+        # today: a probe that times into a fresh field is measuring this too.
+        "fresh_vs_production_pct" =>
+            100.0 * (points["fresh"]["vertical"]["ms"] - base["ms"]) / base["ms"],
         "values_compared" => values,
         "values_differing" => differing,
         "bitwise_identical" => differing == 0,
@@ -180,6 +212,7 @@ results = Dict{String, Any}(
     "steps" => STEPS,
     "n_substeps_quad" => nsubs_quad,
     "orders" => [name for (name, _) in ORDERS],
+    "destinations" => [d for d in DESTS],
     "has_implicit_path" => has_implicit,
     "explicit" => arm(
         explicit!, p.precomputed.ᶜmp_tendency⁰, EXPLICIT_CALLS_PER_STEP,
@@ -200,7 +233,12 @@ results = Dict{String, Any}(
               "call figure and window_saved_ms scales it by the calls a step " *
               "makes and the 120 steps the profile covers. The guard the " *
               "order collects is live on both paths, since `mode` binds the " *
-              "positional argument ahead of `args...`.",
+              "positional argument ahead of `args...`. Both destinations are " *
+              "timed because they are not interchangeable: `production` is " *
+              "the precomputed field the model writes and `fresh` is a " *
+              "`similar` allocation, and fresh_vs_production_pct is what the " *
+              "choice alone costs at the order in use today. Every figure " *
+              "outside `points` is read off the production destination.",
 )
 if has_implicit
     results["implicit"] = arm(
