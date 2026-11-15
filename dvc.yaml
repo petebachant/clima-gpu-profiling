@@ -861,6 +861,7 @@ stages:
       - .calkit/scheduler/logs/sgs-substep-cost/sgs-substep-sweep.out:
           cache: false
           persist: true
+    frozen: true
     desc: Automatically generated from the 'sgs-substep-cost/sgs-substep-sweep'
       stage in calkit.yaml. Changes made here will be overwritten.
   sgs-substep-cost/values:
@@ -875,6 +876,7 @@ stages:
       - results/docs/sgs-substep-cost.json:
           cache: false
           persist: false
+    frozen: true
     desc: Automatically generated from the 'sgs-substep-cost/values' stage in
       calkit.yaml. Changes made here will be overwritten.
   cloud-mask-census/cloud-mask:
@@ -906,6 +908,7 @@ stages:
       - .calkit/scheduler/logs/cloud-mask-census/cloud-mask.out:
           cache: false
           persist: true
+    frozen: true
     desc: Automatically generated from the 'cloud-mask-census/cloud-mask' stage
       in calkit.yaml. Changes made here will be overwritten.
   cloud-mask-census/values:
@@ -921,7 +924,57 @@ stages:
       - results/docs/cloud-mask-census.json:
           cache: false
           persist: false
+    frozen: true
     desc: Automatically generated from the 'cloud-mask-census/values' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  sgs-thread-order/thread-order:
+    cmd: calkit scheduler batch --name sgs-thread-order/thread-order
+      --environment clima --dep scripts/measure-thread-order.jl --dep
+      scripts/run-julia-script.sh --dep ClimaAtmos.jl-mod/src --dep
+      ClimaCore.jl-mod/src --dep ClimaCore.jl-mod/ext --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      --dep .calkit/env-locks/clima --out
+      results/experiments/sgs-thread-order/order.toml --option --gpus=1 --option
+      --time=90 --
+      .calkit/markdown/docs/experiments/sgs-thread-order.md/thread-order.sh
+    deps:
+      - .calkit/markdown/docs/experiments/sgs-thread-order.md/thread-order.sh
+      - scripts/measure-thread-order.jl
+      - scripts/run-julia-script.sh
+      - ClimaAtmos.jl-mod/src
+      - ClimaCore.jl-mod/src
+      - ClimaCore.jl-mod/ext
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      - .calkit/env-locks/clima
+    outs:
+      - results/experiments/sgs-thread-order/order.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/sgs-thread-order/thread-order.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'sgs-thread-order/thread-order' stage
+      in calkit.yaml. Changes made here will be overwritten.
+  sgs-thread-order/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/sgs-thread-order.md/values.py
+    deps:
+      - .calkit/markdown/docs/experiments/sgs-thread-order.md/values.py
+      - results/experiments/sgs-thread-order/order.toml
+      - results/top-kernels.csv
+      - results/null-census.json
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/sgs-thread-order.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'sgs-thread-order/values' stage in
       calkit.yaml. Changes made here will be overwritten.
   wall-clock-conversion-doc/values:
     cmd: calkit xenv -n py --no-check -- python

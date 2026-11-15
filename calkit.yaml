@@ -1002,14 +1002,35 @@ pipeline:
       # Declares its own GPU stage, per the template, because it is the first
       # experiment to take ClimaAtmos.jl-mod/src as an input: the closure it
       # measures is that code, so a microphysics edit moves the answer and has
-      # to restale it. Freeze it on main once it has run and been tagged.
+      # to restale it.
+      #
+      # Frozen on main, live at meas/2026-11-14-sgs-substep-cost. The split it
+      # measures is a property of the closure as it stood: every microphysics
+      # edit after it restales the sweep, and re-running it would spend 90
+      # minutes restating the experiment against a different kernel while the
+      # documents that quote the split render from the working tree. Re-measure
+      # by tagging a new experiment.
+      frozen: true
     cloud-mask-census:
       kind: markdown
       target_path: docs/experiments/cloud-mask-census.md
       environment: py
       # Takes ClimaAtmos.jl-mod/src as an input for the same reason as
       # sgs-substep-cost: the mask it censuses is that code's own skip
-      # criterion. Freeze it on main once it has run and been tagged.
+      # criterion.
+      #
+      # Frozen on main, live at meas/2026-11-14-cloud-mask-census. The census
+      # counts cells and warps, which the thread order it recommends does not
+      # move -- a permutation of the same cells has the same mask -- so a
+      # re-run would spend a reservation to reproduce it. The treatment is
+      # measured by sgs-thread-order instead.
+      frozen: true
+    sgs-thread-order:
+      kind: markdown
+      target_path: docs/experiments/sgs-thread-order.md
+      environment: py
+      # The treatment cloud-mask-census recommends. Takes ClimaCore.jl-mod/src
+      # and /ext as inputs as well, since the order it measures lives there.
     wall-clock-conversion-doc:
       kind: markdown
       target_path: docs/wall-clock-conversion.md
