@@ -3895,3 +3895,88 @@ throw path reached codegen. The per-case `try` is what let the controls above
 survive the run and is worth keeping on any probe that compiles many variants.
 The run also truncated each error to 180 characters, which discarded the `Reason`
 line that says what could not be compiled --- print the whole error.
+
+## 8u. Warp divergence is a property of the launch, not of the field (2026-11-14)
+
+The figures are in `docs/experiments/cloud-mask-census.md` and
+`docs/experiments/sgs-thread-order.md`; what follows is what transfers.
+
+**S4b's rule needs one more step.** "Convert a fraction of points into a
+per-warp probability before believing it" is right and incomplete, because the
+per-warp probability is not a property of the criterion. Which cells share a
+warp is set by the order the launch hands consecutive thread ranks, and
+ClimaCore's pointwise loops hand them the parent layout's order, vertical
+fastest --- so a warp is a run of levels in one column. The SGS closure's
+clear-air criterion holds at a quarter of its cells and almost never at all 32
+lanes of such a warp, because precipitation threads down a column; presented
+horizontally, so that a warp is spectral elements at one height, the same
+criterion fills whole warps at about one in ten. Nothing about the criterion
+changed. So the question to ask of a per-point early-out is not only how often
+it fires but whether the launch groups the cells it fires at --- and that is a
+free variable, not a property of the physics.
+
+Expressing it cost nothing structural. ClimaCore's `DataMask` already supplies
+a loop's index set rather than filtering it, which is how `IJHMask` hands a
+masked loop a compacted list, so an order is a `DataMask` that marks every
+point active and permutes, and no signature changes anywhere.
+
+**"Coalescing is irrelevant here" is a statement about one kernel.** S2a
+measured the heavy SGS kernel at a few percent of DRAM peak and concluded that
+layout does not matter to it, which is what makes a strided thread order
+affordable. Its `Instantaneous` sibling runs the same point body at a fraction
+of the cost per call, so the same bytes are charged against far less arithmetic
+to hide them behind --- and the identical reorder makes it consistently slower.
+The order is a per-call-site choice. A blanket default over both paths gives
+back most of the gain, which is the shape of mistake to expect whenever a
+launch-level knob is set once for a family of call sites.
+
+**A documented default is not a measured one.** This experiment was designed
+around the closure's clear-air guard being dead code, on the strength of a
+docstring in the same package giving the displacement-truncation parameter's
+default as infinite, which would make the guard's own condition unsatisfiable.
+The model resolves it to a finite value set in `create_parameters.jl`, so the
+guard fires at a quarter of the cells and the treatment is a launch change with
+no accuracy case to make, rather than a repaired criterion with one. The census
+counted the condition it was built to explain, which is the only reason the
+premise was caught. Read the parameter out of the running model.
+
+### The device drifts inside a run, and a block-per-configuration design reads the drift as the effect
+
+This cost two reservations and is the most transferable part.
+
+Timing configuration A in a block of repeats, then B in its own block, and
+comparing the blocks' medians attributes everything that changed between the
+blocks to the configuration. Here the explicit SGS call fell monotonically
+across four such blocks, by more in total than the treatment is worth, with a
+within-block spread several times the treatment. Two conclusions followed, both
+wrong: the arm timed second looked faster whichever arm it was, and a factor
+worth nothing --- whether the probe writes the precomputed field the model
+writes or a fresh allocation --- appeared to be worth about a fifth of the
+kernel, in opposite directions on the two paths. Opposite signs for one factor
+on two arms of the same probe is the tell.
+
+Interleave instead. One round visits every configuration, the visiting order
+rotates by one each round, and the effect is the median of the per-round
+differences, so a drift slow compared with a round falls on both arms of every
+difference. Against a synthetic compounding drift steeper than any observed
+here, the rotated paired difference recovers almost all of a known effect that
+the block design loses entirely.
+
+Then do not quote the within-block spread as an error bar, because the drift
+sets it. The claim is about the differences, so test those: a two-sided sign
+test over the rounds. That also survives what an all-rounds-agree criterion
+does not --- one round landing while something else is on the device reverses a
+single difference and says nothing about the effect, and an all-or-nothing test
+reports a replicated result as unresolved.
+
+### And S8s was in this file the whole time
+
+Four measurement scripts in this pass were checked with `Meta.parseall` before
+being submitted. S8s, written five days earlier, is about exactly that: the
+incremental parse Julia actually performs rejects input `parseall` accepts, and
+`scripts/check-julia-script.jl` exists to do both that and macro resolution in
+a second with no GPU. The scripts happened to be clean. The habit this file
+opens with --- grep `docs/learnings.md` for the quantity you are about to rely
+on --- was applied to the warp and coalescing figures and not to the check being
+used to decide a job was safe to submit. Grep it for the tool as well as for
+the number.
