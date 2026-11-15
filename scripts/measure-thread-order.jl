@@ -6,36 +6,39 @@
 # one column -- those cells fill a warp 0.31% of the time. Reordered so that a
 # warp is two spectral elements at one level, they fill 10.26% of warps and
 # 7.80% of 128-thread blocks. The census could only bracket what that is worth,
-# between 0.89% and 1.17% of device on the explicit path, because a warp count
-# cannot say how much of a skipped point body was CloudMicrophysics and how
-# much was the node rule around it.
+# because a warp count cannot say how much of a skipped point body was
+# CloudMicrophysics and how much was the node rule around it.
 #
-# This measures it. `DataLayouts.LevelAlignedOrder` marks every point active,
-# like `NoMask`, and only changes which points consecutive threads take, so the
-# two orders evaluate the same function at the same cells with no reduction
-# between them and must agree to the bit. That is checked here rather than
-# argued: each order writes its own destination field and the two are compared
-# as integers.
+# `DataLayouts.LevelAlignedOrder` marks every point active, like `NoMask`, and
+# only changes which points consecutive threads take, so the two orders evaluate
+# the same function at the same cells with no reduction between them and must
+# agree to the bit. That is checked here rather than argued: each order writes
+# the production destination in turn and the results are compared as integers.
 #
 # Both paths are timed. The explicit call runs twice per step and the implicit
 # one six times, and the guard is live on both -- `mode` binds the positional
 # argument ahead of `args...`, so `isempty(args)` holds whichever mode is
-# passed -- so the implicit path is not a control here but the larger half of
-# the prize, and `sgs-substep-cost` could not price it because `Instantaneous`
-# has no substep loop to fit.
+# passed -- so the implicit calls are a second site to decide rather than a
+# control.
+#
+# THE DEVICE DRIFTS DURING A RUN, AND THAT IS WHAT THE DESIGN IS FOR.
+# Timing each configuration in its own block of repeats and comparing the
+# blocks' medians reads the drift as a difference between the configurations:
+# measured that way the explicit call fell monotonically with execution order,
+# 20.04 -> 16.90 -> 16.23 -> 13.89 ms across four blocks, with a 3.3 ms spread
+# inside a single block, while the same four configurations put the two
+# destinations 19% apart in one direction on the explicit path and 22% the other
+# way on the implicit one. So the configurations are interleaved instead: one
+# round visits all of them, the visiting order rotates by one each round, and
+# the effect is the median of the per-round differences. A drift that is slow
+# compared with a round then falls on both arms of every difference, and the
+# claim that an effect is resolved is that every round agrees on its sign --
+# which is a statement about the differences rather than about a spread that the
+# drift itself sets.
 #
 # Every point runs against one settled AMIP state in one process, which is the
 # only way to resolve a change of this size on a machine where one arm wandered
 # 7.73% between two runs of identical code.
-#
-# The destination field is a factor and not a convenience. A probe reaches for
-# `similar(...)`; the model writes the precomputed field, and the two are not
-# interchangeable -- timed into a fresh field the explicit call takes 20.05 ms
-# against the 16.23 ms that `sgs-substep-cost` and `cloud-mask-census` both
-# measured into the precomputed one, which is about the cost of an occupancy
-# step on a kernel that sits at the top of its band (learnings 8q). So both
-# destinations are timed, the saving is read off the production one, and the gap
-# between them is reported rather than left in the baseline.
 
 import CUDA
 import TOML
@@ -57,7 +60,7 @@ end
 
 out_path = arg_value("--out", "results/thread-order.toml")
 
-const REPEATS = 7
+const ROUNDS = 15
 const WARMUP_STEPS = 3
 const STEPS = 120
 const EXPLICIT_CALLS_PER_STEP = 2
@@ -97,14 +100,18 @@ dt_explicit = CA.mp_averaging_dt(p, p.mp_averaging)
 dt_implicit = p.dtγ
 
 # The orders, as the `mask` argument `copyto_capped!` already takes. `NoMask` is
-# the vertical order the launch uses without being asked.
+# the vertical order, the one the launch uses without being asked.
 const ORDERS = (
     "vertical" => DataLayouts.NoMask(),
     "level_aligned" => DataLayouts.LevelAlignedOrder(),
 )
 
-# The precomputed field the model writes, and a fresh allocation beside it.
+# The precomputed field the model writes, and a fresh allocation beside it. The
+# second is carried because it is what a probe reaches for, so the interleaved
+# rounds can say whether the choice matters at all.
 const DESTS = ("production", "fresh")
+
+config_key(dest, order) = "$dest/$order"
 
 explicit!(dest, order) = CA.set_environment_1m_tendency!(
     dest, Y, p, tm, cmp, thp, dt_explicit, nsubs, nsubs_quad, (), order,
@@ -114,19 +121,7 @@ implicit!(dest, order) = CA.set_environment_1m_tendency!(
     (CA.BMT.Instantaneous(),), order,
 )
 
-# Median of repeats: one timing on this machine is worth little, and the mean is
-# dragged by whatever else lands on the GPU.
-function timed_ms(f; repeats = REPEATS)
-    f()
-    CUDA.synchronize()
-    ts = Float64[]
-    for _ in 1:repeats
-        CUDA.synchronize()
-        push!(ts, CUDA.@elapsed(f()) * 1e3)
-    end
-    sort!(ts)
-    return (median = ts[(length(ts) + 1) ÷ 2], min = first(ts), max = last(ts))
-end
+median(xs) = (s = sort(xs); s[(length(s) + 1) ÷ 2])
 
 # Bitwise, not approximate: a reorder that changes a value has a bug, and a
 # float comparison would hide a NaN moving. The integers are the field's own
@@ -145,32 +140,71 @@ end
 
 function arm(call!, production, calls_per_step)
     dests = Dict("production" => production, "fresh" => similar(production))
-    points = Dict{String, Any}()
-    for dest in DESTS
-        by_order = Dict{String, Any}()
-        for (name, order) in ORDERS
-            @info "$dest destination, $name order"
-            t = timed_ms(() -> call!(dests[dest], order))
-            by_order[name] = Dict{String, Any}(
-                "ms" => t.median,
-                "ms_min" => t.min,
-                "ms_max" => t.max,
-            )
-            @info "  $(t.median) ms"
+    calls = Pair{String, Any}[]
+    for dest in DESTS, (name, order) in ORDERS
+        f = let d = dests[dest], o = order
+            () -> call!(d, o)
         end
-        points[dest] = by_order
+        push!(calls, config_key(dest, name) => f)
     end
-    # The treatment is read off the destination the model writes.
-    base = points["production"]["vertical"]
-    best = points["production"]["level_aligned"]
-    saved = base["ms"] - best["ms"]
-    spread = max(
-        base["ms_max"] - base["ms_min"],
-        best["ms_max"] - best["ms_min"],
+
+    for (_, f) in calls
+        f()
+    end
+    CUDA.synchronize()
+
+    times = Dict(key => Float64[] for (key, _) in calls)
+    rounds = Dict{String, Float64}[]
+    for r in 1:ROUNDS
+        round = Dict{String, Float64}()
+        for (key, f) in circshift(calls, r)
+            CUDA.synchronize()
+            ms = CUDA.@elapsed(f()) * 1e3
+            round[key] = ms
+            push!(times[key], ms)
+        end
+        push!(rounds, round)
+    end
+
+    configs = Dict{String, Any}()
+    for (key, _) in calls
+        ts = times[key]
+        configs[key] = Dict{String, Any}(
+            "ms" => median(ts),
+            "ms_min" => minimum(ts),
+            "ms_max" => maximum(ts),
+        )
+    end
+
+    # One difference per round, so a drift slow compared with a round cancels.
+    function effect(a, b)
+        ds = [round[a] - round[b] for round in rounds]
+        med = median(ds)
+        base = median([round[a] for round in rounds])
+        return Dict{String, Any}(
+            "median_ms" => med,
+            "min_ms" => minimum(ds),
+            "max_ms" => maximum(ds),
+            "pct" => 100.0 * med / base,
+            # Every round agreeing on the sign is the claim; a spread the drift
+            # sets is not an error bar.
+            "sign_consistent" => minimum(ds) > 0 || maximum(ds) < 0,
+        )
+    end
+
+    order_effect = Dict(
+        dest => effect(
+            config_key(dest, "vertical"), config_key(dest, "level_aligned"),
+        ) for dest in DESTS
     )
-    # Agreement, taken on the production field: the two orders run into it in
-    # turn and the result is copied out between them, so the values compared are
-    # the ones the model would go on to use.
+    destination_effect = Dict(
+        name => effect(config_key("fresh", name), config_key("production", name))
+        for (name, _) in ORDERS
+    )
+
+    # Agreement on the production field: the two orders run into it in turn and
+    # the result is copied out between them, so the values compared are the ones
+    # the model would go on to use.
     snapshots = Dict{String, Any}()
     for (name, order) in ORDERS
         call!(production, order)
@@ -179,24 +213,22 @@ function arm(call!, production, calls_per_step)
     end
     (; values, differing, worst) =
         agreement(snapshots["vertical"], snapshots["level_aligned"])
+
+    # The treatment is read off the destination the model writes.
+    headline = order_effect["production"]
+    saved = headline["median_ms"]
     return Dict{String, Any}(
-        "points" => points,
+        "configs" => configs,
+        "order_effect" => order_effect,
+        "destination_effect" => destination_effect,
         "calls_per_step" => calls_per_step,
-        "vertical_ms" => base["ms"],
-        "level_aligned_ms" => best["ms"],
+        "vertical_ms" => configs[config_key("production", "vertical")]["ms"],
+        "level_aligned_ms" =>
+            configs[config_key("production", "level_aligned")]["ms"],
         "saved_ms_per_call" => saved,
-        "saved_pct" => 100.0 * saved / base["ms"],
+        "saved_pct" => headline["pct"],
         "window_saved_ms" => saved * calls_per_step * STEPS,
-        "repeat_spread_ms" => spread,
-        # The change has to exceed the scatter of the two timings it is a
-        # difference of, or it is not a measurement. Taken on the magnitude,
-        # because a resolved regression is a result and a one-sided test would
-        # report it as noise.
-        "resolved" => abs(saved) > spread,
-        # What the destination alone is worth, at the order the model uses
-        # today: a probe that times into a fresh field is measuring this too.
-        "fresh_vs_production_pct" =>
-            100.0 * (points["fresh"]["vertical"]["ms"] - base["ms"]) / base["ms"],
+        "resolved" => headline["sign_consistent"],
         "values_compared" => values,
         "values_differing" => differing,
         "bitwise_identical" => differing == 0,
@@ -207,7 +239,7 @@ end
 results = Dict{String, Any}(
     "config_file" => config_file,
     "float_type" => string(eltype(Y.c.ρ)),
-    "repeats" => REPEATS,
+    "rounds" => ROUNDS,
     "warmup_steps" => WARMUP_STEPS,
     "steps" => STEPS,
     "n_substeps_quad" => nsubs_quad,
@@ -217,28 +249,31 @@ results = Dict{String, Any}(
     "explicit" => arm(
         explicit!, p.precomputed.ᶜmp_tendency⁰, EXPLICIT_CALLS_PER_STEP,
     ),
-    "note" => "Each point calls the live `set_environment_1m_tendency!` on one " *
-              "simulation state with a different thread order and nothing " *
-              "else changed, so the points differ by the order and no two " *
-              "runs are differenced. `vertical` is `DataLayouts.NoMask()`, " *
-              "the order the launch uses unasked: the parent layout's own, " *
-              "with the vertical fastest, so a warp is 32 levels of one " *
-              "column. `level_aligned` is " *
+    "note" => "Each configuration calls the live " *
+              "`set_environment_1m_tendency!` on one simulation state, so the " *
+              "configurations differ by the thread order and the destination " *
+              "field and no two runs are differenced. `vertical` is " *
+              "`DataLayouts.NoMask()`, the order the launch uses unasked: the " *
+              "parent layout's own, with the vertical fastest, so a warp is " *
+              "32 levels of one column. `level_aligned` is " *
               "`DataLayouts.LevelAlignedOrder()`, which gives a warp the " *
               "cells of one level. Both mark every point active and evaluate " *
               "the same function at the same cells with no reduction between " *
-              "them, so they must agree to the bit; bitwise_identical is " *
-              "that check, taken on the fields' own storage reinterpreted as " *
-              "integers so a NaN cannot pass as equal. The saving is a per " *
-              "call figure and window_saved_ms scales it by the calls a step " *
-              "makes and the 120 steps the profile covers. The guard the " *
-              "order collects is live on both paths, since `mode` binds the " *
-              "positional argument ahead of `args...`. Both destinations are " *
-              "timed because they are not interchangeable: `production` is " *
-              "the precomputed field the model writes and `fresh` is a " *
-              "`similar` allocation, and fresh_vs_production_pct is what the " *
-              "choice alone costs at the order in use today. Every figure " *
-              "outside `points` is read off the production destination.",
+              "them, so they must agree to the bit; bitwise_identical is that " *
+              "check, taken on the production field's own storage " *
+              "reinterpreted as integers so a NaN cannot pass as equal. The " *
+              "device drifts during a run, so the configurations are " *
+              "interleaved: one round visits all four, the visiting order " *
+              "rotates each round, and an effect is the median of the " *
+              "per-round differences with sign_consistent saying whether " *
+              "every round agreed on its direction. A per-block spread is not " *
+              "quoted as an error bar because the drift sets it. Figures " *
+              "outside `configs` are read off the production destination, and " *
+              "destination_effect is what the probe's own choice of field is " *
+              "worth. window_saved_ms scales the per-call figure by the calls " *
+              "a step makes and the 120 steps the profile covers. The guard " *
+              "the order collects is live on both paths, since `mode` binds " *
+              "the positional argument ahead of `args...`.",
 )
 if has_implicit
     results["implicit"] = arm(
@@ -250,4 +285,4 @@ mkpath(dirname(out_path))
 open(out_path, "w") do io
     TOML.print(io, results; sorted = true)
 end
-@info "wrote $out_path" results["explicit"]["saved_pct"] results["explicit"]["bitwise_identical"]
+@info "wrote $out_path" results["explicit"]["saved_pct"] results["explicit"]["resolved"] results["explicit"]["bitwise_identical"]

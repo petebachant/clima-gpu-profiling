@@ -1,8 +1,9 @@
 config_file = "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml"
+destinations = ["production", "fresh"]
 float_type = "Float32"
 has_implicit_path = true
 n_substeps_quad = 2
-note = "Each point calls the live `set_environment_1m_tendency!` on one simulation state with a different thread order and nothing else changed, so the points differ by the order and no two runs are differenced. `vertical` is `DataLayouts.NoMask()`, the order the launch uses unasked: the parent layout's own, with the vertical fastest, so a warp is 32 levels of one column. `level_aligned` is `DataLayouts.LevelAlignedOrder()`, which gives a warp the cells of one level. Both mark every point active and evaluate the same function at the same cells with no reduction between them, so they must agree to the bit; bitwise_identical is that check, taken on the fields' own storage reinterpreted as integers so a NaN cannot pass as equal. The saving is a per call figure and window_saved_ms scales it by the calls a step makes and the 120 steps the profile covers. The guard the order collects is live on both paths, since `mode` binds the positional argument ahead of `args...`."
+note = "Each point calls the live `set_environment_1m_tendency!` on one simulation state with a different thread order and nothing else changed, so the points differ by the order and no two runs are differenced. `vertical` is `DataLayouts.NoMask()`, the order the launch uses unasked: the parent layout's own, with the vertical fastest, so a warp is 32 levels of one column. `level_aligned` is `DataLayouts.LevelAlignedOrder()`, which gives a warp the cells of one level. Both mark every point active and evaluate the same function at the same cells with no reduction between them, so they must agree to the bit; bitwise_identical is that check, taken on the fields' own storage reinterpreted as integers so a NaN cannot pass as equal. The saving is a per call figure and window_saved_ms scales it by the calls a step makes and the 120 steps the profile covers. The guard the order collects is live on both paths, since `mode` binds the positional argument ahead of `args...`. Both destinations are timed because they are not interchangeable: `production` is the precomputed field the model writes and `fresh` is a `similar` allocation, and fresh_vs_production_pct is what the choice alone costs at the order in use today. Every figure outside `points` is read off the production destination."
 orders = ["vertical", "level_aligned"]
 repeats = 7
 steps = 120
@@ -11,43 +12,69 @@ warmup_steps = 3
 [explicit]
 bitwise_identical = true
 calls_per_step = 2
-repeat_spread_ms = 0.5990397185087204
-resolved = true
-saved_ms_per_call = 6.168576888740063
-saved_pct = 30.772378233825993
+fresh_vs_production_pct = -19.03326907557213
+level_aligned_ms = 16.899073496460915
+repeat_spread_ms = 3.305472433567047
+resolved = false
+saved_ms_per_call = 3.1416304409503937
+saved_pct = 15.676247953973833
 values_compared = 7766016
 values_differing = 0
-window_saved_ms = 1480.458453297615
+vertical_ms = 20.04070393741131
+window_saved_ms = 753.9913058280945
 worst_abs_difference = 0.0
 
-    [explicit.points.level_aligned]
-    ms = 13.877247460186481
-    ms_max = 14.361599460244179
-    ms_min = 13.762559741735458
+    [explicit.points.fresh.level_aligned]
+    ms = 13.888511806726456
+    ms_max = 14.006271958351135
+    ms_min = 13.787136413156986
 
-    [explicit.points.vertical]
-    ms = 20.045824348926544
-    ms_max = 20.12467198073864
-    ms_min = 19.976193085312843
+    [explicit.points.fresh.vertical]
+    ms = 16.226302832365036
+    ms_max = 16.362495720386505
+    ms_min = 16.19558408856392
+
+    [explicit.points.production.level_aligned]
+    ms = 16.899073496460915
+    ms_max = 17.189888283610344
+    ms_min = 13.884415850043297
+
+    [explicit.points.production.vertical]
+    ms = 20.04070393741131
+    ms_max = 20.207617431879044
+    ms_min = 19.979262724518776
 
 [implicit]
 bitwise_identical = true
 calls_per_step = 6
-repeat_spread_ms = 0.11571170762181282
-resolved = false
-saved_ms_per_call = -0.70348777808249
-saved_pct = -19.34121037179885
+fresh_vs_production_pct = 22.476682465612704
+level_aligned_ms = 4.839424043893814
+repeat_spread_ms = 0.10854378342628479
+resolved = true
+saved_ms_per_call = -1.21753616258502
+saved_pct = -33.6160643974726
 values_compared = 7766016
 values_differing = 0
-window_saved_ms = -506.5112002193928
+vertical_ms = 3.621887881308794
+window_saved_ms = -876.6260370612144
 worst_abs_difference = 0.0
 
-    [implicit.points.level_aligned]
-    ms = 4.340735729783773
-    ms_max = 4.404223989695311
-    ms_min = 4.288512282073498
+    [implicit.points.fresh.level_aligned]
+    ms = 4.811776336282492
+    ms_max = 4.916224163025618
+    ms_min = 4.768767859786749
 
-    [implicit.points.vertical]
-    ms = 3.6372479517012835
-    ms_max = 3.7027839571237564
-    ms_min = 3.598335897549987
+    [implicit.points.fresh.vertical]
+    ms = 4.435968119651079
+    ms_max = 4.463615827262402
+    ms_min = 4.4052479788661
+
+    [implicit.points.production.level_aligned]
+    ms = 4.839424043893814
+    ms_max = 4.894719924777746
+    ms_min = 4.786176141351461
+
+    [implicit.points.production.vertical]
+    ms = 3.621887881308794
+    ms_max = 3.6792319733649492
+    ms_min = 3.60038410872221

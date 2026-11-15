@@ -78,14 +78,23 @@ def arm(name):
         "level_aligned_ms": round(a["level_aligned_ms"], 2),
         "saved_ms_per_call": round(a["saved_ms_per_call"], 3),
         "saved_pct": round(a["saved_pct"], 2),
-        "repeat_spread_ms": round(a["repeat_spread_ms"], 3),
+        # The range of the per-round differences, which is the error bar: a
+        # per-block spread is set by the device drift the rounds cancel.
+        "saved_min_ms": round(a["order_effect"]["production"]["min_ms"], 3),
+        "saved_max_ms": round(a["order_effect"]["production"]["max_ms"], 3),
         "resolved": a["resolved"],
         "helps": a["saved_ms_per_call"] > 0 and a["resolved"],
         "window_saved_ms": round(a["window_saved_ms"], 1),
         "device_pct": round(100.0 * a["window_saved_ms"] / device_ms, 3),
-        # A probe that times into a fresh field instead of the one the model
-        # writes is measuring this as well as the treatment.
-        "fresh_vs_production_pct": round(a["fresh_vs_production_pct"], 2),
+        # The same effect read at the other destination, which is what says the
+        # order and not the field is what moved.
+        "saved_pct_fresh": round(a["order_effect"]["fresh"]["pct"], 2),
+        # And what the probe's own choice of field is worth at the order the
+        # model uses today, which a single-block design reads as a treatment.
+        "destination_pct": round(a["destination_effect"]["vertical"]["pct"], 2),
+        "destination_sign_consistent": a["destination_effect"]["vertical"][
+            "sign_consistent"
+        ],
         "bitwise_identical": a["bitwise_identical"],
         "values_compared": a["values_compared"],
         "values_differing": a["values_differing"],
@@ -108,6 +117,7 @@ blanket_ms = sum(arms[name]["window_saved_ms"] for name in ARMS)
 out = {
     "arms": arms,
     "steps": d["steps"],
+    "rounds": d["rounds"],
     "orders": d["orders"],
     "destinations": d["destinations"],
     "bitwise_identical": all(arms[name]["bitwise_identical"] for name in ARMS),
