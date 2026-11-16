@@ -247,28 +247,46 @@ def correctness():
 # the conversion is absolute milliseconds times launches rather than a share of
 # a share -- the mistake that read a per-call share as a device share once here
 # already.
-def decision():
-    rows = {}
-    for r in csv.DictReader(open("results/top-kernels.csv")):
-        for band, prefix in (
-            ("lw", "rte_lw_2stream_solve_grouped"),
-            ("sw", "rte_sw_2stream_solve_grouped"),
-        ):
-            if r["kernel"].startswith(prefix):
-                rows[band] = r
-    assert set(rows) == {"lw", "sw"}, f"profile has {sorted(rows)}, not both grouped solves"
+# A band is however many kernels its solve launches. It was one named
+# `rte_*_2stream_solve_grouped`; the optics split made it an optics kernel and a
+# sweeps kernel, so a prefix pinned to the old name finds nothing and this
+# analysis asserts the profile is missing a band it is actually running.
+BAND_PREFIXES = {
+    "lw": ("rte_lw_2stream_solve_grouped", "_lw_group_optics", "_lw_group_sweeps"),
+    "sw": ("rte_sw_2stream_solve_grouped", "_sw_group_optics", "_sw_group_sweeps"),
+}
+# One reduction per solve, whatever the solve is made of, which is what makes
+# this the window's count of solves. The solve kernels themselves are launched
+# once per round since the split, so counting those would multiply the window
+# by the number of rounds.
+SOLVE_COUNTERS = {"lw": "_reduce_lw_groups", "sw": "_reduce_sw_groups"}
 
-    # The budget, derived from each row's time and its own share of it. The two
-    # rows agreeing is the check that they came from one profile.
+
+def decision():
+    rows = {b: [] for b in BAND_PREFIXES}
+    solves = {}
+    for r in csv.DictReader(open("results/top-kernels.csv")):
+        for band, prefixes in BAND_PREFIXES.items():
+            if any(r["kernel"].startswith(p) for p in prefixes):
+                rows[band].append(r)
+        for band, prefix in SOLVE_COUNTERS.items():
+            if r["kernel"].startswith(prefix):
+                solves[band] = float(r["invocations_mod"])
+    assert all(rows.values()), f"profile has {sorted(b for b, v in rows.items() if v)}, not both grouped solves"
+    assert set(solves) == {"lw", "sw"}, f"profile has reductions for {sorted(solves)}, not both bands"
+
+    # The budget, derived from each band's time and its own share of it. The two
+    # bands agreeing is the check that they came from one profile.
     budgets = {
-        b: 100.0 * float(r["total_ms_mod"]) / float(r["pct_of_gpu_time_mod"])
-        for b, r in rows.items()
+        b: 100.0 * sum(float(r["total_ms_mod"]) for r in rs)
+        / sum(float(r["pct_of_gpu_time_mod"]) for r in rs)
+        for b, rs in rows.items()
     }
     device_ms = sum(budgets.values()) / len(budgets)
-    assert abs(budgets["lw"] - budgets["sw"]) / device_ms < 0.01, "rows disagree on the device total"
+    assert abs(budgets["lw"] - budgets["sw"]) / device_ms < 0.01, "bands disagree on the device total"
 
     bands = {"lw": pts, "sw": sw["points"]}
-    launches = {b: float(rows[b]["invocations_mod"]) for b in rows}
+    launches = solves
     default = sweep["default_ngpt_groups"]
     assert sw["default_ngpt_groups"] == default, "the two sweeps disagree on the default"
     above = [n for n in counts if n > default]

@@ -227,17 +227,19 @@ def family(con, likes):
 def waves(fam):
     """How many grid-fulls of blocks the device holds, and how many there are.
 
-    This is the quantity the split is for. Registers decide how many blocks fit
-    on an SM at once, and that number does not change when the grid grows, so
-    occupancy per SM is identical grouped or not. What changes is whether there
-    are blocks left over: at one block per SM the whole grid is resident at
-    once, every SM waits for its own column to finish, and the launch is as
-    long as its slowest column. Past one wave the scheduler hands a finished SM
+    Registers decide how many blocks fit on an SM at once, and growing the grid
+    does not change that number. What the grid changes is whether there are
+    blocks left over: at one block per SM the whole grid is resident at once,
+    every SM waits for its own column to finish, and the launch is as long as
+    its slowest column. Past one wave the scheduler hands a finished SM
     another block, which is what absorbs the tail.
 
-    Read it as a prediction to test, not a reason. This treatment moved waves
-    from below one to many, with registers and blocks per SM unchanged, and the
-    kernel time did not move -- so placement was never the limiter here. A wave
+    Read it as a prediction to test, not a reason. The g-point grouping moved
+    waves from below one to many with registers and blocks per SM unchanged,
+    and the kernel time moved by about what the wave count predicted and no
+    more. The optics split then changed blocks per SM as well, which is a
+    different mechanism and a larger effect, so the two arms no longer share an
+    occupancy and `blocks_resident_per_sm` has to be read for each. A wave
     count explains where work goes, never how long it takes.
     """
     regs, block, grid = fam["registers"], fam["block"], fam["grid"]
@@ -350,6 +352,13 @@ def main():
             "groups": ngroups,
             "baseline": w_base,
             "mod": w_mod,
+            # False while the only treatment was the grouping, and true since
+            # the optics split: the arms then differ in occupancy as well as in
+            # grid, so a wave count no longer isolates placement.
+            "occupancy_differs": (
+                w_base["blocks_resident_per_sm"]
+                != w_mod["blocks_resident_per_sm"]
+            ),
         },
         "shortwave": {
             "baseline": {k: v for k, v in b_sw.items() if k != "_rows"},
@@ -441,8 +450,9 @@ def main():
     print(f"wrote {OUT}")
     print(f"  longwave {lw['baseline']['elapsed_ms']} -> {lw['mod_charged_ms']} ms elapsed "
           f"({lw['change_pct']:+.2f}%, {lw['saved_pct_of_device']:+.3f} points of device)")
-    print(f"  waves {w_base['waves']} -> {w_mod['waves']} over {ngroups} groups "
-          f"at {w_mod['blocks_resident_per_sm']} block(s)/SM either way")
+    print(f"  waves {w_base['waves']} -> {w_mod['waves']} over {ngroups} groups, "
+          f"{w_base['blocks_resident_per_sm']} -> "
+          f"{w_mod['blocks_resident_per_sm']} block(s)/SM")
     print(f"  shortwave {doc['shortwave']['baseline']['elapsed_ms']} -> "
           f"{doc['shortwave']['mod_charged_ms']} ms elapsed "
           f"({doc['shortwave']['change_pct']:+.2f}%)")
