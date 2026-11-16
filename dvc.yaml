@@ -928,6 +928,56 @@ stages:
     frozen: true
     desc: Automatically generated from the 'cloud-mask-census/values' stage in
       calkit.yaml. Changes made here will be overwritten.
+  auto-register-cap/census:
+    cmd: calkit scheduler batch --name auto-register-cap/census --environment
+      clima --dep scripts/census-auto-register-cap.jl --dep
+      scripts/run-julia-script.sh --dep ClimaCore.jl-mod/src --dep
+      ClimaCore.jl-mod/ext --dep ClimaAtmos.jl-mod/src --dep
+      ClimaCoupler.jl-mod/src --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep .calkit/env-locks/clima --out
+      results/experiments/auto-register-cap/census.toml --option --gpus=1
+      --option --time=90 --
+      .calkit/markdown/docs/experiments/auto-register-cap.md/census.sh
+    deps:
+      - .calkit/markdown/docs/experiments/auto-register-cap.md/census.sh
+      - scripts/census-auto-register-cap.jl
+      - scripts/run-julia-script.sh
+      - ClimaCore.jl-mod/src
+      - ClimaCore.jl-mod/ext
+      - ClimaAtmos.jl-mod/src
+      - ClimaCoupler.jl-mod/src
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - .calkit/env-locks/clima
+    outs:
+      - results/experiments/auto-register-cap/census.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/auto-register-cap/census.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'auto-register-cap/census' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  auto-register-cap/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/auto-register-cap.md/values.py
+    deps:
+      - .calkit/markdown/docs/experiments/auto-register-cap.md/values.py
+      - results/experiments/auto-register-cap/census.toml
+      - results/top-kernels.csv
+      - results/null-census.json
+      - results/summary.json
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/auto-register-cap.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'auto-register-cap/values' stage in
+      calkit.yaml. Changes made here will be overwritten.
   sgs-thread-order/thread-order:
     cmd: calkit scheduler batch --name sgs-thread-order/thread-order
       --environment clima --dep scripts/measure-thread-order.jl --dep

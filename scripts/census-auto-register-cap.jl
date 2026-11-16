@@ -121,6 +121,7 @@ open(OUT_PATH, "w") do io
         "climacore_commit" =>
             try readchomp(`git -C $(pkgdir(ClimaCore)) rev-parse HEAD`) catch; "unknown" end,
         "max_shed" => Ext.AUTO_REGISTER_CAP_MAX_SHED[],
+        "max_warps" => Ext.AUTO_REGISTER_CAP_MAX_WARPS[],
         "local_growth_pct" => Ext.AUTO_REGISTER_CAP_LOCAL_GROWTH_PCT[],
         "local_slack_bytes" => Ext.AUTO_REGISTER_CAP_LOCAL_SLACK[],
         "n_specializations" => length(rows),
