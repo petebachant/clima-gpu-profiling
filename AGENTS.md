@@ -373,6 +373,28 @@ So we can `cd` into each Coupler submodule and run
 bash scripts/update-coupler-to-main.sh
 ```
 
+### The manifest the stages read is toolchain-versioned
+
+The AMIP environment carries both `Manifest-v1.13.toml` and `Manifest.toml`. The
+GPU stages `module load climacommon/2026_11_06-1.13.3`, so they read the
+**versioned** one. The login shell's `julia` is 1.11.5, and it writes the
+**unversioned** one.
+
+On 2026-11-16 that combination un-dev'd every treatment in one pass, silently.
+`update-coupler-to-main.sh` checks out upstream main, which replaces
+`Manifest-v1.13.toml` with its registry-only version, and then dev's the local
+submodules -- under the login shell, which wrote the dev paths into
+`Manifest.toml`, a file nothing reads. Both arms were left taking registry
+ClimaCore, ClimaAtmos and RRTMGP, so the next run would have been a null test
+with our own code absent. The tree was clean, the script exited 0, and Pkg
+reports `Updating .../Manifest.toml` either way, so nothing said so.
+
+`dev-local-repos-coupler.sh` now loads the stages' own module before any Pkg
+call, and asserts that each arm's `Manifest-v1.13.toml` carries a `path =` for
+ClimaCore, ClimaAtmos and RRTMGP. The assertion is the part that matters: the
+module load fixes today's toolchain, and the next migration will move the
+filename again.
+
 ## Freeze and unfreeze the two ncu stages together
 
 `baseline-ncu` and `mod-ncu` are frozen by default because they cost ~1.5 hours
