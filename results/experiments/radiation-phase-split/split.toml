@@ -1,0 +1,210 @@
+config_file = "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml"
+float_type = "Float32"
+n_gpt_lw = 256
+n_gpt_sw = 224
+ncol = 24576
+ngroups = 16
+nlay = 80
+note = "Three arms on one simulation's state and buffers, so these are in-block comparisons and not a difference of runs. `fused` and `split` share one group workspace and differ only in its split_optics flag. bit_for_bit counts values that differ when the two arms' fluxes, cloud cover and 550 nm optical depth are compared as integers: the split moves no arithmetic, so anything but zero is a bug rather than roundoff. driver_warps_per_sm is the CUDA driver's own cuOccupancyMaxActiveBlocksPerMultiprocessor; model_warps_per_sm is the allocator model ClimaCore's max_active_blocks implements, which is what predicted this split was worth building. Where they disagree the driver is right. solve_ms times the whole both-skies solve, so the grouped arms are charged for their reduction and their state refresh, and the split arm for its extra launch per round."
+occupancy_model_agrees_everywhere = true
+occupancy_model_checks = 12
+optics_block_threads = 128
+repeats = 7
+rounds_lw = 16
+rounds_sw = 14
+split_is_bit_for_bit = true
+split_wins_lw = true
+split_wins_sw = true
+warmup_steps = 3
+
+[at_launch.lw_fused]
+driver_warps_per_sm = 8
+launch_block = 256
+local_bytes = 304
+model_agrees = true
+model_warps_per_sm = 8
+registers = 255
+
+[at_launch.lw_optics]
+driver_warps_per_sm = 12
+launch_block = 128
+local_bytes = 32
+model_agrees = true
+model_warps_per_sm = 12
+registers = 156
+
+[at_launch.lw_sweeps]
+driver_warps_per_sm = 8
+launch_block = 256
+local_bytes = 32
+model_agrees = true
+model_warps_per_sm = 8
+registers = 140
+
+[at_launch.sw_fused]
+driver_warps_per_sm = 8
+launch_block = 256
+local_bytes = 360
+model_agrees = true
+model_warps_per_sm = 8
+registers = 255
+
+[at_launch.sw_optics]
+driver_warps_per_sm = 16
+launch_block = 128
+local_bytes = 32
+model_agrees = true
+model_warps_per_sm = 16
+registers = 124
+
+[at_launch.sw_sweeps]
+driver_warps_per_sm = 16
+launch_block = 256
+local_bytes = 32
+model_agrees = true
+model_warps_per_sm = 16
+registers = 117
+
+[kernels.lw_fused]
+driver_warps_per_sm_b128 = 8
+driver_warps_per_sm_b256 = 8
+local_bytes = 304
+max_threads = 256
+model_agrees_b128 = true
+model_agrees_b256 = true
+model_warps_per_sm_b128 = 8
+model_warps_per_sm_b256 = 8
+registers = 255
+
+[kernels.lw_optics]
+driver_warps_per_sm_b128 = 12
+driver_warps_per_sm_b256 = 8
+local_bytes = 32
+max_threads = 384
+model_agrees_b128 = true
+model_agrees_b256 = true
+model_warps_per_sm_b128 = 12
+model_warps_per_sm_b256 = 8
+registers = 156
+
+[kernels.lw_sweeps]
+driver_warps_per_sm_b128 = 12
+driver_warps_per_sm_b256 = 8
+local_bytes = 32
+max_threads = 384
+model_agrees_b128 = true
+model_agrees_b256 = true
+model_warps_per_sm_b128 = 12
+model_warps_per_sm_b256 = 8
+registers = 140
+
+[kernels.sw_fused]
+driver_warps_per_sm_b128 = 8
+driver_warps_per_sm_b256 = 8
+local_bytes = 360
+max_threads = 256
+model_agrees_b128 = true
+model_agrees_b256 = true
+model_warps_per_sm_b128 = 8
+model_warps_per_sm_b256 = 8
+registers = 255
+
+[kernels.sw_optics]
+driver_warps_per_sm_b128 = 16
+driver_warps_per_sm_b256 = 16
+local_bytes = 32
+max_threads = 512
+model_agrees_b128 = true
+model_agrees_b256 = true
+model_warps_per_sm_b128 = 16
+model_warps_per_sm_b256 = 16
+registers = 124
+
+[kernels.sw_sweeps]
+driver_warps_per_sm_b128 = 16
+driver_warps_per_sm_b256 = 16
+local_bytes = 32
+max_threads = 512
+model_agrees_b128 = true
+model_agrees_b256 = true
+model_warps_per_sm_b128 = 16
+model_warps_per_sm_b256 = 16
+registers = 117
+
+[longwave]
+bit_for_bit = true
+fused_vs_ungrouped_pct = -9.782042358839139
+repeat_spread_pct = 0.06722333620518206
+split_saved_per_event_ms = 101.93920135498047
+split_vs_fused_pct = -16.855169928885772
+split_vs_ungrouped_pct = -24.98843242562699
+values_compared = 9977856
+values_differing = 0
+worst_relative_difference = 0.0
+
+    [longwave.fused]
+    solve_ms = 604.7948598861694
+    solve_ms_max = 605.0140261650085
+    solve_ms_min = 604.6074628829956
+
+    [longwave.split]
+    solve_ms = 502.85565853118896
+    solve_ms_max = 503.0738115310669
+    solve_ms_min = 502.60889530181885
+
+    [longwave.ungrouped]
+    solve_ms = 670.3708171844482
+    solve_ms_max = 671.1674928665161
+    solve_ms_min = 669.2095994949341
+
+[shortwave]
+bit_for_bit = true
+fused_vs_ungrouped_pct = -20.1003095504358
+repeat_spread_pct = 0.13031287046436868
+split_saved_per_event_ms = 169.2815124988556
+split_vs_fused_pct = -34.30327183259948
+split_vs_ungrouped_pct = -47.50851755875533
+values_compared = 11993088
+values_differing = 0
+worst_relative_difference = 0.0
+
+    [shortwave.fused]
+    solve_ms = 493.4850335121155
+    solve_ms_max = 493.9724802970886
+    solve_ms_min = 493.32940578460693
+
+    [shortwave.split]
+    solve_ms = 324.2035210132599
+    solve_ms_max = 324.56088066101074
+    solve_ms_min = 323.5113024711609
+
+    [shortwave.ungrouped]
+    solve_ms = 617.6307201385498
+    solve_ms_max = 618.081271648407
+    solve_ms_min = 616.6435480117798
+
+[wallclock]
+block_iqr_pct = 4.3063178525316275
+block_median_s = 49.053282464
+block_seconds = [48.457358585, 48.623516212, 48.694043201, 48.988538802, 49.022954505, 49.053282464, 49.277182323, 49.430326834, 50.806433461, 60.567029009, 60.782632654, 97.173877283]
+block_steps = 180
+blocks = 12
+dt_cpl_s = 120.0
+gain_over_fused_below_block_iqr = true
+note = "sypd_split is measured: a block of real coupler steps with the live split solver, timed with the wall clock the coupler's own SYPD is defined on. The other arms add their measured in-block solve difference back onto that same measured block rather than differencing a second run, because an AMIP pair cannot resolve a sub-percent effect here: one arm wandered 7.73% between two runs of identical code. These are steady-state figures and are NOT comparable to the pipeline's end-to-end SYPD, which includes first-call compilation."
+rad_period_steps = 30
+radiation_events_per_block = 6
+step_ms = 272.5182359111111
+sypd_split = 1.2055783839838692
+
+    [wallclock.arms.fused]
+    cost_per_block_s = 1.6273242831230164
+    solve_cost_per_event_ms = 271.22071385383606
+    split_gain_pct = 3.317462565970591
+    sypd = 1.1668679756958602
+
+    [wallclock.arms.ungrouped]
+    cost_per_block_s = 2.765654146671295
+    solve_cost_per_event_ms = 460.9423577785492
+    split_gain_pct = 5.6380613238288335
+    sypd = 1.1412348625825512

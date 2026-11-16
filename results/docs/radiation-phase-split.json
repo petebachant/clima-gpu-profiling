@@ -1,4 +1,120 @@
 {
+  "split": {
+    "ngroups": 16,
+    "rounds_lw": 16,
+    "rounds_sw": 14,
+    "optics_block_threads": 128,
+    "longwave": {
+      "fused_warps_per_sm": 8,
+      "optics_warps_per_sm": 12,
+      "sweeps_warps_per_sm": 8,
+      "sweeps_gains_a_step": false,
+      "sweeps_warps_at_128": 12,
+      "occupancy_ideal_pct": -33.33,
+      "realized_fraction_of_ideal": 0.506,
+      "ungrouped_ms": 670.4,
+      "fused_ms": 604.8,
+      "split_ms": 502.9,
+      "split_vs_fused_pct": -16.86,
+      "split_vs_ungrouped_pct": -24.99,
+      "fused_vs_ungrouped_pct": -9.78,
+      "repeat_spread_pct": 0.067,
+      "saved_per_event_ms": 101.9,
+      "values_compared": 9977856,
+      "values_differing": 0,
+      "bit_for_bit": true,
+      "exceeds_repeat_spread": true
+    },
+    "shortwave": {
+      "fused_warps_per_sm": 8,
+      "optics_warps_per_sm": 16,
+      "sweeps_warps_per_sm": 16,
+      "sweeps_gains_a_step": true,
+      "sweeps_warps_at_128": 16,
+      "occupancy_ideal_pct": -50.0,
+      "realized_fraction_of_ideal": 0.686,
+      "ungrouped_ms": 617.6,
+      "fused_ms": 493.5,
+      "split_ms": 324.2,
+      "split_vs_fused_pct": -34.3,
+      "split_vs_ungrouped_pct": -47.51,
+      "fused_vs_ungrouped_pct": -20.1,
+      "repeat_spread_pct": 0.13,
+      "saved_per_event_ms": 169.3,
+      "values_compared": 11993088,
+      "values_differing": 0,
+      "bit_for_bit": true,
+      "exceeds_repeat_spread": true
+    },
+    "kernels": {
+      "lw_fused": {
+        "launch_block": 256,
+        "registers": 255,
+        "local_bytes": 304,
+        "driver_warps_per_sm": 8,
+        "model_warps_per_sm": 8,
+        "model_agrees": true
+      },
+      "lw_optics": {
+        "launch_block": 128,
+        "registers": 156,
+        "local_bytes": 32,
+        "driver_warps_per_sm": 12,
+        "model_warps_per_sm": 12,
+        "model_agrees": true
+      },
+      "lw_sweeps": {
+        "launch_block": 256,
+        "registers": 140,
+        "local_bytes": 32,
+        "driver_warps_per_sm": 8,
+        "model_warps_per_sm": 8,
+        "model_agrees": true
+      },
+      "sw_fused": {
+        "launch_block": 256,
+        "registers": 255,
+        "local_bytes": 360,
+        "driver_warps_per_sm": 8,
+        "model_warps_per_sm": 8,
+        "model_agrees": true
+      },
+      "sw_optics": {
+        "launch_block": 128,
+        "registers": 124,
+        "local_bytes": 32,
+        "driver_warps_per_sm": 16,
+        "model_warps_per_sm": 16,
+        "model_agrees": true
+      },
+      "sw_sweeps": {
+        "launch_block": 256,
+        "registers": 117,
+        "local_bytes": 32,
+        "driver_warps_per_sm": 16,
+        "model_warps_per_sm": 16,
+        "model_agrees": true
+      }
+    },
+    "bit_for_bit": true,
+    "wins_lw": true,
+    "wins_sw": true,
+    "occupancy_model_agrees_everywhere": true,
+    "occupancy_model_checks": 12,
+    "saved_per_event_ms": 271.2,
+    "saved_solver_pct": 24.7,
+    "saved_device_pct": 3.213,
+    "sypd_split": 1.2056,
+    "sypd_fused": 1.1669,
+    "sypd_ungrouped": 1.1412,
+    "sypd_gain_over_fused_pct": 3.317,
+    "sypd_gain_over_ungrouped_pct": 5.638,
+    "block_iqr_pct": 4.306,
+    "step_ms": 272.52,
+    "gain_over_fused_below_block_iqr": true,
+    "blocks": 12,
+    "block_steps": 180
+  },
   "phases": {
     "lw_accumulate": {
       "compiled": true,

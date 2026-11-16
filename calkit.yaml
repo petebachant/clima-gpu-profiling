@@ -360,7 +360,7 @@ questions:
       Neither: the thread count is a coincidence and the parallelism is already there.
       ClimaCore launches one occupancy wave, so a slice loop's grid is computed from its own register count -- and at {registers:.0f} registers that wave is {threads:.0f} threads, which equals ncol only because 108 multiprocessors times 512 threads does.
       The loops are already pointwise over ncol times z_elem slices and stride over them, so {pct_of_device}% of device time runs at {occupancy_pct}% occupancy with registers as the sole cause, and the only lever is a register count low enough to cross a step -- {next_step:.0f} rather than the {band_max:.0f} they sit at now.
-      How to cross one is a question about live state rather than budget: on the radiation solvers, forcing the budget spilled and lost twice, while unfusing their optics phase reaches {rad_optics_regs:.0f} registers with {rad_optics_local:.0f} bytes of local memory against {rad_forced_local:.0f} when the fused kernel is forced to the same budget.
+      How to cross one is a question about live state rather than budget: the radiation solvers' fused kernel spills {rad_forced_local:.0f} bytes of local memory when forced to the budget and lost twice, while its unfused optics phase reaches {rad_optics_regs:.0f} registers with {rad_optics_local:.0f} bytes and {rad_optics_warps:.0f} warps per multiprocessor rather than {rad_fused_warps:.0f} -- bit-for-bit, and worth {rad_split_sypd:.2f}% of steady-state SYPD.
     evidence:
       - kind: document
         path: docs/experiments/radiation-phase-split.md
@@ -372,17 +372,32 @@ questions:
           essentially all of the time does not need the overflow at all. Also
           records that an occupancy threshold has to come from the allocator's
           granularity rules rather than from dividing the register file.
+      - kind: document
+        path: docs/experiments/radiation-phase-split.md
+        section: What the split is worth, measured
+        explanation: >-
+          The split built and timed against the fused grouped solve and against
+          upstream's serial g-point loop, on one simulation's own state, with
+          the two grouped arms asserted bit-for-bit over every flux, the cloud
+          cover and the 550 nm optical depth. Also the occupancy check: the
+          CUDA driver's own occupancy call agreed with the allocator model on
+          every kernel the solve launches, at both block sizes.
       - kind: result
         path: results/docs/radiation-phase-split.json
         values:
-          rad_optics_regs: phases.sw_gas_aerosol_optics.registers
-          rad_optics_local: phases.sw_gas_aerosol_optics.local_bytes
+          rad_optics_regs: split.kernels.sw_optics.registers
+          rad_optics_local: split.kernels.sw_optics.local_bytes
           rad_forced_local: forced.sw_fused_maxregs_128.local_bytes
+          rad_optics_warps: split.shortwave.optics_warps_per_sm
+          rad_fused_warps: split.shortwave.fused_warps_per_sm
+          rad_split_sypd: split.sypd_gain_over_fused_pct
         explanation: >-
           Each phase of the radiation solve compiled as its own kernel with the
           live solver's argument types, after one warmup step of the real
           coupled simulation, with the whole fused kernels as controls that must
-          come back at the register cap.
+          come back at the register cap -- and then the split built, with the
+          registers and local memory read off the kernels the solve actually
+          launches rather than off the phase stubs.
       - kind: document
         path: docs/experiments/occupancy-launch-model.md
         git_ref: meas/2026-11-07-occupancy-launch-model
