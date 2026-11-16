@@ -44,13 +44,18 @@ const RTE = RRTMGP.RTE
 const RTESolver = RRTMGP.RTESolver
 const Optics = RRTMGP.Optics
 
-out_path = "results/radiation-phase-registers.toml"
-let i = findfirst(==("--out"), ARGS)
-    if !isnothing(i)
-        out_path = ARGS[i + 1]
-        deleteat!(ARGS, i:(i + 1))
-    end
+# `let` is a hard scope, so assigning `out_path` inside one makes a local and
+# leaves the global at its default: the flag parses, is deleted from ARGS by
+# the mutation, and is then discarded, so nothing downstream complains.
+function arg_value(flag, default)
+    i = findfirst(==(flag), ARGS)
+    isnothing(i) && return default
+    value = ARGS[i + 1]
+    deleteat!(ARGS, i:(i + 1))
+    return value
 end
+
+out_path = arg_value("--out", "results/radiation-phase-registers.toml")
 
 const WARMUP_STEPS = 1
 const A100_REGS_PER_SM = 65536
@@ -61,24 +66,58 @@ const REGISTER_CAP = 255
 
 # Warps per SM this register count buys at the solve's own block size, which is
 # the only figure that decides whether a split changed anything.
+#
+# This follows ClimaCore's `max_active_blocks`, itself a port of NVIDIA's
+# `cudaOccMaxActiveBlocksPerMultiprocessor`, because the allocation
+# granularities move the thresholds: registers are allocated per warp in
+# 256-register units, a block's warps round up to the scheduler count, and the
+# register file is divided per scheduler rather than per multiprocessor.
+# Dividing 65536 by regs*block instead puts the 128-thread step at 170
+# registers; the granularity-correct answer is 168, which is the figure
+# `launch-bounds-vs-maxregs` already recorded.
+const A100_REGS_PER_ALLOCATION = 256
+const A100_MAX_REGS_PER_BLOCK = 65536
+const A100_SCHEDULERS_PER_SM = 4
+const THREADS_PER_WARP = 32
+
+round_up(n, divisor) = cld(n, divisor) * divisor
+
 function warps_per_sm(regs, block = BLOCK)
-    blocks = min(
-        A100_REGS_PER_SM ÷ max(regs * block, 1),
-        A100_THREADS_PER_SM ÷ block,
-        A100_MAX_BLOCKS_PER_SM,
-    )
-    return max(blocks, 1) * cld(block, 32)
+    warps_per_block = cld(block, THREADS_PER_WARP)
+    max_warps = A100_THREADS_PER_SM ÷ THREADS_PER_WARP
+    if regs > 0
+        allocated_warps = round_up(warps_per_block, A100_SCHEDULERS_PER_SM)
+        allocated_regs_per_warp =
+            round_up(regs * THREADS_PER_WARP, A100_REGS_PER_ALLOCATION)
+        allocated_warps * allocated_regs_per_warp > A100_MAX_REGS_PER_BLOCK &&
+            return 0
+        per_scheduler =
+            (A100_REGS_PER_SM ÷ A100_SCHEDULERS_PER_SM) ÷ allocated_regs_per_warp
+        max_warps = min(max_warps, per_scheduler * A100_SCHEDULERS_PER_SM)
+    end
+    blocks = max_warps ÷ warps_per_block
+    # Blocks of two warps are dealt unevenly to four schedulers unless each
+    # gets the same number.
+    warps_per_block == 2 && (blocks = 4 * (blocks ÷ 4))
+    return min(blocks, A100_MAX_BLOCKS_PER_SM) * warps_per_block
+end
+
+# The largest budget that still reaches `want` warps, read off the model rather
+# than divided out of the register file.
+function budget_for_warps(want, block)
+    r = findlast(r -> warps_per_sm(r, block) >= want, 1:REGISTER_CAP)
+    return isnothing(r) ? 0 : r
 end
 
 # The register count a piece must reach for the next occupancy step.
-const TARGET_REGS = A100_REGS_PER_SM ÷ (2 * BLOCK)
+const TARGET_REGS = budget_for_warps(16, BLOCK)
 
 # The same question at 128 threads per block, where the ladder is finer: three
 # blocks fit at 170 registers, so a phase that cannot reach 128 may still gain
 # a step. At the cap both block sizes give 8 warps, so this costs nothing to
 # ask and is the nearer bar.
 const ALT_BLOCK = 128
-const ALT_TARGET_REGS = A100_REGS_PER_SM ÷ (3 * ALT_BLOCK)
+const ALT_TARGET_REGS = budget_for_warps(12, ALT_BLOCK)
 const BASE_WARPS = warps_per_sm(REGISTER_CAP, BLOCK)
 const ALT_BASE_WARPS = warps_per_sm(REGISTER_CAP, ALT_BLOCK)
 
@@ -390,11 +429,28 @@ phases_sw = ["sw_gas_aerosol_optics", "sw_two_stream_sweep"]
 # phase stays at the cap moves 1% of the time to higher occupancy.
 fits(p) = get(get(results, p, Dict{String, Any}()), "reaches_target", false)
 at_cap(p) = get(get(results, p, Dict{String, Any}()), "at_cap", false)
-lw_optics_fits = fits("lw_gas_aerosol_optics")
-sw_optics_fits = fits("sw_gas_aerosol_optics")
 gains(p) = get(get(results, p, Dict{String, Any}()), "gains_step_b128", false)
-lw_optics_gains = gains("lw_gas_aerosol_optics")
-sw_optics_gains = gains("sw_gas_aerosol_optics")
+
+field(p, k, d) = get(get(results, p, Dict{String, Any}()), k, d)
+
+# Requiring zero local memory is the wrong bar, and it reported a phase at 32 B
+# as a failure. Section 8t records that `CUDA.memory(k).local` covers the call
+# frame and local arrays as well as spilled registers, so it bounds spill
+# rather than measuring it. The reference that means something is the kernel
+# the phase would replace: the grouped controls carry 304-360 B and the forced
+# variants that measured +3.93% and +2.91% carry 672-712 B, so a phase is only
+# paying what made forcing lose if it spills MORE than what it replaces.
+no_worse_spill(p, control) =
+    field(p, "local_bytes", typemax(Int)) <= field(control, "local_bytes", 0)
+fits_vs(p, control) =
+    field(p, "registers", REGISTER_CAP) <= TARGET_REGS && no_worse_spill(p, control)
+gains_vs(p, control) =
+    field(p, "warps_per_sm_b128", 0) > ALT_BASE_WARPS && no_worse_spill(p, control)
+
+lw_optics_fits = fits_vs("lw_gas_aerosol_optics", "lw_grouped_whole")
+sw_optics_fits = fits_vs("sw_gas_aerosol_optics", "sw_grouped_whole")
+lw_optics_gains = gains_vs("lw_gas_aerosol_optics", "lw_grouped_whole")
+sw_optics_gains = gains_vs("sw_gas_aerosol_optics", "sw_grouped_whole")
 
 results["summary"] = Dict{String, Any}(
     "ncol" => ncol,
@@ -434,6 +490,17 @@ results["summary"] = Dict{String, Any}(
     ),
     "lw_optics_phase_fits" => lw_optics_fits,
     "sw_optics_phase_fits" => sw_optics_fits,
+    "lw_optics_phase_fits_no_spill_at_all" => fits("lw_gas_aerosol_optics"),
+    "sw_optics_phase_fits_no_spill_at_all" => fits("sw_gas_aerosol_optics"),
+    "lw_optics_local_bytes" => field("lw_gas_aerosol_optics", "local_bytes", -1),
+    "sw_optics_local_bytes" => field("sw_gas_aerosol_optics", "local_bytes", -1),
+    "lw_grouped_local_bytes" => field("lw_grouped_whole", "local_bytes", -1),
+    "sw_grouped_local_bytes" => field("sw_grouped_whole", "local_bytes", -1),
+    "lw_optics_registers" => field("lw_gas_aerosol_optics", "registers", -1),
+    "sw_optics_registers" => field("sw_gas_aerosol_optics", "registers", -1),
+    "lw_optics_warps_per_sm_b128" =>
+        field("lw_gas_aerosol_optics", "warps_per_sm_b128", -1),
+    "sw_optics_warps_per_sm" => field("sw_gas_aerosol_optics", "warps_per_sm", -1),
     # The whole question, in one field.
     "split_is_viable" => lw_optics_fits || sw_optics_fits,
     # And the same question against the nearer bar, which a split can clear

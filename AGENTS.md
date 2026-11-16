@@ -607,6 +607,42 @@ end
 Measurement scripts are the usual victims because they are written quickly and
 run once. Run them for a single step locally before submitting if possible.
 
+### The same rule covers `let`, and there it fails silently
+
+`for` and `while` are not the only soft scopes. Assigning a global from inside
+a top-level `let` also creates a local, and unlike the loop case it does not
+raise `UndefVarError` and Julia prints no soft-scope warning --- the global
+simply keeps its old value.
+
+`measure-radiation-phase-registers.jl` parsed its output path this way:
+
+    out_path = "results/radiation-phase-registers.toml"
+    let i = findfirst(==("--out"), ARGS)
+        if !isnothing(i)
+            out_path = ARGS[i + 1]      # a local; the global never changes
+            deleteat!(ARGS, i:(i + 1))  # a mutation; this one takes
+        end
+    end
+
+What makes it invisible is the asymmetry between the two lines. The
+`deleteat!` mutates, so the flag really was consumed and `ArgParse` did not
+complain about an unknown argument; the assignment did not, so the script
+wrote its default path. The stage then failed on a missing output after a
+35-minute GPU job whose measurement was perfectly good and in the wrong file.
+
+Parse arguments in a function, which is the same fix as for accumulation:
+
+    function arg_value(flag, default)
+        i = findfirst(==(flag), ARGS)
+        isnothing(i) && return default
+        value = ARGS[i + 1]
+        deleteat!(ARGS, i:(i + 1))
+        return value
+    end
+
+`measure-thread-order.jl` already had this form, and a comment explaining why.
+Copy it rather than rediscovering it.
+
 ## A package the arms do not dev cannot be imported by name
 
 `import CloudMicrophysics...` worked only while CM was dev'd in the mod arm.
