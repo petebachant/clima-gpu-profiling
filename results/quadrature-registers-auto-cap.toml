@@ -1,0 +1,92 @@
+arm = "mod"
+case_set = "auto-cap"
+climaatmos_commit = "d6b0f111de71b4f7b310508dbc6454b19b047b00"
+climaatmos_dirty = false
+climaatmos_path = "/home/pbachant/calkit/clima-gpu-profiling/ClimaAtmos.jl-mod"
+measured = "2026-11-16"
+note = "Compile-only census of the SGS-quadrature microphysics broadcast on the real AMIP he16 data layout, with parameters folded into Val as the model folds them. Registers, spill and block size are read from ClimaCore's RECORD_KERNELS launch record, so they are the kernel the model launches. `device_ms` is the best of seven CUDA-event timings of that launch on a varied state in which almost every cell carries condensate, so it prices the full-work path and runs about twice the profile's per-launch time on the model's mixed state. `out_bits_hash` is FNV-1a over the raw output bits of all points, so two arms agreeing on it computed the same thing exactly."
+
+[cases.auto_cap_decisions.1]
+cap = 128
+capped_local_bytes = 320
+capped_registers = 128
+capped_warps_per_sm = 16
+edge = 128
+local_budget = 370
+local_bytes = 296
+reason = "capped"
+registers = 136
+warps_per_sm = 12
+
+[cases."automatic cap, plain broadcast"]
+device_ms = 40.0558
+kernels_launched = 1
+local_bytes = 320
+maxthreads = 512
+occupancy_pct = 25.0
+out_bits_hash = "d878401346d4ab42"
+registers = 128
+warps_per_sm = 16
+
+    [cases."automatic cap, plain broadcast".capped.128]
+    honored = true
+    local_bytes = 320
+    registers = 128
+    warps_per_sm = 16
+
+    [cases."automatic cap, plain broadcast".capped.96]
+    honored = true
+    local_bytes = 448
+    registers = 96
+    warps_per_sm = 20
+
+[cases.band_check]
+checked = 256
+disagreements = 0
+edge_below_128 = 96
+edge_below_136 = 128
+edge_below_32 = -1
+edges_above = [32, 40, 48, 56, 64, 72, 80, 96, 128, 168]
+first_disagreement = "none"
+
+[cases."quadrature broadcast (L1297)"]
+device_ms = 48.7014
+kernels_launched = 1
+local_bytes = 296
+maxthreads = 384
+occupancy_pct = 18.75
+out_bits_hash = "d878401346d4ab42"
+registers = 136
+warps_per_sm = 12
+
+    [cases."quadrature broadcast (L1297)".capped.128]
+    honored = true
+    local_bytes = 320
+    registers = 128
+    warps_per_sm = 16
+
+    [cases."quadrature broadcast (L1297)".capped.96]
+    honored = true
+    local_bytes = 448
+    registers = 96
+    warps_per_sm = 20
+
+[cases.steps]
+1 = 64
+128 = 16
+168 = 12
+32 = 64
+40 = 48
+48 = 40
+56 = 36
+64 = 32
+72 = 28
+80 = 24
+96 = 20
+
+[layout]
+Nh = 1536
+Nij = 6
+Nv = 79
+float_type = "Float32"
+points = 4368384
