@@ -1393,7 +1393,7 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: c5166da7efa1e62c2a77a36d7dadf70b
+      md5: fb99a1fc0f3683c89cfdcfe63e6c714c
       size: 32776
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
@@ -1406,8 +1406,8 @@ stages:
       nfiles: 2
     - path: results/summary.json
       hash: md5
-      md5: 8b24572cfd591482370410caa23bd1a2
-      size: 2416
+      md5: 61e72d6d6b36601aa13c2007d095cceb
+      size: 2413
     - path: scripts/build-experiment-index.py
       hash: md5
       md5: 6ecee83a0c8f1cc405ebcd60efab8df0
@@ -3755,7 +3755,7 @@ stages:
       size: 2220
     - path: results/treatment.json
       hash: md5
-      md5: c5166da7efa1e62c2a77a36d7dadf70b
+      md5: fb99a1fc0f3683c89cfdcfe63e6c714c
       size: 32776
     - path: scripts/record-sypd-repeat.py
       hash: md5
@@ -4178,18 +4178,18 @@ stages:
       size: 889
     - path: RRTMGP.jl-mod/ext
       hash: md5
-      md5: 0ba4968add0a7e7382a3bc287ead49cf.dir
-      size: 79687
+      md5: fe002e17e4928741f8975a976e31ce27.dir
+      size: 92313
       nfiles: 11
     - path: RRTMGP.jl-mod/src
       hash: md5
-      md5: 483f82aa020e43540fb9811fbc1ce4be.dir
-      size: 344110
+      md5: 16e2e821e1b5874f7214ac066f6f3e49.dir
+      size: 348210
       nfiles: 44
     - path: scripts/measure-gpoint-sweep.jl
       hash: md5
-      md5: e9372658de926f2a601931ae593d06fc
-      size: 15515
+      md5: e1ecda7e5626438bb32841e6e0f752b0
+      size: 15531
     - path: scripts/run-julia-script.sh
       hash: md5
       md5: 2b491e48a8f15c4ea7ff76d19d95f830
@@ -4197,16 +4197,16 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/gpoint-group-sweep.out
       hash: md5
-      md5: 6b054f3ac10f5f4b7d9eb00bea6f02e0
-      size: 42786
+      md5: 6537871d21be7bee0c77e8f3721caddd
+      size: 42769
     - path: results/gpoint-sweep.toml
       hash: md5
-      md5: 8002a96f1e2b5c421f5afb403783491c
-      size: 2973
+      md5: 6b54301af15b8c4aa23ca9f1e5140038
+      size: 2982
     - path: results/gpoint-wallclock.toml
       hash: md5
-      md5: aeb471ada8d85827d6b23c06cdefe8a8
-      size: 2441
+      md5: 4e8dab4e2b47789f6db14ccf9e7fc67e
+      size: 2433
   gpoint-group-count-doc/values:
     cmd: calkit xenv -n py --no-check -- python 
       .calkit/markdown/docs/experiments/gpoint-group-count.md/values.py
@@ -4218,41 +4218,45 @@ stages:
       nfiles: 2
     - path: .calkit/markdown/docs/experiments/gpoint-group-count.md/values.py
       hash: md5
-      md5: 7322e909a7c68fe03ef5899a7f88eb53
-      size: 15328
+      md5: 8e11f7677c15c641aba96f46020ca25e
+      size: 20120
+    - path: results/experiments/radiation-phase-split/split.toml
+      hash: md5
+      md5: bbf7444d32c4eac66e8da3bbd7f94a28
+      size: 7008
     - path: results/gpoint-groups.json
       hash: md5
-      md5: 1674cc026e8422449e288a646497dd17
-      size: 5030
+      md5: 757c5dabc2d059357f613c96505c3df4
+      size: 8633
     - path: results/gpoint-record/prediction.json
       hash: md5
       md5: 02a00f6058e20a4dfa1ecc5d9d2db6b7
       size: 866
     - path: results/gpoint-sweep.toml
       hash: md5
-      md5: 8002a96f1e2b5c421f5afb403783491c
-      size: 2973
+      md5: 6b54301af15b8c4aa23ca9f1e5140038
+      size: 2982
     - path: results/gpoint-wallclock.toml
       hash: md5
-      md5: aeb471ada8d85827d6b23c06cdefe8a8
-      size: 2441
+      md5: 4e8dab4e2b47789f6db14ccf9e7fc67e
+      size: 2433
     - path: results/null-census.json
       hash: md5
       md5: d9cf08faa89fb2705fba87bf4efe4da1
       size: 2548
     - path: results/sw-gpoint-sweep.toml
       hash: md5
-      md5: 7ff013aa13d55b8c644a42b19cafc4ce
-      size: 3339
+      md5: c54ad1af56c5006b49ed773305b1c82d
+      size: 3337
     - path: results/top-kernels.csv
       hash: md5
-      md5: 47496988f2d806ddf9a662cc3e239af9
-      size: 3581
+      md5: 472a0a4a10550b2a1d08d82a105bfb8e
+      size: 3538
     outs:
     - path: results/docs/gpoint-group-count.json
       hash: md5
-      md5: 05d236a5042c5b15d39a9825c69a6520
-      size: 7198
+      md5: 4a691bbd54d28f1c7cbad7b57e075639
+      size: 9166
   sw-gpoint-sweep:
     cmd: calkit scheduler batch --name sw-gpoint-sweep --environment clima --dep
       scripts/measure-sw-gpoint-sweep.jl --dep RRTMGP.jl-mod/src --dep 
@@ -4291,18 +4295,18 @@ stages:
       size: 889
     - path: RRTMGP.jl-mod/ext
       hash: md5
-      md5: 0ba4968add0a7e7382a3bc287ead49cf.dir
-      size: 79687
+      md5: fe002e17e4928741f8975a976e31ce27.dir
+      size: 92313
       nfiles: 11
     - path: RRTMGP.jl-mod/src
       hash: md5
-      md5: 483f82aa020e43540fb9811fbc1ce4be.dir
-      size: 344110
+      md5: 16e2e821e1b5874f7214ac066f6f3e49.dir
+      size: 348210
       nfiles: 44
     - path: scripts/measure-sw-gpoint-sweep.jl
       hash: md5
-      md5: 9a9911d7d2a764b79acf231a5a36b6db
-      size: 17340
+      md5: 89752cfd9e2b18006f7fef456867c316
+      size: 17356
     - path: scripts/run-julia-script.sh
       hash: md5
       md5: 2b491e48a8f15c4ea7ff76d19d95f830
@@ -4310,16 +4314,16 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/sw-gpoint-sweep.out
       hash: md5
-      md5: d43f427f2a69f311d913ac3d4802afb4
-      size: 42788
+      md5: 0f98bd6ed5befeacd24a88f5fdf0a658
+      size: 42779
     - path: results/sw-gpoint-sweep.toml
       hash: md5
-      md5: 7ff013aa13d55b8c644a42b19cafc4ce
-      size: 3339
+      md5: c54ad1af56c5006b49ed773305b1c82d
+      size: 3337
     - path: results/sw-gpoint-wallclock.toml
       hash: md5
-      md5: 41733426950ed2d194a935120e1498f3
-      size: 2974
+      md5: 0ce3b5a7c2366900110da0ab8bc6b52c
+      size: 2979
   wave-census:
     cmd: calkit xenv -n py --no-check -- python scripts/export-wave-census.py
     deps:
@@ -4330,8 +4334,8 @@ stages:
       nfiles: 2
     - path: results/gpoint-sweep.toml
       hash: md5
-      md5: 8002a96f1e2b5c421f5afb403783491c
-      size: 2973
+      md5: 6b54301af15b8c4aa23ca9f1e5140038
+      size: 2982
     - path: results/nsys/baseline.sqlite
       hash: md5
       md5: f2bd73710df0cdf055c44e3221d61678
@@ -4343,7 +4347,7 @@ stages:
     outs:
     - path: results/wave-census.json
       hash: md5
-      md5: a5402f59278aebdb769c667945aec9eb
+      md5: ecec6ec6c575a1ba5d6638943fe67f88
       size: 74151
   wave-census-doc/values:
     cmd: calkit xenv -n py --no-check -- python 
@@ -4356,33 +4360,33 @@ stages:
       nfiles: 2
     - path: .calkit/markdown/docs/experiments/wave-census.md/values.py
       hash: md5
-      md5: 2eaab6b9f01ac44a3072e4835c5db01f
-      size: 8708
+      md5: a1408331ffe5028203a8dc07bc43bc1e
+      size: 9335
     - path: results/docs/gpoint-group-count.json
       hash: md5
-      md5: 05d236a5042c5b15d39a9825c69a6520
-      size: 7198
+      md5: 4a691bbd54d28f1c7cbad7b57e075639
+      size: 9166
     - path: results/gpoint-groups.json
       hash: md5
-      md5: 1674cc026e8422449e288a646497dd17
-      size: 5030
+      md5: 757c5dabc2d059357f613c96505c3df4
+      size: 8633
     - path: results/sw-gpoint-sweep.toml
       hash: md5
-      md5: 7ff013aa13d55b8c644a42b19cafc4ce
-      size: 3339
+      md5: c54ad1af56c5006b49ed773305b1c82d
+      size: 3337
     - path: results/sw-gpoint-wallclock.toml
       hash: md5
-      md5: 41733426950ed2d194a935120e1498f3
-      size: 2974
+      md5: 0ce3b5a7c2366900110da0ab8bc6b52c
+      size: 2979
     - path: results/wave-census.json
       hash: md5
-      md5: a5402f59278aebdb769c667945aec9eb
+      md5: ecec6ec6c575a1ba5d6638943fe67f88
       size: 74151
     outs:
     - path: results/docs/wave-census.json
       hash: md5
-      md5: 377d65fae5223d18fbf31347f4220b18
-      size: 2958
+      md5: cd14ffc9abb707780e2bfb8e1ab24390
+      size: 3023
   gpoint-equivalence:
     cmd: calkit scheduler batch --name gpoint-equivalence --environment clima 
       --dep scripts/check-gpoint-group-equivalence.jl --dep RRTMGP.jl-mod/src 
@@ -4421,13 +4425,13 @@ stages:
       size: 889
     - path: RRTMGP.jl-mod/ext
       hash: md5
-      md5: 0ba4968add0a7e7382a3bc287ead49cf.dir
-      size: 79687
+      md5: fe002e17e4928741f8975a976e31ce27.dir
+      size: 92313
       nfiles: 11
     - path: RRTMGP.jl-mod/src
       hash: md5
-      md5: 483f82aa020e43540fb9811fbc1ce4be.dir
-      size: 344110
+      md5: 16e2e821e1b5874f7214ac066f6f3e49.dir
+      size: 348210
       nfiles: 44
     - path: scripts/check-gpoint-group-equivalence.jl
       hash: md5
@@ -4440,8 +4444,8 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/gpoint-equivalence.out
       hash: md5
-      md5: e5d6361801b9af113373960491c84b6f
-      size: 39855
+      md5: c628208d16db7496b5edb2fbf080776d
+      size: 39492
     - path: results/gpoint-equivalence.toml
       hash: md5
       md5: 3598381af487155442f41555f84c4685

@@ -220,9 +220,9 @@ questions:
   - question: >-
       Does the longwave g-point split need 16 groups, or is the default just the first count that worked?
     answer: >-
-      No, and three sweeps have now failed to find a knee: {sufficient_ngroups} groups is the smallest count reaching the best measured saving of {best_change_pct:.2f}%, which is again the largest count swept, so a rule asking for the smallest sufficient count only returns wherever the sweep stopped.
-      The count is a price rather than a threshold, and the price is small: moving the default to 32 is worth {decision_32_pct:.3f}% of device time for {decision_32_gib:.2f} GiB of extra workspace across both solves, while the further doubling to 64 costs {decision_marginal_gib:.2f} GiB more for {decision_marginal_pct:.3f} points, so 32 is the setting.
-      Timed on real coupler steps the split itself is worth {sypd_gain_pct:.3f}% of SYPD at the shipped default, measured rather than converted, though most of the solve-time saving is wave quantization rather than the split.
+      It did not need 16 then and the question has since changed shape: splitting the optics out of the sweeps took most of what the group count used to be the only way to reach, so the curve now has a knee at {sufficient_ngroups} groups and the default sits in the middle of a plateau rather than below one.
+      Raising the default to 32 is worth {decision_32_pct:.3f}% of device time for {decision_32_gib:.2f} GiB across both solves and lowering it to 8 costs {decision_below_pct:.3f}% while returning {decision_below_gib:.2f} GiB, both far under the {null_floor_pct:.3f}% that two identical arms of this stack reproduce each other to, so the right answer is to leave it alone.
+      Timed on real coupler steps the longwave grouping is worth {sypd_gain_pct:.3f}% of SYPD at the shipped default, measured rather than converted.
     evidence:
       - kind: document
         path: docs/experiments/gpoint-group-count.md
@@ -238,7 +238,6 @@ questions:
       - kind: result
         path: results/gpoint-sweep.toml
         values:
-          best_change_pct: best_change_pct
           sufficient_ngroups: sufficient_ngroups
         explanation: >-
           Four group counts taken in one process against one settled AMIP state,
@@ -250,17 +249,20 @@ questions:
           of a percent. `ngroups = 1` is the ungrouped specialization, so the
           baseline is a point in the same sweep. `sufficient_ngroups` is derived
           rather than asserted -- the smallest count within one repeat spread of
-          the best saving -- and `sufficient_is_sweep_maximum` records that it
-          landed on the endpoint, which is the guard against reading "smallest
-          sufficient" as "enough".
+          the best saving -- and `sufficient_is_sweep_maximum` records whether
+          it landed on the endpoint, which is the guard against reading
+          "smallest sufficient" as "enough". On the split kernels it no longer
+          does: 64 groups measure slightly worse than 32, so the curve turns
+          over inside the sweep.
       - kind: result
         path: results/docs/gpoint-group-count.json
         values:
           sypd_gain_pct: wallclock.arms.16.gain_steady_pct
           decision_32_pct: decision.points.32.pct_of_device
           decision_32_gib: decision.points.32.extra_gib
-          decision_marginal_pct: decision.marginal_pct_of_device
-          decision_marginal_gib: decision.marginal_gib
+          decision_below_pct: decision.below.pct_of_device
+          decision_below_gib: decision.below.extra_gib
+          null_floor_pct: decision.null_floor_pct
         explanation: >-
           The derived file the document's values stage writes, cited here
           rather than the raw results/gpoint-wallclock.toml because the SYPD

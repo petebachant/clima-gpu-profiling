@@ -20,7 +20,7 @@ Section 4l item 5 measured 99% of RRTMGP's time in the optics and 0.1% in the ve
 If the optics phase alone comes back near 255 registers, the split dies for the same reason the microphysics quadrature split died: each piece still contained one full CloudMicrophysics evaluation at ~246 registers, so every piece ran at the same 8 warps.
 
 There is a second, nearer bar, and it costs nothing to ask.
-At 256 threads the only step is 128 registers, because two blocks of 256 need 65536/(2*256); at 128 threads a third block fits at 170 registers, and at the cap both block sizes give the same 8 warps.
+At 256 threads the only step is 128 registers, because two blocks of 256 need 65536/(2*256); at 128 threads a third block fits at 168 registers -- not the 170 a division gives, because a warp's registers are allocated in units of 256 and three warps of 5,632 overrun a scheduler's 16,384 -- and at the cap both block sizes give the same 8 warps.
 So a phase that cannot reach 128 may still gain a step at the smaller block, and that is a weaker requirement than the budget the two forced attempts failed to meet cleanly.
 
 ## The probe
