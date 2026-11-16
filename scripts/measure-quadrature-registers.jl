@@ -156,6 +156,19 @@ end
 quad_fp_uncapped(dt, nsubs) = quad_fp(dt, nsubs, Val(:auto))
 quad_fp_capped(dt, nsubs) = quad_fp(dt, nsubs, Val(128))
 
+# The plain broadcast with ClimaCore's automatic cap on, which is the spelling
+# that needs no call-site change at all. The switch is a `Ref` read at launch,
+# so one process measures both arms on one state; the policy is left off outside
+# this case so the uncapped case is uncapped however the two are ordered.
+function quad_auto(dt, nsubs)
+    Ext.AUTO_REGISTER_CAP[] = true
+    try
+        return quad_L1297(dt, nsubs)
+    finally
+        Ext.AUTO_REGISTER_CAP[] = false
+    end
+end
+
 # The same quadrature with `BMT.Instantaneous()`, which is the dispatch
 # `update_implicit_1m_tendency!` calls inside the Newton loop -- and the kernel
 # the removals pay off on. The hash of THIS case is what makes the bit-for-bit
@@ -286,6 +299,14 @@ const CASE_SETS = Dict(
         ("copyto_capped!, Val(128)", quad_capped),
         ("foreach_point, uncapped", quad_fp_uncapped),
         ("foreach_point, maxregs = Val(128)", quad_fp_capped),
+    ],
+    # Does the automatic policy reach the cap that the hand-placed one reached,
+    # on a call site written as plain `@.`? The answer for this kernel is known
+    # (see the cap-api set), so it checks the policy against a measured result
+    # before the policy is trusted on a kernel nobody has measured.
+    "auto-cap" => [
+        ("quadrature broadcast (L1297)", quad_L1297),
+        ("automatic cap, plain broadcast", quad_auto),
     ],
 )
 const CASE_SET = get(ENV, "QUAD_PROBE_CASES", "arms")
@@ -421,6 +442,54 @@ for (nm, f) in CASES
         println(rpad("  capped at $cap", 38), rpad(c["registers"], 6),
                 rpad(c["local_bytes"], 9), rpad(c["warps_per_sm"], 10))
     end
+end
+
+# ClimaCore's own occupancy rules against this script's, which are those of
+# `scripts/measure_occupancy.py` -- two implementations of the allocator, so a
+# disagreement is a real error in one of them rather than a restatement.
+if isdefined(Ext, :max_warps_per_sm_by_regs)
+    disagree = [
+        (r, warps_per_sm(r), Ext.max_warps_per_sm_by_regs(r)) for r in 1:256 if
+        warps_per_sm(r) != Ext.max_warps_per_sm_by_regs(r)
+    ]
+    edges = [r for r in 1:255 if warps_per_sm(r + 1) != warps_per_sm(r)]
+    results["band_check"] = Dict{String, Any}(
+        "checked" => 256,
+        "disagreements" => length(disagree),
+        "first_disagreement" => isempty(disagree) ? "none" : string(first(disagree)),
+        "edges_above" =>
+            [r for r in edges if !isnothing(Ext.band_edge_below(r + 1))],
+        "edge_below_136" => something(Ext.band_edge_below(136), -1),
+        "edge_below_128" => something(Ext.band_edge_below(128), -1),
+        "edge_below_32" => something(Ext.band_edge_below(32), -1),
+    )
+    println("\n=== ClimaCore occupancy rules vs this script's, r = 1:256 ===")
+    println("  disagreements: ", length(disagree),
+            isempty(disagree) ? "" : "  first: $(first(disagree))")
+    println("  band_edge_below(136) = ", Ext.band_edge_below(136),
+            "   (128) = ", Ext.band_edge_below(128),
+            "   (32) = ", Ext.band_edge_below(32))
+end
+
+# Every decision the policy made, so a kernel it fired on is identifiable.
+if isdefined(Ext, :auto_cap_decisions)
+    decisions = Ext.auto_cap_decisions()
+    println("\n=== automatic register-cap decisions ($(length(decisions))) ===")
+    dec_out = Dict{String, Any}()
+    for (i, (key, d)) in enumerate(decisions)
+        println("  ", d.reason, ": ", d.regs, " regs (", d.warps, " warps) -> cap ",
+                something(d.cap, "none"), "; capped ", d.capped_regs, " regs (",
+                d.capped_warps, " warps), local ", d.local_bytes, " -> ",
+                d.capped_local, " B/thread, budget ", d.local_budget)
+        dec_out[string(i)] = Dict{String, Any}(
+            "reason" => string(d.reason), "registers" => d.regs,
+            "warps_per_sm" => d.warps, "local_bytes" => d.local_bytes,
+            "edge" => something(d.edge, -1), "cap" => something(d.cap, -1),
+            "local_budget" => d.local_budget, "capped_registers" => d.capped_regs,
+            "capped_local_bytes" => d.capped_local, "capped_warps_per_sm" => d.capped_warps,
+        )
+    end
+    results["auto_cap_decisions"] = dec_out
 end
 
 # The step table, so the output says how far a saving has to go to pay.
