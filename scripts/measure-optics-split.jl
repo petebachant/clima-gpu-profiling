@@ -109,6 +109,11 @@ end
 
 const BLOCKS_MEASURED = [128, 256]
 
+# The same pair `_configure_threadblock` returns, computed here because it is
+# internal to the extension.
+split_threadblock(block, nitems) =
+    (min(block, nitems), cld(nitems, min(block, nitems)))
+
 function kernel_record(name, build)
     k = build()
     regs = CUDA.registers(k)
@@ -470,12 +475,104 @@ end
 
 kernels = kernel_records()
 
+# Where the time sits inside a split solve. One round of each half, timed on
+# its own, times `rounds` for the band's share -- an estimate, because a round
+# in isolation does not see the L2 state the previous round leaves. It runs
+# after the arms and their snapshots: the sweeps launch overwrites the
+# accumulators, and nothing reads them again.
+#
+# Each launch names the real kernel with the real arguments. Wrapping one in a
+# closure and launching that would compile a different kernel, with its own
+# register allocation, which is the thing being measured.
+function phase_round_times()
+    nwide = ncol * NGROUPS
+    otx, obx = split_threadblock(ext.OPTICS_BLOCK_THREADS, nwide)
+    stx, sbx = split_threadblock(ext.SWEEPS_BLOCK_THREADS, nwide)
+
+    # Each launch is a named one-line function, so the `@cuda` macro's extent
+    # ends at the statement rather than at a comma in an argument list, and the
+    # kernel it names is the real one. Wrapping a launch in a closure and
+    # launching the closure would compile a different kernel with its own
+    # register allocation, which is the thing being measured.
+    launch_lw_optics() =
+        CUDA.@cuda always_inline = true threads = (otx) blocks = (obx) ext._lw_group_optics_CUDA!(
+            lwg.op, lwg.src, as, lws.state_cache, lk.lookup_lw,
+            lk.lookup_lw_aero, ncol, NGROUPS, n_gpt_lw, 1,
+        )
+    launch_lw_sweeps() =
+        CUDA.@cuda always_inline = true threads = (stx) blocks = (sbx) ext._lw_group_sweeps_CUDA!(
+            lwg.fluxb, lwg.acc, lwg.acc_clear, lwg.src, lws.bcs, lwg.op,
+            lwg.mask, lwg.cloudy, nlay, ncol, as, lk.lookup_lw,
+            lk.lookup_lw_cld, NGROUPS, n_gpt_lw, 1,
+        )
+    launch_sw_optics() =
+        CUDA.@cuda always_inline = true threads = (otx) blocks = (obx) ext._sw_group_optics_CUDA!(
+            swg.op, as, sws.state_cache, lk.lookup_sw, lk.lookup_sw_aero,
+            ncol, NGROUPS, n_gpt_sw, 1,
+        )
+    launch_sw_sweeps() =
+        CUDA.@cuda always_inline = true threads = (stx) blocks = (sbx) ext._sw_group_sweeps_CUDA!(
+            swg.fluxb, swg.acc, swg.acc_clear, swg.src, sws.bcs, swg.op,
+            swg.mask, swg.cloudy, nlay, ncol, as, lk.lookup_sw,
+            lk.lookup_sw_cld, NGROUPS, n_gpt_sw, 1,
+        )
+
+    lw_optics = timed_ms(launch_lw_optics)
+    lw_sweeps = timed_ms(launch_lw_sweeps)
+    sw_optics = timed_ms(launch_sw_optics)
+    sw_sweeps = timed_ms(launch_sw_sweeps)
+
+    function record(rounds, solve_ms, optics, sweeps)
+        return Dict{String, Any}(
+            "rounds" => rounds,
+            "optics_round_ms" => optics.median,
+            "sweeps_round_ms" => sweeps.median,
+            "optics_total_ms" => rounds * optics.median,
+            "sweeps_total_ms" => rounds * sweeps.median,
+            "optics_pct_of_split" => 100.0 * rounds * optics.median / solve_ms,
+            "sweeps_pct_of_split" => 100.0 * rounds * sweeps.median / solve_ms,
+            "accounted_pct_of_split" =>
+                100.0 * rounds * (optics.median + sweeps.median) / solve_ms,
+        )
+    end
+
+    out = Dict{String, Any}(
+        "longwave" => record(
+            cld(n_gpt_lw, NGROUPS),
+            lw_arms["split"]["solve_ms"],
+            lw_optics,
+            lw_sweeps,
+        ),
+        "shortwave" => record(
+            cld(n_gpt_sw, NGROUPS),
+            sw_arms["split"]["solve_ms"],
+            sw_optics,
+            sw_sweeps,
+        ),
+    )
+    println("\n=== phase times (one round each) ===")
+    for band in ("longwave", "shortwave")
+        r = out[band]
+        println(
+            "  $band: optics $(round(r["optics_round_ms"], digits = 2)) ms/round, " *
+            "sweeps $(round(r["sweeps_round_ms"], digits = 2)) ms/round, " *
+            "$(round(r["accounted_pct_of_split"], digits = 1))% of the solve",
+        )
+    end
+    return out
+end
+
+phase_times = phase_round_times()
+
 # The block size each kernel is actually launched at, so the warps a reader
 # compares are the ones the solve runs and not the best of a pair.
 const LAUNCH_BLOCK = Dict(
-    "lw_fused" => 256, "lw_optics" => ext.OPTICS_BLOCK_THREADS,
-    "lw_sweeps" => 256, "sw_fused" => 256,
-    "sw_optics" => ext.OPTICS_BLOCK_THREADS, "sw_sweeps" => 256,
+    "lw_fused" => 256,
+    "sw_fused" => 256,
+    "lw_optics" => ext.OPTICS_BLOCK_THREADS,
+    "sw_optics" => ext.OPTICS_BLOCK_THREADS,
+    "lw_sweeps" => ext.SWEEPS_BLOCK_THREADS,
+    "sw_sweeps" => ext.SWEEPS_BLOCK_THREADS,
 )
 
 function occupancy_summary(kernels)
@@ -579,6 +676,8 @@ results = Dict{String, Any}(
     "shortwave" => sw_arms,
     "kernels" => kernels,
     "at_launch" => at_launch,
+    "phase_times" => phase_times,
+    "sweeps_block_threads" => ext.SWEEPS_BLOCK_THREADS,
     "wallclock" => wall,
     "split_wins_lw" => lw_arms["split_vs_fused_pct"] < 0,
     "split_wins_sw" => sw_arms["split_vs_fused_pct"] < 0,
