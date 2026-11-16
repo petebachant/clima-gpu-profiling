@@ -1,0 +1,209 @@
+[lw_accumulate]
+at_cap = false
+gains_step = true
+gains_step_b128 = true
+local_bytes = 0
+reaches_target = true
+registers = 24
+warps_per_sm = 64
+warps_per_sm_b128 = 64
+
+[lw_cloud_mask]
+at_cap = false
+gains_step = false
+gains_step_b128 = false
+local_bytes = 32
+reaches_target = false
+registers = 32
+warps_per_sm = 64
+warps_per_sm_b128 = 64
+
+[lw_cloud_optics]
+at_cap = false
+gains_step = false
+gains_step_b128 = false
+local_bytes = 32
+reaches_target = false
+registers = 42
+warps_per_sm = 40
+warps_per_sm_b128 = 40
+
+[lw_fused_launch_bounds_2]
+at_cap = false
+gains_step = false
+gains_step_b128 = false
+local_bytes = 672
+reaches_target = false
+registers = 128
+warps_per_sm = 16
+warps_per_sm_b128 = 16
+
+[lw_fused_maxregs_128]
+at_cap = false
+gains_step = false
+gains_step_b128 = false
+local_bytes = 672
+reaches_target = false
+registers = 128
+warps_per_sm = 16
+warps_per_sm_b128 = 16
+
+[lw_fused_whole]
+at_cap = true
+gains_step = false
+gains_step_b128 = false
+local_bytes = 304
+reaches_target = false
+registers = 255
+warps_per_sm = 8
+warps_per_sm_b128 = 8
+
+[lw_gas_aerosol_optics]
+at_cap = false
+gains_step = false
+gains_step_b128 = false
+local_bytes = 32
+reaches_target = false
+registers = 156
+warps_per_sm = 8
+warps_per_sm_b128 = 12
+
+[lw_grouped_whole]
+at_cap = true
+gains_step = false
+gains_step_b128 = false
+local_bytes = 304
+reaches_target = false
+registers = 255
+warps_per_sm = 8
+warps_per_sm_b128 = 8
+
+[lw_two_stream_sweep]
+at_cap = false
+gains_step = true
+gains_step_b128 = true
+local_bytes = 0
+reaches_target = true
+registers = 51
+warps_per_sm = 32
+warps_per_sm_b128 = 36
+
+[summary]
+alt_block_size = 128
+alt_current_warps_per_sm = 8
+alt_target_registers = 168
+alt_target_warps_per_sm = 12
+block_size = 256
+control_lw_at_cap = true
+control_lw_grouped_at_cap = true
+control_sw_at_cap = true
+control_sw_grouped_at_cap = true
+current_warps_per_sm = 8
+failed = []
+forced_budget_is_clean = false
+lw_grouped_local_bytes = 304
+lw_optics_local_bytes = 32
+lw_optics_phase_fits = false
+lw_optics_phase_fits_no_spill_at_all = false
+lw_optics_phase_gains_step_b128 = true
+lw_optics_registers = 156
+lw_optics_warps_per_sm_b128 = 12
+ncol = 24576
+ngroups_lw = 16
+ngroups_sw = 16
+nlay = 80
+note = "Each phase is compiled as its own kernel with the live solver's argument types, which is what a split would produce. target_registers is what the next occupancy step needs at this block size: 65536 / (regs * block) >= 2. reaches_target requires BOTH the register count and zero spill, because forcing the budget with a spill is the thing that measured +3.93% and +2.91% on these kernels. The phase that decides viability is the gas and aerosol optics: section 4l item 5 measured 99% of RRTMGP time there and 0.1% in the vertical sweeps, so a split whose expensive phase stays at the cap moves almost none of the time to higher occupancy. The controls must come back at the cap or the probe is not measuring the kernel the model runs."
+phases_that_fit = ["lw_two_stream_sweep", "lw_accumulate", "sw_two_stream_sweep"]
+phases_that_gain_a_step_b128 = ["lw_two_stream_sweep", "lw_accumulate", "sw_two_stream_sweep"]
+register_cap = 255
+split_gains_a_step_b128 = true
+split_is_viable = true
+sw_grouped_local_bytes = 360
+sw_optics_local_bytes = 32
+sw_optics_phase_fits = true
+sw_optics_phase_fits_no_spill_at_all = false
+sw_optics_phase_gains_step_b128 = true
+sw_optics_registers = 128
+sw_optics_warps_per_sm = 16
+target_registers = 128
+target_warps_per_sm = 16
+
+    [summary.forced.lw_fused_launch_bounds_2]
+    local_bytes = 672
+    registers = 128
+    warps_per_sm = 16
+
+    [summary.forced.lw_fused_maxregs_128]
+    local_bytes = 672
+    registers = 128
+    warps_per_sm = 16
+
+    [summary.forced.sw_fused_launch_bounds_2]
+    local_bytes = 712
+    registers = 128
+    warps_per_sm = 16
+
+    [summary.forced.sw_fused_maxregs_128]
+    local_bytes = 712
+    registers = 128
+    warps_per_sm = 16
+
+[sw_fused_launch_bounds_2]
+at_cap = false
+gains_step = false
+gains_step_b128 = false
+local_bytes = 712
+reaches_target = false
+registers = 128
+warps_per_sm = 16
+warps_per_sm_b128 = 16
+
+[sw_fused_maxregs_128]
+at_cap = false
+gains_step = false
+gains_step_b128 = false
+local_bytes = 712
+reaches_target = false
+registers = 128
+warps_per_sm = 16
+warps_per_sm_b128 = 16
+
+[sw_fused_whole]
+at_cap = true
+gains_step = false
+gains_step_b128 = false
+local_bytes = 344
+reaches_target = false
+registers = 255
+warps_per_sm = 8
+warps_per_sm_b128 = 8
+
+[sw_gas_aerosol_optics]
+at_cap = false
+gains_step = false
+gains_step_b128 = false
+local_bytes = 32
+reaches_target = false
+registers = 128
+warps_per_sm = 16
+warps_per_sm_b128 = 16
+
+[sw_grouped_whole]
+at_cap = true
+gains_step = false
+gains_step_b128 = false
+local_bytes = 360
+reaches_target = false
+registers = 255
+warps_per_sm = 8
+warps_per_sm_b128 = 8
+
+[sw_two_stream_sweep]
+at_cap = false
+gains_step = true
+gains_step_b128 = true
+local_bytes = 0
+reaches_target = true
+registers = 53
+warps_per_sm = 32
+warps_per_sm_b128 = 36

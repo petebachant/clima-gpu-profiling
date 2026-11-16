@@ -5104,3 +5104,90 @@ stages:
       hash: md5
       md5: 6d4ef0a95efdfc32a84923a96b7a753d
       size: 2441
+  radiation-phase-split/phases:
+    cmd: calkit scheduler batch --name radiation-phase-split/phases 
+      --environment clima --dep scripts/measure-radiation-phase-registers.jl 
+      --dep scripts/run-julia-script.sh --dep RRTMGP.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml 
+      --dep .calkit/env-locks/clima --out 
+      results/experiments/radiation-phase-split/phases.toml --option --gpus=1 
+      --option --time=60 -- 
+      .calkit/markdown/docs/experiments/radiation-phase-split.md/phases.sh
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: .calkit/markdown/docs/experiments/radiation-phase-split.md/phases.sh
+      hash: md5
+      md5: aa5f1824b95479ee595c4382c64e8dba
+      size: 311
+    - path: ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      hash: md5
+      md5: 66e9712dfb39a09d73ab08e096b614db
+      size: 1114
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 3974e589a2618f7adb8c0164acb5807b
+      size: 855
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      hash: md5
+      md5: 15f62060eba963817bee4af7e3e51817
+      size: 139651
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: RRTMGP.jl-mod/src
+      hash: md5
+      md5: 483f82aa020e43540fb9811fbc1ce4be.dir
+      size: 344110
+      nfiles: 44
+    - path: scripts/measure-radiation-phase-registers.jl
+      hash: md5
+      md5: 1093d085bfee5f9704a20a9ffbcb9cb5
+      size: 23192
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: 2b491e48a8f15c4ea7ff76d19d95f830
+      size: 1040
+    outs:
+    - path: .calkit/scheduler/logs/radiation-phase-split/phases.out
+      hash: md5
+      md5: 8b7c21540d1f946b0dc5a7167d58c620
+      size: 40343
+    - path: results/experiments/radiation-phase-split/phases.toml
+      hash: md5
+      md5: 8b7fb0a6a346a57de09821b5a9f3085f
+      size: 4931
+  radiation-phase-split/values:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/experiments/radiation-phase-split.md/values.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: .calkit/markdown/docs/experiments/radiation-phase-split.md/values.py
+      hash: md5
+      md5: 57a1c432facd5676885b50cd8ece528b
+      size: 5768
+    - path: results/experiments/radiation-phase-split/phases.toml
+      hash: md5
+      md5: 8b7fb0a6a346a57de09821b5a9f3085f
+      size: 4931
+    - path: results/top-kernels.csv
+      hash: md5
+      md5: 47496988f2d806ddf9a662cc3e239af9
+      size: 3581
+    outs:
+    - path: results/docs/radiation-phase-split.json
+      hash: md5
+      md5: 2bbab86ab58221f39434b79efc2e77d8
+      size: 7666
