@@ -35,12 +35,40 @@ Section 8t attributed that to the stubs calling the per-column bodies outside `@
 The cause was that the file imports CUDA rather than using it, so the bare `threadIdx()` in each stub was an undefined name, and the dynamic dispatch that followed buried the real reason several lines into an error whose first lines name only its consequences.
 Seven stubs, seven failures, one per unqualified intrinsic.
 
-```sh calkit stage name=phases environment=clima outputs=[{path: results/experiments/radiation-phase-split/phases.toml, storage: git}] inputs=[scripts/measure-radiation-phase-registers.jl, scripts/run-julia-script.sh, RRTMGP.jl-mod/src, ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml, ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl, ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml, ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml] scheduler={options: [--gpus=1, --time=60]}
+```sh calkit stage name=phases environment=clima outputs=[{path: results/experiments/radiation-phase-split/phases.toml, storage: git}] inputs=[scripts/measure-radiation-phase-registers.jl, scripts/run-julia-script.sh, RRTMGP.jl-mod/src, RRTMGP.jl-mod/ext, ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml, ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl, ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml, ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml] scheduler={options: [--gpus=1, --time=60]}
 #!/usr/bin/env bash
 bash scripts/run-julia-script.sh \
   --project=ClimaCoupler.jl-mod/experiments/AMIP \
   scripts/measure-radiation-phase-registers.jl \
   --out results/experiments/radiation-phase-split/phases.toml \
+  --config_file ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+```
+
+## Building it, and what it measures
+
+The grouped solve already writes its optics to device arrays: `op` and `src` in the group workspace are `(ncol * ngroups, nlay)` and both halves of a round address them by wide column.
+So the two phases exchange nothing across a kernel boundary that was not already going to memory, and the split is three changes rather than a rewrite — the post-optics half of each per-column body becomes a named function, each band gets an optics kernel and a sweeps kernel, and the host walks the rounds of the g-point loop instead of the kernel walking them.
+The cloud mask moves from the start of the body into the sweeps half, because the gas and aerosol optics never read it and the sweeps kernel is the half with registers to spare.
+
+Three claims are measured on the live simulation's own state, lookups and buffers, which makes all three in-block comparisons rather than differences of runs:
+
+  * `ungrouped` is upstream's serial g-point loop, with no group workspace at all.
+  * `fused` is the grouped solve as one kernel per round, which is what the PR ships today.
+  * `split` is the grouped solve as optics then sweeps, two kernels per round.
+
+`fused` and `split` share one group workspace and differ only in its `split_optics` flag, so they cannot differ in what they allocated or in what state they read.
+The split moves no arithmetic, so the two are asserted bit-for-bit — fluxes, cloud cover and the 550 nm optical depth compared as integers — and the gate runs before the timed blocks, so a broken kernel costs two solves rather than a reservation.
+
+It also answers a question this experiment raised about its own instrument.
+The occupancy model that predicted the split was worth building is a model; the CUDA driver's `cuOccupancyMaxActiveBlocksPerMultiprocessor` is the authority.
+Every kernel here is reported three ways — the register count `ptxas` chose, the driver's answer, and the model's — so `occupancy_model_agrees_everywhere` either confirms the ladder this document reasons on or names where it is wrong.
+
+```sh calkit stage name=split environment=clima outputs=[{path: results/experiments/radiation-phase-split/split.toml, storage: git}] inputs=[scripts/measure-optics-split.jl, scripts/run-julia-script.sh, RRTMGP.jl-mod/src, RRTMGP.jl-mod/ext, ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml, ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl, ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml, ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml] scheduler={options: [--gpus=1, --time=120]}
+#!/usr/bin/env bash
+bash scripts/run-julia-script.sh \
+  --project=ClimaCoupler.jl-mod/experiments/AMIP \
+  scripts/measure-optics-split.jl \
+  --out results/experiments/radiation-phase-split/split.toml \
   --config_file ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
 ```
 

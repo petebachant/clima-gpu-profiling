@@ -981,6 +981,7 @@ stages:
     cmd: calkit scheduler batch --name radiation-phase-split/phases
       --environment clima --dep scripts/measure-radiation-phase-registers.jl
       --dep scripts/run-julia-script.sh --dep RRTMGP.jl-mod/src --dep
+      RRTMGP.jl-mod/ext --dep
       ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep
       ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
       ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -994,6 +995,7 @@ stages:
       - scripts/measure-radiation-phase-registers.jl
       - scripts/run-julia-script.sh
       - RRTMGP.jl-mod/src
+      - RRTMGP.jl-mod/ext
       - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
       - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
       - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
@@ -1007,6 +1009,39 @@ stages:
           cache: false
           persist: true
     desc: Automatically generated from the 'radiation-phase-split/phases' stage
+      in calkit.yaml. Changes made here will be overwritten.
+  radiation-phase-split/split:
+    cmd: calkit scheduler batch --name radiation-phase-split/split --environment
+      clima --dep scripts/measure-optics-split.jl --dep
+      scripts/run-julia-script.sh --dep RRTMGP.jl-mod/src --dep
+      RRTMGP.jl-mod/ext --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      --dep .calkit/env-locks/clima --out
+      results/experiments/radiation-phase-split/split.toml --option --gpus=1
+      --option --time=120 --
+      .calkit/markdown/docs/experiments/radiation-phase-split.md/split.sh
+    deps:
+      - .calkit/markdown/docs/experiments/radiation-phase-split.md/split.sh
+      - scripts/measure-optics-split.jl
+      - scripts/run-julia-script.sh
+      - RRTMGP.jl-mod/src
+      - RRTMGP.jl-mod/ext
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      - .calkit/env-locks/clima
+    outs:
+      - results/experiments/radiation-phase-split/split.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/radiation-phase-split/split.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'radiation-phase-split/split' stage
       in calkit.yaml. Changes made here will be overwritten.
   radiation-phase-split/values:
     cmd: calkit xenv -n py --no-check -- python
