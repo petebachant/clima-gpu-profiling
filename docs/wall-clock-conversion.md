@@ -125,6 +125,15 @@ out = {
         # is unexplained by the measurement this project trusts.
         "exceeds_device_prediction": current["mean_pct"]
         > device_predicted_pct + census["current_window_spread_points"],
+        # A margin over the floor resolves a headline only if it is wider than
+        # the scatter of the draws that set the floor, since one draw is not the
+        # floor and the two here disagree by about as much as one of them is
+        # from zero.
+        "margin_exceeds_null_spread": current["margin_over_null_points"]
+        > census["current_window_spread_points"],
+        "device_prediction_gap_points": round(
+            current["mean_pct"] - device_predicted_pct, 2
+        ),
         "spread_points": current.get("spread_points"),
         # Each arm's own wander across the group. A pair differences two
         # runs, so it resolves nothing smaller than this.
@@ -228,9 +237,11 @@ The device chain agrees it is zero where it should --- <!-- calkit value key=nul
 Repeating a pair says what kind of floor this is, and the answer is not the one this project assumed for months.
 The treatment measured here --- the updraft cache, not the fold above --- has been run end to end <!-- calkit value key=repeats.n -->3<!-- /calkit value --> times on one stack and one set of committed code, giving <!-- calkit value key=repeats.min_pct -->4.847<!-- /calkit value -->% to <!-- calkit value key=repeats.max_pct -->5.354<!-- /calkit value -->%: a mean of <!-- calkit value key=repeats.mean_pct -->5.086<!-- /calkit value -->% and a spread of <!-- calkit value key=repeats.spread_points -->0.507<!-- /calkit value --> points.
 Re-baselining onto a newer upstream main changes the code of both arms, so `record-treatment` files the result as a new group rather than a fourth repeat; the re-baseline's own pair was a null test, because upstream had merged the treatment and the two arms were identical, and it is the second of the two draws that set this window's floor below.
-The current group is this pass's arm --- the pointwise register cap and the g-point groups, with the SGS node removals and the sedimentation fold both upstream in the baseline now --- and it holds <!-- calkit value key=current.n -->1<!-- /calkit value --> pair of one set of committed code, a mean of <!-- calkit value key=current.mean_pct -->3.732<!-- /calkit value -->%, with `is_null` recording <!-- calkit value key=current.is_null -->false<!-- /calkit value -->.
-Its margin over the floor is <!-- calkit value key=current.margin_points -->1.863<!-- /calkit value --> points, so `clears_floor` records <!-- calkit value key=current.clears_floor -->true<!-- /calkit value -->: with the node removals merged upstream the remaining treatment is smaller than the gap two identical arms show, and an unprofiled pair no longer resolves it.
-The device chain still does --- it prices this arm's treatments on this stack at <!-- calkit value key=current.device_predicted_pct -->4.05<!-- /calkit value -->% of wall clock against the pair's <!-- calkit value key=current.mean_pct -->3.732<!-- /calkit value -->%, and `exceeds_device_prediction` records <!-- calkit value key=current.exceeds_device_prediction -->false<!-- /calkit value --> --- which is the case this document exists to make, the quantity being real and the wall clock the wrong instrument for it.
+The current group is this pass's arm --- the g-point groups with the optics phase split, the level-aligned thread order on the SGS closure and the pointwise register cap, with the SGS node removals and the sedimentation fold both upstream in the baseline now --- and it holds <!-- calkit value key=current.n -->1<!-- /calkit value --> pair of one set of committed code, a mean of <!-- calkit value key=current.mean_pct -->9.047<!-- /calkit value -->%, with `is_null` recording <!-- calkit value key=current.is_null -->false<!-- /calkit value -->.
+Its margin over the floor is <!-- calkit value key=current.margin_points -->7.178<!-- /calkit value --> points, so `clears_floor` records <!-- calkit value key=current.clears_floor -->true<!-- /calkit value -->, and `margin_exceeds_null_spread` records <!-- calkit value key=current.margin_exceeds_null_spread -->true<!-- /calkit value --> against the <!-- calkit value key=census.current_spread_points -->1.196<!-- /calkit value -->-point gap between the two draws that set the floor.
+That is the test the earlier arms on this stack did not pass, and it is what makes this one a wall-clock measurement rather than a quantity the wall clock cannot see: a pair resolves an effect this size.
+The device chain corroborates it rather than standing in for it --- it prices this arm's treatments on this stack at <!-- calkit value key=current.device_predicted_pct -->8.75<!-- /calkit value -->% of wall clock against the pair's <!-- calkit value key=current.mean_pct -->9.047<!-- /calkit value -->%, <!-- calkit value key=current.device_prediction_gap_points -->0.3<!-- /calkit value --> points apart, with `exceeds_device_prediction` recording <!-- calkit value key=current.exceeds_device_prediction -->false<!-- /calkit value -->.
+So two instruments that share no measurement agree on a nine-percent effect, which is the case this document exists to make in the direction it is usually needed: the conversion holds where the quantity is large enough for either end to see it.
 A pair differences two runs, so it cannot resolve an effect smaller than the wander of the runs it differences, and one pair carries no run-order, repeat-spread or arm-wander figure at all --- so the order effect is read off the repeated group below, which spreads <!-- calkit value key=repeats.spread_points -->0.507<!-- /calkit value --> points.
 
 

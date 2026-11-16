@@ -299,6 +299,13 @@ per_event_saved = (
     + sp["shortwave"]["split_saved_per_event_ms"]
 )
 saved_solver_pct = 100.0 * per_event_saved / per_event_fused
+# The profiled arm is the split one, so its solver share of device is already
+# net of the saving and scaling the saved fraction by it understates the result.
+# Scale by the split solve's own cost instead, which recovers what the window
+# would have spent fused and what the split took off it.
+per_event_split = per_event_fused - per_event_saved
+fused_solver_ms = solver_ms * per_event_fused / per_event_split
+saved_window_ms = solver_ms * per_event_saved / per_event_split
 
 split = {
     "ngroups": sp["ngroups"],
@@ -332,9 +339,10 @@ split = {
     "occupancy_model_checks": sp["occupancy_model_checks"],
     "saved_per_event_ms": round(per_event_saved, 1),
     "saved_solver_pct": round(saved_solver_pct, 2),
-    "saved_device_pct": round(
-        saved_solver_pct * (100.0 * solver_ms / device_ms) / 100.0, 3
-    ),
+    "saved_window_ms": round(saved_window_ms, 1),
+    "fused_solver_ms": round(fused_solver_ms, 1),
+    "fused_solver_pct_of_device": round(100.0 * fused_solver_ms / device_ms, 2),
+    "saved_device_pct": round(100.0 * saved_window_ms / device_ms, 3),
     "sypd_split": round(wall["sypd_split"], 4),
     "sypd_fused": round(wall["arms"]["fused"]["sypd"], 4),
     "sypd_ungrouped": round(wall["arms"]["ungrouped"]["sypd"], 4),
@@ -426,7 +434,7 @@ Requiring a phase to show exactly zero local bytes reports both optics phases as
 Section 8t records why zero is the wrong bar: `CUDA.memory(k).local` covers the call frame and local arrays as well as spilled registers, so it bounds spill rather than measuring it.
 The reference that means something is the kernel the phase would replace, and against that both phases spill an order of magnitude less, so `split_is_viable` is <!-- calkit value key=split_is_viable -->true<!-- /calkit value --> and `split_gains_a_step_b128` is <!-- calkit value key=split_gains_a_step_b128 -->true<!-- /calkit value -->.
 
-For scale: the two solvers are <!-- calkit value key=device.solver_ms format="{:,}" -->4,333.8<!-- /calkit value --> ms of the <!-- calkit value key=device.device_ms format="{:,}" -->33,304.7<!-- /calkit value --> ms window, or <!-- calkit value key=device.solver_pct_of_device -->13.01<!-- /calkit value -->% of device, over <!-- calkit value key=grid.ncol format="{:,}" -->24,576<!-- /calkit value --> columns and <!-- calkit value key=grid.nlay -->80<!-- /calkit value --> layers at <!-- calkit value key=grid.ngroups_lw -->16<!-- /calkit value --> g-point groups.
+For scale: the two solvers are <!-- calkit value key=device.solver_ms format="{:,}" -->2,729.1<!-- /calkit value --> ms of the <!-- calkit value key=device.device_ms format="{:,}" -->31,442.4<!-- /calkit value --> ms window, or <!-- calkit value key=device.solver_pct_of_device -->8.68<!-- /calkit value -->% of device, over <!-- calkit value key=grid.ncol format="{:,}" -->24,576<!-- /calkit value --> columns and <!-- calkit value key=grid.nlay -->80<!-- /calkit value --> layers at <!-- calkit value key=grid.ngroups_lw -->16<!-- /calkit value --> g-point groups.
 
 ## What the split is worth, measured
 
@@ -434,6 +442,9 @@ Both bands win, and by margins no register count could have predicted, because a
 The longwave solve goes from <!-- calkit value key=split.longwave.fused_ms -->605.6<!-- /calkit value --> ms to <!-- calkit value key=split.longwave.split_ms -->454.8<!-- /calkit value --> ms, which is <!-- calkit value key=split.longwave.split_vs_fused_pct -->-24.9<!-- /calkit value -->%, and the shortwave from <!-- calkit value key=split.shortwave.fused_ms -->494.5<!-- /calkit value --> ms to <!-- calkit value key=split.shortwave.split_ms -->319.1<!-- /calkit value --> ms, or <!-- calkit value key=split.shortwave.split_vs_fused_pct -->-35.47<!-- /calkit value -->%.
 Measured against upstream's serial g-point loop, which is what either grouped path is an improvement on, the same two solves are <!-- calkit value key=split.longwave.split_vs_ungrouped_pct -->-32.76<!-- /calkit value -->% and <!-- calkit value key=split.shortwave.split_vs_ungrouped_pct -->-48.2<!-- /calkit value -->%.
 Each arm's own repeat spread is <!-- calkit value key=split.longwave.repeat_spread_pct -->0.054<!-- /calkit value -->% and <!-- calkit value key=split.shortwave.repeat_spread_pct -->0.08<!-- /calkit value -->%, so both effects are resolved more than two orders of magnitude over the noise of the instrument that found them, and `effects_exceed_repeat_spread` is <!-- calkit value key=split.effects_exceed_repeat_spread -->true<!-- /calkit value -->.
+
+Scaled onto the profile's window, where the two grouped solves cost <!-- calkit value key=device.solver_ms format="{:,}" -->2,729.1<!-- /calkit value --> ms split, the same fraction is <!-- calkit value key=split.saved_window_ms format="{:,}" -->1,150.1<!-- /calkit value --> ms off a fused solver of <!-- calkit value key=split.fused_solver_ms format="{:,}" -->3,879.2<!-- /calkit value --> ms, or <!-- calkit value key=split.saved_device_pct -->3.658<!-- /calkit value -->% of the <!-- calkit value key=device.device_ms format="{:,}" -->31,442.4<!-- /calkit value --> ms device budget.
+The scaling runs that way round deliberately: the profiled arm is the split one, so its solver's share of device is already net of the saving, and multiplying the saved fraction by it would price the split against itself.
 
 Nothing moved but the kernel boundary, and that is asserted rather than argued.
 All of <!-- calkit value key=split.longwave.values_compared format="{:,}" -->9,977,856<!-- /calkit value --> longwave values and <!-- calkit value key=split.shortwave.values_compared format="{:,}" -->11,993,088<!-- /calkit value --> shortwave ones — fluxes, clear-sky fluxes, cloud cover and the 550 nm aerosol optical depth — were compared between the two grouped arms as integers, and <!-- calkit value key=split.longwave.values_differing -->0<!-- /calkit value --> differ.
