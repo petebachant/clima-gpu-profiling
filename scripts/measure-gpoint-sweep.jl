@@ -289,8 +289,8 @@ results = Dict{String, Any}(
     "best_change_pct" => best,
     "sufficient_ngroups" => sufficient,
     "sufficient_is_sweep_maximum" => sufficient == maximum(measured),
-    "default_ngpt_groups" => RTE.DEFAULT_NGPT_GROUPS,
-    "default_is_sufficient_only" => RTE.DEFAULT_NGPT_GROUPS == sufficient,
+    "default_ngpt_groups" => RTE.default_ngpt_groups(gp),
+    "default_is_sufficient_only" => RTE.default_ngpt_groups(gp) == sufficient,
     "points" => points,
     "note" => "solve_ms times the whole longwave both-skies solve, so it " *
               "charges the grouped path for its reduction and its state " *
@@ -347,7 +347,7 @@ function wallclock_results(seconds, points)
         )
     end
 
-    default_gain = arms[string(RTE.DEFAULT_NGPT_GROUPS)]["sypd_gain_pct"]
+    default_gain = arms[string(RTE.default_ngpt_groups(gp))]["sypd_gain_pct"]
     iqr_pct = 100.0 * (q3 - q1) / mid
     return Dict{String, Any}(
         "block_steps" => block_steps,
@@ -364,7 +364,7 @@ function wallclock_results(seconds, points)
         "block_iqr_pct" => iqr_pct,
         "block_rel_se_pct" => 100.0 * (sd / sqrt(n)) / mid,
         "step_ms" => 1e3 * mid / block_steps,
-        "default_ngpt_groups" => RTE.DEFAULT_NGPT_GROUPS,
+        "default_ngpt_groups" => RTE.default_ngpt_groups(gp),
         "default_sypd_gain_pct" => default_gain,
         "gain_below_block_iqr" => default_gain < iqr_pct,
         "arms" => arms,
