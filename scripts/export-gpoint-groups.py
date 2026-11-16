@@ -42,14 +42,28 @@ BASE = "results/nsys/baseline.sqlite"
 MOD = "results/nsys/mod.sqlite"
 OUT = Path("results/gpoint-groups.json")
 
-# Matched by role. The longwave family covers both arms' solve kernels, whose
-# names differ; the overhead kernels exist only in the mod arm.
-LW_SOLVE = "%rte_lw_2stream_solve%"
-SW_SOLVE = "%rte_sw_2stream_solve%"
-LW_REDUCE = "%reduce_lw_groups%"
-LW_AERO = "%lw_aero_mask%"
-SW_REDUCE = "%reduce_sw_groups%"
-SW_AERO = "%sw_aero_mask%"
+# Matched by role, and each role is a list because one arm's role can be
+# several kernels. The baseline launches one fused solve per band; the mod arm
+# launched one grouped solve per band and now launches an optics kernel and a
+# sweeps kernel per band instead. A pattern pinned to one of those names reports
+# the band as having vanished, which is the failure
+# `analysis-stages-pinned-to-kernel-identity` describes and which costs a
+# reservation to discover. The overhead kernels exist only in the mod arm.
+LW_SOLVE = ("%rte_lw_2stream_solve%", "%lw_group_optics%", "%lw_group_sweeps%")
+SW_SOLVE = ("%rte_sw_2stream_solve%", "%sw_group_optics%", "%sw_group_sweeps%")
+LW_REDUCE = ("%reduce_lw_groups%",)
+LW_AERO = ("%lw_aero_mask%",)
+SW_REDUCE = ("%reduce_sw_groups%",)
+SW_AERO = ("%sw_aero_mask%",)
+
+# Everything either band launches, so the noise band cannot pick up a treated
+# kernel. `shared` already drops a name present in one arm only, which is every
+# name here, so this is belt and braces rather than the guard -- but a role that
+# does appear in both arms would otherwise be compared against itself.
+TREATED_FRAGMENTS = (
+    "rte_lw", "rte_sw", "lw_group_", "sw_group_",
+    "reduce_lw_groups", "reduce_sw_groups", "lw_aero_mask", "sw_aero_mask",
+)
 
 A100_SMS = 108
 A100_REGS_PER_SM = 65536
@@ -57,10 +71,43 @@ A100_THREADS_PER_SM = 2048
 A100_BLOCKS_PER_SM = 32
 
 
+# ClimaCore's `max_active_blocks`, a port of NVIDIA's occupancy calculator.
+# Dividing the register file by `regs * block` instead is wrong at several A100
+# steps -- it puts the 128-thread step at 170 registers where the real one is
+# 168 -- because registers are allocated per warp in 256-register units, a
+# block's warps round up to the scheduler count, and the file is divided per
+# scheduler rather than per multiprocessor. The CUDA driver's own occupancy
+# call agrees with this model on every kernel in this solve; see
+# docs/experiments/radiation-phase-split.md.
+A100_REGS_PER_ALLOCATION = 256
+A100_MAX_REGS_PER_BLOCK = 65536
+A100_SCHEDULERS_PER_SM = 4
+
+
+def round_up(n, divisor):
+    return -(-n // divisor) * divisor
+
+
+def max_active_blocks(regs, block):
+    warps_per_block = -(-block // 32)
+    max_warps = A100_THREADS_PER_SM // 32
+    if regs > 0:
+        allocated_warps = round_up(warps_per_block, A100_SCHEDULERS_PER_SM)
+        per_warp = round_up(regs * 32, A100_REGS_PER_ALLOCATION)
+        if allocated_warps * per_warp > A100_MAX_REGS_PER_BLOCK:
+            return 0
+        per_scheduler = (A100_REGS_PER_SM // A100_SCHEDULERS_PER_SM) // per_warp
+        max_warps = min(max_warps, per_scheduler * A100_SCHEDULERS_PER_SM)
+    blocks = max_warps // warps_per_block
+    # Blocks of two warps are dealt unevenly to four schedulers unless each
+    # gets the same number.
+    if warps_per_block == 2:
+        blocks = 4 * (blocks // 4)
+    return min(blocks, A100_BLOCKS_PER_SM)
+
+
 def warps_per_sm(regs, block):
-    blocks = min(A100_REGS_PER_SM // max(regs * block, 1),
-                 A100_THREADS_PER_SM // max(block, 1), A100_BLOCKS_PER_SM)
-    return blocks * ((block + 31) // 32)
+    return max_active_blocks(regs, block) * ((block + 31) // 32)
 
 
 def connect(path):
@@ -100,42 +147,79 @@ def device_total(con):
     return union_ms(rows), summed
 
 
-def family(con, like):
-    """Every launch of one kernel family, with shape and raw start/end times."""
-    rows = con.execute("""
+def family(con, likes):
+    """Every launch of one kernel role, per kernel and in aggregate.
+
+    A role is several kernels when an arm splits it. The shape check stays
+    per NAME rather than per role: one name standing for two launch shapes
+    would put one launch's registers beside another's grid and invent a kernel
+    that never ran, which is the error section 8g of docs/learnings.md was
+    written for. Two different names with different shapes is the normal case
+    now and is reported rather than rejected.
+    """
+    clause = " OR ".join(["s.value LIKE ?"] * len(likes))
+    rows = con.execute(f"""
         SELECT s.value, k.registersPerThread, k.blockX*k.blockY*k.blockZ,
                k.gridX*k.gridY*k.gridZ, k.start, k.end
         FROM CUPTI_ACTIVITY_KIND_KERNEL k
         JOIN StringIds s ON k.shortName = s.id
-        WHERE s.value LIKE ?
+        WHERE {clause}
         ORDER BY k.start
-    """, (like,)).fetchall()
+    """, tuple(likes)).fetchall()
     if not rows:
         return None
+
+    by_name = {}
+    for name, regs, block, grid, start, end in rows:
+        by_name.setdefault(name, []).append((regs, block, grid, start, end))
+
+    kernels = []
+    for name, launches in sorted(by_name.items()):
+        shapes = {(r[0], r[1], r[2]) for r in launches}
+        if len(shapes) != 1:
+            sys.exit(
+                f"{name} ran at {len(shapes)} distinct shapes: {sorted(shapes)}"
+            )
+        regs, block, grid = launches[0][0], launches[0][1], launches[0][2]
+        kernels.append({
+            "name": name,
+            "launches": len(launches),
+            "elapsed_ms": round(
+                union_ms([(s, e) for *_, s, e in launches]), 1
+            ),
+            "registers": regs,
+            "block": block,
+            "grid": grid,
+            "threads": block * grid,
+            "warps_per_sm": warps_per_sm(regs, block),
+            # Fewer blocks than SMs means part of the device is idle for the
+            # whole kernel, which is the condition the split exists to remove.
+            "blocks_per_sm": round(grid / A100_SMS, 2),
+        })
+
     summed = sum(e - s for *_, s, e in rows) / 1e6
     ms = union_ms([(s, e) for *_, s, e in rows])
-    # One name must not stand for two launch shapes: reporting one launch's
-    # registers beside another's grid invents a kernel that never ran, which is
-    # the error section 8g of docs/learnings.md was written for.
-    shapes = {(r[1], r[2], r[3]) for r in rows}
-    if len(shapes) != 1:
-        sys.exit(f"{rows[0][0]} ran at {len(shapes)} distinct shapes: {sorted(shapes)}")
-    regs, block, grid = rows[0][1], rows[0][2], rows[0][3]
+    # The shape reported for the role is the kernel carrying its time, so a
+    # register count or a grid read off this role describes where the time is.
+    big = max(kernels, key=lambda k: k["elapsed_ms"])
     return {
-        "name": rows[0][0],
+        "name": " + ".join(k["name"] for k in kernels),
+        "kernels": kernels,
         "launches": len(rows),
         "elapsed_ms": round(ms, 1),
         "summed_ms": round(summed, 1),
-        # Above one means launches of this family overlapped each other, so the
+        # Above one means launches of this role overlapped each other, so the
         # summed figure is not elapsed time.
         "summed_over_elapsed": round(summed / ms, 2) if ms else None,
-        "registers": regs,
-        "block": block,
-        "grid": grid,
-        "warps_per_sm": warps_per_sm(regs, block),
-        # Fewer blocks than SMs means part of the device is idle for the whole
-        # kernel, which is the condition the split exists to remove.
-        "blocks_per_sm": round(grid / A100_SMS, 2),
+        "registers": big["registers"],
+        "block": big["block"],
+        "grid": big["grid"],
+        "threads": big["threads"],
+        # A role whose kernels cover different thread counts has no single
+        # amount of work per launch, so the group count cannot be read off it.
+        "threads_agree": len({k["threads"] for k in kernels}) == 1,
+        "warps_per_sm": big["warps_per_sm"],
+        "blocks_per_sm": big["blocks_per_sm"],
         "_rows": rows,
     }
 
@@ -157,8 +241,7 @@ def waves(fam):
     count explains where work goes, never how long it takes.
     """
     regs, block, grid = fam["registers"], fam["block"], fam["grid"]
-    per_sm = min(A100_REGS_PER_SM // max(regs * block, 1),
-                 A100_THREADS_PER_SM // max(block, 1), A100_BLOCKS_PER_SM)
+    per_sm = max_active_blocks(regs, block)
     resident = A100_SMS * per_sm
     return {
         "blocks": grid,
@@ -225,15 +308,23 @@ def main():
     sw_saved = b_sw["elapsed_ms"] - sw_mod_charged
     sw_is_treated = sw_reduce_k is not None
 
-    # The split is one launch over a wider grid now, so the group count comes
-    # from the grid ratio; launch counts are equal in both arms.
-    ngroups = m_lw["grid"] // b_lw["grid"]
+    # Threads, not blocks: the mod arm launches a narrower block than the
+    # baseline since the optics split, so a ratio of grids is not a ratio of
+    # work and read 32 where the group count is 16.
+    for label, fam in (("baseline longwave", b_lw), ("mod longwave", m_lw)):
+        if not fam["threads_agree"]:
+            sys.exit(
+                f"{label} covers several thread counts "
+                f"({sorted({k['threads'] for k in fam['kernels']})}), so the "
+                "group count cannot be read off it"
+            )
+    ngroups = m_lw["threads"] // b_lw["threads"]
     w_base, w_mod = waves(b_lw), waves(m_lw)
 
     # The noise band is the untreated kernels alone. Shortwave used to be in
     # it; a band that is itself treated is not a control, and leaving it in
     # compared one treated band's saving against the other's.
-    bc, mc = controls(bcon, ("rte_lw", "rte_sw")), controls(mcon, ("rte_lw", "rte_sw"))
+    bc, mc = controls(bcon, TREATED_FRAGMENTS), controls(mcon, TREATED_FRAGMENTS)
     shared = sorted(set(bc) & set(mc))
     worst_control = max((abs(mc[k] - bc[k]) for k in shared), default=0.0)
 
