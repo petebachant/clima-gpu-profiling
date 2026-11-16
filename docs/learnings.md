@@ -3889,12 +3889,27 @@ convenient on this family and do not expect launch bounds to rescue a budget a
 cap cannot meet.
 
 **The phase-split question remains unanswered.** All seven phase compiles failed
-with `InvalidIRError`, because the stubs called the per-column bodies outside
-`@inbounds` while every real kernel calls them inside one, so a bounds-check
-throw path reached codegen. The per-case `try` is what let the controls above
-survive the run and is worth keeping on any probe that compiles many variants.
-The run also truncated each error to 180 characters, which discarded the `Reason`
-line that says what could not be compiled --- print the whole error.
+with `InvalidIRError`. The per-case `try` is what let the controls above survive
+the run and is worth keeping on any probe that compiles many variants. The run
+also truncated each error to 180 characters, which discarded the `Reason` line
+that says what could not be compiled --- print the whole error.
+
+**The cause, read off the full error on 2026-11-15, was not what this section
+first said.** It was attributed above to the stubs calling the per-column bodies
+outside `@inbounds` while every real kernel calls them inside one. Every stub
+already had its `@inbounds`. The file imports CUDA rather than using it, so the
+bare `threadIdx()` each stub computed its column from was an undefined name:
+seven stubs, seven unqualified intrinsics, seven failures, and the controls were
+unaffected because they call RRTMGP's own kernels, where CUDA is in scope.
+
+That shape is worth recognizing, because the error reads from the wrong end. An
+`InvalidIRError`'s first `Reason` lines were `gpu_gc_pool_alloc` and a dynamic
+call to the phase body --- both consequences of a name that did not resolve ---
+and the line that names the cause, `unsupported use of an undefined name (use of
+'threadIdx')`, sits below them. So read the whole error and look for an undefined
+name before believing a diagnosis drawn from the first Reason. Note also what
+did not catch it: `scripts/check-julia-script.jl` resolves qualified *macro*
+references, and an unqualified *function* is a different class it does not see.
 
 ## 8u. Warp divergence is a property of the launch, not of the field (2026-11-14)
 

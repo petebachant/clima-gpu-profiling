@@ -15,6 +15,15 @@
 #     the enclosing definition is evaluated -- after the model is built. That
 #     is how `Base.@printf`, which has never existed, cost 42 minutes.
 #
+#  3. UNQUALIFIED CALLS TO AN IMPORTED MODULE'S EXPORTS, added 2026-11-15. A
+#     name a module exports is reachable unqualified only after `using`; under
+#     `import` it is an undefined name. `measure-radiation-phase-registers.jl`
+#     imports CUDA and wrote `threadIdx()` in seven device stubs, so all seven
+#     failed after the warmup step had already built the model -- and the error
+#     reads from the wrong end, leading with `gpu_gc_pool_alloc` and a dynamic
+#     call, which are consequences, and naming the undefined name several
+#     lines down.
+#
 # `Meta.parseall` does not expand macros, so a parse check accepts
 # `Base.@printf` -- which does not exist, since `@printf` lives in `Printf`.
 # That cost a 42-minute GPU reservation on 2026-11-09: the script built a
@@ -73,6 +82,103 @@ function import_script_modules(src)
     return nothing
 end
 
+# Resolve a dotted module path through Main, for the export checks below.
+function resolve_module(name)
+    mod = Main
+    for part in split(name, '.')
+        sym = Symbol(part)
+        isdefined(mod, sym) || return nothing
+        mod = getfield(mod, sym)
+        mod isa Module || return nothing
+    end
+    return mod
+end
+
+# Which modules arrived by `using` (exports reachable unqualified) and which by
+# `import` (exports reachable only through the module).
+function module_import_forms(src)
+    usings, imports = String[], String[]
+    for raw in split(src, '\n')
+        m = match(
+            r"^\s*(import|using)\s+([A-Za-z][A-Za-z0-9_.]*)(?:\s+as\s+([A-Za-z][A-Za-z0-9_]*))?\s*$",
+            strip_comment(raw),
+        )
+        isnothing(m) && continue
+        kind, path, alias = m.captures[1], m.captures[2], m.captures[3]
+        push!(kind == "using" ? usings : imports, isnothing(alias) ? path : alias)
+    end
+    return usings, imports
+end
+
+# Names the script binds itself, which shadow an import and are not the bug.
+# Over-collecting here only costs a missed report, never a false one.
+function script_defined_names(src)
+    defs = Set{Symbol}()
+    for raw in split(src, '\n')
+        line = strip_comment(raw)
+        for re in (
+            r"^\s*function\s+([A-Za-z_][A-Za-z0-9_!]*)",
+            r"^\s*(?:const\s+|local\s+|global\s+)?([A-Za-z_][A-Za-z0-9_!]*)\s*(?:=|\()",
+        )
+            m = match(re, line)
+            isnothing(m) || push!(defs, Symbol(m.captures[1]))
+        end
+    end
+    return defs
+end
+
+# Device intrinsics that are never valid unqualified under `import CUDA`, kept
+# here so the check still fires when CUDA itself cannot be loaded in the
+# checker's project -- which is the common case, and is what made the first
+# version of this check silently inert against its own regression case.
+const GATED_FALLBACK = Dict(
+    "CUDA" => Symbol.([
+        "threadIdx", "blockIdx", "blockDim", "gridDim", "warpsize", "laneid",
+        "sync_threads", "sync_warp", "threadfence", "threadfence_block",
+        "shfl_sync", "shfl_up_sync", "shfl_down_sync", "shfl_xor_sync",
+        "vote_all_sync", "vote_any_sync", "vote_ballot_sync", "active_mask",
+    ]),
+)
+
+# A bare `name(` where `name` is exported by an import-only module, is not
+# bound in this file, and does not resolve in Main -- so it cannot resolve at
+# run time either. The `(?<![.\w])` is what keeps a qualified `CUDA.name(`
+# out of the match. Returns the hits and the import-only modules it could not
+# resolve, because a check that cannot see a module is UNCHECKED, not clean.
+function unqualified_import_calls(src)
+    usings, imports = module_import_forms(src)
+    reachable = Set{Symbol}()
+    for u in usings
+        mod = resolve_module(u)
+        isnothing(mod) || union!(reachable, names(mod))
+    end
+    here = script_defined_names(src)
+    gated = Dict{Symbol, String}()
+    unresolved = String[]
+    for i in imports
+        mod = resolve_module(i)
+        candidates = if isnothing(mod)
+            haskey(GATED_FALLBACK, i) || push!(unresolved, i)
+            get(GATED_FALLBACK, i, Symbol[])
+        else
+            names(mod)
+        end
+        for n in candidates
+            (n in reachable || n in here || isdefined(Main, n)) && continue
+            get!(gated, n, i)
+        end
+    end
+    hits = Tuple{Symbol, String, Int}[]
+    isempty(gated) && return hits, unresolved
+    for (ln, raw) in enumerate(split(src, '\n'))
+        for m in eachmatch(r"(?<![.\w])([A-Za-z_][A-Za-z0-9_!]*)\s*\(", strip_comment(raw))
+            sym = Symbol(m.captures[1])
+            haskey(gated, sym) && push!(hits, (sym, gated[sym], ln))
+        end
+    end
+    return hits, unresolved
+end
+
 # A reference is only a failure when the module resolves and the macro is
 # absent -- that is the `Base.@printf` case. A module this session cannot see
 # (one bound in an included file, or aliased inside a function) is UNCHECKED,
@@ -116,6 +222,16 @@ function check(path)
         isdefined(mod, Symbol("@", macroname)) ||
             push!(problems, "$path:$line  $modname.@$macroname is NOT defined in $modname")
     end
+    (bare, unresolved) = unqualified_import_calls(src)
+    for (sym, modname, line) in bare
+        push!(problems,
+            "$path:$line  `$sym(` is an undefined name: $modname is imported, \
+             not used, so write $modname.$sym")
+    end
+    for modname in unique(unresolved)
+        push!(unchecked,
+            "$path  bare calls to $modname's exports (module not visible here)")
+    end
     checked = length(refs) - length(unchecked)
     println("$path: $checked/$(length(refs)) references checked, \
              $(length(problems)) bad, $(length(unchecked)) unchecked")
@@ -136,9 +252,9 @@ function main(paths)
     if !isempty(all_problems)
         println("\nBAD:")
         foreach(p -> println("  ", p), all_problems)
-        error("$(length(all_problems)) macro reference(s) name a macro their module does not define")
+        error("$(length(all_problems)) reference(s) will not resolve at run time")
     end
-    println("\nno qualified macro reference names a macro its module lacks")
+    println("\nevery qualified macro exists and no bare call needs a module prefix")
     return nothing
 end
 
