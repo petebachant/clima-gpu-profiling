@@ -15,6 +15,7 @@ rounds_sw = 14
 split_is_bit_for_bit = true
 split_wins_lw = true
 split_wins_sw = true
+sweeps_block_threads = 128
 warmup_steps = 3
 
 [at_launch.lw_fused]
@@ -34,11 +35,11 @@ model_warps_per_sm = 12
 registers = 156
 
 [at_launch.lw_sweeps]
-driver_warps_per_sm = 8
-launch_block = 256
+driver_warps_per_sm = 12
+launch_block = 128
 local_bytes = 32
 model_agrees = true
-model_warps_per_sm = 8
+model_warps_per_sm = 12
 registers = 140
 
 [at_launch.sw_fused]
@@ -59,7 +60,7 @@ registers = 124
 
 [at_launch.sw_sweeps]
 driver_warps_per_sm = 16
-launch_block = 256
+launch_block = 128
 local_bytes = 32
 model_agrees = true
 model_warps_per_sm = 16
@@ -133,60 +134,80 @@ registers = 117
 
 [longwave]
 bit_for_bit = true
-fused_vs_ungrouped_pct = -9.782042358839139
-repeat_spread_pct = 0.06722333620518206
-split_saved_per_event_ms = 101.93920135498047
-split_vs_fused_pct = -16.855169928885772
-split_vs_ungrouped_pct = -24.98843242562699
+fused_vs_ungrouped_pct = -10.471808337352314
+repeat_spread_pct = 0.054282211989803805
+split_saved_per_event_ms = 150.75945854187012
+split_vs_fused_pct = -24.895249602701455
+split_vs_ungrouped_pct = -32.76007511655341
 values_compared = 9977856
 values_differing = 0
 worst_relative_difference = 0.0
 
     [longwave.fused]
-    solve_ms = 604.7948598861694
-    solve_ms_max = 605.0140261650085
-    solve_ms_min = 604.6074628829956
+    solve_ms = 605.5752038955688
+    solve_ms_max = 605.786144733429
+    solve_ms_min = 605.4574251174927
 
     [longwave.split]
-    solve_ms = 502.85565853118896
-    solve_ms_max = 503.0738115310669
-    solve_ms_min = 502.60889530181885
+    solve_ms = 454.81574535369873
+    solve_ms_max = 455.0686776638031
+    solve_ms_min = 454.49933409690857
 
     [longwave.ungrouped]
-    solve_ms = 670.3708171844482
-    solve_ms_max = 671.1674928665161
-    solve_ms_min = 669.2095994949341
+    solve_ms = 676.4072775840759
+    solve_ms_max = 677.2992014884949
+    solve_ms_min = 676.1195659637451
+
+[phase_times.longwave]
+accounted_pct_of_split = 105.13783293506542
+optics_pct_of_split = 77.87533965477158
+optics_round_ms = 22.136831656098366
+optics_total_ms = 354.18930649757385
+rounds = 16
+sweeps_pct_of_split = 27.26249328029385
+sweeps_round_ms = 7.749632000923157
+sweeps_total_ms = 123.99411201477051
+
+[phase_times.shortwave]
+accounted_pct_of_split = 102.79029320859249
+optics_pct_of_split = 77.39144943058554
+optics_round_ms = 17.641471698880196
+optics_total_ms = 246.98060378432274
+rounds = 14
+sweeps_pct_of_split = 25.398843778006945
+sweeps_round_ms = 5.789696238934994
+sweeps_total_ms = 81.05574734508991
 
 [shortwave]
 bit_for_bit = true
-fused_vs_ungrouped_pct = -20.1003095504358
-repeat_spread_pct = 0.13031287046436868
-split_saved_per_event_ms = 169.2815124988556
-split_vs_fused_pct = -34.30327183259948
-split_vs_ungrouped_pct = -47.50851755875533
+fused_vs_ungrouped_pct = -19.734511142597267
+repeat_spread_pct = 0.08034328494476399
+split_saved_per_event_ms = 175.4019856452942
+split_vs_fused_pct = -35.46816144227405
+split_vs_ungrouped_pct = -48.20320431297136
 values_compared = 11993088
 values_differing = 0
 worst_relative_difference = 0.0
 
     [shortwave.fused]
-    solve_ms = 493.4850335121155
-    solve_ms_max = 493.9724802970886
-    solve_ms_min = 493.32940578460693
+    solve_ms = 494.53362822532654
+    solve_ms_max = 494.76709961891174
+    solve_ms_min = 494.369775056839
 
     [shortwave.split]
-    solve_ms = 324.2035210132599
-    solve_ms_max = 324.56088066101074
-    solve_ms_min = 323.5113024711609
+    solve_ms = 319.13164258003235
+    solve_ms_max = 319.60269808769226
+    solve_ms_min = 318.814218044281
 
     [shortwave.ungrouped]
-    solve_ms = 617.6307201385498
-    solve_ms_max = 618.081271648407
-    solve_ms_min = 616.6435480117798
+    solve_ms = 616.1223649978638
+    solve_ms_max = 617.1412467956543
+    solve_ms_min = 615.8632636070251
 
 [wallclock]
-block_iqr_pct = 4.3063178525316275
-block_median_s = 49.053282464
-block_seconds = [48.457358585, 48.623516212, 48.694043201, 48.988538802, 49.022954505, 49.053282464, 49.277182323, 49.430326834, 50.806433461, 60.567029009, 60.782632654, 97.173877283]
+block_iqr_pct = 4.9647253236504
+block_median_s = 48.8804825
+block_seconds = [48.257639559, 48.293580633, 48.540276108, 48.570774664, 48.62432236, 48.8804825, 49.703867103, 50.138040992, 50.967057801, 60.726885305, 61.185241984, 96.311358815]
 block_steps = 180
 blocks = 12
 dt_cpl_s = 120.0
@@ -194,17 +215,17 @@ gain_over_fused_below_block_iqr = true
 note = "sypd_split is measured: a block of real coupler steps with the live split solver, timed with the wall clock the coupler's own SYPD is defined on. The other arms add their measured in-block solve difference back onto that same measured block rather than differencing a second run, because an AMIP pair cannot resolve a sub-percent effect here: one arm wandered 7.73% between two runs of identical code. These are steady-state figures and are NOT comparable to the pipeline's end-to-end SYPD, which includes first-call compilation."
 rad_period_steps = 30
 radiation_events_per_block = 6
-step_ms = 272.5182359111111
-sypd_split = 1.2055783839838692
+step_ms = 271.5582361111111
+sypd_split = 1.209840287522804
 
     [wallclock.arms.fused]
-    cost_per_block_s = 1.6273242831230164
-    solve_cost_per_event_ms = 271.22071385383606
-    split_gain_pct = 3.317462565970591
-    sypd = 1.1668679756958602
+    cost_per_block_s = 1.9569686651229858
+    solve_cost_per_event_ms = 326.1614441871643
+    split_gain_pct = 4.003578862223764
+    sypd = 1.1632679382365396
 
     [wallclock.arms.ungrouped]
-    cost_per_block_s = 2.765654146671295
-    solve_cost_per_event_ms = 460.9423577785492
-    split_gain_pct = 5.6380613238288335
-    sypd = 1.1412348625825512
+    cost_per_block_s = 3.1114935278892517
+    solve_cost_per_event_ms = 518.5822546482086
+    split_gain_pct = 6.3655131225213495
+    sypd = 1.13743661080185

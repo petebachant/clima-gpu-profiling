@@ -49,6 +49,7 @@ bash scripts/run-julia-script.sh \
 The grouped solve already writes its optics to device arrays: `op` and `src` in the group workspace are `(ncol * ngroups, nlay)` and both halves of a round address them by wide column.
 So the two phases exchange nothing across a kernel boundary that was not already going to memory, and the split is three changes rather than a rewrite — the post-optics half of each per-column body becomes a named function, each band gets an optics kernel and a sweeps kernel, and the host walks the rounds of the g-point loop instead of the kernel walking them.
 The cloud mask moves from the start of the body into the sweeps half, because the gas and aerosol optics never read it and the sweeps kernel is the half with registers to spare.
+Both halves launch at <!-- calkit value key=split.optics_block_threads path=results/docs/radiation-phase-split.json -->128<!-- /calkit value --> threads rather than the solve's usual <!-- calkit value key=split.kernels.lw_fused.launch_block path=results/docs/radiation-phase-split.json -->256<!-- /calkit value -->, which is the only tuning in the change and is there because a block's warps round up to the scheduler count: at four warps per block these register counts reach a third and a fourth resident block where at eight they reach one.
 
 Three claims are measured on the live simulation's own state, lookups and buffers, which makes all three in-block comparisons rather than differences of runs:
 
@@ -242,8 +243,20 @@ def band(key, prefix):
     }
 
 
+# The next rung above where a kernel sits, read off the same ladder the rest of
+# this file uses, so "what is left" is a figure rather than an impression.
+def next_step(regs, block):
+    here = warps(regs, block)
+    for r in range(regs - 1, 31, -1):
+        w = warps(r, block)
+        if w > here:
+            return {"registers": r, "warps_per_sm": w}
+    return {"registers": 0, "warps_per_sm": here}
+
+
 def kernel(name):
     k = sp["at_launch"][name]
+    step = next_step(k["registers"], k["launch_block"])
     return {
         "launch_block": k["launch_block"],
         "registers": k["registers"],
@@ -251,6 +264,26 @@ def kernel(name):
         "driver_warps_per_sm": k["driver_warps_per_sm"],
         "model_warps_per_sm": k["model_warps_per_sm"],
         "model_agrees": k["model_agrees"],
+        "next_step_registers": step["registers"],
+        "next_step_warps_per_sm": step["warps_per_sm"],
+    }
+
+
+# One round of each half timed on its own, times the rounds. The two shares sum
+# to more than the solve, which is what says this is an upper bound on each half
+# rather than a decomposition: an isolated round pays a cold cache and takes the
+# first round's zero-fill branch, and the solve also carries a reduction neither
+# half is charged for.
+def phase_share(key):
+    t = sp["phase_times"][key]
+    return {
+        "rounds": t["rounds"],
+        "optics_round_ms": round(t["optics_round_ms"], 2),
+        "sweeps_round_ms": round(t["sweeps_round_ms"], 2),
+        "optics_pct_of_split": round(t["optics_pct_of_split"], 1),
+        "sweeps_pct_of_split": round(t["sweeps_pct_of_split"], 1),
+        "accounted_pct_of_split": round(t["accounted_pct_of_split"], 1),
+        "shares_overshoot": t["accounted_pct_of_split"] > 100.0,
     }
 
 
@@ -272,10 +305,27 @@ split = {
     "rounds_lw": sp["rounds_lw"],
     "rounds_sw": sp["rounds_sw"],
     "optics_block_threads": sp["optics_block_threads"],
+    "sweeps_block_threads": sp["sweeps_block_threads"],
+    "phase_times": {
+        "longwave": phase_share("longwave"),
+        "shortwave": phase_share("shortwave"),
+    },
     "longwave": band("longwave", "lw"),
     "shortwave": band("shortwave", "sw"),
     "kernels": {n: kernel(n) for n in sorted(sp["at_launch"])},
     "bit_for_bit": sp["split_is_bit_for_bit"],
+    "effects_exceed_repeat_spread": bool(
+        band("longwave", "lw")["exceeds_repeat_spread"]
+        and band("shortwave", "sw")["exceeds_repeat_spread"]
+    ),
+    "both_sweeps_gain_a_step": bool(
+        band("longwave", "lw")["sweeps_gains_a_step"]
+        and band("shortwave", "sw")["sweeps_gains_a_step"]
+    ),
+    "phase_shares_overshoot": bool(
+        phase_share("longwave")["shares_overshoot"]
+        and phase_share("shortwave")["shares_overshoot"]
+    ),
     "wins_lw": sp["split_wins_lw"],
     "wins_sw": sp["split_wins_sw"],
     "occupancy_model_agrees_everywhere": sp["occupancy_model_agrees_everywhere"],
@@ -381,16 +431,16 @@ For scale: the two solvers are <!-- calkit value key=device.solver_ms format="{:
 ## What the split is worth, measured
 
 Both bands win, and by margins no register count could have predicted, because a register count is not a time.
-The longwave solve goes from <!-- calkit value key=split.longwave.fused_ms -->604.8<!-- /calkit value --> ms to <!-- calkit value key=split.longwave.split_ms -->502.9<!-- /calkit value --> ms, which is <!-- calkit value key=split.longwave.split_vs_fused_pct -->-16.86<!-- /calkit value -->%, and the shortwave from <!-- calkit value key=split.shortwave.fused_ms -->493.5<!-- /calkit value --> ms to <!-- calkit value key=split.shortwave.split_ms -->324.2<!-- /calkit value --> ms, or <!-- calkit value key=split.shortwave.split_vs_fused_pct -->-34.3<!-- /calkit value -->%.
-Measured against upstream's serial g-point loop, which is what either grouped path is an improvement on, the same two solves are <!-- calkit value key=split.longwave.split_vs_ungrouped_pct -->-24.99<!-- /calkit value -->% and <!-- calkit value key=split.shortwave.split_vs_ungrouped_pct -->-47.51<!-- /calkit value -->%.
-Each arm's own repeat spread is <!-- calkit value key=split.longwave.repeat_spread_pct -->0.067<!-- /calkit value -->% and <!-- calkit value key=split.shortwave.repeat_spread_pct -->0.13<!-- /calkit value -->%, so both effects are resolved more than two orders of magnitude over the noise of the instrument that found them, and `exceeds_repeat_spread` is <!-- calkit value key=split.longwave.exceeds_repeat_spread -->true<!-- /calkit value --> for both.
+The longwave solve goes from <!-- calkit value key=split.longwave.fused_ms -->605.6<!-- /calkit value --> ms to <!-- calkit value key=split.longwave.split_ms -->454.8<!-- /calkit value --> ms, which is <!-- calkit value key=split.longwave.split_vs_fused_pct -->-24.9<!-- /calkit value -->%, and the shortwave from <!-- calkit value key=split.shortwave.fused_ms -->494.5<!-- /calkit value --> ms to <!-- calkit value key=split.shortwave.split_ms -->319.1<!-- /calkit value --> ms, or <!-- calkit value key=split.shortwave.split_vs_fused_pct -->-35.47<!-- /calkit value -->%.
+Measured against upstream's serial g-point loop, which is what either grouped path is an improvement on, the same two solves are <!-- calkit value key=split.longwave.split_vs_ungrouped_pct -->-32.76<!-- /calkit value -->% and <!-- calkit value key=split.shortwave.split_vs_ungrouped_pct -->-48.2<!-- /calkit value -->%.
+Each arm's own repeat spread is <!-- calkit value key=split.longwave.repeat_spread_pct -->0.054<!-- /calkit value -->% and <!-- calkit value key=split.shortwave.repeat_spread_pct -->0.08<!-- /calkit value -->%, so both effects are resolved more than two orders of magnitude over the noise of the instrument that found them, and `effects_exceed_repeat_spread` is <!-- calkit value key=split.effects_exceed_repeat_spread -->true<!-- /calkit value -->.
 
 Nothing moved but the kernel boundary, and that is asserted rather than argued.
-<!-- calkit value key=split.longwave.values_compared format="{:,}" -->9,977,856<!-- /calkit value --> longwave values and <!-- calkit value key=split.shortwave.values_compared format="{:,}" -->11,993,088<!-- /calkit value --> shortwave ones — fluxes, clear-sky fluxes, cloud cover and the 550 nm aerosol optical depth — were compared between the two grouped arms as integers, and <!-- calkit value key=split.longwave.values_differing -->0<!-- /calkit value --> differ.
+All of <!-- calkit value key=split.longwave.values_compared format="{:,}" -->9,977,856<!-- /calkit value --> longwave values and <!-- calkit value key=split.shortwave.values_compared format="{:,}" -->11,993,088<!-- /calkit value --> shortwave ones — fluxes, clear-sky fluxes, cloud cover and the 550 nm aerosol optical depth — were compared between the two grouped arms as integers, and <!-- calkit value key=split.longwave.values_differing -->0<!-- /calkit value --> differ.
 
-In wall clock that is <!-- calkit value key=split.sypd_gain_over_fused_pct -->3.317<!-- /calkit value -->% of SYPD over the fused grouped path and <!-- calkit value key=split.sypd_gain_over_ungrouped_pct -->5.638<!-- /calkit value -->% over the ungrouped one, taking a steady-state <!-- calkit value key=split.sypd_ungrouped -->1.1412<!-- /calkit value --> to <!-- calkit value key=split.sypd_split -->1.2056<!-- /calkit value -->.
+In wall clock that is <!-- calkit value key=split.sypd_gain_over_fused_pct -->4.004<!-- /calkit value -->% of SYPD over the fused grouped path and <!-- calkit value key=split.sypd_gain_over_ungrouped_pct -->6.366<!-- /calkit value -->% over the ungrouped one, taking a steady-state <!-- calkit value key=split.sypd_ungrouped -->1.1374<!-- /calkit value --> to <!-- calkit value key=split.sypd_split -->1.2098<!-- /calkit value -->.
 The figure is <!-- calkit value key=split.blocks -->12<!-- /calkit value --> blocks of <!-- calkit value key=split.block_steps -->180<!-- /calkit value --> real coupler steps timed with the live split solver, with each other arm's in-block solve cost added back onto that same measured block rather than differenced against a second run.
-Why it is built that way is visible in the number beside it: the blocks' own interquartile spread is <!-- calkit value key=split.block_iqr_pct -->4.306<!-- /calkit value -->%, so `gain_over_fused_below_block_iqr` is <!-- calkit value key=split.gain_over_fused_below_block_iqr -->true<!-- /calkit value --> and an AMIP pair would not have resolved this.
+Why it is built that way is visible in the number beside it: the blocks' own interquartile spread is <!-- calkit value key=split.block_iqr_pct -->4.965<!-- /calkit value -->%, so `gain_over_fused_below_block_iqr` is <!-- calkit value key=split.gain_over_fused_below_block_iqr -->true<!-- /calkit value --> and an AMIP pair would not have resolved this.
 
 ### The occupancy model was right, and the driver is what says so
 
@@ -402,23 +452,33 @@ The model is not being graded on the phase probe's predictions here but on the k
 |---|---|---|---|---|
 | longwave fused, retired | <!-- calkit value key=split.kernels.lw_fused.launch_block -->256<!-- /calkit value --> | <!-- calkit value key=split.kernels.lw_fused.registers -->255<!-- /calkit value --> | <!-- calkit value key=split.kernels.lw_fused.local_bytes -->304<!-- /calkit value --> | <!-- calkit value key=split.kernels.lw_fused.driver_warps_per_sm -->8<!-- /calkit value --> |
 | longwave optics | <!-- calkit value key=split.kernels.lw_optics.launch_block -->128<!-- /calkit value --> | <!-- calkit value key=split.kernels.lw_optics.registers -->156<!-- /calkit value --> | <!-- calkit value key=split.kernels.lw_optics.local_bytes -->32<!-- /calkit value --> | <!-- calkit value key=split.kernels.lw_optics.driver_warps_per_sm -->12<!-- /calkit value --> |
-| longwave sweeps | <!-- calkit value key=split.kernels.lw_sweeps.launch_block -->256<!-- /calkit value --> | <!-- calkit value key=split.kernels.lw_sweeps.registers -->140<!-- /calkit value --> | <!-- calkit value key=split.kernels.lw_sweeps.local_bytes -->32<!-- /calkit value --> | <!-- calkit value key=split.kernels.lw_sweeps.driver_warps_per_sm -->8<!-- /calkit value --> |
+| longwave sweeps | <!-- calkit value key=split.kernels.lw_sweeps.launch_block -->128<!-- /calkit value --> | <!-- calkit value key=split.kernels.lw_sweeps.registers -->140<!-- /calkit value --> | <!-- calkit value key=split.kernels.lw_sweeps.local_bytes -->32<!-- /calkit value --> | <!-- calkit value key=split.kernels.lw_sweeps.driver_warps_per_sm -->12<!-- /calkit value --> |
 | shortwave fused, retired | <!-- calkit value key=split.kernels.sw_fused.launch_block -->256<!-- /calkit value --> | <!-- calkit value key=split.kernels.sw_fused.registers -->255<!-- /calkit value --> | <!-- calkit value key=split.kernels.sw_fused.local_bytes -->360<!-- /calkit value --> | <!-- calkit value key=split.kernels.sw_fused.driver_warps_per_sm -->8<!-- /calkit value --> |
 | shortwave optics | <!-- calkit value key=split.kernels.sw_optics.launch_block -->128<!-- /calkit value --> | <!-- calkit value key=split.kernels.sw_optics.registers -->124<!-- /calkit value --> | <!-- calkit value key=split.kernels.sw_optics.local_bytes -->32<!-- /calkit value --> | <!-- calkit value key=split.kernels.sw_optics.driver_warps_per_sm -->16<!-- /calkit value --> |
-| shortwave sweeps | <!-- calkit value key=split.kernels.sw_sweeps.launch_block -->256<!-- /calkit value --> | <!-- calkit value key=split.kernels.sw_sweeps.registers -->117<!-- /calkit value --> | <!-- calkit value key=split.kernels.sw_sweeps.local_bytes -->32<!-- /calkit value --> | <!-- calkit value key=split.kernels.sw_sweeps.driver_warps_per_sm -->16<!-- /calkit value --> |
+| shortwave sweeps | <!-- calkit value key=split.kernels.sw_sweeps.launch_block -->128<!-- /calkit value --> | <!-- calkit value key=split.kernels.sw_sweeps.registers -->117<!-- /calkit value --> | <!-- calkit value key=split.kernels.sw_sweeps.local_bytes -->32<!-- /calkit value --> | <!-- calkit value key=split.kernels.sw_sweeps.driver_warps_per_sm -->16<!-- /calkit value --> |
 
 Two things in that table were not predicted and matter.
 The sweeps half is not the <!-- calkit value key=phases.lw_two_stream_sweep.registers -->51<!-- /calkit value -->-register vertical sweep the probe compiled: it carries the cloud mask, both sweeps, the cloud increment between them and both accumulations, which is <!-- calkit value key=split.kernels.lw_sweeps.registers -->140<!-- /calkit value --> registers longwave and <!-- calkit value key=split.kernels.sw_sweeps.registers -->117<!-- /calkit value --> shortwave.
 And the local memory the fused kernels carried — <!-- calkit value key=split.kernels.lw_fused.local_bytes -->304<!-- /calkit value --> and <!-- calkit value key=split.kernels.sw_fused.local_bytes -->360<!-- /calkit value --> bytes — is <!-- calkit value key=split.kernels.lw_optics.local_bytes -->32<!-- /calkit value --> bytes in every one of the four kernels that replace them.
 
-### The saving tracks the occupancy step, which is how the headroom is visible
+### The saving tracks the occupancy step, in both bands and to the same degree
 
-If a kernel were purely latency-bound its time would go as the reciprocal of its warps, so the step bounds what the split could be worth: <!-- calkit value key=split.longwave.occupancy_ideal_pct -->-33.33<!-- /calkit value -->% longwave at <!-- calkit value key=split.longwave.fused_warps_per_sm -->8<!-- /calkit value --> warps becoming <!-- calkit value key=split.longwave.optics_warps_per_sm -->12<!-- /calkit value -->, and <!-- calkit value key=split.shortwave.occupancy_ideal_pct -->-50.0<!-- /calkit value -->% shortwave at <!-- calkit value key=split.shortwave.optics_warps_per_sm -->16<!-- /calkit value -->.
-The bands realized <!-- calkit value key=split.longwave.realized_fraction_of_ideal -->0.506<!-- /calkit value --> and <!-- calkit value key=split.shortwave.realized_fraction_of_ideal -->0.686<!-- /calkit value --> of their own bounds, which is the shape a latency-bound kernel gives: the step is most of the story and it is not all of it.
+If a kernel were purely latency-bound its time would go as the reciprocal of its warps, so the step bounds what the split could be worth: <!-- calkit value key=split.longwave.occupancy_ideal_pct -->-33.33<!-- /calkit value -->% longwave at <!-- calkit value key=split.longwave.fused_warps_per_sm -->8<!-- /calkit value --> warps becoming <!-- calkit value key=split.longwave.optics_warps_per_sm -->12<!-- /calkit value -->, and <!-- calkit value key=split.shortwave.occupancy_ideal_pct -->-50.0<!-- /calkit value -->% shortwave at <!-- calkit value key=split.shortwave.fused_warps_per_sm -->8<!-- /calkit value --> becoming <!-- calkit value key=split.shortwave.optics_warps_per_sm -->16<!-- /calkit value -->.
+The bands realized <!-- calkit value key=split.longwave.realized_fraction_of_ideal -->0.747<!-- /calkit value --> and <!-- calkit value key=split.shortwave.realized_fraction_of_ideal -->0.709<!-- /calkit value --> of those bounds, and it is the closeness of the two fractions that makes occupancy the mechanism rather than a coincidence of two separate rewrites.
 
-The two fractions differ for a reason the table states.
-Shortwave's sweeps kernel gains a step as well — `sweeps_gains_a_step` is <!-- calkit value key=split.shortwave.sweeps_gains_a_step -->true<!-- /calkit value --> — while longwave's does not, because <!-- calkit value key=split.kernels.lw_sweeps.registers -->140<!-- /calkit value --> registers at <!-- calkit value key=split.kernels.lw_sweeps.launch_block -->256<!-- /calkit value --> threads is still <!-- calkit value key=split.longwave.sweeps_warps_per_sm -->8<!-- /calkit value --> warps.
-At <!-- calkit value key=split.optics_block_threads -->128<!-- /calkit value --> threads that same kernel reaches <!-- calkit value key=split.longwave.sweeps_warps_at_128 -->12<!-- /calkit value -->, so one of the two halves of the longwave solve is being launched at the wrong block size and the measurement says so without anything else being built.
+They did not start out close, and how they were brought together is the useful part.
+A first pass launched both sweeps halves at the solve's usual <!-- calkit value key=split.kernels.lw_fused.launch_block -->256<!-- /calkit value --> threads, where the longwave half's <!-- calkit value key=split.kernels.lw_sweeps.registers -->140<!-- /calkit value --> registers still bought it the <!-- calkit value key=split.longwave.fused_warps_per_sm -->8<!-- /calkit value --> warps of the kernel it replaced while the shortwave half's <!-- calkit value key=split.kernels.sw_sweeps.registers -->117<!-- /calkit value --> already bought <!-- calkit value key=split.shortwave.sweeps_warps_per_sm -->16<!-- /calkit value -->.
+The longwave band then realized markedly less of its bound than the shortwave did — a puzzle from the timings alone, and an obvious one next to the per-kernel register readout.
+The fix was one constant, and `both_sweeps_gain_a_step` is now <!-- calkit value key=split.both_sweeps_gain_a_step -->true<!-- /calkit value -->.
+
+### Where the time is inside a split solve
+
+One round of the longwave optics takes <!-- calkit value key=split.phase_times.longwave.optics_round_ms -->22.14<!-- /calkit value --> ms against <!-- calkit value key=split.phase_times.longwave.sweeps_round_ms -->7.75<!-- /calkit value --> ms for the sweeps, which over <!-- calkit value key=split.phase_times.longwave.rounds -->16<!-- /calkit value --> rounds is <!-- calkit value key=split.phase_times.longwave.optics_pct_of_split -->77.9<!-- /calkit value -->% and <!-- calkit value key=split.phase_times.longwave.sweeps_pct_of_split -->27.3<!-- /calkit value -->% of the solve; the shortwave shares are <!-- calkit value key=split.phase_times.shortwave.optics_pct_of_split -->77.4<!-- /calkit value -->% and <!-- calkit value key=split.phase_times.shortwave.sweeps_pct_of_split -->25.4<!-- /calkit value -->%.
+Those sum past the solve, and `phase_shares_overshoot` is <!-- calkit value key=split.phase_shares_overshoot -->true<!-- /calkit value -->, so each is an upper bound on its half rather than a decomposition: a round timed in isolation pays a cold cache and takes the first round's zero-fill branch, and the solve carries a reduction neither half is charged for.
+They are enough for the one thing they are needed for, which is that the optics is roughly three quarters of the solve and the sweeps are no longer negligible.
+
+That is a different cut from section 4l's 99%-in-optics and 0.1%-in-sweeps, not a correction of it.
+That measurement compared the optics function against the vertical sweep alone; this sweeps half also carries the cloud mask, the cloud optics increment and both accumulations, which is why it is <!-- calkit value key=split.kernels.lw_sweeps.registers -->140<!-- /calkit value --> registers rather than the <!-- calkit value key=phases.lw_two_stream_sweep.registers -->51<!-- /calkit value --> the probe measured for the sweep on its own.
 
 ## Verdict
 
@@ -440,7 +500,7 @@ A port of a calculator is still a model, so the check was worth making on the ke
 ### Pricing the precondition before the payoff was the right order, and one of its cautions was wrong
 
 The probe could say only that a budget was reachable.
-It could not say the split was worth <!-- calkit value key=split.longwave.split_vs_fused_pct -->-16.86<!-- /calkit value -->% and <!-- calkit value key=split.shortwave.split_vs_fused_pct -->-34.3<!-- /calkit value -->%, and the sequence was still right: a phase that came back near the cap would have ended this line of work for the cost of one compile-only job, and the two earlier attempts to raise this family's occupancy each cost a full measurement to reject.
+It could not say the split was worth <!-- calkit value key=split.longwave.split_vs_fused_pct -->-24.9<!-- /calkit value -->% and <!-- calkit value key=split.shortwave.split_vs_fused_pct -->-35.47<!-- /calkit value -->%, and the sequence was still right: a phase that came back near the cap would have ended this line of work for the cost of one compile-only job, and the two earlier attempts to raise this family's occupancy each cost a full measurement to reject.
 
 One caution in that verdict was wrong, and it was wrong about the code rather than about the device.
 It said a split "has to write the optics output to scratch and read it back", so the traffic would be new cost against an occupancy gain.
@@ -450,12 +510,13 @@ Reading the workspace's own definition would have answered that before the sente
 
 ### What is left is named by this measurement rather than guessed
 
-The longwave sweeps kernel is launched at <!-- calkit value key=split.kernels.lw_sweeps.launch_block -->256<!-- /calkit value --> threads where <!-- calkit value key=split.optics_block_threads -->128<!-- /calkit value --> would take it from <!-- calkit value key=split.longwave.sweeps_warps_per_sm -->8<!-- /calkit value --> warps to <!-- calkit value key=split.longwave.sweeps_warps_at_128 -->12<!-- /calkit value -->.
-That is the one piece of this solve still launched at a block size its register count does not want, and it is the likeliest reason longwave realized <!-- calkit value key=split.longwave.realized_fraction_of_ideal -->0.506<!-- /calkit value --> of its occupancy bound where shortwave realized <!-- calkit value key=split.shortwave.realized_fraction_of_ideal -->0.686<!-- /calkit value -->.
+Every kernel in both solves now sits one rung above where the fused kernel sat, and the next rung is a register count away rather than a restructure away: the longwave optics would need <!-- calkit value key=split.kernels.lw_optics.next_step_registers -->128<!-- /calkit value --> registers for <!-- calkit value key=split.kernels.lw_optics.next_step_warps_per_sm -->16<!-- /calkit value --> warps where it compiles to <!-- calkit value key=split.kernels.lw_optics.registers -->156<!-- /calkit value -->, and the shortwave optics <!-- calkit value key=split.kernels.sw_optics.next_step_registers -->96<!-- /calkit value --> for <!-- calkit value key=split.kernels.sw_optics.next_step_warps_per_sm -->20<!-- /calkit value --> where it compiles to <!-- calkit value key=split.kernels.sw_optics.registers -->124<!-- /calkit value -->.
+That is this experiment's own question asked of a smaller kernel, and it has the same two answers: squeeze the budget, which has lost twice here, or make the live state smaller.
+The optics phase is still one kernel holding a gas lookup, a Planck source and an aerosol increment at once, and the Planck source is the piece whose output already goes to a device array.
 
 The group count is an open question again rather than a settled one.
-Sixteen groups were chosen because at one resident block per multiprocessor the grid needed some fourteen waves to absorb the imbalance between columns, and the optics kernel no longer runs at one resident block.
-Both the memory the workspaces cost and the count that is sufficient should be re-measured on the split rather than inherited from the fused sweep.
+Sixteen groups were chosen because at one resident block per multiprocessor the grid needed some fourteen waves to absorb the imbalance between columns, and no kernel in this solve runs at one resident block any more.
+Both the memory the workspaces cost and the count that is sufficient should be re-measured on the split rather than inherited from the fused sweep, and the two sweep stages that answer it need no new code to do so.
 
 The headroom that remains is still large in absolute terms.
-<!-- calkit value key=split.longwave.optics_warps_per_sm -->12<!-- /calkit value --> and <!-- calkit value key=split.shortwave.optics_warps_per_sm -->16<!-- /calkit value --> warps of a possible 64 is not a full machine, and the optics phase is still one kernel holding a gas lookup, a Planck source and an aerosol increment at once.
+At <!-- calkit value key=split.longwave.optics_warps_per_sm -->12<!-- /calkit value --> and <!-- calkit value key=split.shortwave.optics_warps_per_sm -->16<!-- /calkit value --> warps of a possible 64 these kernels are still far from a full machine, and this family was the one that looked least movable in the whole device budget.

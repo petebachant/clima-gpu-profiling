@@ -4006,3 +4006,81 @@ opens with --- grep `docs/learnings.md` for the quantity you are about to rely
 on --- was applied to the warp and coalescing figures and not to the check being
 used to decide a job was safe to submit. Grep it for the tool as well as for
 the number.
+
+## 8v. A register-bound kernel is bound by what it holds at once (2026-11-15)
+
+`docs/experiments/radiation-phase-split.md` has the figures.
+
+The two radiation 2-stream solvers were the clearest case in this project of a
+kernel held by one resource: at the register cap, one block per multiprocessor,
+a small fraction of the warps the device can hold, and nothing else on the card
+near saturation. Two attempts to lower the budget had been measured and
+rejected, both paying local memory for occupancy and both slower. The conclusion drawn then --- that these kernels sat
+at their ceiling --- was a statement about the budget, and it was taken for a
+statement about the computation.
+
+### A cap and a split ask different questions
+
+A cap tells `ptxas` to fit the same live state into fewer registers, and it has
+one way to comply. Compiling each phase of the solve as its own kernel, with
+the live solver's own argument types, asks instead how much state each phase
+needs. Here that separated them cleanly: the phase carrying essentially all of
+the time needed well under the budget and an order of magnitude less local
+memory than the fused kernel carried, while the fused kernel forced to that
+same budget carried more local memory than it had unforced and far more than
+the phase needed at all.
+
+So "the kernel is at its register ceiling" and "the computation needs that many
+registers" are different claims and the second does not follow. The spill says
+the live state exceeds the file; live state is a property of how much is fused
+into one kernel, which is a choice rather than a fact about the physics.
+
+### A phase boundary costs a launch, not a round trip, when the scratch is already there
+
+The reason not to split was going to be traffic: the optics output would have to
+be written to scratch and read back. That reason was already false, and the code
+said so. The g-point grouping had widened every workspace the solve indexes by
+column, so the optics and source arrays were device arrays of `ncol * ngroups`
+columns and the fused kernel was already writing its optics there and reading
+them back within one thread's body. The boundary carries nothing that was not
+already going to memory; it adds one launch per round against solves of hundreds
+of milliseconds.
+
+The transferable form: before pricing a split's memory cost, check whether the
+value crossing the boundary is in registers or already in an array. An earlier
+treatment that widened scratch for its own reasons may have paid the split's
+cost in advance --- and the write-up here asserted the cost in a verdict without
+reading the workspace definition that refuted it.
+
+### Check a predicted occupancy against the driver, not only against the model
+
+ClimaCore's `max_active_blocks` is a port of NVIDIA's occupancy calculator and
+is the right thing to reason with: dividing the register file by threads gets
+several A100 steps wrong, which this project has now done twice. It is still a
+model. The driver exposes `cuOccupancyMaxActiveBlocksPerMultiprocessor`,
+reachable from CUDA.jl as `active_blocks(kernel.fun, threads)`, and it costs
+nothing on a kernel already compiled for a register readout. Asking it about
+every kernel a solve launches, at every block size considered, is how a
+predicted step stops being a prediction.
+
+It agreed everywhere here. The value of the check is not that it found a
+discrepancy but that the experiment's central quantity no longer rests on a
+port of a calculator.
+
+### A per-kernel readout beside the timing named the next step, and it was right
+
+The two bands first realized noticeably different fractions of what their
+occupancy step bounded, and from the timings alone that is a puzzle. The
+per-kernel registers and warps said why without anything further being built:
+one band's post-optics half reached a second step and the other's did not,
+because it was being launched at the solve's usual block size rather than one
+its register count wanted. Changing a single constant took the lagging band's
+solve from a sixth off to a quarter off and brought the two realized fractions
+to within a few hundredths of each other.
+
+That convergence is worth more than the extra percent. Two independently
+rewritten solves landing on the same fraction of their own occupancy bound is
+the evidence that occupancy was the mechanism; either band alone would have
+been consistent with several explanations. Report registers, local memory and
+warps for every kernel beside the times, and a prediction about the mechanism
+becomes testable at no extra cost.
