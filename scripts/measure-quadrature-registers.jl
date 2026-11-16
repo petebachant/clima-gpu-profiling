@@ -132,6 +132,30 @@ quad_capped(dt, nsubs) = ClimaCore.DataLayouts.copyto_capped!(
     Val(128),
 )
 
+# The same cap asked for through `foreach_point`, which already takes `maxregs`
+# and so needs no ClimaCore change: the broadcast becomes a one-statement loop
+# body, every sliced argument is named twice, and `dt` and `nsubs` move out of
+# the expression into the closure's captures. Whether that reaches the same
+# kernel as `copyto_capped!` is not obvious, since the closure is what the
+# inliner sees, so `Val(:auto)` -- the documented default -- gives an uncapped
+# control with the same structure and the pair separates wrapper from cap.
+function quad_fp(dt, nsubs, maxregs)
+    ClimaCore.DataLayouts.foreach_point(
+        out, ρf, Tf, wf, qtf, qlf, qif, qrf, qsf,
+        TTf, qqf, corrf, momf, αf, λf, muSf, pfracf;
+        maxregs,
+    ) do o, ρ, T, w, qt, ql, qi, qr, qs, TT, qq, corr, mom, α, λ, muS, pfrac
+        @. o = CA.microphysics_tendencies_1m(
+            BMT.Microphysics1Moment(), QUAD, MP, TPS, ρ, T, w,
+            qt, ql, qi, qr, qs, TT, qq, corr, mom, α, dt, nsubs,
+            λ, muS, pfrac, OPTS,
+        )
+    end
+    return out
+end
+quad_fp_uncapped(dt, nsubs) = quad_fp(dt, nsubs, Val(:auto))
+quad_fp_capped(dt, nsubs) = quad_fp(dt, nsubs, Val(128))
+
 # The same quadrature with `BMT.Instantaneous()`, which is the dispatch
 # `update_implicit_1m_tendency!` calls inside the Newton loop -- and the kernel
 # the removals pay off on. The hash of THIS case is what makes the bit-for-bit
@@ -252,6 +276,16 @@ const CASE_SETS = Dict(
         ("traversal frame (stub node function)", traversal_only),
         ("node function frame (recon + BMT)", node_function_only),
         ("BMT frame (CloudMicrophysics only)", bmt_only),
+    ],
+    # Four spellings of one broadcast, in one process on one state, so
+    # registers, spill, time and output bits compare directly: is the cap
+    # reachable through `foreach_point` alone, and does wrapping a broadcast in
+    # a closure change the kernel it compiles to?
+    "cap-api" => [
+        ("quadrature broadcast (L1297)", quad_L1297),
+        ("copyto_capped!, Val(128)", quad_capped),
+        ("foreach_point, uncapped", quad_fp_uncapped),
+        ("foreach_point, maxregs = Val(128)", quad_fp_capped),
     ],
 )
 const CASE_SET = get(ENV, "QUAD_PROBE_CASES", "arms")
