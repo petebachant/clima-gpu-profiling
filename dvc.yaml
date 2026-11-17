@@ -1039,6 +1039,57 @@ stages:
     frozen: true
     desc: Automatically generated from the 'register-cap-filter/values' stage in
       calkit.yaml. Changes made here will be overwritten.
+  register-cap-after-cm852/census:
+    cmd: calkit scheduler batch --name register-cap-after-cm852/census
+      --environment clima --dep scripts/census-auto-register-cap.jl --dep
+      scripts/run-julia-script.sh --dep ClimaCore.jl-mod/src --dep
+      ClimaCore.jl-mod/ext --dep ClimaAtmos.jl-mod/src --dep
+      CloudMicrophysics.jl-mod/src --dep ClimaCoupler.jl-mod/src --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep .calkit/env-locks/clima --out
+      results/experiments/register-cap-after-cm852/census-wide.toml --option
+      --gpus=1 --option --time=180 --
+      .calkit/markdown/docs/experiments/register-cap-after-cm852.md/census.sh
+    deps:
+      - .calkit/markdown/docs/experiments/register-cap-after-cm852.md/census.sh
+      - scripts/census-auto-register-cap.jl
+      - scripts/run-julia-script.sh
+      - ClimaCore.jl-mod/src
+      - ClimaCore.jl-mod/ext
+      - ClimaAtmos.jl-mod/src
+      - CloudMicrophysics.jl-mod/src
+      - ClimaCoupler.jl-mod/src
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - .calkit/env-locks/clima
+    outs:
+      - results/experiments/register-cap-after-cm852/census-wide.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/register-cap-after-cm852/census.out:
+          cache: false
+          persist: true
+    desc: Automatically generated from the 'register-cap-after-cm852/census'
+      stage in calkit.yaml. Changes made here will be overwritten.
+  register-cap-after-cm852/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/register-cap-after-cm852.md/values.py
+    deps:
+      - .calkit/markdown/docs/experiments/register-cap-after-cm852.md/values.py
+      - scripts/register_bands.py
+      - results/experiments/register-cap-after-cm852/census-wide.toml
+      - results/experiments/register-cap-filter/census-wide.toml
+      - data/cm-852-registers.toml
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/register-cap-after-cm852.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'register-cap-after-cm852/values'
+      stage in calkit.yaml. Changes made here will be overwritten.
   sgs-thread-order/thread-order:
     cmd: calkit scheduler batch --name sgs-thread-order/thread-order
       --environment clima --dep scripts/measure-thread-order.jl --dep
