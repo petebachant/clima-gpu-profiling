@@ -1083,6 +1083,14 @@ pipeline:
       # Its values stage converts that TOML to JSON because value markers read
       # JSON only, and derives the per-GiB and increment columns the prose
       # argues from.
+      # Frozen on main, live at meas/2026-11-16-gpoint-group-sweeps. It reads
+      # results/gpoint-sweep.toml and results/sw-gpoint-sweep.toml, whose
+      # stages are frozen below for the same reason -- the mod arm no longer
+      # carries the groups -- and its values stage reads the transient
+      # results/top-kernels.csv. The sweep tables of CliMA/RRTMGP.jl#637 come
+      # from here, so a re-run against the baseline arm would overwrite the
+      # evidence for an open pull request.
+      frozen: true
     sgs-substep-cost:
       kind: markdown
       target_path: docs/experiments/sgs-substep-cost.md
@@ -1117,6 +1125,15 @@ pipeline:
       kind: markdown
       target_path: docs/experiments/auto-register-cap.md
       environment: py
+      # Frozen on main. The census it declares takes ClimaCore.jl-mod/src and
+      # /ext, so the next move of that submodule makes it stale and a run would
+      # regenerate the whole census -- the 690 decisions and the five caps --
+      # against different policy code. Its values stage also reads the
+      # transient results/top-kernels.csv, which currently holds exactly the
+      # arm pair this experiment measured and will not after the next pass.
+      # Tag before unfreezing; see register-cap-filter, which cross-checks
+      # against this census and is frozen for the same reason.
+      frozen: true
     register-cap-filter:
       kind: markdown
       target_path: docs/experiments/register-cap-filter.md
@@ -1142,12 +1159,28 @@ pipeline:
       environment: py
       # The treatment cloud-mask-census recommends. Takes ClimaCore.jl-mod/src
       # and /ext as inputs as well, since the order it measures lives there.
+      # Frozen on main, live at meas/2026-11-16-sgs-thread-order. The thread
+      # order it measures lives in ClimaCore.jl-mod, and the register-cap
+      # isolation moved that submodule, so this document's own stage is stale on
+      # code the measurement was not taken with. Its values stage is stale for a
+      # second reason: it reads results/top-kernels.csv, which holds whichever
+      # arm pair profiled last and now holds the register cap's. Re-running
+      # either would restate the experiment against a different treatment.
+      frozen: true
     radiation-phase-split:
       kind: markdown
       target_path: docs/experiments/radiation-phase-split.md
       environment: py
       # Compile-only: it asks what each phase of the radiation solve would cost
       # in registers as its own kernel, before anything is built.
+      # Frozen on main, live at meas/2026-11-16-radiation-phase-split. Both
+      # measuring stages take RRTMGP.jl-mod/src and /ext, and the mod arm no
+      # longer carries the g-point split at all -- there is no
+      # ext/cuda/rte_gpt_groups.jl in it -- so re-running them would time a
+      # split that is not there. The values stage additionally reads the
+      # transient results/top-kernels.csv. Re-measure by tagging a new
+      # experiment with the treatment back in the arm.
+      frozen: true
     wall-clock-conversion-doc:
       kind: markdown
       target_path: docs/wall-clock-conversion.md
@@ -1373,6 +1406,13 @@ pipeline:
       # profiled last. The file carries both arms' refs and both database
       # hashes so a stale freeze shows up in the snapshot itself.
 
+      # Frozen: it reads the two profiles for the grouped solve's kernels, and
+      # the mod arm no longer launches any, so a run against the current pair
+      # would write zeros over results/gpoint-groups.json. Frozen with the
+      # sweeps at meas/2026-11-16-gpoint-group-sweeps rather than separately,
+      # since a profile-derived export and the sweeps it is read beside have to
+      # describe the same arm.
+      frozen: true
     gpoint-group-sweep:
       kind: shell-script
       environment: clima
@@ -1427,6 +1467,14 @@ pipeline:
         - path: results/gpoint-wallclock.toml
           storage: git
 
+      # Frozen on main, live at meas/2026-11-16-gpoint-group-sweeps. The mod arm
+      # no longer carries the g-point groups -- the register-cap isolation at
+      # 5050f9a dropped them, and RRTMGP.jl-mod has no ngpt_groups in src -- so
+      # this sweep would now sweep a group count that does not exist, and
+      # results/gpoint-sweep.toml is where the sweep table of
+      # CliMA/RRTMGP.jl#637 comes from. Unfreeze only with pb/gpoint-groups
+      # back in the arm, and tag the result rather than overwriting this one.
+      frozen: true
     sw-gpoint-sweep:
       kind: shell-script
       environment: clima
@@ -1481,6 +1529,13 @@ pipeline:
         - path: results/sw-gpoint-wallclock.toml
           storage: git
 
+      # Frozen with gpoint-group-sweep, for the same reason and at the same
+      # tag: the treatment is absent from the mod arm, and this output is
+      # CliMA/RRTMGP.jl#637's shortwave sweep table. Freeze and unfreeze the
+      # two sweeps together, as the ncu pair rule in AGENTS.md requires --
+      # a band measured on one arm beside a band measured on another is not a
+      # comparison.
+      frozen: true
     wave-census:
       kind: python-script
       environment: py
@@ -1548,6 +1603,13 @@ pipeline:
         - path: results/gpoint-equivalence.toml
           storage: git
 
+      # Frozen with the two sweeps, at meas/2026-11-16-gpoint-group-sweeps. It
+      # compares the grouped solve against the serial one, and the mod arm has
+      # no grouped solve to compare, so a run would check nothing and overwrite
+      # the deviation table CliMA/RRTMGP.jl#637 cites. The branch now carries
+      # its own exact one-group check in test/all_sky_with_aerosols.jl, which
+      # is where that claim is asserted rather than measured.
+      frozen: true
     kernel-population:
       kind: python-script
       environment: py
