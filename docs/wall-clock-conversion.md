@@ -285,3 +285,5 @@ The conservative course is to subtract that mean: the margin for the treatment m
 The one-arm version of the step-breakdown stage reported <!-- calkit value key=own_threshold.mod_frac -->36.6<!-- /calkit value -->% of wall in the mod arm's expensive steps against <!-- calkit value key=own_threshold.baseline_frac -->34.2<!-- /calkit value -->% in the baseline's, which reads as a treatment effect and is not one.
 The threshold is 1.25x each arm's OWN median, and the fold moved the median from <!-- calkit value key=own_threshold.baseline_median_ms -->142.5<!-- /calkit value --> to <!-- calkit value key=own_threshold.mod_median_ms -->122.7<!-- /calkit value --> ms, so an unchanged distribution crosses a lower bar.
 Those fields cannot be read across arms; a fixed periodic classification can.
+
+<!-- /calkit values -->

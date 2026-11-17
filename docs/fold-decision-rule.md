@@ -170,3 +170,5 @@ changed the kernel bodies and moved their distance to the next occupancy step.
 Steps 1 through 5 can be redone in minutes when that happens, which is the
 practical argument for keeping the decision cheap rather than for trusting an
 old profile.
+
+<!-- /calkit values -->

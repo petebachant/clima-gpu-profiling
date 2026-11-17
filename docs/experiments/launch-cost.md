@@ -166,3 +166,5 @@ Note also that 6.74 us sits below the 8.19 us that `cuLaunchKernel` itself
 occupies in the baseline profile, which suggests the marginal launch is mostly
 driver cost rather than Julia-side broadcast machinery, and that some of it
 overlaps with GPU execution.
+
+<!-- /calkit values -->

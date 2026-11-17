@@ -73,3 +73,5 @@ The baseline issued <!-- calkit value key=baseline.launches format="{:,}" -->0<!
 ## Verdict
 
 Accepted or rejected, against which null band, and why.
+
+<!-- /calkit values -->

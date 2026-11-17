@@ -531,3 +531,5 @@ Both the memory the workspaces cost and the count that is sufficient should be r
 
 The headroom that remains is still large in absolute terms.
 At <!-- calkit value key=split.longwave.optics_warps_per_sm -->12<!-- /calkit value --> and <!-- calkit value key=split.shortwave.optics_warps_per_sm -->16<!-- /calkit value --> warps of a possible 64 these kernels are still far from a full machine, and this family was the one that looked least movable in the whole device budget.
+
+<!-- /calkit values -->

@@ -69,3 +69,5 @@ The microphysics mean in particular is now an average over two kernel shapes rat
 The two differ by about three points at these magnitudes, so a figure computed the other way does not belong beside these.
 
 What the wall-clock side of the conversion looks like step by step, and how wide the floor under these ratios is, is in [the wall-clock conversion document](wall-clock-conversion.md).
+
+<!-- /calkit values -->

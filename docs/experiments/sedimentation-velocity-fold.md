@@ -136,3 +136,5 @@ The record that survives is the per-kernel one: both halves of a <!-- calkit val
 
 This pass is tagged `exp/2026-10-31-sedimentation-velocity-fold`, where `export-sedimentation-fold` is live and both nsys databases are in the DVC remote, so the snapshot above regenerates from the tag.
 On main the stage is frozen, because those database paths hold whichever experiment profiled last.
+
+<!-- /calkit values -->

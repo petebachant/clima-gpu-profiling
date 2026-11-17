@@ -94,3 +94,5 @@ So <!-- calkit value key=discarded_n -->3<!-- /calkit value --> of the folded ca
 
 Measured on <!-- calkit value key=gpu -->NVIDIA A100-SXM4-80GB<!-- /calkit value --> under Julia <!-- calkit value key=julia -->1.11.5<!-- /calkit value --> at <!-- calkit value key=float_type -->Float32<!-- /calkit value -->.
 The four per-process TOMLs the figures are joined from are kept in Git under `results/fold-compile-cost/`, so the per-repeat numbers the spread is computed from are readable without a `calkit pull`.
+
+<!-- /calkit values -->

@@ -70,3 +70,5 @@ So the write steps carry the great majority of what this measurement can see, an
 Nothing else in this pipeline can answer the question.
 The 120-step nsys window is shorter than the 720-step daily write period, so it contains no write at all and its kernel table reports the sampling as ordinary every-step work.
 The step breakdown finds the writes precisely, because they are the most expensive steps in the window, and by construction cannot find the sampling for the same reason.
+
+<!-- /calkit values -->

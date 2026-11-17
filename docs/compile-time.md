@@ -101,3 +101,5 @@ Rewinding this clone in place is the supported path. The coupler manifests recor
 At that rev the four profiling stages (`baseline-nsys`, `mod-nsys`, `amip-baseline`, `amip-mod`) are intentionally stale. The wiring under test is an input to all four, and it was never run through them precisely because this result says it should not be.
 
 Measured on <!-- calkit value key=environment.gpu -->NVIDIA A100-SXM4-80GB<!-- /calkit value --> under Julia <!-- calkit value key=environment.julia -->1.11.5<!-- /calkit value -->, SLURM job <!-- calkit value key=environment.slurm_job_id -->252912<!-- /calkit value -->.
+
+<!-- /calkit values -->

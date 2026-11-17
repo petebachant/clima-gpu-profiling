@@ -202,3 +202,5 @@ The call is <!-- calkit value key=explicit.substep_share_pct format="{:.1f}" pat
 Neither item is adopted here.
 The substep count is a physics-accuracy decision that belongs to the science owners, and this experiment exists to put a price on it rather than to take it.
 Compaction is a treatment and is now worth building, against a measured ceiling instead of a sparsity argument.
+
+<!-- /calkit values -->

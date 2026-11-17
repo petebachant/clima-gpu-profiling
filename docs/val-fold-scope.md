@@ -173,3 +173,5 @@ At the pinned v1.3.0 both `q_vap_saturation` methods the folded kernels call are
 It held, and more cleanly than predicted.
 The call compiles to <!-- calkit value key=probes.td_arguments.registers -->32<!-- /calkit value --> registers with the parameter set as a runtime argument, <!-- calkit value key=probes.td_const.registers -->32<!-- /calkit value --> as a const global and <!-- calkit value key=probes.td_val.registers -->32<!-- /calkit value --> through `Val` --- the same number three times, so its <!-- calkit value key=probes.tps_bytes -->104<!-- /calkit value -->-byte parameter struct costs nothing to pass however it is passed.
 The prediction was that folding would not pay there; the measurement says the call never paid for its parameters in the first place, which closes the question rather than bounding it.
+
+<!-- /calkit values -->
