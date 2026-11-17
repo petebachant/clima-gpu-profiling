@@ -5379,3 +5379,119 @@ stages:
       hash: md5
       md5: e6706bc8f0ff9565af7e581514f397cf
       size: 2159
+  register-cap-filter/wide-census:
+    cmd: calkit scheduler batch --name register-cap-filter/wide-census 
+      --environment clima --dep scripts/census-auto-register-cap.jl --dep 
+      scripts/run-julia-script.sh --dep ClimaCore.jl-mod/src --dep 
+      ClimaCore.jl-mod/ext --dep ClimaAtmos.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep .calkit/env-locks/clima --out 
+      results/experiments/register-cap-filter/census-wide.toml --option --gpus=1
+      --option --time=150 -- 
+      .calkit/markdown/docs/experiments/register-cap-filter.md/wide-census.sh
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: 
+        .calkit/markdown/docs/experiments/register-cap-filter.md/wide-census.sh
+      hash: md5
+      md5: 5036dd7732adc17e1ef234d0f9849647
+      size: 778
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: 9e93101dfd07906a0a29899d4af920ff.dir
+      size: 2746118
+      nfiles: 178
+    - path: ClimaCore.jl-mod/ext
+      hash: md5
+      md5: 1676457c141c9757cef3de16f32c0c87.dir
+      size: 234259
+      nfiles: 26
+    - path: ClimaCore.jl-mod/src
+      hash: md5
+      md5: 282b87c6311147ecb0d36fcd2bc3062d.dir
+      size: 1476933
+      nfiles: 105
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 3974e589a2618f7adb8c0164acb5807b
+      size: 855
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      hash: md5
+      md5: bb7b7b182718e2431afcc30d5d3b95ff
+      size: 138581
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: ClimaCoupler.jl-mod/src
+      hash: md5
+      md5: 8175d14b441b725ab7b1e68604ad0136.dir
+      size: 331248
+      nfiles: 22
+    - path: scripts/census-auto-register-cap.jl
+      hash: md5
+      md5: bf325326a2931025bc3dd93624d40af5
+      size: 6004
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: 2b491e48a8f15c4ea7ff76d19d95f830
+      size: 1040
+    outs:
+    - path: .calkit/scheduler/logs/register-cap-filter/wide-census.out
+      hash: md5
+      md5: 71f6b6593347ed80605b22a7ba09899d
+      size: 116742
+    - path: results/experiments/register-cap-filter/census-wide.toml
+      hash: md5
+      md5: 7ccdc0f216e547f0babb42e3ce2bf0fe
+      size: 207553
+  register-cap-filter/values:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/experiments/register-cap-filter.md/values.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: .calkit/markdown/docs/experiments/register-cap-filter.md/values.py
+      hash: md5
+      md5: 0b921a5189d723718a3e10fc4d671e12
+      size: 8904
+    - path: data/cm-852-registers.toml
+      hash: md5
+      md5: cbc8fcc081f43fc40e40bb418a57a969
+      size: 3136
+    - path: results/docs/auto-register-cap.json
+      hash: md5
+      md5: e6706bc8f0ff9565af7e581514f397cf
+      size: 2159
+    - path: results/experiments/auto-register-cap/census.toml
+      hash: md5
+      md5: 915cffa873c52bfc7aa341bd3b42176d
+      size: 210460
+    - path: results/experiments/register-cap-filter/census-wide.toml
+      hash: md5
+      md5: 7ccdc0f216e547f0babb42e3ce2bf0fe
+      size: 207553
+    - path: results/top-kernels.csv
+      hash: md5
+      md5: bb7b2b70f8cbba4c334dc60a264809aa
+      size: 3592
+    - path: scripts/register_bands.py
+      hash: md5
+      md5: 8c775d93f8d35c3371392648e709e6b7
+      size: 4379
+    outs:
+    - path: results/docs/register-cap-filter.json
+      hash: md5
+      md5: 8b8f124841e79671fe83d709e5a8a5c4
+      size: 44159

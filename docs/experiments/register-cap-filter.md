@@ -43,8 +43,8 @@ bash scripts/run-julia-script.sh \
 
 ## Replaying the filter
 
-```python calkit stage name=values environment=py outputs=[{path: results/docs/register-cap-filter.json, storage: git}] inputs=[scripts/register_bands.py, results/experiments/register-cap-filter/census-wide.toml, results/experiments/auto-register-cap/census.toml, data/cm-852-registers.toml]
-import json, sys, tomllib
+```python calkit stage name=values environment=py outputs=[{path: results/docs/register-cap-filter.json, storage: git}] inputs=[scripts/register_bands.py, results/experiments/register-cap-filter/census-wide.toml, results/experiments/auto-register-cap/census.toml, results/docs/auto-register-cap.json, results/top-kernels.csv, data/cm-852-registers.toml]
+import csv, json, sys, tomllib
 sys.path.insert(0, "scripts")
 import register_bands as rb
 
@@ -130,6 +130,62 @@ cm_curve = [cm_at(m) for m in (16, 24, 32, 48)]
 for s in cm_curve:
     s["candidate_share_pct"] = round(100 * s["candidate_ms_per_step"] / cm_total_ms, 1)
 
+# Pricing what a wider setting admits needs the profile, and
+# `results/top-kernels.csv` is a transient path: it holds whichever arm pair ran
+# last. The budget it implies is asserted against the figure the
+# auto-register-cap experiment committed, so a profile from a different pair
+# fails this stage instead of quietly repricing against it.
+prof_rows = list(csv.DictReader(open("results/top-kernels.csv")))
+device_base = next(
+    float(r["total_ms_baseline"]) / float(r["pct_of_gpu_time_baseline"]) * 100.0
+    for r in prof_rows if float(r["pct_of_gpu_time_baseline"]))
+committed = json.load(
+    open("results/docs/auto-register-cap.json"))["device"]["device_ms_baseline"]
+assert abs(device_base - committed) < 1.0, (
+    f"the profile implies a {device_base:.1f} ms budget against the committed "
+    f"{committed} ms, so results/top-kernels.csv describes a different arm pair")
+
+# The profile reports the mod arm under the baseline arm's paths.
+def normalized(name):
+    return name.replace("_jl_mod_", "_jl_")
+
+priced = {normalized(r["kernel"]): r for r in prof_rows}
+capped_at = {m: {key(r) for r in wide_rows if rb.replay(r, m, max_shed) == "capped"}
+             for m in (16, 24, 32)}
+names_16 = {k[0] for k in capped_at[16]}
+
+# One name can carry several specializations, and the profile aggregates them
+# into a single row, so a call site already capped at 16 warps cannot have a
+# wider setting's share of it priced apart from what 16 already captured.
+multi = sum(1 for n in {r["kernel"] for r in wide_rows}
+            if sum(1 for r in wide_rows if r["kernel"] == n) > 1)
+
+# Aggregated by name and not by specialization, because the profile is: a name
+# with two admitted specializations has one row, and pricing both reads that row
+# twice. 47 of this census's rows are one `copyto_by_slices` call site.
+def wider(max_warps):
+    admitted = {r["kernel"] for r in wide_rows
+                if rb.replay(r, max_warps, max_shed) == "capped"}
+    fresh = admitted - names_16
+    specs = {n: sorted(r["registers"] for r in wide_rows if r["kernel"] == n
+                       and rb.replay(r, max_warps, max_shed) == "capped")
+             for n in fresh}
+    rows, total = [], 0.0
+    for name in sorted(fresh, key=lambda n: -max(specs[n])):
+        hit = priced.get(normalized(name))
+        ms = round(float(hit["total_ms_baseline"]), 1) if hit else None
+        if ms:
+            total += ms
+        rows.append({"kernel": name[:70], "registers": specs[name],
+                     "profiled_ms": ms})
+    return {
+        "call_sites": len(fresh),
+        "profiled": sum(1 for r in rows if r["profiled_ms"]),
+        "priced_ms": round(total, 1),
+        "priced_pct_of_device": round(100.0 * total / device_base, 2),
+        "kernels": rows,
+    }
+
 out = {
     "wide": {
         "specializations": wide["n_specializations"],
@@ -151,6 +207,9 @@ out = {
     "curve": curve,
     "by_warps": by_warps,
     "new_at_64": new_rows,
+    "device_ms_baseline": round(device_base, 1),
+    "names_with_several_specializations": multi,
+    "wider": {"24": wider(24), "32": wider(32)},
     "cm_852": {
         "kernels": len(cm["kernels"]),
         "total_ms_per_step": round(cm_total_ms, 2),
@@ -169,6 +228,10 @@ for s in curve:
           f"{s['candidates']:>3} candidates, "
           f"{s['spill_over_budget']} over spill budget, "
           f"{s['buys_no_warps']} buying no warps")
+for m in ("24", "32"):
+    w = out["wider"][m]
+    print(f"  wider to {m}: {w['call_sites']} new call sites, {w['profiled']} "
+          f"profiled, {w['priced_ms']} ms = {w['priced_pct_of_device']}% of device")
 for s in cm_curve:
     print(f"  #852 at max_warps {s['max_warps']:>2}: {s['candidates']} of "
           f"{out['cm_852']['kernels']} kernels candidate, "
@@ -179,24 +242,52 @@ for s in cm_curve:
 
 ## What the census says
 
-The wide census decided <!-- calkit value key=wide.specializations -->0<!-- /calkit value --> specializations with the residency filter inert, and the band arithmetic here agrees with the extension's own on all <!-- calkit value key=wide.checked_warps -->0<!-- /calkit value --> of them and on every one of the <!-- calkit value key=wide.checked_edges -->0<!-- /calkit value --> band edges it recorded.
-Replayed down to 16 warps it caps <!-- calkit value key=cross_check.replayed_at_16 -->0<!-- /calkit value --> kernels against the <!-- calkit value key=cross_check.measured_at_16 -->0<!-- /calkit value --> that the census taken at 16 warps capped, and that the two sets are identical is <!-- calkit value key=cross_check.agree -->false<!-- /calkit value -->.
+The wide census decided <!-- calkit value key=wide.specializations -->690<!-- /calkit value --> specializations with the residency filter inert, and the band arithmetic here agrees with the extension's own on all <!-- calkit value key=wide.checked_warps -->690<!-- /calkit value --> of them and on every one of the <!-- calkit value key=wide.checked_edges -->133<!-- /calkit value --> band edges it recorded.
+Replayed down to 16 warps it caps <!-- calkit value key=cross_check.replayed_at_16 -->5<!-- /calkit value --> kernels against the <!-- calkit value key=cross_check.measured_at_16 -->5<!-- /calkit value --> that the census taken at 16 warps capped, and that the two sets are identical is <!-- calkit value key=cross_check.agree -->true<!-- /calkit value -->.
 That is a check between two independent runs rather than a restatement: the compiles happened in different processes, and nothing but the setting differed.
 
-Lifting the filter to 24 warps caps <!-- calkit value key=by_warps.24.capped -->0<!-- /calkit value --> kernels against <!-- calkit value key=by_warps.16.capped -->0<!-- /calkit value --> at 16, and removing it entirely caps <!-- calkit value key=by_warps.64.capped -->0<!-- /calkit value --> of the <!-- calkit value key=by_warps.64.candidates -->0<!-- /calkit value --> the shed filter admits.
-The spill test is what declines the rest: <!-- calkit value key=by_warps.64.spill_over_budget -->0<!-- /calkit value --> kernels compile past their local budget and <!-- calkit value key=by_warps.64.buys_no_warps -->0<!-- /calkit value --> buy no warps at all, so the budget is doing real work rather than passing everything the arithmetic sends it.
+Lifting the filter to 24 warps caps <!-- calkit value key=by_warps.24.capped -->14<!-- /calkit value --> kernels against <!-- calkit value key=by_warps.16.capped -->5<!-- /calkit value --> at 16, and removing it entirely caps <!-- calkit value key=by_warps.64.capped -->125<!-- /calkit value --> of the <!-- calkit value key=by_warps.64.candidates -->127<!-- /calkit value --> the shed filter admits.
+The spill test declines almost none of them: <!-- calkit value key=by_warps.64.spill_over_budget -->2<!-- /calkit value --> kernels compile past their local budget and <!-- calkit value key=by_warps.64.buys_no_warps -->0<!-- /calkit value --> buy no warps at all.
+A cap of at most 12 registers is small enough that `ptxas` meets it without spilling: the <!-- calkit value key=by_warps.24.capped -->14<!-- /calkit value --> kernels a 24-warp filter caps add <!-- calkit value key=by_warps.24.spill_added_bytes -->160<!-- /calkit value --> bytes of local memory between them, and all <!-- calkit value key=by_warps.64.capped -->125<!-- /calkit value --> at the widest setting add <!-- calkit value key=by_warps.64.spill_added_bytes -->536<!-- /calkit value --> bytes.
+
+Pricing what a wider setting admits needs care, because a kernel name is not a specialization: <!-- calkit value key=names_with_several_specializations -->54<!-- /calkit value --> of this census's names carry more than one, and one `copyto_by_slices` call site carries 47.
+The profile has one row per name, so a call site is priced once however many of its specializations the filter admits, and a call site already capped at 16 warps cannot have a wider setting's share of it separated from what 16 already captured.
+On that basis, lifting the filter to 24 warps brings <!-- calkit value key=wider.24.call_sites -->6<!-- /calkit value --> new call sites under the policy, of which <!-- calkit value key=wider.24.profiled -->2<!-- /calkit value --> appear in the profile at all, worth <!-- calkit value key=wider.24.priced_pct_of_device -->3.67<!-- /calkit value -->% of the device budget.
+Lifting it to 32 brings <!-- calkit value key=wider.32.call_sites -->14<!-- /calkit value --> call sites and <!-- calkit value key=wider.32.priced_pct_of_device -->16.28<!-- /calkit value -->%.
 
 ## What #852's own numbers say
 
-The eight microphysics kernels of #852's table take <!-- calkit value key=cm_852.total_ms_per_step -->0<!-- /calkit value --> ms per coupling step between them.
-At the filter's current setting of 16 warps the policy declines <!-- calkit value key=cm_852.by_warps.16.declined -->0<!-- /calkit value --> of the <!-- calkit value key=cm_852.kernels -->0<!-- /calkit value --> outright, which is every one of them: #852 leaves the lightest of them holding 40 warps and the heaviest 20, and the filter wants 16 or fewer.
-At 24 warps it admits <!-- calkit value key=cm_852.by_warps.24.candidates -->0<!-- /calkit value --> of them, carrying <!-- calkit value key=cm_852.by_warps.24.candidate_share_pct -->0<!-- /calkit value -->% of that time, and at 32 warps <!-- calkit value key=cm_852.by_warps.32.candidates -->0<!-- /calkit value --> of them.
+The eight microphysics kernels of #852's table take <!-- calkit value key=cm_852.total_ms_per_step -->61.04<!-- /calkit value --> ms per coupling step between them.
+At the filter's current setting of 16 warps the policy declines <!-- calkit value key=cm_852.by_warps.16.declined -->8<!-- /calkit value --> of the <!-- calkit value key=cm_852.kernels -->8<!-- /calkit value --> outright, which is every one of them: #852 leaves the lightest of them holding 40 warps and the heaviest 20, and the filter wants 16 or fewer.
+At 24 warps it admits <!-- calkit value key=cm_852.by_warps.24.candidates -->5<!-- /calkit value --> of them, carrying <!-- calkit value key=cm_852.by_warps.24.candidate_share_pct -->81.4<!-- /calkit value -->% of that time, and at 32 warps <!-- calkit value key=cm_852.by_warps.32.candidates -->6<!-- /calkit value --> of them.
 
 Admitting is not capping, and published register counts cannot reach further: what a kernel compiles to under a cap is the one thing only a compile knows.
 Read these as the ceiling on what the policy could still find on that stack, not as a payoff.
 
 ## Verdict
 
-To be written once the census has run.
+**Leave `CLIMA_AUTO_REGISTER_CAP_MAX_WARPS` at 16, and stop describing the spill budget as a safeguard.**
+
+The filter is not a conservative setting of a well-screened policy.
+It is the only screen the policy has.
+Of the <!-- calkit value key=by_warps.64.candidates -->127<!-- /calkit value --> kernels the band arithmetic admits, the spill budget turns away <!-- calkit value key=by_warps.64.spill_over_budget -->2<!-- /calkit value -->, so with residency removed the policy caps <!-- calkit value key=by_warps.64.capped -->125<!-- /calkit value --> of <!-- calkit value key=wide.specializations -->690<!-- /calkit value --> specializations rather than the <!-- calkit value key=by_warps.16.capped -->5<!-- /calkit value --> it caps now.
+Everything between those two numbers is the residency test and nothing else.
+
+That the spill is near zero is not reassurance, and this is the part worth carrying forward.
+`ptxas` can meet a tighter register budget by rematerializing values instead of spilling them, which costs instructions and no local memory at all, so a kernel that regresses under a cap looks identical to one that is fine.
+The policy's own comment records the case: a ClimaLand `turbulent_fluxes` kernel regressed 21% while spilling 44 bytes.
+A budget that declines 2 of <!-- calkit value key=by_warps.64.candidates -->127<!-- /calkit value --> is therefore consistent with the caps being harmless and equally consistent with their cost sitting in a currency nothing here measures.
+
+Against that, the upside of a wider filter is small.
+At 24 warps the policy would reach <!-- calkit value key=wider.24.priced_pct_of_device -->3.67<!-- /calkit value -->% more of the device budget, on <!-- calkit value key=wider.24.profiled -->2<!-- /calkit value --> profiled call sites, and it returns about a tenth of what it covers, so the expected gain is a few tenths of a percent of device --- the same order as the drift of the kernels it does not touch.
+Each new admission would need pricing one at a time, because nothing downstream of the arithmetic would catch a bad one.
+
+The CloudMicrophysics finding is the one that bears on whether to upstream this at all.
+At 16 warps the policy declines every one of the <!-- calkit value key=cm_852.kernels -->8<!-- /calkit value --> microphysics kernels of #852's table, so the <!-- calkit value key=cm_852.total_ms_per_step -->61.04<!-- /calkit value --> ms per step they cost is entirely outside its reach once that lands, and the 2.9% the policy is credited with today rests on kernels #852 takes registers out of instead.
+At 24 warps five of them return, carrying <!-- calkit value key=cm_852.by_warps.24.candidate_share_pct -->81.4<!-- /calkit value -->% of that time.
+So the setting that would keep the policy relevant is the one its only screen cannot be trusted to guard, which is the honest statement of where this stands.
+
+What the policy is worth keeping for is unchanged by any of it: it found five kernels nobody had looked at, two of them in ClimaLand, and it declines 685 of 690 by default.
+That is a mechanism argument, and it is the one to make upstream --- not the 2.9%.
 
 <!-- /calkit values -->

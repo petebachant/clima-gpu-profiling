@@ -1,0 +1,913 @@
+gpu-guard: running on GPU(s) [4] -- OK (avoiding [])
+Loading climacommon/2026_11_06-1.13.3
+  Loading requirement: climaauth/2025_05_15 openmpi/4.1.5-mpitrampoline
+    julia/1.13.3 cuda/julia-pref
+Status `~/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/experiments/AMIP/Project.toml`
+  [c7e460c6] ArgParse v1.2.0
+⌃ [052768ef] CUDA v6.4.1
+  [159f3aea] Cairo v1.1.1
+⌃ [13f3f980] CairoMakie v0.15.15
+  [29b5916a] ClimaAnalysis v0.5.25
+  [b2c96348] ClimaAtmos v0.42.19 `../../../ClimaAtmos.jl-mod`
+  [4347a170] ClimaCalibrate v0.6.0
+  [3a4d1b5c] ClimaComms v0.6.13
+  [d414da3d] ClimaCore v1.0.8 `../../../ClimaCore.jl-mod`
+  [4ade58fe] ClimaCoupler v0.3.0 `../..`
+  [1ecacbb8] ClimaDiagnostics v0.4.1
+  [08f4d4ce] ClimaLand v1.15.0
+⌃ [5c42b081] ClimaParams v1.3.10
+  [595c0a79] ClimaTimeSteppers v1.0.1
+  [b3f4f4ca] ClimaUtilities v0.1.35
+  [aa8a2aa5] EnsembleKalmanProcesses v2.7.4
+⌃ [61eb1bfa] GPUCompiler v2.10.0
+  [db073c08] GeoMakie v0.7.18
+  [e98cc03f] Insolation v1.2.1
+⌅ [a98d9a8b] Interpolations v0.15.2
+  [033835bb] JLD2 v0.6.7
+  [da04e1cc] MPI v0.20.29
+⌅ [ee78f7c6] Makie v0.24.15
+  [85f8d34a] NCDatasets v0.14.15
+  [5da4648a] NVTX v1.0.3
+⌅ [b946abbf] NaNStatistics v0.6.62
+  [08abe8d2] PrettyTables v3.5.1
+  [a01a1ee8] RRTMGP v1.1.1 `../../../RRTMGP.jl-mod`
+  [1bc83da4] SafeTestsets v0.1.0
+  [90137ffa] StaticArrays v1.9.25
+  [49b00bb7] SurfaceFluxes v1.6.0
+  [b60c26fb] Thermodynamics v1.3.0
+  [ddb6d928] YAML v0.4.17
+⌅ [9c32591e] Poppler_jll v24.6.0+0
+  [de0858da] Printf v1.11.0
+Info Packages marked with ⌃ and ⌅ have new versions available. Those with ⌃ may be upgradable, but those with ⌅ are restricted by compatibility constraints from upgrading. To see why use `status --outdated`
+[ Info: Active project: /home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/experiments/AMIP
+┌ Warning: Package cuDNN not found in current path.
+│ - Run `import Pkg; Pkg.add("cuDNN")` to install the cuDNN package, then restart julia.
+│ - If cuDNN is not installed, some Flux functionalities will not be available when running on the GPU.
+└ @ FluxCUDAExt ~/.julia/packages/Flux/YMjah/ext/FluxCUDAExt.jl:11
+[ Info: Using Atmos configuration from ClimaCoupler in config/atmos_configs/climaatmos_progedmf_1m.yml
+[ Info: Dict{Any, Any}("dz_top" => 3000.0, "nh_poly" => 3, "walltime_dt" => nothing, "radiation_reset_rng_seed" => true, "tracer_nonnegativity_method" => nothing, "cloud_model" => "quadrature", "cloud_inhomogeneity_in_sw_radiation" => true, "debug_tendency_diagnostics" => false, "y_elem" => 6, "land_spun_up_ic" => false, "simple_ocean" => false, "nogw_beres_detailed_diagnostics" => false, "edmfx_scale_blending" => "SmoothMinimum", "coupler_diagnostics_reduction" => "average", "device" => "auto", "edmfx_nh_pressure" => true, "edmfx_vertical_diffusion" => true, "sleve_eta" => 0.7, "energy_humidity_upwinding" => "vanleer_limiter", "output_dir_style" => "ActiveLink", "rayleigh_sponge" => true, "constant_horizontal_diffusion" => false, "restart_file" => nothing, "atmos_progress_interval" => "never", "disable_surface_flux_tendency" => false, "detect_restart_file" => false, "topo_smoothing" => true, "use_intersection_grid" => true, "edmfx_entr_model" => "Generalized", "rain_terminal_velocity" => "Chen2022", "check_steady_state" => false, "log_progress" => true, "z_elem" => 79, "strict_params" => true, "diagnostics" => Any[], "radiation_include_snow" => false, "config" => "sphere", "cloud_ice_terminal_velocity" => "Fixed", "ocean_progress_interval" => "never", "ocean_3d_diagnostic_interval" => nothing, "dt" => "120secs", "prescribed_aerosols" => ["CB1", "CB2", "DST01", "DST02", "DST03", "DST04", "DST05", "OC1", "OC2", "SO4", "SSLT01", "SSLT02", "SSLT03", "SSLT04", "SSLT05"], "updraft_number" => 1, "cfsite_number" => "site23", "ocean_float_type" => "Float64", "rain_condensation_evaporation" => "RainEvaporation", "tracer_upwinding" => "vanleer_limiter", "scm_surface_type" => "ocean", "jvp_step_adjustment" => 1.0, "mesh_warp_type" => "SLEVE", "rad" => "allskywithclear", "external_forcing" => nothing, "component_dt_dict" => Dict("dt_ocean" => 120.0, "dt_land" => 120.0, "dt_atmos" => 120.0, "dt_seaice" => 120.0), "sleve_s" => 10.0, "reproducibility_test" => false, "use_krylov_method" => false, "check_nan_every" => 1024, "print_config_dict" => true, "walltime_debug" => true, "lai_source" => "modis_monthly", "prescribed_flow" => nothing, "config_file" => "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml", "prescribe_clouds_in_radiation" => false, "era5_diurnal_warming" => nothing, "save_cache" => true, "use_land_diagnostics" => true, "update_constrain_state_every" => "stage", "ocean_diagnostic_mode" => "average", "netcdf_interpolation_num_points" => nothing, "restart_dir" => nothing, "coupler_diagnostics_period" => nothing, "microphysics_n_substeps_quadrature" => 2, "idealized_h2o" => false, "cloud_ice_snow_accretion" => "CloudIceSnowAccretion", "eisenstat_walker_forcing_alpha" => 2.0, "cloud_liquid_rain_accretion" => "CloudLiquidRainAccretion", "log_to_file" => false, "tq_correlation_model" => "diagnosed", "krylov_rtol" => 0.1, "edmfx_sgs_horizontal_diffusive_flux" => false, "land_fraction_source" => "etopo", "dt_rad" => "1hours", "checkpoint_dt" => "1months", "land_diagnostics_period" => "1months", "restart_t" => nothing, "toml" => ["toml/prognostic_edmfx_1M.toml"], "prognostic_tke" => true, "prognostic_surface" => "PrescribedSST", "advection_test" => false, "netcdf_output_at_levels" => true, "use_auto_jacobian" => false, "test_dycore_consistency" => false, "x_elem" => 6, "insolation" => "timevarying", "surface_setup" => "PrescribedSurface", "start_date" => "20100101", "cloud_ice_melt" => "CloudIceMelt", "t_start" => "0secs", "use_dynamic_krylov_rtol" => false, "conservation_softfail" => false, "t_end" => "345600secs", "sgs_variance_fidelity_model" => "equilibrium", "update_jacobian_every" => "solve", "implicit_diffusion" => true, "bubble" => false, "hyperdiffusion_prandtl_number" => 0.2, "cosp_overlap" => "maximum_random", "edmfx_horizontal_diffusion" => false, "precipitation_evaporation_0m" => nothing, "non_orographic_gravity_wave" => true, "column_latlon" => [0.0, 0.0], "evolving_ocean" => true, "land_diagnostics_reduction" => "average", "land_progress_interval" => "never", "ocean_diagnostic_interval" => "1days", "cloud_liquid_freezing" => "HomogeneousAndHeterogeneous", "dt_nogw" => "1800secs", "dz_bottom" => 28.0, "sgs_variance_curvature" => false, "perturb_initstate" => true, "topography" => "Earth", "dt_ogw" => "1800secs", "divergence_damping_factor" => 5.0, "z_stretch" => true, "reference_job_id" => nothing, "enable_diagnostics" => true, "edmfx_tracer_upwinding" => "first_order", "bucket_albedo_type" => "map_static", "ice_model" => "prescribed", "use_sgs_quadrature" => true, "check_conservation" => false, "coupler_output_dir" => "output", "aerosol_radiation" => true, "extra_atmos_diagnostics" => Dict{Any, Any}[Dict("short_name" => ["hur", "hus", "ta"], "pressure_coordinates" => true, "compute_every" => "6hours", "period" => "1months", "reduction_time" => "average")], "x_max" => 300000.0, "atmos_config_file" => "config/atmos_configs/climaatmos_progedmf_1m.yml", "edmfx_upwinding" => "first_order", "update_cache_every" => "stage", "albedo_model" => "CouplerAlbedo", "energy_check" => false, "approximate_linear_solve_iters" => 2, "mode_name" => "amip", "amd_les" => false, "dt_cloud_fraction" => "1hours", "topography_damping_factor" => 5.0, "ode_algo" => "ARS222", "cosp_n_subcolumns" => 100, "output_default_diagnostics" => true, "c_amd" => 0.29, "output_dir" => nothing, "nogw_beres_source" => false, "y_max" => 300000.0, "z_max" => 60000.0, "site_latitude" => 17.0, "snow_autoconversion" => "NoSupersaturation", "site_longitude" => -149.0, "z_pbl" => 2200.0, "debug_jacobian" => false, "era5_initial_condition_dir" => nothing, "orographic_gravity_wave" => "raw_topo_online", "rain_snow_accretion" => "RainSnowAccretion", "turbconv" => "prognostic_edmfx", "hyperdiff" => "Hyperdiffusion", "unique_seed" => false, "microphysics_model" => "1M", "viscous_sponge" => true, "seaice_diagnostic_interval" => "1days", "ocean_grid" => "one_deg_tripolar", "cloud_liquid_formation" => "CloudLiquidFormation", "snow_terminal_velocity" => "Chen2022", "initial_condition" => "WeatherModel", "sst_adjustment" => 0.0, "n_columns" => 1, "bucket_initial_condition" => "", "cloud_liquid_terminal_velocity" => "Fixed", "era5_ic_full_pressure" => false, "rain_autoconversion" => "Kessler1M", "reproducible_restart" => false, "detect_restart_files" => false, "seaice_progress_interval" => "never", "use_coupler_diagnostics" => true, "binary_area_fraction" => false, "cloud_liquid_snow_accretion" => "CloudLiquidSnowAccretion", "edmfx_mse_humidity_upwinding" => "first_order", "use_dense_jacobian" => false, "snow_melt" => "SnowMelt", "vert_diff" => nothing, "edmfx_sgs_diffusive_flux" => true, "strict_config" => false, "FLOAT_TYPE" => "Float32", "smagorinsky_lilly" => nothing, "h_elem" => 16, "vapor_relaxation" => "Joint", "job_id" => "amip_progedmf_1m_land_he16", "dt_subcol" => "Inf", "cloud_nn_architecture" => "arch_2layers_8nodes.jld2", "ocean_vertical_levels" => 60, "implicit_microphysics" => true, "edmfx_sgs_mass_flux" => true, "max_newton_iters_ode" => 1, "deep_atmosphere" => true, "dt_cpl" => "120secs", "sgs_distribution" => "gaussian", "time_varying_trace_gases" => ["CO2", "O3"], "ocean_model" => "prescribed", "vertical_water_borrowing_species" => nothing, "quadrature_order" => 3, "edmfx_detr_model" => "Generalized", "microphysics_n_substeps" => 3, "chemistry_model" => nothing, "apply_sem_quasimonotone_limiter" => false, "vorticity_hyperdiffusion_coefficient" => 0.1857, "auto_jacobian_padding_bands" => nothing, "idealized_clouds" => false, "edmfx_updraft_picard_rounds" => 2, "nogw_beres_heating_latent" => false, "add_isothermal_boundary_layer" => true, "seaice_diagnostic_mode" => "average", "rmse_check" => false, "coupler_toml" => ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/toml/amip_progedmf_1m.toml"], "snow_deposition_sublimation" => "DepositionAndSublimation", "use_newton_rtol" => false, "dt_save_state_to_disk" => "30days", "use_itime" => true, "newton_rtol" => 1.0e-5, "land_model" => "integrated", "domain_type" => "global", "edmfx_sgsflux_upwinding" => "none", "restart_cache" => true, "cloud_ice_formation" => "TemperatureDependentIceNumber", "cloud_ice_rain_accretion" => "CloudIceRainAccretion", "external_forcing_file" => nothing, "edmfx_filter" => true)
+[ Info: Setting up single-process ClimaCoupler run on device: CUDADevice.
+[ Info: Dict{Any, Any}("dz_top" => 3000.0, "nh_poly" => 3, "walltime_dt" => nothing, "radiation_reset_rng_seed" => true, "tracer_nonnegativity_method" => nothing, "cloud_model" => "quadrature", "cloud_inhomogeneity_in_sw_radiation" => true, "debug_tendency_diagnostics" => false, "y_elem" => 6, "land_spun_up_ic" => false, "simple_ocean" => false, "nogw_beres_detailed_diagnostics" => false, "edmfx_scale_blending" => "SmoothMinimum", "coupler_diagnostics_reduction" => "average", "device" => "auto", "edmfx_nh_pressure" => true, "edmfx_vertical_diffusion" => true, "sleve_eta" => 0.7, "energy_humidity_upwinding" => "vanleer_limiter", "output_dir_style" => "ActiveLink", "rayleigh_sponge" => true, "constant_horizontal_diffusion" => false, "restart_file" => nothing, "atmos_progress_interval" => "never", "disable_surface_flux_tendency" => false, "detect_restart_file" => false, "topo_smoothing" => true, "use_intersection_grid" => true, "edmfx_entr_model" => "Generalized", "rain_terminal_velocity" => "Chen2022", "check_steady_state" => false, "log_progress" => true, "z_elem" => 79, "strict_params" => true, "diagnostics" => Any[], "radiation_include_snow" => false, "config" => "sphere", "cloud_ice_terminal_velocity" => "Fixed", "ocean_progress_interval" => "never", "ocean_3d_diagnostic_interval" => nothing, "dt" => "120secs", "prescribed_aerosols" => ["CB1", "CB2", "DST01", "DST02", "DST03", "DST04", "DST05", "OC1", "OC2", "SO4", "SSLT01", "SSLT02", "SSLT03", "SSLT04", "SSLT05"], "updraft_number" => 1, "cfsite_number" => "site23", "ocean_float_type" => "Float64", "rain_condensation_evaporation" => "RainEvaporation", "tracer_upwinding" => "vanleer_limiter", "scm_surface_type" => "ocean", "jvp_step_adjustment" => 1.0, "mesh_warp_type" => "SLEVE", "rad" => "allskywithclear", "external_forcing" => nothing, "component_dt_dict" => Dict("dt_ocean" => 120.0, "dt_land" => 120.0, "dt_atmos" => 120.0, "dt_seaice" => 120.0), "sleve_s" => 10.0, "reproducibility_test" => false, "use_krylov_method" => false, "check_nan_every" => 1024, "print_config_dict" => true, "walltime_debug" => true, "lai_source" => "modis_monthly", "prescribed_flow" => nothing, "config_file" => "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml", "prescribe_clouds_in_radiation" => false, "era5_diurnal_warming" => nothing, "save_cache" => true, "use_land_diagnostics" => true, "update_constrain_state_every" => "stage", "ocean_diagnostic_mode" => "average", "netcdf_interpolation_num_points" => nothing, "restart_dir" => nothing, "coupler_diagnostics_period" => nothing, "microphysics_n_substeps_quadrature" => 2, "idealized_h2o" => false, "cloud_ice_snow_accretion" => "CloudIceSnowAccretion", "eisenstat_walker_forcing_alpha" => 2.0, "cloud_liquid_rain_accretion" => "CloudLiquidRainAccretion", "log_to_file" => false, "tq_correlation_model" => "diagnosed", "krylov_rtol" => 0.1, "edmfx_sgs_horizontal_diffusive_flux" => false, "land_fraction_source" => "etopo", "dt_rad" => "1hours", "checkpoint_dt" => "1months", "land_diagnostics_period" => "1months", "restart_t" => nothing, "toml" => ["toml/prognostic_edmfx_1M.toml"], "prognostic_tke" => true, "prognostic_surface" => "PrescribedSST", "advection_test" => false, "netcdf_output_at_levels" => true, "use_auto_jacobian" => false, "test_dycore_consistency" => false, "x_elem" => 6, "insolation" => "timevarying", "surface_setup" => "PrescribedSurface", "start_date" => "20100101", "cloud_ice_melt" => "CloudIceMelt", "t_start" => "0secs", "use_dynamic_krylov_rtol" => false, "conservation_softfail" => false, "t_end" => "345600secs", "sgs_variance_fidelity_model" => "equilibrium", "update_jacobian_every" => "solve", "implicit_diffusion" => true, "bubble" => false, "hyperdiffusion_prandtl_number" => 0.2, "cosp_overlap" => "maximum_random", "edmfx_horizontal_diffusion" => false, "precipitation_evaporation_0m" => nothing, "non_orographic_gravity_wave" => true, "column_latlon" => [0.0, 0.0], "evolving_ocean" => true, "land_diagnostics_reduction" => "average", "land_progress_interval" => "never", "ocean_diagnostic_interval" => "1days", "cloud_liquid_freezing" => "HomogeneousAndHeterogeneous", "dt_nogw" => "1800secs", "dz_bottom" => 28.0, "sgs_variance_curvature" => false, "perturb_initstate" => true, "topography" => "Earth", "dt_ogw" => "1800secs", "divergence_damping_factor" => 5.0, "z_stretch" => true, "reference_job_id" => nothing, "enable_diagnostics" => true, "edmfx_tracer_upwinding" => "first_order", "bucket_albedo_type" => "map_static", "ice_model" => "prescribed", "use_sgs_quadrature" => true, "check_conservation" => false, "coupler_output_dir" => "output", "aerosol_radiation" => true, "extra_atmos_diagnostics" => Dict{Any, Any}[Dict("short_name" => ["hur", "hus", "ta"], "pressure_coordinates" => true, "compute_every" => "6hours", "period" => "1months", "reduction_time" => "average")], "x_max" => 300000.0, "atmos_config_file" => "config/atmos_configs/climaatmos_progedmf_1m.yml", "edmfx_upwinding" => "first_order", "update_cache_every" => "stage", "albedo_model" => "CouplerAlbedo", "energy_check" => false, "approximate_linear_solve_iters" => 2, "mode_name" => "amip", "amd_les" => false, "dt_cloud_fraction" => "1hours", "topography_damping_factor" => 5.0, "ode_algo" => "ARS222", "cosp_n_subcolumns" => 100, "output_default_diagnostics" => true, "c_amd" => 0.29, "output_dir" => nothing, "nogw_beres_source" => false, "y_max" => 300000.0, "z_max" => 60000.0, "site_latitude" => 17.0, "snow_autoconversion" => "NoSupersaturation", "site_longitude" => -149.0, "z_pbl" => 2200.0, "debug_jacobian" => false, "era5_initial_condition_dir" => nothing, "orographic_gravity_wave" => "raw_topo_online", "rain_snow_accretion" => "RainSnowAccretion", "turbconv" => "prognostic_edmfx", "hyperdiff" => "Hyperdiffusion", "unique_seed" => false, "microphysics_model" => "1M", "viscous_sponge" => true, "seaice_diagnostic_interval" => "1days", "ocean_grid" => "one_deg_tripolar", "cloud_liquid_formation" => "CloudLiquidFormation", "snow_terminal_velocity" => "Chen2022", "initial_condition" => "WeatherModel", "sst_adjustment" => 0.0, "n_columns" => 1, "bucket_initial_condition" => "", "cloud_liquid_terminal_velocity" => "Fixed", "era5_ic_full_pressure" => false, "rain_autoconversion" => "Kessler1M", "reproducible_restart" => false, "detect_restart_files" => false, "seaice_progress_interval" => "never", "use_coupler_diagnostics" => true, "binary_area_fraction" => false, "cloud_liquid_snow_accretion" => "CloudLiquidSnowAccretion", "edmfx_mse_humidity_upwinding" => "first_order", "use_dense_jacobian" => false, "snow_melt" => "SnowMelt", "vert_diff" => nothing, "edmfx_sgs_diffusive_flux" => true, "strict_config" => false, "FLOAT_TYPE" => "Float32", "smagorinsky_lilly" => nothing, "h_elem" => 16, "vapor_relaxation" => "Joint", "job_id" => "amip_progedmf_1m_land_he16", "dt_subcol" => "Inf", "cloud_nn_architecture" => "arch_2layers_8nodes.jld2", "ocean_vertical_levels" => 60, "implicit_microphysics" => true, "edmfx_sgs_mass_flux" => true, "max_newton_iters_ode" => 1, "deep_atmosphere" => true, "dt_cpl" => "120secs", "sgs_distribution" => "gaussian", "time_varying_trace_gases" => ["CO2", "O3"], "ocean_model" => "prescribed", "vertical_water_borrowing_species" => nothing, "quadrature_order" => 3, "edmfx_detr_model" => "Generalized", "microphysics_n_substeps" => 3, "chemistry_model" => nothing, "apply_sem_quasimonotone_limiter" => false, "vorticity_hyperdiffusion_coefficient" => 0.1857, "auto_jacobian_padding_bands" => nothing, "idealized_clouds" => false, "edmfx_updraft_picard_rounds" => 2, "nogw_beres_heating_latent" => false, "add_isothermal_boundary_layer" => true, "seaice_diagnostic_mode" => "average", "rmse_check" => false, "coupler_toml" => ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/toml/amip_progedmf_1m.toml"], "snow_deposition_sublimation" => "DepositionAndSublimation", "use_newton_rtol" => false, "dt_save_state_to_disk" => "30days", "use_itime" => true, "newton_rtol" => 1.0e-5, "land_model" => "integrated", "domain_type" => "global", "edmfx_sgsflux_upwinding" => "none", "restart_cache" => true, "cloud_ice_formation" => "TemperatureDependentIceNumber", "cloud_ice_rain_accretion" => "CloudIceRainAccretion", "external_forcing_file" => nothing, "edmfx_filter" => true)
+[ Info: Dict{Any, Any}("dz_top" => 3000.0, "nh_poly" => 3, "walltime_dt" => nothing, "radiation_reset_rng_seed" => true, "tracer_nonnegativity_method" => nothing, "cloud_model" => "quadrature", "cloud_inhomogeneity_in_sw_radiation" => true, "debug_tendency_diagnostics" => false, "y_elem" => 6, "land_spun_up_ic" => false, "simple_ocean" => false, "nogw_beres_detailed_diagnostics" => false, "edmfx_scale_blending" => "SmoothMinimum", "coupler_diagnostics_reduction" => "average", "device" => "auto", "edmfx_nh_pressure" => true, "edmfx_vertical_diffusion" => true, "sleve_eta" => 0.7, "energy_humidity_upwinding" => "vanleer_limiter", "output_dir_style" => "ActiveLink", "rayleigh_sponge" => true, "constant_horizontal_diffusion" => false, "restart_file" => nothing, "atmos_progress_interval" => "never", "disable_surface_flux_tendency" => false, "detect_restart_file" => false, "topo_smoothing" => true, "use_intersection_grid" => true, "edmfx_entr_model" => "Generalized", "rain_terminal_velocity" => "Chen2022", "check_steady_state" => false, "log_progress" => true, "z_elem" => 79, "strict_params" => true, "diagnostics" => Any[], "radiation_include_snow" => false, "config" => "sphere", "cloud_ice_terminal_velocity" => "Fixed", "ocean_progress_interval" => "never", "ocean_3d_diagnostic_interval" => nothing, "dt" => "120secs", "prescribed_aerosols" => ["CB1", "CB2", "DST01", "DST02", "DST03", "DST04", "DST05", "OC1", "OC2", "SO4", "SSLT01", "SSLT02", "SSLT03", "SSLT04", "SSLT05"], "updraft_number" => 1, "cfsite_number" => "site23", "ocean_float_type" => "Float64", "rain_condensation_evaporation" => "RainEvaporation", "tracer_upwinding" => "vanleer_limiter", "scm_surface_type" => "ocean", "jvp_step_adjustment" => 1.0, "mesh_warp_type" => "SLEVE", "rad" => "allskywithclear", "external_forcing" => nothing, "component_dt_dict" => Dict("dt_ocean" => 120.0, "dt_land" => 120.0, "dt_atmos" => 120.0, "dt_seaice" => 120.0), "sleve_s" => 10.0, "reproducibility_test" => false, "use_krylov_method" => false, "check_nan_every" => 1024, "print_config_dict" => true, "walltime_debug" => true, "lai_source" => "modis_monthly", "prescribed_flow" => nothing, "config_file" => "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml", "prescribe_clouds_in_radiation" => false, "era5_diurnal_warming" => nothing, "save_cache" => true, "use_land_diagnostics" => true, "update_constrain_state_every" => "stage", "ocean_diagnostic_mode" => "average", "netcdf_interpolation_num_points" => nothing, "restart_dir" => nothing, "coupler_diagnostics_period" => nothing, "microphysics_n_substeps_quadrature" => 2, "idealized_h2o" => false, "cloud_ice_snow_accretion" => "CloudIceSnowAccretion", "eisenstat_walker_forcing_alpha" => 2.0, "cloud_liquid_rain_accretion" => "CloudLiquidRainAccretion", "log_to_file" => false, "tq_correlation_model" => "diagnosed", "krylov_rtol" => 0.1, "edmfx_sgs_horizontal_diffusive_flux" => false, "land_fraction_source" => "etopo", "dt_rad" => "1hours", "checkpoint_dt" => "1months", "land_diagnostics_period" => "1months", "restart_t" => nothing, "toml" => ["toml/prognostic_edmfx_1M.toml"], "prognostic_tke" => true, "prognostic_surface" => "PrescribedSST", "advection_test" => false, "netcdf_output_at_levels" => true, "use_auto_jacobian" => false, "test_dycore_consistency" => false, "x_elem" => 6, "insolation" => "timevarying", "surface_setup" => "PrescribedSurface", "start_date" => "20100101", "cloud_ice_melt" => "CloudIceMelt", "t_start" => "0secs", "use_dynamic_krylov_rtol" => false, "conservation_softfail" => false, "t_end" => "345600secs", "sgs_variance_fidelity_model" => "equilibrium", "update_jacobian_every" => "solve", "implicit_diffusion" => true, "bubble" => false, "hyperdiffusion_prandtl_number" => 0.2, "cosp_overlap" => "maximum_random", "edmfx_horizontal_diffusion" => false, "precipitation_evaporation_0m" => nothing, "non_orographic_gravity_wave" => true, "column_latlon" => [0.0, 0.0], "evolving_ocean" => true, "land_diagnostics_reduction" => "average", "land_progress_interval" => "never", "ocean_diagnostic_interval" => "1days", "cloud_liquid_freezing" => "HomogeneousAndHeterogeneous", "dt_nogw" => "1800secs", "dz_bottom" => 28.0, "sgs_variance_curvature" => false, "perturb_initstate" => true, "topography" => "Earth", "dt_ogw" => "1800secs", "divergence_damping_factor" => 5.0, "z_stretch" => true, "reference_job_id" => nothing, "enable_diagnostics" => true, "edmfx_tracer_upwinding" => "first_order", "bucket_albedo_type" => "map_static", "ice_model" => "prescribed", "use_sgs_quadrature" => true, "check_conservation" => false, "coupler_output_dir" => "output", "aerosol_radiation" => true, "extra_atmos_diagnostics" => Dict{Any, Any}[Dict("short_name" => ["hur", "hus", "ta"], "pressure_coordinates" => true, "compute_every" => "6hours", "period" => "1months", "reduction_time" => "average")], "x_max" => 300000.0, "atmos_config_file" => "config/atmos_configs/climaatmos_progedmf_1m.yml", "edmfx_upwinding" => "first_order", "update_cache_every" => "stage", "albedo_model" => "CouplerAlbedo", "energy_check" => false, "approximate_linear_solve_iters" => 2, "mode_name" => "amip", "amd_les" => false, "dt_cloud_fraction" => "1hours", "topography_damping_factor" => 5.0, "ode_algo" => "ARS222", "cosp_n_subcolumns" => 100, "output_default_diagnostics" => true, "c_amd" => 0.29, "output_dir" => nothing, "nogw_beres_source" => false, "y_max" => 300000.0, "z_max" => 60000.0, "site_latitude" => 17.0, "snow_autoconversion" => "NoSupersaturation", "site_longitude" => -149.0, "z_pbl" => 2200.0, "debug_jacobian" => false, "era5_initial_condition_dir" => nothing, "orographic_gravity_wave" => "raw_topo_online", "rain_snow_accretion" => "RainSnowAccretion", "turbconv" => "prognostic_edmfx", "hyperdiff" => "Hyperdiffusion", "unique_seed" => false, "microphysics_model" => "1M", "viscous_sponge" => true, "seaice_diagnostic_interval" => "1days", "ocean_grid" => "one_deg_tripolar", "cloud_liquid_formation" => "CloudLiquidFormation", "snow_terminal_velocity" => "Chen2022", "initial_condition" => "WeatherModel", "sst_adjustment" => 0.0, "n_columns" => 1, "bucket_initial_condition" => "", "cloud_liquid_terminal_velocity" => "Fixed", "era5_ic_full_pressure" => false, "rain_autoconversion" => "Kessler1M", "reproducible_restart" => false, "detect_restart_files" => false, "seaice_progress_interval" => "never", "use_coupler_diagnostics" => true, "binary_area_fraction" => false, "cloud_liquid_snow_accretion" => "CloudLiquidSnowAccretion", "edmfx_mse_humidity_upwinding" => "first_order", "use_dense_jacobian" => false, "snow_melt" => "SnowMelt", "vert_diff" => nothing, "edmfx_sgs_diffusive_flux" => true, "strict_config" => false, "FLOAT_TYPE" => "Float32", "smagorinsky_lilly" => nothing, "h_elem" => 16, "vapor_relaxation" => "Joint", "job_id" => "amip_progedmf_1m_land_he16", "dt_subcol" => "Inf", "cloud_nn_architecture" => "arch_2layers_8nodes.jld2", "ocean_vertical_levels" => 60, "implicit_microphysics" => true, "edmfx_sgs_mass_flux" => true, "max_newton_iters_ode" => 1, "deep_atmosphere" => true, "dt_cpl" => "120secs", "sgs_distribution" => "gaussian", "time_varying_trace_gases" => ["CO2", "O3"], "ocean_model" => "prescribed", "vertical_water_borrowing_species" => nothing, "quadrature_order" => 3, "edmfx_detr_model" => "Generalized", "microphysics_n_substeps" => 3, "chemistry_model" => nothing, "apply_sem_quasimonotone_limiter" => false, "vorticity_hyperdiffusion_coefficient" => 0.1857, "auto_jacobian_padding_bands" => nothing, "idealized_clouds" => false, "edmfx_updraft_picard_rounds" => 2, "nogw_beres_heating_latent" => false, "add_isothermal_boundary_layer" => true, "seaice_diagnostic_mode" => "average", "rmse_check" => false, "coupler_toml" => ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/toml/amip_progedmf_1m.toml"], "snow_deposition_sublimation" => "DepositionAndSublimation", "use_newton_rtol" => false, "dt_save_state_to_disk" => "30days", "use_itime" => true, "newton_rtol" => 1.0e-5, "land_model" => "integrated", "domain_type" => "global", "edmfx_sgsflux_upwinding" => "none", "restart_cache" => true, "cloud_ice_formation" => "TemperatureDependentIceNumber", "cloud_ice_rain_accretion" => "CloudIceRainAccretion", "external_forcing_file" => nothing, "edmfx_filter" => true)
+[ Info: Output directories output/amip_progedmf_1m_land_he16/output_0117
+[ Info: Coupler artifacts directory output/amip_progedmf_1m_land_he16/artifacts
+[ Info: Coupler checkpoint directory output/amip_progedmf_1m_land_he16/checkpoints
+[ Info: Random seed set to 1234
+[ Info: Starting from t_start 0.0 seconds (2010-01-01T00:00:00) [counter = 0, period = 1 second, epoch = 2010-01-01T00:00:00]
+[ Info: Overwriting Atmos parameters from input TOML file(s): ["/home/pbachant/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/toml/amip_progedmf_1m.toml"]
+┌ Warning: The configuration passed to ClimaAtmos contains unused keys: walltime_dt, bucket_albedo_type, simple_ocean, land_spun_up_ic, extra_atmos_diagnostics, coupler_diagnostics_reduction, atmos_config_file, edmfx_upwinding, energy_check, mode_name, dt_cloud_fraction, atmos_progress_interval, use_intersection_grid, ocean_progress_interval, ocean_3d_diagnostic_interval, unique_seed, ocean_float_type, seaice_diagnostic_interval, ocean_grid, scm_surface_type, sst_adjustment, bucket_initial_condition, component_dt_dict, detect_restart_files, seaice_progress_interval, use_coupler_diagnostics, binary_area_fraction, print_config_dict, walltime_debug, lai_source, config_file, save_cache, use_land_diagnostics, ocean_diagnostic_mode, restart_dir, coupler_diagnostics_period, ocean_vertical_levels, dt_cpl, ocean_model, land_fraction_source, checkpoint_dt, land_diagnostics_period, restart_t, seaice_diagnostic_mode, conservation_softfail, column_latlon, evolving_ocean, rmse_check, coupler_toml, land_diagnostics_reduction, land_progress_interval, use_itime, land_model, ocean_diagnostic_interval, domain_type, ice_model, restart_cache, coupler_output_dir
+└ @ ClimaAtmos ~/calkit/clima-gpu-profiling/ClimaAtmos.jl-mod/src/config/yaml_helper.jl:166
+┌ Info: numerics 
+│            `energy_humidity_upwinding`::`Val{:vanleer_limiter}`
+│                     `tracer_upwinding`::`Val{:vanleer_limiter}`
+│         `edmfx_mse_humidity_upwinding`::`Val{:first_order}`
+│              `edmfx_sgsflux_upwinding`::`Val{:none}`
+│               `edmfx_tracer_upwinding`::`Val{:first_order}`
+│              `test_dycore_consistency`::`false`
+│                 `reproducible_restart`::`false`
+│                              `limiter`::`Nothing`
+│                            `diff_mode`::`ClimaAtmos.Implicit`
+│                            `hyperdiff`::`ClimaAtmos.Hyperdiffusion{Float32}`
+└     `vertical_water_borrowing_species`::`Nothing`
+┌ Info: AtmosModel: 
+│ 
+│                             `water`::`ClimaAtmos.AtmosWater{ClimaAtmos.NonEquilibriumMicrophysics1M{CloudMicrophysics.Parameters.Microphysics1MOptions{CloudMicrophysics.Parameters.CloudLiquidFormation, CloudMicrophysics.Parameters.TemperatureDependentIceNumber, CloudMicrophysics.Parameters.CloudIceMelt, CloudMicrophysics.Parameters.HomogeneousAndHeterogeneous, CloudMicrophysics.Parameters.Kessler1M, CloudMicrophysics.Parameters.NoSupersaturation, CloudMicrophysics.Parameters.RainEvaporation, CloudMicrophysics.Parameters.DepositionAndSublimation, CloudMicrophysics.Parameters.SnowMelt, CloudMicrophysics.Parameters.CloudLiquidRainAccretion, CloudMicrophysics.Parameters.CloudLiquidSnowAccretion, CloudMicrophysics.Parameters.CloudIceRainAccretion, CloudMicrophysics.Parameters.CloudIceSnowAccretion, CloudMicrophysics.Parameters.RainSnowAccretion, CloudMicrophysics.Parameters.JointVaporRelaxation}}, ClimaAtmos.QuadratureCloud, ClimaAtmos.Implicit, Nothing, ClimaAtmos.SGSQuadrature{3, StaticArraysCore.SVector{3, Float32}, StaticArraysCore.SVector{3, Float32}, ClimaAtmos.GaussianSGS, Float32}, ClimaAtmos.DiagnosedTqCorrelation, ClimaAtmos.EquilibriumVarianceFidelity, ClimaAtmos.FixedTerminalVelocity, ClimaAtmos.FixedTerminalVelocity, ClimaAtmos.Chen2022TerminalVelocity, ClimaAtmos.Chen2022TerminalVelocity}`
+│                         `scm_setup`::`ClimaAtmos.SCMSetup{Nothing, Nothing, Nothing, Bool, Nothing}`
+│                         `radiation`::`ClimaAtmos.AtmosRadiation{ClimaAtmos.RRTMGPInterface.AllSkyRadiationWithClearSkyDiagnostics{ClimaAtmos.InteractiveCloudInRadiation}, ClimaAtmos.TimeVaryingInsolation{Nothing, Nothing, Nothing}, NTuple{15, String}, Tuple{String, String}}`
+│                          `turbconv`::`ClimaAtmos.AtmosTurbconv{ClimaAtmos.EDMFXModel{ClimaAtmos.InvZEntrainment, ClimaAtmos.BuoyancyVelocityDetrainment, Val{false}, Val{false}, ClimaAtmos.SmoothMinimumBlending}, ClimaAtmos.PrognosticEDMFX{1, true, Float32}, Nothing, Nothing, Nothing}`
+│                   `prescribed_flow`::`Nothing`
+│                      `gravity_wave`::`ClimaAtmos.AtmosGravityWave{ClimaAtmos.NonOrographicGravityWave{Float32, Nothing}, ClimaAtmos.FullOrographicGravityWave{Float32, Val{:raw_topo_online}, Val{:Earth}}}`
+│                `vertical_diffusion`::`Nothing`
+│                            `sponge`::`ClimaAtmos.AtmosSponge{ClimaAtmos.ViscousSponge{Float32}, ClimaAtmos.RayleighSponge{Float32}}`
+│                           `surface`::`ClimaAtmos.AtmosSurface{Nothing, ClimaAtmos.SurfaceConditions.AnalyticTemperature{typeof(ClimaAtmos.Setups.zonally_symmetric_temperature)}, ClimaAtmos.SurfaceConditions.SurfaceBoundaryOverrides{Nothing, Nothing, Nothing, Nothing}, ClimaAtmos.CouplerAlbedo}`
+│                          `numerics`::`ClimaAtmos.AtmosNumerics{Val{:vanleer_limiter}, Val{:vanleer_limiter}, Val{:first_order}, Val{:none}, Val{:first_order}, Nothing, ClimaAtmos.Implicit, ClimaAtmos.Hyperdiffusion{Float32}, Nothing}`
+│                         `chemistry`::`ClimaAtmos.AtmosChem{Nothing}`
+└                              `cosp`::`Nothing`
+┌ Info: Microphysics settings: 
+│                        `n_substeps`::`3`
+│                   `n_substeps_quad`::`2`
+│            `cloud_liquid_formation`::`CloudLiquidFormation`
+│               `cloud_ice_formation`::`TemperatureDependentIceNumber`
+│                    `cloud_ice_melt`::`CloudIceMelt`
+│             `cloud_liquid_freezing`::`HomogeneousAndHeterogeneous`
+│               `rain_autoconversion`::`Kessler1M`
+│               `snow_autoconversion`::`NoSupersaturation`
+│     `rain_condensation_evaporation`::`RainEvaporation`
+│       `snow_deposition_sublimation`::`DepositionAndSublimation`
+│                         `snow_melt`::`SnowMelt`
+│       `cloud_liquid_rain_accretion`::`CloudLiquidRainAccretion`
+│       `cloud_liquid_snow_accretion`::`CloudLiquidSnowAccretion`
+│          `cloud_ice_rain_accretion`::`CloudIceRainAccretion`
+│          `cloud_ice_snow_accretion`::`CloudIceSnowAccretion`
+│               `rain_snow_accretion`::`RainSnowAccretion`
+└                  `vapor_relaxation`::`JointVaporRelaxation`
+[ Info: Single-process ClimaAtmos run on CUDADevice
+[ Info: Using ODE config: `ClimaTimeSteppers.ARS222`
+┌ Warning: Removing output/amip_progedmf_1m_land_he16/output_0117/clima_atmos
+└ @ ClimaUtilities.OutputPathGenerator ~/.julia/packages/ClimaUtilities/tOpcE/src/OutputPathGenerator.jl:157
+┌ Info: Calling weather_model_data_path
+└   (start_date = setup.start_date, era5_dir = era5_dir) = (start_date = Dates.DateTime("2010-01-01T00:00:00"), era5_dir = nothing)
+
+=== automatic register-cap census: 690 kernel specializations ===
+capped: 125
+  no_band_below             557
+  capped                    125
+  edge_too_far              6
+  spill_over_budget         2
+
+kernel                                                    regs  shed  warps     local B           reason
+set_environment_1m_tendency__FILE_ClimaAtmos_jl_mod_src_ca136   8     12->16    296->320 (bud 370)capped
+set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_sr108   12    16->20    32->56 (bud 64)   capped
+update_updraft_microphysics_tendency_cache__FILE_ClimaAtmo108   12    16->20    32->56 (bud 64)   capped
+_FILE_ClimaLand_fEOwX_src_standalone_Snow_snow_parameteriz104   8     16->20    32->48 (bud 64)   capped
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_soil_surface_tem103   7     16->20    32->48 (bud 64)   capped
+set_environment_1m_tendency__FILE_ClimaAtmos_jl_mod_src_ca92    12    20->24    296->312 (bud 370)capped
+weighted_screen_level_FILE_ClimaLand_fEOwX_src_diagnostics90    10    20->24    32->32 (bud 64)   capped
+update_updraft_microphysics_tendency_cache__FILE_ClimaAtmo90    10    20->24    32->48 (bud 64)   capped
+weighted_screen_level_FILE_ClimaLand_fEOwX_src_diagnostics90    10    20->24    32->32 (bud 64)   capped
+calc_saturation_profile__FILE_ClimaAtmos_jl_mod_src_parame86    6     20->24    32->32 (bud 64)   capped
+weighted_screen_level_FILE_ClimaLand_fEOwX_src_diagnostics85    5     20->24    32->40 (bud 64)   capped
+viscous_sponge_tendency__NVTX                             84    4     20->24    0->0 (bud 32)     capped
+horizontal_advection_tendency__NVTX                       80    8     24->28    0->8 (bud 32)     capped
+_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl78    6     24->28    0->8 (bud 32)     capped
+set_edmfx_surface_conditions__FILE_ClimaAtmos_jl_mod_src_p70    6     28->32    32->56 (bud 64)   capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa70    6     28->32    0->0 (bud 32)     capped
+_set_covariance_cache_loop__FILE_ClimaAtmos_jl_mod_src_par66    2     28->32    32->32 (bud 64)   capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa64    8     32->36    0->0 (bud 32)     capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa64    8     32->36    0->8 (bud 32)     capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa64    8     32->36    0->8 (bud 32)     capped
+update_advection_jacobian__FILE_ClimaAtmos_jl_mod_src_prog64    8     32->36    0->0 (bud 32)     capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa64    8     32->36    0->0 (bud 32)     capped
+set_covariance_cache_and_cloud_fraction__FILE_ClimaAtmos_j64    8     32->36    0->0 (bud 32)     capped
+viscous_sponge_tendency__NVTX                             64    8     32->36    0->0 (bud 32)     capped
+set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_c64    8     32->36    0->0 (bud 32)     capped
+_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hy57    1     32->36    32->32 (bud 64)   capped
+_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hy57    1     32->36    32->32 (bud 64)   capped
+update_sedimentation_jacobian__FILE_ClimaAtmos_jl_mod_src_56    8     36->40    0->8 (bud 32)     capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa56    8     36->40    0->0 (bud 32)     capped
+update_sgs_massflux_jacobian__FILE_ClimaAtmos_jl_mod_src_p56    8     36->40    0->0 (bud 32)     capped
+edmfx_tke_sources__FILE_ClimaAtmos_jl_mod_src_prognostic_e56    8     36->40    32->32 (bud 64)   capped
+update_diffusion_jacobian__FILE_ClimaAtmos_jl_mod_src_prog56    8     36->40    0->0 (bud 32)     capped
+vertical_advection_of_water_tendency__FILE_ClimaAtmos_jl_m56    8     36->40    0->24 (bud 32)    capped
+update_sgs_advection_jacobian__FILE_ClimaAtmos_jl_mod_src_56    8     36->40    0->8 (bud 32)     capped
+_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Gr55    7     36->40    32->56 (bud 64)   capped
+set_sgs_moments_and_cloud_fraction__NVTX                  55    7     36->40    32->40 (bud 64)   capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa55    7     36->40    0->0 (bud 32)     capped
+set_albedos__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClim55    7     36->40    32->32 (bud 64)   capped
+set_insolation_variables__FILE_ClimaAtmos_jl_mod_src_callb55    7     36->40    32->32 (bud 64)   capped
+edmfx_sgs_diffusive_flux_tendency__FILE_ClimaAtmos_jl_mod_54    6     36->40    0->0 (bud 32)     capped
+set_sgs_moments__NVTX                                     53    5     36->40    32->48 (bud 64)   capped
+_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Gr53    5     36->40    32->48 (bud 64)   capped
+get_additional_coordinate_field_data_FILE_ClimaLand_fEOwX_53    5     36->40    120->120 (bud 152)capped
+get_additional_coordinate_field_data_FILE_ClimaLand_fEOwX_53    5     36->40    120->120 (bud 152)capped
+_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Gr53    5     36->40    32->48 (bud 64)   capped
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds53    5     36->40    32->32 (bud 64)   capped
+_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Gr53    5     36->40    32->40 (bud 64)   capped
+sedimentation_rate_pair__FILE_ClimaAtmos_jl_mod_src_progno52    4     36->40    0->0 (bud 32)     capped
+_sweep_sgs_updraft_tracers__FILE_ClimaAtmos_jl_mod_src_pro50    2     36->40    32->32 (bud 64)   capped
+_update_surface_fractions_from_land_fraction__FILE_ClimaCo50    2     36->40    112->112 (bud 144)capped
+get_additional_coordinate_field_data_FILE_ClimaLand_fEOwX_50    2     36->40    120->120 (bud 152)capped
+_update_surface_fractions_from_land_fraction__FILE_ClimaCo50    2     36->40    112->112 (bud 144)capped
+sedimentation_rate_pair__FILE_ClimaAtmos_jl_mod_src_progno50    2     36->40    0->0 (bud 32)     capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa50    2     36->40    0->0 (bud 32)     capped
+update_implicit_1m_tendency__FILE_ClimaAtmos_jl_mod_src_ca49    1     36->40    32->32 (bud 64)   capped
+source__NVTX                                              48    8     40->48    32->40 (bud 64)   capped
+update_photosynthesis__FILE_ClimaLand_fEOwX_src_standalone48    8     40->48    32->32 (bud 64)   capped
+update_drivers__FILE_ClimaLand_fEOwX_src_shared_utilities_48    8     40->48    32->40 (bud 64)   capped
+update_advection_jacobian__FILE_ClimaAtmos_jl_mod_src_prog48    8     40->48    0->16 (bud 32)    capped
+prep_hyperdiffusion_tendency__NVTX                        48    8     40->48    0->0 (bud 32)     capped
+apply_tracer_hyperdiffusion_tendency__NVTX                48    8     40->48    0->0 (bud 32)     capped
+edmfx_sgs_vertical_advection_tendency__FILE_ClimaAtmos_jl_48    8     40->48    0->8 (bud 32)     capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa48    8     40->48    0->0 (bud 32)     capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa48    8     40->48    0->0 (bud 32)     capped
+prep_hyperdiffusion_tendency__NVTX                        47    7     40->48    0->0 (bud 32)     capped
+vertical_advection_of_water_tendency__FILE_ClimaAtmos_jl_m47    7     40->48    0->8 (bud 32)     capped
+prep_hyperdiffusion_tendency__NVTX                        47    7     40->48    0->0 (bud 32)     capped
+source__NVTX                                              47    7     40->48    32->40 (bud 64)   capped
+set_quadrature_cloud_fraction__FILE_ClimaAtmos_jl_mod_src_46    6     40->48    32->32 (bud 64)   capped
+set_buoyancy_gradient_inputs__NVTX                        46    6     40->48    0->0 (bud 32)     capped
+set_quadrature_cloud_fraction__FILE_ClimaAtmos_jl_mod_src_46    6     40->48    32->32 (bud 64)   capped
+solve_sgs__a_implicit_stage_analytic__FILE_ClimaAtmos_jl_m45    5     40->48    0->0 (bud 32)     capped
+_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl44    4     40->48    0->8 (bud 32)     capped
+update_sgs_diffusion_and_entr_detr_jacobian__FILE_ClimaAtm44    4     40->48    0->0 (bud 32)     capped
+set_canopy_component_initial_conditions__FILE_ClimaLand_fE44    4     40->48    32->32 (bud 64)   capped
+update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_44    4     40->48    32->32 (bud 64)   capped
+edmfx_entr_detr_tendency__FILE_ClimaAtmos_jl_mod_src_progn43    3     40->48    0->0 (bud 32)     capped
+update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_43    3     40->48    32->32 (bud 64)   capped
+set_prognostic_edmf_precomputed_quantities_explicit_closur42    2     40->48    0->0 (bud 32)     capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa42    2     40->48    0->0 (bud 32)     capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa41    1     40->48    0->0 (bud 32)     capped
+non_orographic_gravity_wave_compute_tendency__FILE_ClimaAt41    1     40->48    32->32 (bud 64)   capped
+apply_hyperdiffusion_tendency__NVTX                       41    1     40->48    0->0 (bud 32)     capped
+_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_water_adv40    8     48->64    0->8 (bud 32)     capped
+init_sfc_conditions_zero__FILE_ClimaAtmos_jl_mod_src_surfa40    8     48->64    0->0 (bud 32)     capped
+explicit_vertical_advection_tendency__NVTX                40    8     48->64    0->8 (bud 32)     capped
+orographic_gravity_wave_apply_tendency__FILE_ClimaAtmos_jl40    8     48->64    0->16 (bud 32)    capped
+update_aux__NVTX                                          40    8     48->64    0->0 (bud 32)     capped
+calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_t40    8     48->64    0->0 (bud 32)     capped
+_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_water_adv40    8     48->64    0->8 (bud 32)     capped
+update_photosynthesis__FILE_ClimaLand_fEOwX_src_standalone40    8     48->64    0->32 (bud 32)    capped
+set_prognostic_edmf_precomputed_quantities_environment__NV40    8     48->64    0->0 (bud 32)     capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa40    8     48->64    0->0 (bud 32)     capped
+update_advection_jacobian__FILE_ClimaAtmos_jl_mod_src_prog39    7     48->64    0->16 (bud 32)    capped
+edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_p39    7     48->64    0->8 (bud 32)     capped
+_materialized_FILE_ClimaAtmos_jl_mod_src_parameterized_ten39    7     48->64    0->0 (bud 32)     capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa39    7     48->64    0->0 (bud 32)     capped
+edmfx_boundary_condition_tendency__FILE_ClimaAtmos_jl_mod_38    6     48->64    32->32 (bud 64)   capped
+set_face_diffusivities__NVTX                              38    6     48->64    32->40 (bud 64)   capped
+update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_38    6     48->64    32->32 (bud 64)   capped
+_updraft_cloud_moments__FILE_ClimaAtmos_jl_mod_src_paramet38    6     48->64    32->32 (bud 64)   capped
+solve_sgs_u__implicit_stage_analytic__FILE_ClimaAtmos_jl_m38    6     48->64    32->32 (bud 64)   capped
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds37    5     48->64    32->40 (bud 64)   capped
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds37    5     48->64    32->40 (bud 64)   capped
+source__NVTX                                              37    5     48->64    0->0 (bud 32)     capped
+update_relative_humidity__FILE_ClimaAtmos_jl_mod_src_param37    5     48->64    0->0 (bud 32)     capped
+calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_t37    5     48->64    0->0 (bud 32)     capped
+map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1      36    4     48->64    32->32 (bud 64)   capped
+_updraft_cloud_moments__FILE_ClimaAtmos_jl_mod_src_paramet36    4     48->64    32->32 (bud 64)   capped
+_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150    36    4     48->64    32->32 (bud 64)   capped
+update_soil_snow_ground_heat_flux__NVTX                   36    4     48->64    32->32 (bud 64)   capped
+set_sw_cloud_optical_depth_factor__FILE_ClimaAtmos_jl_mod_36    4     48->64    32->40 (bud 64)   capped
+update_sedimentation_jacobian__FILE_ClimaAtmos_jl_mod_src_36    4     48->64    0->0 (bud 32)     capped
+_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hy36    4     48->64    0->0 (bud 32)     capped
+map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1      36    4     48->64    32->32 (bud 64)   capped
+implicit_vertical_advection_tendency__FILE_ClimaAtmos_jl_m36    4     48->64    0->0 (bud 32)     capped
+update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_36    4     48->64    32->32 (bud 64)   capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa36    4     48->64    0->0 (bud 32)     capped
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa36    4     48->64    0->8 (bud 32)     capped
+_updraft_cloud_condensate_and_area__FILE_ClimaAtmos_jl_mod36    4     48->64    32->32 (bud 64)   capped
+_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hy36    4     48->64    0->0 (bud 32)     capped
+enforce_edmf_updraft_constraints__FILE_ClimaAtmos_jl_mod_s35    3     48->64    0->0 (bud 32)     capped
+compute_jacobian__NVTX                                    34    2     48->64    0->0 (bud 32)     capped
+implicit_vertical_advection_tendency__FILE_ClimaAtmos_jl_m34    2     48->64    0->0 (bud 32)     capped
+edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_p34    2     48->64    0->8 (bud 32)     capped
+waveforcing_column_accumulate__FILE_ClimaAtmos_jl_mod_src_255   87    8         8664              edge_too_far
+compute_surface_fluxes__NVTX                              187   19    8         32                edge_too_far
+compute_surface_fluxes__NVTX                              161   33    12        32                edge_too_far
+compute_fractional_absorbances__FILE_ClimaLand_fEOwX_src_s122   26    16        40                edge_too_far
+_FILE_ClimaLand_fEOwX_src_shared_utilities_drivers_jl_L536122   26    16        32                edge_too_far
+edmfx_sgs_diffusive_flux_tendency__FILE_ClimaAtmos_jl_mod_96    16    20        0                 edge_too_far
+update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_48    8     40->48    0->40 (bud 32)    spill_over_budget
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds40    8     48->64    32->96 (bud 64)   spill_over_budget
+set_prognostic_edmf_precomputed_quantities_draft__NVTX    32    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_32    -1    64        0                 no_band_below
+map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1      32    -1    64        32                no_band_below
+calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_t32    -1    64        48                no_band_below
+non_orographic_gravity_wave_forcing_FILE_ClimaAtmos_jl_mod32    -1    64        32                no_band_below
+_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150    32    -1    64        32                no_band_below
+map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1      32    -1    64        32                no_band_below
+warm_start_grid_mean_tracers__FILE_ClimaAtmos_jl_mod_src_p32    -1    64        0                 no_band_below
+interpolate__FILE_ClimaCore_jl_mod_src_Remapping_distribut32    -1    64        32                no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds32    -1    64        32                no_band_below
+non_orographic_gravity_wave_compute_tendency__FILE_ClimaAt32    -1    64        32                no_band_below
+update_cloud_properties__FILE_ClimaAtmos_jl_mod_src_parame32    -1    64        0                 no_band_below
+calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_t32    -1    64        32                no_band_below
+updraft_sedimentation_rate__FILE_ClimaAtmos_jl_mod_src_pro32    -1    64        32                no_band_below
+sedimentation_rate_pair__FILE_ClimaAtmos_jl_mod_src_progno32    -1    64        32                no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds32    -1    64        32                no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa32    -1    64        0                 no_band_below
+_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L290    32    -1    64        32                no_band_below
+set_albedos__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClim32    -1    64        32                no_band_below
+_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150    32    -1    64        32                no_band_below
+zero_canopy_fluxes_without_plants__FILE_ClimaLand_fEOwX_sr32    -1    64        0                 no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds32    -1    64        32                no_band_below
+map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1      32    -1    64        32                no_band_below
+_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150    32    -1    64        32                no_band_below
+calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_pa32    -1    64        0                 no_band_below
+warm_start_grid_mean_tracers__FILE_ClimaAtmos_jl_mod_src_p32    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa32    -1    64        0                 no_band_below
+interpolate__FILE_ClimaCore_jl_mod_src_Remapping_distribut32    -1    64        0                 no_band_below
+sedimentation_rate_pair__FILE_ClimaAtmos_jl_mod_src_progno32    -1    64        32                no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds32    -1    64        32                no_band_below
+update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_Clim32    -1    64        32                no_band_below
+set_albedos__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClim32    -1    64        32                no_band_below
+get_residual_melt_flux_FILE_ClimaLand_fEOwX_src_standalone32    -1    64        32                no_band_below
+calc_saturation_profile__FILE_ClimaAtmos_jl_mod_src_parame32    -1    64        32                no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa32    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa32    -1    64        0                 no_band_below
+set_precip_fraction__NVTX                                 32    -1    64        32                no_band_below
+calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_pa32    -1    64        32                no_band_below
+dss__FILE_ClimaCore_jl_mod_src_Topologies_dss_jl_L417     32    -1    64        32                no_band_below
+_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150    32    -1    64        32                no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa32    -1    64        0                 no_band_below
+map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1      32    -1    64        32                no_band_below
+_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150    32    -1    64        32                no_band_below
+_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_32    -1    64        0                 no_band_below
+record_stage_precipitation_linearization__FILE_ClimaAtmos_32    -1    64        32                no_band_below
+record_stage_precipitation_linearization__FILE_ClimaAtmos_32    -1    64        0                 no_band_below
+solve_sgs_u__implicit_stage_analytic__FILE_ClimaAtmos_jl_m32    -1    64        32                no_band_below
+set_implicit_precomputed_quantities_core__NVTX            32    -1    64        0                 no_band_below
+update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_Clim32    -1    64        0                 no_band_below
+interpolate__FILE_ClimaCore_jl_mod_src_Remapping_distribut32    -1    64        32                no_band_below
+_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150    32    -1    64        32                no_band_below
+component_specific_humidity_FILE_ClimaLand_fEOwX_src_stand32    -1    64        0                 no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds32    -1    64        32                no_band_below
+postprocess_and_accumulate__FILE_ClimaAtmos_jl_mod_src_par32    -1    64        0                 no_band_below
+component_specific_humidity_FILE_ClimaLand_fEOwX_src_stand32    -1    64        0                 no_band_below
+map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1      32    -1    64        32                no_band_below
+record_stage_precipitation_linearization__FILE_ClimaAtmos_32    -1    64        0                 no_band_below
+solve_sgs__a_implicit_stage_analytic__FILE_ClimaAtmos_jl_m32    -1    64        32                no_band_below
+_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_32    -1    64        0                 no_band_below
+set_prognostic_edmf_precomputed_quantities_explicit_closur32    -1    64        0                 no_band_below
+surface_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognost32    -1    64        0                 no_band_below
+set_implicit_precomputed_quantities_core__NVTX            32    -1    64        0                 no_band_below
+accumulate_stage_precipitation_surface_fluxes__FILE_ClimaA32    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa32    -1    64        0                 no_band_below
+calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_pa32    -1    64        32                no_band_below
+set_sfc_sgs_precip_energy_flux__FILE_ClimaAtmos_jl_mod_src32    -1    64        0                 no_band_below
+orographic_gravity_wave_apply_tendency__FILE_ClimaAtmos_jl32    -1    64        0                 no_band_below
+accumulate_stage_precipitation_surface_fluxes__FILE_ClimaA32    -1    64        0                 no_band_below
+_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150    32    -1    64        32                no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa32    -1    64        0                 no_band_below
+assign_velocity_energy__FILE_ClimaAtmos_jl_mod_src_setups_32    -1    64        0                 no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds32    -1    64        32                no_band_below
+_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_32    -1    64        0                 no_band_below
+_sweep_sgs_updraft_tracers__FILE_ClimaAtmos_jl_mod_src_pro32    -1    64        32                no_band_below
+compute_coriolis_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl32    -1    64        32                no_band_below
+orographic_gravity_wave_forcing__FILE_ClimaAtmos_jl_mod_sr32    -1    64        32                no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds32    -1    64        32                no_band_below
+calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_pa32    -1    64        32                no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa32    -1    64        0                 no_band_below
+orographic_gravity_wave_forcing__FILE_ClimaAtmos_jl_mod_sr32    -1    64        56                no_band_below
+interpolate__FILE_ClimaCore_jl_mod_src_Remapping_distribut32    -1    64        32                no_band_below
+_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150    32    -1    64        32                no_band_below
+update_aux__NVTX                                          32    -1    64        32                no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa32    -1    64        0                 no_band_below
+compute_exp_tendency__FILE_ClimaLand_fEOwX_src_standalone_31    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn31    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno31    -1    64        0                 no_band_below
+boundary_flux__FILE_ClimaLand_fEOwX_src_standalone_Soil_Bi31    -1    64        0                 no_band_below
+non_orographic_gravity_wave_cache_FILE_ClimaAtmos_jl_mod_s30    -1    64        0                 no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds30    -1    64        32                no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno30    -1    64        0                 no_band_below
+initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_30    -1    64        32                no_band_below
+initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_30    -1    64        32                no_band_below
+_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hy30    -1    64        32                no_band_below
+implicit_tendency__NVTX                                   30    -1    64        32                no_band_below
+update_SIF__FILE_ClimaLand_fEOwX_src_standalone_Vegetation30    -1    64        0                 no_band_below
+snow_boundary_fluxes__NVTX                                30    -1    64        0                 no_band_below
+initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_30    -1    64        32                no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds30    -1    64        32                no_band_below
+initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_30    -1    64        32                no_band_below
+non_orographic_gravity_wave_compute_tendency__FILE_ClimaAt30    -1    64        32                no_band_below
+_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hy30    -1    64        32                no_band_below
+_materialized_FILE_ClimaAtmos_jl_mod_src_parameterized_ten30    -1    64        0                 no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds30    -1    64        32                no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds30    -1    64        32                no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds30    -1    64        32                no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds30    -1    64        32                no_band_below
+get_field_FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAt30    -1    64        0                 no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds30    -1    64        32                no_band_below
+set_eff_land_radiation_properties__FILE_ClimaLand_fEOwX_sr30    -1    64        0                 no_band_below
+compute_coriolis_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl30    -1    64        32                no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds30    -1    64        32                no_band_below
+soil_boundary_fluxes__NVTX                                30    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa30    -1    64        0                 no_band_below
+initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_30    -1    64        32                no_band_below
+set_environment_1m_tendency__FILE_ClimaAtmos_jl_mod_src_ca30    -1    64        0                 no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds30    -1    64        32                no_band_below
+source__NVTX                                              30    -1    64        0                 no_band_below
+_materialized_FILE_ClimaAtmos_jl_mod_src_parameterized_ten30    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn30    -1    64        0                 no_band_below
+wilting_saturation_FILE_ClimaLand_fEOwX_src_standalone_Soi30    -1    64        32                no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds30    -1    64        32                no_band_below
+initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_30    -1    64        32                no_band_below
+accumulate_stage_precipitation_surface_fluxes__FILE_ClimaA30    -1    64        0                 no_band_below
+initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_30    -1    64        32                no_band_below
+non_orographic_gravity_wave_compute_tendency__FILE_ClimaAt30    -1    64        0                 no_band_below
+PrognosticMet_FILE_ClimaLand_fEOwX_src_integrated_soil_ene30    -1    64        32                no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds30    -1    64        32                no_band_below
+weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_ds30    -1    64        32                no_band_below
+initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_30    -1    64        0                 no_band_below
+apply_preconditioner_NVTX                                 29    -1    64        0                 no_band_below
+compute_screen_level__FILE_ClimaLand_fEOwX_src_diagnostics29    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa29    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno29    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno29    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno29    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno29    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn29    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn29    -1    64        0                 no_band_below
+compute_screen_level__FILE_ClimaLand_fEOwX_src_diagnostics29    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa29    -1    64        0                 no_band_below
+update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_Clim29    -1    64        0                 no_band_below
+set_albedos__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClim29    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa29    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn29    -1    64        0                 no_band_below
+compute_screen_level__FILE_ClimaLand_fEOwX_src_diagnostics29    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn29    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa29    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn28    -1    64        0                 no_band_below
+compute_twsa__FILE_ClimaLand_fEOwX_src_diagnostics_land_co28    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno28    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa28    -1    64        0                 no_band_below
+update_cloud_properties__FILE_ClimaAtmos_jl_mod_src_parame28    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_energy_hydrology28    -1    64        0                 no_band_below
+update_root_extraction__FILE_ClimaLand_fEOwX_src_integrate28    -1    64        0                 no_band_below
+accumulate_stage_precipitation_surface_fluxes__FILE_ClimaA28    -1    64        0                 no_band_below
+apply_hyperdiffusion_tendency__NVTX                       28    -1    64        0                 no_band_below
+compute_surface_fluxes__NVTX                              28    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn28    -1    64        0                 no_band_below
+update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_28    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno28    -1    64        0                 no_band_below
+update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_Clim28    -1    64        0                 no_band_below
+soil_infiltration_capacity_FILE_ClimaLand_fEOwX_src_standa28    -1    64        0                 no_band_below
+additional_tendency__NVTX                                 28    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_f28    -1    64        0                 no_band_below
+set_prognostic_edmf_precomputed_quantities_draft_thermo__F28    -1    64        0                 no_band_below
+radiation_tendency__FILE_ClimaAtmos_jl_mod_src_parameteriz28    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn28    -1    64        0                 no_band_below
+update_cloud_properties__FILE_ClimaAtmos_jl_mod_src_parame28    -1    64        0                 no_band_below
+update_field__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerCli28    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno28    -1    64        0                 no_band_below
+compute_jacobian__FILE_ClimaLand_fEOwX_src_standalone_Vege28    -1    64        0                 no_band_below
+update_aux__NVTX                                          27    -1    64        0                 no_band_below
+set_edmfx_surface_conditions__FILE_ClimaAtmos_jl_mod_src_p27    -1    64        0                 no_band_below
+update_aux__NVTX                                          27    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn27    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno27    -1    64        0                 no_band_below
+tofd_drag_coefficient__FILE_ClimaAtmos_jl_mod_src_paramete27    -1    64        0                 no_band_below
+orographic_gravity_wave_compute_tendency__FILE_ClimaAtmos_27    -1    64        0                 no_band_below
+compute_jacobian__NVTX                                    27    -1    64        0                 no_band_below
+apply_hyperdiffusion_tendency__NVTX                       27    -1    64        0                 no_band_below
+get_field_FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAt26    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_energy_hydrology26    -1    64        0                 no_band_below
+calc_propagate_forcing__FILE_ClimaAtmos_jl_mod_src_paramet26    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn26    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa26    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_energy_hydrology26    -1    64        0                 no_band_below
+apply_tracer_hyperdiffusion_tendency__NVTX                26    -1    64        0                 no_band_below
+calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_t26    -1    64        0                 no_band_below
+run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixF26    -1    64        0                 no_band_below
+set_edmfx_surface_conditions__FILE_ClimaAtmos_jl_mod_src_p26    -1    64        0                 no_band_below
+warm_start_grid_mean_tracers__FILE_ClimaAtmos_jl_mod_src_p26    -1    64        0                 no_band_below
+non_orographic_gravity_wave_apply_tendency__FILE_ClimaAtmo26    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno26    -1    64        0                 no_band_below
+compute_jacobian__NVTX                                    26    -1    64        0                 no_band_below
+compute_imp_tendency__FILE_ClimaLand_fEOwX_src_standalone_26    -1    64        0                 no_band_below
+add_implicit_upwind1_dissipation__FILE_ClimaAtmos_jl_mod_s26    -1    64        0                 no_band_below
+compute_evapotranspiration__FILE_ClimaLand_fEOwX_src_diagn26    -1    64        0                 no_band_below
+run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixF26    -1    64        0                 no_band_below
+calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_t26    -1    64        0                 no_band_below
+hyperdiffusion_cache_FILE_ClimaAtmos_jl_mod_src_prognostic26    -1    64        0                 no_band_below
+calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_t26    -1    64        0                 no_band_below
+combine_surfaces__FILE_ClimaCoupler_jl_mod_src_FieldExchan25    -1    64        0                 no_band_below
+field_matrix_solve__NVTX                                  25    -1    64        0                 no_band_below
+_updraft_cloud_moments__FILE_ClimaAtmos_jl_mod_src_paramet25    -1    64        0                 no_band_below
+compute_surface_fluxes__NVTX                              25    -1    64        0                 no_band_below
+update_relative_humidity__FILE_ClimaAtmos_jl_mod_src_param25    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa25    -1    64        0                 no_band_below
+compute_soilo2__FILE_ClimaLand_fEOwX_src_diagnostics_land_25    -1    64        0                 no_band_below
+microphysics_tendency__FILE_ClimaAtmos_jl_mod_src_paramete25    -1    64        0                 no_band_below
+combine_surfaces__FILE_ClimaCoupler_jl_mod_src_FieldExchan25    -1    64        0                 no_band_below
+compute_jacobian__NVTX                                    25    -1    64        0                 no_band_below
+apply_preconditioner_NVTX                                 25    -1    64        0                 no_band_below
+update_aux__NVTX                                          25    -1    64        0                 no_band_below
+add_implicit_upwind1_dissipation__FILE_ClimaAtmos_jl_mod_s25    -1    64        0                 no_band_below
+constrain_state__NVTX                                     25    -1    64        0                 no_band_below
+make_compute_exp_tendency_FILE_ClimaLand_fEOwX_src_standal25    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_24    -1    64        0                 no_band_below
+assign_velocity_energy__FILE_ClimaAtmos_jl_mod_src_setups_24    -1    64        0                 no_band_below
+compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_ext_Clima24    -1    64        0                 no_band_below
+update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_24    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa24    -1    64        0                 no_band_below
+update_field__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerCli24    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa24    -1    64        0                 no_band_below
+calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_t24    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa24    -1    64        0                 no_band_below
+update_sgs_boundary_condition_jacobian__FILE_ClimaAtmos_jl24    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_24    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn24    -1    64        0                 no_band_below
+update_aux__NVTX                                          24    -1    64        0                 no_band_below
+warm_start_grid_mean_tracers__FILE_ClimaAtmos_jl_mod_src_p24    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_24    -1    64        0                 no_band_below
+update_aerosol_concentrations__FILE_ClimaAtmos_jl_mod_src_24    -1    64        0                 no_band_below
+update_infiltration_water_flux__FILE_ClimaLand_fEOwX_src_s24    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno24    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_24    -1    64        0                 no_band_below
+compute_jacobian__NVTX                                    23    -1    64        0                 no_band_below
+_coupler_set_ic__FILE_ClimaCoupler_jl_mod_ext_ClimaCoupler23    -1    64        0                 no_band_below
+lsm_radiant_energy_fluxes__NVTX                           23    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno23    -1    64        0                 no_band_below
+_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl23    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn23    -1    64        0                 no_band_below
+compute_jacobian__NVTX                                    23    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa23    -1    64        0                 no_band_below
+calc_propagate_forcing__FILE_ClimaAtmos_jl_mod_src_paramet23    -1    64        0                 no_band_below
+update_autotrophic_respiration__FILE_ClimaLand_fEOwX_src_s23    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa23    -1    64        0                 no_band_below
+explicit_vertical_advection_tendency__NVTX                23    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa23    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa23    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L232           23    -1    64        0                 no_band_below
+update_infiltration_water_flux__FILE_ClimaLand_fEOwX_src_s23    -1    64        0                 no_band_below
+calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_t22    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa22    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn22    -1    64        0                 no_band_below
+_FILE_ClimaCoupler_jl_mod_src_Models_prescr_ocean_jl_L134 22    -1    64        0                 no_band_below
+update_boundary_fluxes__NVTX                              22    -1    64        0                 no_band_below
+update_soil_snow_ground_heat_flux__NVTX                   22    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varyin22    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn22    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno22    -1    64        0                 no_band_below
+fill_FILE_ClimaCore_jl_mod_src_Fields_Fields_jl_L471      22    -1    64        0                 no_band_below
+orographic_gravity_wave_compute_tendency__FILE_ClimaAtmos_22    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno22    -1    64        0                 no_band_below
+compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_ext_Clima22    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa22    -1    64        0                 no_band_below
+solve_fluxes__FILE_ClimaAtmos_jl_mod_src_parameterized_ten22    -1    64        0                 no_band_below
+update_aux__NVTX                                          22    -1    64        0                 no_band_below
+_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl22    -1    64        0                 no_band_below
+add_vertical_advection_corrections__FILE_ClimaAtmos_jl_mod22    -1    64        0                 no_band_below
+set_precipitation_surface_fluxes__FILE_ClimaAtmos_jl_mod_s22    -1    64        0                 no_band_below
+update_aux__NVTX                                          21    -1    64        0                 no_band_below
+clip_absent_plant_area__FILE_ClimaLand_fEOwX_src_standalon21    -1    64        0                 no_band_below
+boundary_flux__FILE_ClimaLand_fEOwX_src_standalone_Soil_Bi21    -1    64        0                 no_band_below
+lsm_radiant_energy_fluxes__NVTX                           21    -1    64        0                 no_band_below
+linear_interpolation_to_surface__FILE_ClimaLand_fEOwX_src_21    -1    64        0                 no_band_below
+snow_boundary_fluxes__NVTX                                21    -1    64        0                 no_band_below
+update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_21    -1    64        0                 no_band_below
+lsm_radiant_energy_fluxes__NVTX                           21    -1    64        0                 no_band_below
+ice_rhs__FILE_ClimaCoupler_jl_mod_src_Models_prescr_seaice21    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa21    -1    64        0                 no_band_below
+compute_exp_tendency__FILE_ClimaLand_fEOwX_src_standalone_21    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L271           21    -1    64        0                 no_band_below
+boundary_flux__FILE_ClimaLand_fEOwX_src_standalone_Soil_Bi21    -1    64        0                 no_band_below
+lsm_radiant_energy_fluxes__NVTX                           20    -1    64        0                 no_band_below
+add_vertical_advection_corrections__FILE_ClimaAtmos_jl_mod20    -1    64        0                 no_band_below
+compute_surface_fluxes__NVTX                              20    -1    64        0                 no_band_below
+_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl20    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn20    -1    64        0                 no_band_below
+compute_sensible_heat_flux__FILE_ClimaLand_fEOwX_src_diagn20    -1    64        0                 no_band_below
+update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_Clim20    -1    64        0                 no_band_below
+lsm_radiant_energy_fluxes__NVTX                           20    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn20    -1    64        0                 no_band_below
+single_field_solve__FILE_ClimaCore_jl_mod_src_MatrixFields20    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno20    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_energy_hydrology20    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno20    -1    64        0                 no_band_below
+source__FILE_ClimaLand_fEOwX_src_standalone_Soil_Runoff_Ru20    -1    64        0                 no_band_below
+assign_moisture_edmf__FILE_ClimaAtmos_jl_mod_src_setups_co20    -1    64        0                 no_band_below
+soil_surface_vapor_conductance__FILE_ClimaLand_fEOwX_src_s20    -1    64        0                 no_band_below
+lsm_radiant_energy_fluxes__NVTX                           20    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_f20    -1    64        0                 no_band_below
+lsm_radiant_energy_fluxes__NVTX                           20    -1    64        0                 no_band_below
+lsm_radiant_energy_fluxes__NVTX                           20    -1    64        0                 no_band_below
+set_ic__FILE_ClimaLand_fEOwX_src_simulations_initial_condi20    -1    64        0                 no_band_below
+update_infiltration_water_flux__FILE_ClimaLand_fEOwX_src_s20    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn19    -1    64        0                 no_band_below
+update_snow_cover_fraction__FILE_ClimaLand_fEOwX_src_stand19    -1    64        0                 no_band_below
+total_liq_water_vol_per_area__FILE_ClimaLand_fEOwX_src_sta19    -1    64        0                 no_band_below
+compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_ext_Clima19    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno19    -1    64        0                 no_band_below
+combine_surfaces__FILE_ClimaCoupler_jl_mod_src_FieldExchan19    -1    64        0                 no_band_below
+compute_10cm_water_mass__FILE_ClimaLand_fEOwX_src_diagnost19    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_f19    -1    64        0                 no_band_below
+update_boundary_fluxes__NVTX                              19    -1    64        0                 no_band_below
+update_subsurface_energy_runoff__FILE_ClimaLand_fEOwX_src_19    -1    64        0                 no_band_below
+set_soilco2_SOC_from_soilgrids__FILE_ClimaLand_fEOwX_src_s19    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn19    -1    64        0                 no_band_below
+update_steady_state_leaf_water_potential__FILE_ClimaLand_f19    -1    64        0                 no_band_below
+update_boundary_fluxes__NVTX                              19    -1    64        0                 no_band_below
+set_ic__FILE_ClimaLand_fEOwX_src_simulations_initial_condi19    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno19    -1    64        0                 no_band_below
+compute_PAR__FILE_ClimaLand_fEOwX_src_standalone_Vegetatio19    -1    64        0                 no_band_below
+update_snow_albedo__FILE_ClimaLand_fEOwX_src_standalone_Sn19    -1    64        0                 no_band_below
+_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl19    -1    64        0                 no_band_below
+update_aux__NVTX                                          19    -1    64        0                 no_band_below
+_FILE_ClimaUtilities_tOpcE_ext_TimeVaryingInputsExt_jl_L4218    -1    64        0                 no_band_below
+set_ic__FILE_ClimaLand_fEOwX_src_simulations_initial_condi18    -1    64        0                 no_band_below
+_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Gr18    -1    64        0                 no_band_below
+update_flux_fields__FILE_ClimaCoupler_jl_mod_src_FluxCalcu18    -1    64        0                 no_band_below
+_FILE_ClimaUtilities_tOpcE_ext_TimeVaryingInputsExt_jl_L4218    -1    64        0                 no_band_below
+soil_boundary_fluxes__NVTX                                18    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno18    -1    64        0                 no_band_below
+update_ground_albedo_PAR__FILE_ClimaLand_fEOwX_src_integra18    -1    64        0                 no_band_below
+update_sedimentation_jacobian__FILE_ClimaAtmos_jl_mod_src_18    -1    64        0                 no_band_below
+add_vertical_advection_corrections__FILE_ClimaAtmos_jl_mod18    -1    64        0                 no_band_below
+ClimaAtmosSimulation_FILE_ClimaCoupler_jl_mod_ext_ClimaCou18    -1    64        0                 no_band_below
+update_aux__NVTX                                          18    -1    64        0                 no_band_below
+update_canopy_conductance__FILE_ClimaLand_fEOwX_src_standa18    -1    64        0                 no_band_below
+update_aux__NVTX                                          18    -1    64        0                 no_band_below
+update_boundary_fluxes__NVTX                              18    -1    64        0                 no_band_below
+init_sfc_conditions_zero__FILE_ClimaAtmos_jl_mod_src_surfa18    -1    64        0                 no_band_below
+init_sfc_conditions_zero__FILE_ClimaAtmos_jl_mod_src_surfa18    -1    64        0                 no_band_below
+init_sfc_conditions_zero__FILE_ClimaAtmos_jl_mod_src_surfa18    -1    64        0                 no_band_below
+snow_boundary_fluxes__NVTX                                18    -1    64        0                 no_band_below
+add_vertical_advection_corrections__FILE_ClimaAtmos_jl_mod18    -1    64        0                 no_band_below
+assign_moisture_edmf__FILE_ClimaAtmos_jl_mod_src_setups_co18    -1    64        0                 no_band_below
+set_velocity_at_surface__FILE_ClimaAtmos_jl_mod_src_cache_18    -1    64        0                 no_band_below
+update_volume_mixing_ratios__FILE_ClimaAtmos_jl_mod_src_pa18    -1    64        0                 no_band_below
+piecewise_moisture_stress_thresholds_FILE_ClimaLand_fEOwX_18    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn18    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa18    -1    64        0                 no_band_below
+import_atmos_fields__FILE_ClimaCoupler_jl_mod_ext_ClimaCou18    -1    64        0                 no_band_below
+ogw_face_pressure__FILE_ClimaAtmos_jl_mod_src_parameterize18    -1    64        0                 no_band_below
+_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Gr18    -1    64        0                 no_band_below
+set_eff_land_radiation_properties__FILE_ClimaLand_fEOwX_sr17    -1    64        0                 no_band_below
+update_aux__NVTX                                          17    -1    64        0                 no_band_below
+update_boundary_fluxes__NVTX                              17    -1    64        0                 no_band_below
+compute_dss_weights_FILE_ClimaCore_jl_mod_src_Grids_spectr17    -1    64        0                 no_band_below
+ogw_face_pressure__FILE_ClimaAtmos_jl_mod_src_parameterize17    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno17    -1    64        0                 no_band_below
+update_infiltration_water_flux__FILE_ClimaLand_fEOwX_src_s17    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_energy_hydrology17    -1    64        0                 no_band_below
+update_aux__NVTX                                          17    -1    64        0                 no_band_below
+_coupler_set_ic__FILE_ClimaCoupler_jl_mod_ext_ClimaCoupler17    -1    64        0                 no_band_below
+soil_surface_vapor_conductance__FILE_ClimaLand_fEOwX_src_s17    -1    64        0                 no_band_below
+orographic_gravity_wave_forcing__FILE_ClimaAtmos_jl_mod_sr17    -1    64        0                 no_band_below
+hydrostatic_pressure_FILE_ClimaAtmos_jl_mod_src_setups_com17    -1    64        0                 no_band_below
+_materialized_FILE_ClimaAtmos_jl_mod_src_parameterized_ten17    -1    64        0                 no_band_below
+update_density_and_depth__FILE_ClimaLand_fEOwX_src_standal17    -1    64        0                 no_band_below
+update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_Clim17    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno17    -1    64        0                 no_band_below
+update_piecewise_soil_moisture_stress__NVTX               17    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varyin17    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn17    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn17    -1    64        0                 no_band_below
+update_biomass__FILE_ClimaLand_fEOwX_src_standalone_Vegeta17    -1    64        0                 no_band_below
+PrognosticMet_FILE_ClimaLand_fEOwX_src_integrated_soil_ene17    -1    64        0                 no_band_below
+_updraft_cloud_moments__FILE_ClimaAtmos_jl_mod_src_paramet17    -1    64        0                 no_band_below
+remap__NVTX                                               16    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa16    -1    64        0                 no_band_below
+remap__NVTX                                               16    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varyin16    -1    64        0                 no_band_below
+assign_moisture_edmf__FILE_ClimaAtmos_jl_mod_src_setups_co16    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno16    -1    64        0                 no_band_below
+compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_ext_Clima16    -1    64        0                 no_band_below
+compute_imp_tendency__NVTX                                16    -1    64        0                 no_band_below
+map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1      16    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno16    -1    64        0                 no_band_below
+update_radiative_transfer__FILE_ClimaLand_fEOwX_src_standa16    -1    64        0                 no_band_below
+compute_10cm_water_mass__FILE_ClimaLand_fEOwX_src_diagnost16    -1    64        0                 no_band_below
+update_field__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerCli16    -1    64        0                 no_band_below
+sgs_u__implicit_tendency__FILE_ClimaAtmos_jl_mod_src_progn16    -1    64        0                 no_band_below
+solve_sgs__a_two_pass__FILE_ClimaAtmos_jl_mod_src_prognost16    -1    64        0                 no_band_below
+update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_16    -1    64        0                 no_band_below
+explicit_vertical_advection_tendency__NVTX                16    -1    64        0                 no_band_below
+_FILE_ClimaCoupler_jl_mod_src_Models_prescr_seaice_jl_L29716    -1    64        0                 no_band_below
+set_precipitation_surface_fluxes__FILE_ClimaAtmos_jl_mod_s16    -1    64        0                 no_band_below
+_update_surface_fractions_from_land_fraction__FILE_ClimaCo16    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn16    -1    64        0                 no_band_below
+_FILE_ClimaCoupler_jl_mod_src_SimOutput_diagnostics_jl_L8916    -1    64        0                 no_band_below
+get_atmos_height_delta_FILE_ClimaCoupler_jl_mod_src_Interf16    -1    64        0                 no_band_below
+update_ice_albedo__FILE_ClimaCoupler_jl_mod_src_Models_pre16    -1    64        0                 no_band_below
+_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl16    -1    64        0                 no_band_below
+soil_surface_vapor_conductance__FILE_ClimaLand_fEOwX_src_s16    -1    64        0                 no_band_below
+update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_Clim16    -1    64        0                 no_band_below
+_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl16    -1    64        0                 no_band_below
+remap__NVTX                                               16    -1    64        0                 no_band_below
+calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_t16    -1    64        0                 no_band_below
+update_albedo__FILE_ClimaLand_fEOwX_src_standalone_Soil_so16    -1    64        0                 no_band_below
+remap__NVTX                                               16    -1    64        0                 no_band_below
+compute_jacobian__NVTX                                    16    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn16    -1    64        0                 no_band_below
+update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_Clim16    -1    64        0                 no_band_below
+ClimaAtmosSimulation_FILE_ClimaCoupler_jl_mod_ext_ClimaCou16    -1    64        0                 no_band_below
+_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl16    -1    64        0                 no_band_below
+source__NVTX                                              16    -1    64        0                 no_band_below
+_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl16    -1    64        0                 no_band_below
+non_orographic_gravity_wave_forcing_FILE_ClimaAtmos_jl_mod15    -1    64        0                 no_band_below
+update_aux__NVTX                                          15    -1    64        0                 no_band_below
+get__z_FILE_ClimaLand_fEOwX_src_shared_utilities_Domains_j15    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L271           15    -1    64        0                 no_band_below
+_coupler_set_ic__FILE_ClimaCoupler_jl_mod_ext_ClimaCoupler15    -1    64        0                 no_band_below
+set_sfc_sgs_precip_energy_flux__FILE_ClimaAtmos_jl_mod_src15    -1    64        0                 no_band_below
+single_field_solve__FILE_ClimaCore_jl_mod_src_MatrixFields15    -1    64        0                 no_band_below
+get_atmos_height_delta_FILE_ClimaCoupler_jl_mod_src_Interf14    -1    64        0                 no_band_below
+calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_pa14    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L271           14    -1    64        0                 no_band_below
+sum_aerosol_bins__FILE_ClimaAtmos_jl_mod_src_parameterized14    -1    64        0                 no_band_below
+update_bf__FILE_ClimaLand_fEOwX_src_standalone_Soil_Biogeo14    -1    64        0                 no_band_below
+ClimaAtmosSimulation_FILE_ClimaCoupler_jl_mod_ext_ClimaCou14    -1    64        0                 no_band_below
+update_root_extraction__FILE_ClimaLand_fEOwX_src_integrate14    -1    64        0                 no_band_below
+_FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaLandExt_cli14    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn14    -1    64        0                 no_band_below
+source__NVTX                                              14    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno14    -1    64        0                 no_band_below
+compute_jacobian__FILE_ClimaLand_fEOwX_src_standalone_Vege14    -1    64        0                 no_band_below
+non_orographic_gravity_wave_forcing_FILE_ClimaAtmos_jl_mod14    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno14    -1    64        0                 no_band_below
+_update_surface_fractions_from_land_fraction__FILE_ClimaCo14    -1    64        0                 no_band_below
+orchestrate_diagnostics_NVTX                              14    -1    64        0                 no_band_below
+initial_condition_field_FILE_ClimaAtmos_jl_mod_src_setups_14    -1    64        0                 no_band_below
+additional_tendency__NVTX                                 14    -1    64        0                 no_band_below
+_FILE_ClimaCoupler_jl_mod_src_Input_jl_L929               14    -1    64        0                 no_band_below
+slab_ice_space_init_FILE_ClimaCoupler_jl_mod_src_Models_pr14    -1    64        0                 no_band_below
+calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_pa14    -1    64        0                 no_band_below
+compute_net_ecosystem_exchange__FILE_ClimaLand_fEOwX_src_d14    -1    64        0                 no_band_below
+_FILE_ClimaCoupler_jl_mod_src_Models_prescr_seaice_jl_L29114    -1    64        0                 no_band_below
+orchestrate_diagnostics_NVTX                              14    -1    64        0                 no_band_below
+_update_surface_fractions_from_land_fraction__FILE_ClimaCo14    -1    64        0                 no_band_below
+compute_precip__FILE_ClimaLand_fEOwX_src_diagnostics_land_14    -1    64        0                 no_band_below
+update_snow_albedo__FILE_ClimaLand_fEOwX_src_standalone_Sn14    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L271           14    -1    64        0                 no_band_below
+_FILE_ClimaUtilities_tOpcE_ext_TimeVaryingInputsExt_jl_L4214    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno14    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa14    -1    64        0                 no_band_below
+add_vertical_advection_corrections__FILE_ClimaAtmos_jl_mod14    -1    64        0                 no_band_below
+[ Info: Overwriting initial conditions with data from file /net/sampo/data1/ClimaArtifacts/artifacts/wxquest_initial_conditions/era5_init_processed_internal_20100101_0000.nc
+[ Info: Adjusted surface pressure to account for ERA5/model surface-height differences.
+[ Info: Initialized state (35.039 s, 9.34 GiB)
+┌ Info: Computing orographic gravity wave drag input at initialization (raw_topo_online)
+└   α_smoothing = 1.0f0
+┌ Info: Grid-aware OGWD preprocessing
+│   Δh_GCM = 192086.0f0
+│   smoothing_length_scale = 192086.0f0
+│   skip_pt = 26
+└   α_smoothing = 1.0f0
+[ Info: skip_pt = 26
+[ Info: smoothing_length_scale for calc_hpoz_latlon = 192086.0
+[ Info: Computing hmax...
+[ Info: chi smoothing: length_scale=192086.0, n_cells=nothing
+[ Info: Computing velocity potential (Haversine arc, tiny=1e-12)...
+[ Info: Computing T tensor...
+┌ Info: Computing the filtered-orography variance for TOFD
+│   size(elev) = (21600, 10800)
+└   Δh_GCM = 192086.0f0
+[ Info: Built cache (461.864 s, 92.9 GiB)
+[ Info: Assembled callbacks (377.894 ms, 37.33 MiB)
+┌ Info: Jacobian algorithm: ManualSparseJacobian(
+│   approximate_solve_iters = 2,
+└ )
+[ Info: Jacobian derivative flags: topography_flag = UseDerivative, diffusion_flag = UseDerivative
+[ Info: Built tendency function (1.17 s, 45.2 MiB)
+[ Info: Initialized integrator (180.05 s, 41.1 GiB)
+[ Info: Added 75 default ClimaAtmos diagnostics
+┌ Warning: Disabling vertical interpolation, the provided number of points is ignored (using 37)
+└ @ ClimaDiagnostics.Writers ~/.julia/packages/ClimaDiagnostics/j56tX/src/netcdf_writer.jl:187
+[ Info: Added 3 user-provided YAML-style diagnostics
+[ Info: Saving accumulated diagnostics to disk with frequency: 1 day, 1 month
+[ Info: Set up diagnostics (23.052 s, 2.19 GiB)
+[ Info: Initialized 78 total diagnostics
+┌ Info: Simulation info
+│   job_id = "amip_progedmf_1m_land_he16"
+└   output_dir = "output/amip_progedmf_1m_land_he16/output_0117/clima_atmos"
+[ Info: ClimaAtmos: get_simulation (14 min 23.2 s, 168.909 GiB, compile 12 min 26.1 s)
+[ Info: ClimaAtmos: zeroed fluxes and applied DSS to the state (10.19 s, 692.350 MiB, compile 8.99 s)
+[ Info: Initialized atmosphere simulation (14 min 42.3 s, 170.449 GiB, compile 12 min 43.7 s)
+[ Info: Created boundary space and surface fields (4.31 s, 452.019 MiB, compile 4.17 s)
+[ Info: Computed land fraction (8.81 s, 3.187 GiB, compile 3.93 s)
+[ Info: ClimaCoupler.Interfacer.AMIPMode
+[ Info: ClimaLand: created domain (9.54 s, 921.691 MiB, compile 6.4 s)
+[ Info: ClimaLand: read MODIS LAI (870.7 ms, 99.240 MiB, compile 847.2 ms)
+[ Info: ClimaLand: constructed LandModel (39.27 s, 5.116 GiB, compile 32.04 s)
+[ Info: ClimaLand: set up diagnostics (7.5 s, 781.822 MiB, compile 7.49 s)
+[ Info: ClimaLand: initialized LandSimulation (51.52 s, 4.132 GiB, compile 44.98 s)
+[ Info: Initialized land simulation (1 min 55.7 s, 11.894 GiB, compile 1 min 38.5 s)
+┌ Info: PrescribedOcean: using SST file
+└   sst_data = "/net/sampo/data1/ClimaArtifacts/artifacts/historical_sst_sic/MODEL.SST.HAD187001-198110.OI198111-202206.nc"
+[ Info: Initialized ocean simulation (3.45 s, 245.520 MiB, compile 3.19 s)
+┌ Info: PrescribedIce: using SIC file
+└   sic_data = "/net/sampo/data1/ClimaArtifacts/artifacts/historical_sst_sic/MODEL.ICE.HAD187001-198110.OI198111-202206.nc"
+┌ Info: PrescribedIce: ISTL1 not in file, using constant initialization
+└   file = "/net/sampo/data1/ClimaArtifacts/artifacts/historical_sst_sic/MODEL.ICE.HAD187001-198110.OI198111-202206.nc"
+[ Info: Initialized sea ice simulation (9.15 s, 593.216 MiB, compile 8.62 s)
+[ Info: Component models initialized: (:atmos_sim, :ice_sim, :land_sim, :ocean_sim)
+[ Info: Component model types: ("ClimaAtmosSimulation", "PrescribedIceSimulation", "ClimaLandSimulation", "PrescribedOceanSimulation")
+[ Info: Initialized coupler fields (46.1 ms, 2.637 MiB, compile 44.6 ms)
+[ Info: Using default coupler diagnostics
+[ Info: Set up coupler diagnostics (5.75 s, 307.157 MiB, compile 5.41 s)
+┌ Warning: `update_field!` is not extended for the `liquid_precipitation` field of PrescribedIceSimulation: skipping update.
+└ @ ClimaCoupler.Interfacer ~/calkit/clima-gpu-profiling/ClimaCoupler.jl-mod/src/Interfacer.jl:376
+[ Info: Performed initial exchange and flux computation (2 min 38.5 s, 15.843 GiB, compile 2 min 5.4 s)
+[ Info: Memory in use: 11.125 GiB
+[ Info: Set up CoupledSimulation (19 min 56.0 s, 203.440 GiB, compile 16 min 59.4 s)
+┌ Info: Progress
+│   time = 2010-01-01T00:02:00 (2 m)
+└   step = 1 (0.0%)
+┌ Info: Progress
+│   time = 2010-01-01T00:04:00 (4 m)
+│   step = 2 (0.1%)
+│   walltime remaining ≈ 30 m 43 s (2026-11-17T12:22:59)
+└   sypd ≈ 0.5129
+┌ Info: Progress
+│   time = 2010-01-01T00:08:00 (8 m)
+│   step = 4 (0.1%)
+│   walltime remaining ≈ 21 m 5 s (2026-11-17T12:13:21)
+└   sypd ≈ 0.7467
+[ Info: step 5 / 35
+┌ Info: Progress
+│   time = 2010-01-01T00:16:00 (16 m)
+│   step = 8 (0.3%)
+│   walltime remaining ≈ 16 m 17 s (2026-11-17T12:08:34)
+└   sypd ≈ 0.9658
+[ Info: step 10 / 35
+[ Info: step 15 / 35
+┌ Info: Progress
+│   time = 2010-01-01T00:32:00 (32 m)
+│   step = 16 (0.6%)
+│   walltime remaining ≈ 14 m 1 s (2026-11-17T12:06:20)
+└   sypd ≈ 1.119
+[ Info: step 20 / 35
+[ Info: step 25 / 35
+[ Info: step 30 / 35
+┌ Info: Progress
+│   time = 2010-01-01T01:04:00 (1 h 4 m)
+│   step = 32 (1.1%)
+│   walltime remaining ≈ 14 m 40 s (2026-11-17T12:07:05)
+└   sypd ≈ 1.064
+[ Info: step 35 / 35
+hydrostatic_pressure_FILE_ClimaAtmos_jl_mod_src_setups_com14    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn14    -1    64        0                 no_band_below
+source__NVTX                                              14    -1    64        0                 no_band_below
+non_orographic_gravity_wave_cache_FILE_ClimaAtmos_jl_mod_s14    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_energy_hydrology14    -1    64        0                 no_band_below
+update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_Clim14    -1    64        0                 no_band_below
+dss__FILE_ClimaCore_jl_mod_src_Topologies_dss_jl_L425     14    -1    64        0                 no_band_below
+update_aux__NVTX                                          14    -1    64        0                 no_band_below
+assign_velocity_energy__FILE_ClimaAtmos_jl_mod_src_setups_14    -1    64        0                 no_band_below
+orchestrate_diagnostics_NVTX                              14    -1    64        0                 no_band_below
+orchestrate_diagnostics_NVTX                              14    -1    64        0                 no_band_below
+fill__FILE_ClimaCore_jl_mod_src_Fields_Fields_jl_L462     14    -1    64        0                 no_band_below
+_diffuse_surface_elevation__FILE_ClimaCore_jl_mod_src_Hyps14    -1    64        0                 no_band_below
+compute_total_respiration__FILE_ClimaLand_fEOwX_src_diagno14    -1    64        0                 no_band_below
+compute_canopy_transpiration__FILE_ClimaLand_fEOwX_src_dia14    -1    64        0                 no_band_below
+_FILE_ClimaCoupler_jl_mod_src_Input_jl_L935               14    -1    64        0                 no_band_below
+compute_total_respiration__FILE_ClimaLand_fEOwX_src_diagno14    -1    64        0                 no_band_below
+dss__FILE_ClimaCore_jl_mod_src_Topologies_dss_jl_L409     14    -1    64        0                 no_band_below
+orographic_gravity_wave_forcing__FILE_ClimaAtmos_jl_mod_sr14    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn14    -1    64        0                 no_band_below
+update_density_and_depth__FILE_ClimaLand_fEOwX_src_standal14    -1    64        0                 no_band_below
+update_boundary_fluxes__NVTX                              14    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Vegetation_spatially_14    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno14    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varyin14    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn14    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn14    -1    64        0                 no_band_below
+update_flux_fields__FILE_ClimaCoupler_jl_mod_src_FluxCalcu14    -1    64        0                 no_band_below
+_FILE_ClimaUtilities_tOpcE_ext_TimeVaryingInputsExt_jl_L4214    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_f14    -1    64        0                 no_band_below
+update_field__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerCli14    -1    64        0                 no_band_below
+calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_pa14    -1    64        0                 no_band_below
+non_orographic_gravity_wave_cache_FILE_ClimaAtmos_jl_mod_s14    -1    64        0                 no_band_below
+_FILE_ClimaCoupler_jl_mod_src_SimOutput_diagnostics_jl_L1214    -1    64        0                 no_band_below
+update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_14    -1    64        0                 no_band_below
+PrescribedBiomassModel_FILE_ClimaLand_fEOwX_src_standalone14    -1    64        0                 no_band_below
+remap__NVTX                                               13    -1    64        0                 no_band_below
+orographic_gravity_wave_compute_tendency__FILE_ClimaAtmos_12    -1    64        0                 no_band_below
+EnergyHydrology_FILE_ClimaLand_fEOwX_src_standalone_Soil_S12    -1    64        0                 no_band_below
+precomputed_quantities_FILE_ClimaAtmos_jl_mod_src_cache_pr12    -1    64        0                 no_band_below
+single_field_solve__FILE_ClimaCore_jl_mod_src_MatrixFields12    -1    64        0                 no_band_below
+compute_heterotrophic_respiration__FILE_ClimaLand_fEOwX_sr12    -1    64        0                 no_band_below
+calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_t12    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno12    -1    64        0                 no_band_below
+compute_filtered_orography_variance_FILE_ClimaAtmos_jl_mod12    -1    64        0                 no_band_below
+non_orographic_gravity_wave_cache_FILE_ClimaAtmos_jl_mod_s12    -1    64        0                 no_band_below
+check_land_equality_FILE_ClimaLand_fEOwX_src_shared_utilit12    -1    64        0                 no_band_below
+single_field_solve__FILE_ClimaCore_jl_mod_src_MatrixFields12    -1    64        0                 no_band_below
+initial_condition_field_FILE_ClimaAtmos_jl_mod_src_setups_12    -1    64        0                 no_band_below
+_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl12    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varyin12    -1    64        0                 no_band_below
+update_infiltration_water_flux__FILE_ClimaLand_fEOwX_src_s12    -1    64        0                 no_band_below
+_FILE_ClimaCoupler_jl_mod_src_Input_jl_L930               12    -1    64        0                 no_band_below
+set_canopy_component_initial_conditions__FILE_ClimaLand_fE12    -1    64        0                 no_band_below
+set_albedos__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClim12    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn12    -1    64        0                 no_band_below
+set_velocity_at_surface__FILE_ClimaAtmos_jl_mod_src_cache_12    -1    64        0                 no_band_below
+compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagn12    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Vegetation_spatially_12    -1    64        0                 no_band_below
+calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_pa12    -1    64        0                 no_band_below
+single_field_solve__FILE_ClimaCore_jl_mod_src_MatrixFields12    -1    64        0                 no_band_below
+ClimaAtmosSimulation_FILE_ClimaCoupler_jl_mod_ext_ClimaCou12    -1    64        0                 no_band_below
+_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L221           12    -1    64        0                 no_band_below
+MoninObukhovCanopyFluxes_FILE_ClimaLand_fEOwX_src_standalo12    -1    64        0                 no_band_below
+compute_exp_tendency__NVTX                                12    -1    64        0                 no_band_below
+update_aux__NVTX                                          12    -1    64        0                 no_band_below
+compute_10cm_water_mass__FILE_ClimaLand_fEOwX_src_diagnost12    -1    64        0                 no_band_below
+non_orographic_gravity_wave_cache_FILE_ClimaAtmos_jl_mod_s12    -1    64        0                 no_band_below
+assign_velocity_energy__FILE_ClimaAtmos_jl_mod_src_setups_12    -1    64        0                 no_band_below
+_FILE_ClimaCoupler_jl_mod_src_Models_prescr_seaice_jl_L31312    -1    64        0                 no_band_below
+fill_FILE_ClimaCore_jl_mod_src_Fields_Fields_jl_L471      12    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varyin12    -1    64        0                 no_band_below
+sum_aerosol_bins__FILE_ClimaAtmos_jl_mod_src_parameterized12    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varyin12    -1    64        0                 no_band_below
+hypsography_FILE_ClimaAtmos_jl_mod_src_simulation_grids_jl12    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varyin12    -1    64        0                 no_band_below
+initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_12    -1    64        0                 no_band_below
+compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagno12    -1    64        0                 no_band_below
+single_field_solve__FILE_ClimaCore_jl_mod_src_MatrixFields12    -1    64        0                 no_band_below
+copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broa11    -1    64        0                 no_band_below
+remap__NVTX                                               10    -1    64        0                 no_band_below
+hypsography_FILE_ClimaAtmos_jl_mod_src_simulation_grids_jl10    -1    64        0                 no_band_below
+field_capacity_saturation_FILE_ClimaLand_fEOwX_src_standal10    -1    64        0                 no_band_below
+compute_imp_tendency__NVTX                                10    -1    64        0                 no_band_below
+compute_imp_tendency__NVTX                                10    -1    64        0                 no_band_below
+regrid_OGW_info_FILE_ClimaAtmos_jl_mod_src_parameterized_t10    -1    64        0                 no_band_below
+get_field_FILE_ClimaCoupler_jl_mod_src_Models_prescr_seaic10    -1    64        0                 no_band_below
+set_covariance_cache_and_cloud_fraction__FILE_ClimaAtmos_j10    -1    64        0                 no_band_below
+compute_orog__FILE_ClimaAtmos_jl_mod_src_diagnostics_core_10    -1    64        0                 no_band_below
+set_insolation_variables__FILE_ClimaAtmos_jl_mod_src_callb10    -1    64        0                 no_band_below
+check_land_equality_FILE_ClimaLand_fEOwX_src_shared_utilit10    -1    64        0                 no_band_below
+_updraft_cloud_moments__FILE_ClimaAtmos_jl_mod_src_paramet10    -1    64        0                 no_band_below
+_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl10    -1    64        0                 no_band_below
+boundary_fields_FILE_ClimaCoupler_jl_mod_src_SimCoordinato10    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Vegetation_radiation_10    -1    64        0                 no_band_below
+_coupler_set_ic__FILE_ClimaCoupler_jl_mod_ext_ClimaCoupler10    -1    64        0                 no_band_below
+_FILE_ClimaLand_fEOwX_src_standalone_Vegetation_spatially_10    -1    64        0                 no_band_below
+orographic_gravity_wave_compute_tendency__FILE_ClimaAtmos_10    -1    64        0                 no_band_below
+assign_moisture_edmf__FILE_ClimaAtmos_jl_mod_src_setups_co10    -1    64        0                 no_band_below
+_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl9     -1    64        0                 no_band_below
+
+wrote results/experiments/register-cap-filter/census-wide.toml
+CENSUS DONE
