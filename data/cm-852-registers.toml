@@ -1,0 +1,94 @@
+# Register counts per thread of the microphysics kernels under CloudMicrophysics
+# PR #852, transcribed from the table in that pull request's description.
+#
+# Why these are here rather than measured: #852 is open, and bringing it into an
+# arm re-bases the whole stack, which is a measurement this project has not
+# chosen to take. Its own numbers are enough to replay the register-cap policy's
+# filters, because every filter but the spill test is arithmetic on the register
+# count. What they cannot say is what capping these kernels would compile to,
+# which is the one thing only a compile knows.
+#
+# Not comparable with results/experiments/auto-register-cap/census.toml: that
+# census ran the benchmark configuration on this project's stack, and these come
+# from the flagship configuration with ClimaAtmos #4985 on both sides. Registers
+# move with the toolchain and with every package in the frame, so the two sets
+# describe the same kernels on different stacks.
+source = "https://github.com/CliMA/CloudMicrophysics.jl/pull/852"
+source_table = "Comparison against #851"
+source_build = "https://buildkite.com/clima/climaatmos-end-to-end-performance/builds/540"
+measured_by = "Nsight Compute on one coupling step; times over 20 traced coupling steps"
+climaatmos_commit = "8fd998e65"
+transcribed = "2026-11-17"
+note = "`registers` is the count under #852, `registers_pct_vs_851` the change against #851 that the same table reports, and `ms_per_step` and `occupancy_pct` its time and achieved occupancy. A row with several launches per step sums them, and its occupancy is weighted by time."
+
+[[kernels]]
+role = "environment, explicit"
+kernel = "set_microphysics_tendency_cache!"
+launches_per_step = 2
+registers = 84
+registers_pct_vs_851 = -29.4
+ms_per_step = 15.65
+occupancy_pct = 29.1
+
+[[kernels]]
+role = "environment, implicit"
+kernel = "update_implicit_1m_tendency!"
+launches_per_step = 6
+registers = 81
+registers_pct_vs_851 = -12.9
+ms_per_step = 18.71
+occupancy_pct = 29.6
+
+[[kernels]]
+role = "updraft, explicit"
+kernel = "update_updraft_microphysics_tendency_cache!"
+launches_per_step = 4
+registers = 78
+registers_pct_vs_851 = -27.8
+ms_per_step = 6.50
+occupancy_pct = 35.9
+
+[[kernels]]
+role = "updraft, implicit processes"
+kernel = "update_updraft_microphysics_tendency_cache!"
+launches_per_step = 4
+registers = 79
+registers_pct_vs_851 = -12.2
+ms_per_step = 6.22
+occupancy_pct = 35.9
+
+[[kernels]]
+role = "updraft, explicit"
+kernel = "set_microphysics_tendency_cache!"
+launches_per_step = 2
+registers = 78
+registers_pct_vs_851 = -27.8
+ms_per_step = 2.58
+occupancy_pct = 35.6
+
+[[kernels]]
+role = "updraft, implicit"
+kernel = "update_implicit_1m_tendency!"
+launches_per_step = 6
+registers = 44
+registers_pct_vs_851 = -8.3
+ms_per_step = 1.15
+occupancy_pct = 48.7
+
+[[kernels]]
+role = "terminal velocities"
+kernel = "set_precipitation_velocities!"
+launches_per_step = 10
+registers = 48
+registers_pct_vs_851 = -15.8
+ms_per_step = 8.63
+occupancy_pct = 41.4
+
+[[kernels]]
+role = "microphysics Jacobian"
+kernel = "update_jacobian!"
+launches_per_step = 2
+registers = 66
+registers_pct_vs_851 = -7.0
+ms_per_step = 1.60
+occupancy_pct = 41.9
