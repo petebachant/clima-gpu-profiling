@@ -5,17 +5,23 @@ That was replayed from register counts #852 published, which reach as far as ari
 
 This census closes it by putting the stack in the arm and asking the policy directly.
 
-## What is in the arm, and what this is not
+## What is in the arm
 
-The mod arm takes CloudMicrophysics #852 (`dy/microphysics_fusion`) and ClimaAtmos #4985 (`dy/params_fusion`), which is the configuration #852 measures itself in --- #852 is branched on #851's params-macro API change and ClimaAtmos has to be adapted to it, so neither can be taken alone.
-Both branches sit directly on what the arms already carried: #4985 is four commits on the ClimaAtmos commit both arms share, with nothing in the arms that is not in it, and #852 is two commits on the CloudMicrophysics pointer the manifest already pinned.
+**Both** arms take CloudMicrophysics #852 (`dy/microphysics_fusion`) and ClimaAtmos #4985 (`dy/params_fusion`), at the same commit on each side, and the register cap in ClimaCore is the only thing that differs between them.
+That is deliberate and it is the point of the arrangement: CloudMicrophysics was a registry dependency in both arms, so dev'ing it into the mod arm alone would make the arms differ by its whole version rather than by a change to it --- the failure that rode along inside every CM experiment before 2026-09-14 (`docs/learnings.md` 4i), and the reason RRTMGP ended up dev'd on both sides.
+A census needs only one arm, but leaving the pair measurable is what makes the next question --- what the cap is worth on this stack --- askable without redoing any of this.
 
-Two things this deliberately is not.
+The two branches have to travel together: #852 is branched on #851's params-macro API change and ClimaAtmos has to be adapted to it, so neither can be taken alone.
+Both sit directly on what the arms already carried --- #4985 is four commits on the ClimaAtmos commit both arms shared, with nothing in the arms that is not in it --- so this is additive rather than a re-baseline.
+A new `CloudMicrophysics.jl` submodule carries the baseline side; the dev'd set is now the same five packages on both arms, and the two manifests are identical but their dev paths and the `project_hash` those paths imply.
 
-It is **not a measurable pair**. CloudMicrophysics has no baseline submodule here and was a registry dependency in both arms, so dev'ing it into the mod arm alone makes the arms differ by its whole version rather than by a change to it --- the failure that rode along inside every CM experiment before 2026-09-14 (`docs/learnings.md` 4i). A census needs only the one arm, and no arm pair is run here.
+Two caveats the figures below carry.
 
-And the population is **not comparable to the previous census kernel for kernel**. Resolving the new manifest carried nine registry bumps along with the two branches, `ClimaParams` 1.3.10 to 1.3.12 because #851 requires it, and with it `ForwardDiff` 1.4.8 to 1.5.0 and `KernelAbstractions` 0.9.47 to 0.9.48, either of which can move code generation and so register counts across the whole population.
-So read the per-kernel decisions below, which are measured on this stack and answer the question asked, and treat any count-against-count comparison with the earlier census as carrying that drift.
+The population is **not comparable to the previous census kernel for kernel**. Resolving the new manifests carried nine registry bumps along with the two branches, `ClimaParams` 1.3.10 to 1.3.12 because #851 requires it, and with it `ForwardDiff` 1.4.8 to 1.5.0 and `KernelAbstractions` 0.9.47 to 0.9.48, either of which can move code generation and so register counts across the whole population.
+Both arms resolved to the same nine independently, so the pair is clean; it is the comparison with `register-cap-filter`'s census that carries the drift.
+So read the per-kernel decisions below, which are measured on this stack and answer the question asked, and treat any count-against-count comparison with the earlier census as indicative only.
+
+And **#852 is an open branch that is force-pushed**. It moved twice on the day this was set up, and the commit measured here is the live tip of `dy/microphysics_fusion` at that point rather than an earlier one --- an earlier head had already fallen off every remote ref, which would have left a submodule pointer nobody else could fetch. `results/treatment.json` records the commit this census actually ran.
 
 ## The census, again with the residency filter inert
 
