@@ -4084,3 +4084,60 @@ the evidence that occupancy was the mechanism; either band alone would have
 been consistent with several explanations. Report registers, local memory and
 warps for every kernel beside the times, and a prediction about the mechanism
 becomes testable at no extra cost.
+
+## 8w. A screen that declines almost nothing is not a screen (2026-11-17)
+
+`docs/experiments/register-cap-filter.md` has the figures.
+
+ClimaCore's automatic register cap applies its tests in order: a name-based
+exemption, a residency filter that declines a kernel already holding enough
+warps, a band-distance filter that declines a kernel whose next occupancy band
+is too far below it, and then a spill budget, checked by compiling the kernel a
+second time at the cap and comparing its local frame. The spill budget was
+written as the safeguard and reads like one --- it is the only test that looks at
+what capping a particular kernel actually cost, rather than at arithmetic.
+
+Run the census with the residency filter disabled and it turns away two
+candidates in over a hundred. The reason is scale, and it is obvious only
+afterwards: the policy never asks for a cap more than a dozen registers below
+what a kernel compiled to, and `ptxas` meets a cut that small almost entirely
+without spilling. So the budget was never going to reject anything, and the
+policy's whole selectivity belongs to the residency filter --- a threshold
+argued from one kernel's single occupancy step.
+
+The second-order point is the transferable one, and it inverts the comfortable
+reading. A near-zero spill cost does not mean the cap was free: `ptxas` can also
+meet a tighter budget by rematerializing values instead of spilling them, which
+costs instructions and no local memory at all. The proxy the budget measures
+therefore reads zero in precisely the case the policy most needs to detect, and
+this project already had the counterexample on file --- a ClimaLand turbulent
+fluxes kernel that regressed a fifth while spilling a few dozen bytes. A gate
+whose rejection rate is near zero is not a conservative gate; it is either
+unnecessary or blind, and the spill test is blind.
+
+So before calling a gate a safeguard, measure what fraction of candidates it
+rejects. If the answer is almost none, the gate is documentation and the real
+control is whichever test does the rejecting --- which should then be held to the
+standard of evidence the safeguard was being credited with.
+
+### Take a census with the cheap gate open
+
+The policy's filters divide into arithmetic on a register count and one
+expensive test that needs a second compile. That asymmetry makes a census
+re-readable: record each decision's inputs and the whole filter curve can be
+replayed at other settings afterwards, without the cluster. But only for the
+arithmetic --- a kernel the cheap gate rejected never paid for its compile, so a
+census taken at the production setting can say which kernels a wider one would
+*consider* and not which it would accept.
+
+Taking the census with the cheap gate deliberately open fixes that for one extra
+compile per candidate, against the hundreds the run performs anyway. Every
+setting becomes answerable from the one job, including settings nobody thought
+of when it ran, and the production setting is recovered by replay --- which also
+checks the replay, since it has to reproduce a census taken at that setting in a
+different process. Here it did, exactly.
+
+The generalization: when a policy puts a cheap test in front of an expensive
+measurement, census it with the cheap test open and impose it in analysis. The
+cost is bounded by the number of candidates the cheap test was hiding, and what
+you buy is every counterfactual at once.

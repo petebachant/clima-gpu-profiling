@@ -1121,6 +1121,21 @@ pipeline:
       kind: markdown
       target_path: docs/experiments/register-cap-filter.md
       environment: py
+      # Frozen on main. The census this document declares depends on
+      # ClimaCore.jl-mod/ext, so the next move of that submodule makes it stale
+      # and a `calkit run` would regenerate it against different policy code --
+      # which would silently restate the filter curve, and the cross-check
+      # against results/experiments/auto-register-cap/census.toml with it, for a
+      # stack the write-up is not about. The census is stored in Git, so the
+      # record survives a garbage collection; what needs protecting is the
+      # command, not the artifact.
+      #
+      # Not yet tagged: tagging wants the whole pipeline green and several GPU
+      # stages are stale on carried-over work. Tag it before unfreezing, so
+      # there is a rev where `calkit run register-cap-filter/wide-census`
+      # reproduces this. Re-measure by tagging a new experiment rather than by
+      # thawing this one.
+      frozen: true
     sgs-thread-order:
       kind: markdown
       target_path: docs/experiments/sgs-thread-order.md
