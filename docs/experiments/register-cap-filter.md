@@ -283,9 +283,12 @@ At 24 warps the policy would reach <!-- calkit value key=wider.24.priced_pct_of_
 Each new admission would need pricing one at a time, because nothing downstream of the arithmetic would catch a bad one.
 
 The CloudMicrophysics finding is the one that bears on whether to upstream this at all.
-At 16 warps the policy declines every one of the <!-- calkit value key=cm_852.kernels -->8<!-- /calkit value --> microphysics kernels of #852's table, so the <!-- calkit value key=cm_852.total_ms_per_step -->61.04<!-- /calkit value --> ms per step they cost is entirely outside its reach once that lands, and the 2.9% the policy is credited with today rests on kernels #852 takes registers out of instead.
+At 16 warps the policy declines every one of the <!-- calkit value key=cm_852.kernels -->8<!-- /calkit value --> microphysics kernels of #852's table, so the <!-- calkit value key=cm_852.total_ms_per_step -->61.04<!-- /calkit value --> ms per step they cost is entirely outside its reach once that lands.
 At 24 warps five of them return, carrying <!-- calkit value key=cm_852.by_warps.24.candidate_share_pct -->81.4<!-- /calkit value -->% of that time.
-So the setting that would keep the policy relevant is the one its only screen cannot be trusted to guard, which is the honest statement of where this stands.
+
+**Corrected 2026-11-17.** This paragraph used to continue "and the 2.9% the policy is credited with today rests on kernels #852 takes registers out of instead", and conclude that the setting which would keep the policy relevant is the one its only screen cannot be trusted to guard.
+`docs/experiments/register-cap-after-cm852.md` put the stack in the arm and measured it: most of the priced saving is still in the policy's reach at 16 warps, so both of those statements are wrong.
+The mistake is the inference and not the arithmetic, which that census confirms exactly --- **#852's table is not the population.** The table lists the kernels its author profiled, the kernel carrying most of this policy's priced saving is not among them, and a replay against a published table can only ever say whether the kernels in that table are still candidates.
 
 What the policy is worth keeping for is unchanged by any of it: it found five kernels nobody had looked at, two of them in ClimaLand, and it declines 685 of 690 by default.
 That is a mechanism argument, and it is the one to make upstream --- not the 2.9%.

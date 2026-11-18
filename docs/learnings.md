@@ -4141,3 +4141,39 @@ The generalization: when a policy puts a cheap test in front of an expensive
 measurement, census it with the cheap test open and impose it in analysis. The
 cost is bounded by the number of candidates the cheap test was hiding, and what
 you buy is every counterfactual at once.
+
+## 8x. A published table is not the population (2026-11-17)
+
+`docs/experiments/register-cap-after-cm852.md` has the figures.
+
+The question was whether ClimaCore's automatic register cap still finds anything
+once CloudMicrophysics #852 lands, and #852's pull request publishes a table of
+its eight microphysics kernels with their register counts. Every filter the cap
+applies before compiling is arithmetic on a register count, so the table was
+enough to replay the policy's decision for each of those eight: it declines all
+of them at the shipped setting. The conclusion drawn --- that the cap's measured
+saving was a proxy for #852's and would be spent --- then ran ahead of what the
+replay could support, and a census on the real stack showed it false for most of
+the saving.
+
+What the replay could not see is the part of the population the table omits. The
+cap's saving was priced over three kernels, and the largest of the three, worth
+about two thirds of it, is a ClimaAtmos microphysics *cache* kernel that #852's
+table does not list. #852 lowered its register count substantially and left it
+one occupancy band short, so the policy still admits it and still caps it. The
+two kernels the table does name are the two that escaped.
+
+The replay was arithmetically exact --- the census reproduced its verdict on all
+eight rows --- which is what made the overreach easy. A correct answer about the
+rows of a table reads as an answer about the subsystem, and the gap between them
+is invisible from inside the table. An author's table lists what that author
+profiled, for the comparison that author was making; it is a sample of the
+population chosen by someone answering a different question.
+
+So when a treatment's reach is the question, enumerate the population and not
+the published rows. The matching is where this bites twice over: the same
+experiment nearly lost one of the eight anyway, because #852 attributes its
+Jacobian row to `update_jacobian!` while this stack names the launch after the
+function that issues it, and a name match against the table's spelling found
+nothing and said nothing. Assert that every row of a borrowed table matches
+something before drawing a conclusion from the match.
