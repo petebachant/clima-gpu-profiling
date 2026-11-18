@@ -1,0 +1,576 @@
+{
+  "stack": {
+    "specializations": 627,
+    "max_warps": 64,
+    "max_shed": 12,
+    "measured": "2026-11-17",
+    "steps": 35,
+    "checked_warps": 627,
+    "checked_edges": 117
+  },
+  "curve": {
+    "16": {
+      "capped": 3,
+      "candidates": 3,
+      "spill_over_budget": 0,
+      "buys_no_warps": 0
+    },
+    "20": {
+      "capped": 10,
+      "candidates": 10,
+      "spill_over_budget": 0,
+      "buys_no_warps": 0
+    },
+    "24": {
+      "capped": 17,
+      "candidates": 17,
+      "spill_over_budget": 0,
+      "buys_no_warps": 0
+    },
+    "32": {
+      "capped": 27,
+      "candidates": 27,
+      "spill_over_budget": 0,
+      "buys_no_warps": 0
+    },
+    "48": {
+      "capped": 110,
+      "candidates": 111,
+      "spill_over_budget": 1,
+      "buys_no_warps": 0
+    },
+    "64": {
+      "capped": 110,
+      "candidates": 111,
+      "spill_over_budget": 1,
+      "buys_no_warps": 0
+    }
+  },
+  "curve_before": {
+    "16": {
+      "capped": 5,
+      "candidates": 5,
+      "spill_over_budget": 0,
+      "buys_no_warps": 0
+    },
+    "20": {
+      "capped": 12,
+      "candidates": 12,
+      "spill_over_budget": 0,
+      "buys_no_warps": 0
+    },
+    "24": {
+      "capped": 14,
+      "candidates": 14,
+      "spill_over_budget": 0,
+      "buys_no_warps": 0
+    },
+    "32": {
+      "capped": 27,
+      "candidates": 27,
+      "spill_over_budget": 0,
+      "buys_no_warps": 0
+    },
+    "48": {
+      "capped": 125,
+      "candidates": 127,
+      "spill_over_budget": 2,
+      "buys_no_warps": 0
+    },
+    "64": {
+      "capped": 125,
+      "candidates": 127,
+      "spill_over_budget": 2,
+      "buys_no_warps": 0
+    }
+  },
+  "micro": {
+    "functions": [
+      "set_microphysics_tendency_cache",
+      "set_precipitation_velocities",
+      "update_implicit_1m_tendency",
+      "update_implicit_microphysics_jacobian",
+      "update_updraft_microphysics_tendency_cache"
+    ],
+    "specializations": 6,
+    "specializations_before": 15,
+    "capped_at_16": 0,
+    "capped_at_24": 4,
+    "capped_at_32": 4,
+    "resident_at_16": 6,
+    "resident_at_24": 2,
+    "spill_over_budget_at_24": 0,
+    "buys_no_warps_at_24": 0,
+    "edge_too_far_at_24": 0,
+    "max_registers": 88,
+    "min_registers": 48,
+    "min_warps": 20,
+    "at_target_at_24": 3,
+    "below_target_at_24": 1,
+    "by_function": {
+      "set_microphysics_tendency_cache": {
+        "specializations": 1,
+        "max_registers": 75,
+        "min_warps": 24,
+        "capped_at_16": 0,
+        "capped_at_24": 1
+      },
+      "set_precipitation_velocities": {
+        "specializations": 1,
+        "max_registers": 48,
+        "min_warps": 40,
+        "capped_at_16": 0,
+        "capped_at_24": 0
+      },
+      "update_implicit_1m_tendency": {
+        "specializations": 1,
+        "max_registers": 55,
+        "min_warps": 36,
+        "capped_at_16": 0,
+        "capped_at_24": 0
+      },
+      "update_implicit_microphysics_jacobian": {
+        "specializations": 1,
+        "max_registers": 74,
+        "min_warps": 24,
+        "capped_at_16": 0,
+        "capped_at_24": 1
+      },
+      "update_updraft_microphysics_tendency_cache": {
+        "specializations": 2,
+        "max_registers": 88,
+        "min_warps": 20,
+        "capped_at_16": 0,
+        "capped_at_24": 2
+      }
+    },
+    "kernels": [
+      {
+        "kernel": "update_updraft_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cac",
+        "registers": 88,
+        "warps": 20,
+        "edge": 80,
+        "shed": 8,
+        "capped_warps": 24,
+        "local_bytes": 32,
+        "capped_local_bytes": 40,
+        "local_budget": 64,
+        "at_16": "already_resident",
+        "at_24": "capped",
+        "at_32": "capped"
+      },
+      {
+        "kernel": "set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphy",
+        "registers": 75,
+        "warps": 24,
+        "edge": 72,
+        "shed": 3,
+        "capped_warps": 28,
+        "local_bytes": 32,
+        "capped_local_bytes": 32,
+        "local_budget": 64,
+        "at_16": "already_resident",
+        "at_24": "capped",
+        "at_32": "capped"
+      },
+      {
+        "kernel": "update_updraft_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cac",
+        "registers": 75,
+        "warps": 24,
+        "edge": 72,
+        "shed": 3,
+        "capped_warps": 28,
+        "local_bytes": 32,
+        "capped_local_bytes": 32,
+        "local_budget": 64,
+        "at_16": "already_resident",
+        "at_24": "capped",
+        "at_32": "capped"
+      },
+      {
+        "kernel": "update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_mod_src_prognost",
+        "registers": 74,
+        "warps": 24,
+        "edge": 72,
+        "shed": 2,
+        "capped_warps": 28,
+        "local_bytes": 32,
+        "capped_local_bytes": 32,
+        "local_budget": 64,
+        "at_16": "already_resident",
+        "at_24": "capped",
+        "at_32": "capped"
+      },
+      {
+        "kernel": "update_implicit_1m_tendency__FILE_ClimaAtmos_jl_mod_src_cache_microphysics",
+        "registers": 55,
+        "warps": 36,
+        "edge": 48,
+        "shed": 7,
+        "capped_warps": 40,
+        "local_bytes": 32,
+        "capped_local_bytes": 32,
+        "local_budget": 64,
+        "at_16": "already_resident",
+        "at_24": "already_resident",
+        "at_32": "already_resident"
+      },
+      {
+        "kernel": "set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_microphysic",
+        "registers": 48,
+        "warps": 40,
+        "edge": 40,
+        "shed": 8,
+        "capped_warps": 48,
+        "local_bytes": 0,
+        "capped_local_bytes": 24,
+        "local_budget": 32,
+        "at_16": "already_resident",
+        "at_24": "already_resident",
+        "at_32": "already_resident"
+      }
+    ]
+  },
+  "micro_before": {
+    "specializations": 15,
+    "capped_at_16": 2,
+    "capped_at_24": 3,
+    "resident_at_16": 13,
+    "max_registers": 108,
+    "min_warps": 16,
+    "capped_at_16_registers": 108,
+    "capped_at_16_warps": 16,
+    "capped_at_16_edge": 96,
+    "capped_at_16_warps_bought": 20,
+    "by_function": {
+      "set_microphysics_tendency_cache": {
+        "specializations": 1,
+        "max_registers": 108,
+        "min_warps": 16,
+        "capped_at_16": 1,
+        "capped_at_24": 1
+      },
+      "set_precipitation_velocities": {
+        "specializations": 1,
+        "max_registers": 64,
+        "min_warps": 32,
+        "capped_at_16": 0,
+        "capped_at_24": 0
+      },
+      "update_implicit_1m_tendency": {
+        "specializations": 1,
+        "max_registers": 49,
+        "min_warps": 36,
+        "capped_at_16": 0,
+        "capped_at_24": 0
+      },
+      "update_implicit_microphysics_jacobian": {
+        "specializations": 10,
+        "max_registers": 48,
+        "min_warps": 40,
+        "capped_at_16": 0,
+        "capped_at_24": 0
+      },
+      "update_updraft_microphysics_tendency_cache": {
+        "specializations": 2,
+        "max_registers": 108,
+        "min_warps": 16,
+        "capped_at_16": 1,
+        "capped_at_24": 2
+      }
+    },
+    "kernels": [
+      {
+        "kernel": "set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphy",
+        "registers": 108,
+        "warps": 16,
+        "edge": 96,
+        "shed": 12,
+        "capped_warps": 20,
+        "local_bytes": 32,
+        "capped_local_bytes": 56,
+        "local_budget": 64,
+        "at_16": "capped",
+        "at_24": "capped",
+        "at_32": "capped"
+      },
+      {
+        "kernel": "update_updraft_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cac",
+        "registers": 108,
+        "warps": 16,
+        "edge": 96,
+        "shed": 12,
+        "capped_warps": 20,
+        "local_bytes": 32,
+        "capped_local_bytes": 56,
+        "local_budget": 64,
+        "at_16": "capped",
+        "at_24": "capped",
+        "at_32": "capped"
+      },
+      {
+        "kernel": "update_updraft_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cac",
+        "registers": 90,
+        "warps": 20,
+        "edge": 80,
+        "shed": 10,
+        "capped_warps": 24,
+        "local_bytes": 32,
+        "capped_local_bytes": 48,
+        "local_budget": 64,
+        "at_16": "already_resident",
+        "at_24": "capped",
+        "at_32": "capped"
+      },
+      {
+        "kernel": "set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_microphysic",
+        "registers": 64,
+        "warps": 32,
+        "edge": 56,
+        "shed": 8,
+        "capped_warps": 36,
+        "local_bytes": 0,
+        "capped_local_bytes": 0,
+        "local_budget": 32,
+        "at_16": "already_resident",
+        "at_24": "already_resident",
+        "at_32": "capped"
+      },
+      {
+        "kernel": "update_implicit_1m_tendency__FILE_ClimaAtmos_jl_mod_src_cache_microphysics",
+        "registers": 49,
+        "warps": 36,
+        "edge": 48,
+        "shed": 1,
+        "capped_warps": 40,
+        "local_bytes": 32,
+        "capped_local_bytes": 32,
+        "local_budget": 64,
+        "at_16": "already_resident",
+        "at_24": "already_resident",
+        "at_32": "already_resident"
+      },
+      {
+        "kernel": "update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_mod_src_prognost",
+        "registers": 48,
+        "warps": 40,
+        "edge": 40,
+        "shed": 8,
+        "capped_warps": 48,
+        "local_bytes": 0,
+        "capped_local_bytes": 40,
+        "local_budget": 32,
+        "at_16": "already_resident",
+        "at_24": "already_resident",
+        "at_32": "already_resident"
+      },
+      {
+        "kernel": "update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_mod_src_prognost",
+        "registers": 44,
+        "warps": 40,
+        "edge": 40,
+        "shed": 4,
+        "capped_warps": 48,
+        "local_bytes": 32,
+        "capped_local_bytes": 32,
+        "local_budget": 64,
+        "at_16": "already_resident",
+        "at_24": "already_resident",
+        "at_32": "already_resident"
+      },
+      {
+        "kernel": "update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_mod_src_prognost",
+        "registers": 43,
+        "warps": 40,
+        "edge": 40,
+        "shed": 3,
+        "capped_warps": 48,
+        "local_bytes": 32,
+        "capped_local_bytes": 32,
+        "local_budget": 64,
+        "at_16": "already_resident",
+        "at_24": "already_resident",
+        "at_32": "already_resident"
+      },
+      {
+        "kernel": "update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_mod_src_prognost",
+        "registers": 38,
+        "warps": 48,
+        "edge": 32,
+        "shed": 6,
+        "capped_warps": 64,
+        "local_bytes": 32,
+        "capped_local_bytes": 32,
+        "local_budget": 64,
+        "at_16": "already_resident",
+        "at_24": "already_resident",
+        "at_32": "already_resident"
+      },
+      {
+        "kernel": "update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_mod_src_prognost",
+        "registers": 36,
+        "warps": 48,
+        "edge": 32,
+        "shed": 4,
+        "capped_warps": 64,
+        "local_bytes": 32,
+        "capped_local_bytes": 32,
+        "local_budget": 64,
+        "at_16": "already_resident",
+        "at_24": "already_resident",
+        "at_32": "already_resident"
+      },
+      {
+        "kernel": "update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_mod_src_prognost",
+        "registers": 28,
+        "warps": 64,
+        "edge": null,
+        "shed": null,
+        "capped_warps": null,
+        "local_bytes": 0,
+        "capped_local_bytes": null,
+        "local_budget": 32,
+        "at_16": "already_resident",
+        "at_24": "already_resident",
+        "at_32": "already_resident"
+      },
+      {
+        "kernel": "update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_mod_src_prognost",
+        "registers": 24,
+        "warps": 64,
+        "edge": null,
+        "shed": null,
+        "capped_warps": null,
+        "local_bytes": 0,
+        "capped_local_bytes": null,
+        "local_budget": 32,
+        "at_16": "already_resident",
+        "at_24": "already_resident",
+        "at_32": "already_resident"
+      },
+      {
+        "kernel": "update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_mod_src_prognost",
+        "registers": 21,
+        "warps": 64,
+        "edge": null,
+        "shed": null,
+        "capped_warps": null,
+        "local_bytes": 0,
+        "capped_local_bytes": null,
+        "local_budget": 32,
+        "at_16": "already_resident",
+        "at_24": "already_resident",
+        "at_32": "already_resident"
+      },
+      {
+        "kernel": "update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_mod_src_prognost",
+        "registers": 16,
+        "warps": 64,
+        "edge": null,
+        "shed": null,
+        "capped_warps": null,
+        "local_bytes": 0,
+        "capped_local_bytes": null,
+        "local_budget": 32,
+        "at_16": "already_resident",
+        "at_24": "already_resident",
+        "at_32": "already_resident"
+      },
+      {
+        "kernel": "update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_mod_src_prognost",
+        "registers": 14,
+        "warps": 64,
+        "edge": null,
+        "shed": null,
+        "capped_warps": null,
+        "local_bytes": 0,
+        "capped_local_bytes": null,
+        "local_budget": 32,
+        "at_16": "already_resident",
+        "at_24": "already_resident",
+        "at_32": "already_resident"
+      }
+    ]
+  },
+  "population": {
+    "at_target_at_24": 7,
+    "at_target_at_24_before": 2,
+    "specializations_before": 690
+  },
+  "measured": {
+    "device_saving_pct": 2.917,
+    "capped_priced": 3,
+    "capped_pct_of_device": 25.74,
+    "capped_share_of_saving_pct": 103.0,
+    "max_warps": 16
+  },
+  "retention": {
+    "kernels": [
+      {
+        "kernel": "set_environment_1m_tendency__FILE_ClimaAtmos_jl_mod_src_cache_mi",
+        "saving_ms": 715.3,
+        "change_pct": -9.76,
+        "registers_then": 136,
+        "warps_then": 12,
+        "warps_then_capped": 16,
+        "registers_now": 99,
+        "warps_now": 16,
+        "specializations_now": 3,
+        "still_capped_at_16": 1,
+        "warps_now_capped": 20
+      },
+      {
+        "kernel": "update_updraft_microphysics_tendency_cache__FILE_ClimaAtmos_jl_m",
+        "saving_ms": 229.1,
+        "change_pct": -13.51,
+        "registers_then": 108,
+        "warps_then": 16,
+        "warps_then_capped": 20,
+        "registers_now": 88,
+        "warps_now": 20,
+        "specializations_now": 2,
+        "still_capped_at_16": 0,
+        "warps_now_capped": null
+      },
+      {
+        "kernel": "set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cach",
+        "saving_ms": 101.7,
+        "change_pct": -14.06,
+        "registers_then": 108,
+        "warps_then": 16,
+        "warps_then_capped": 20,
+        "registers_now": 75,
+        "warps_now": 24,
+        "specializations_now": 1,
+        "still_capped_at_16": 0,
+        "warps_now_capped": null
+      }
+    ],
+    "top": {
+      "kernel": "set_environment_1m_tendency__FILE_ClimaAtmos_jl_mod_src_cache_mi",
+      "saving_ms": 715.3,
+      "change_pct": -9.76,
+      "registers_then": 136,
+      "warps_then": 12,
+      "warps_then_capped": 16,
+      "registers_now": 99,
+      "warps_now": 16,
+      "specializations_now": 3,
+      "still_capped_at_16": 1,
+      "warps_now_capped": 20
+    },
+    "retained_kernels": 1,
+    "lost_kernels": 2,
+    "retained_ms": 715.3,
+    "lost_ms": 330.8,
+    "total_ms": 1046.1,
+    "retained_pct": 68.4,
+    "lost_pct": 31.6,
+    "device_pct_still_in_reach": 1.99
+  },
+  "predicted": {
+    "candidates_at_16": 0,
+    "candidates_at_24": 5,
+    "source": "https://github.com/CliMA/CloudMicrophysics.jl/pull/852"
+  }
+}

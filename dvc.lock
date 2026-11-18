@@ -1109,13 +1109,13 @@ stages:
     deps:
     - path: ClimaAtmos.jl
       hash: md5
-      md5: 520b73dfc0ab3778646bb3342703a43a.dir
-      size: 7989862
+      md5: bd9a74099c5eb26d22057a4783e53c13.dir
+      size: 8076034
       nfiles: 658
     - path: ClimaAtmos.jl-mod
       hash: md5
-      md5: 520b73dfc0ab3778646bb3342703a43a.dir
-      size: 7989862
+      md5: bd9a74099c5eb26d22057a4783e53c13.dir
+      size: 8076034
       nfiles: 658
     - path: ClimaCore.jl
       hash: md5
@@ -1129,18 +1129,18 @@ stages:
       nfiles: 624
     - path: ClimaCoupler.jl
       hash: md5
-      md5: 86934a28756e09679cd431d94a669b4f.dir
-      size: 10438228
+      md5: 6bf81a5eb48a2cc60acb64b3e23fd657.dir
+      size: 10438302
       nfiles: 286
     - path: ClimaCoupler.jl-mod
       hash: md5
-      md5: 023250c014220ca154122a2ea048962f.dir
-      size: 10438264
+      md5: 6eec626710402c7e6658b23ffdff13e9.dir
+      size: 10438346
       nfiles: 286
     - path: CloudMicrophysics.jl-mod
       hash: md5
-      md5: de9169127b0c09674dbc94101aea144f.dir
-      size: 2847950
+      md5: 3818efb24f20b72f1783b4e51846970c.dir
+      size: 2865596
       nfiles: 290
     - path: RRTMGP.jl
       hash: md5
@@ -1160,9 +1160,9 @@ stages:
     outs:
     - path: diffs
       hash: md5
-      md5: 53e8d2ad2dd89874ab6e6e9b25612f77.dir
-      size: 18121
-      nfiles: 4
+      md5: 6ec162462d01857cfb552e0acbe5542e.dir
+      size: 122392
+      nfiles: 6
   compare-kernels:
     cmd: calkit nb execute --environment py --no-check --to html 
       "notebooks/compare-kernels.ipynb"
@@ -1379,13 +1379,13 @@ stages:
       nfiles: 2
     - path: calkit.yaml
       hash: md5
-      md5: 5659bc242a68ce433b5691a6de02109a
-      size: 90675
+      md5: 32c7d3465d086d80f7f71ebdcfe62f6c
+      size: 90581
     - path: diffs
       hash: md5
-      md5: 53e8d2ad2dd89874ab6e6e9b25612f77.dir
-      size: 18121
-      nfiles: 4
+      md5: 6ec162462d01857cfb552e0acbe5542e.dir
+      size: 122392
+      nfiles: 6
     - path: scripts/record-treatment.py
       hash: md5
       md5: d775fc4aab92d1542acf9d08937a1b20
@@ -1393,8 +1393,8 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: b28a5b712f9208f1d324738b81fdff63
-      size: 32435
+      md5: b812142bc64951ca8e42cff79ed07e0a
+      size: 32584
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
       scripts/build-experiment-index.py
@@ -5495,3 +5495,121 @@ stages:
       hash: md5
       md5: 8b8f124841e79671fe83d709e5a8a5c4
       size: 44159
+  register-cap-after-cm852/census:
+    cmd: calkit scheduler batch --name register-cap-after-cm852/census 
+      --environment clima --dep scripts/census-auto-register-cap.jl --dep 
+      scripts/run-julia-script.sh --dep ClimaCore.jl-mod/src --dep 
+      ClimaCore.jl-mod/ext --dep ClimaAtmos.jl-mod/src --dep 
+      CloudMicrophysics.jl-mod/src --dep ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep .calkit/env-locks/clima --out 
+      results/experiments/register-cap-after-cm852/census-wide.toml --option 
+      --gpus=1 --option --time=180 -- 
+      .calkit/markdown/docs/experiments/register-cap-after-cm852.md/census.sh
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: 
+        .calkit/markdown/docs/experiments/register-cap-after-cm852.md/census.sh
+      hash: md5
+      md5: f7bbf4408354a6d22a2849a79130ec83
+      size: 729
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: dc238eb8836fd7c0757bc6c78a27b8d0.dir
+      size: 2762733
+      nfiles: 178
+    - path: ClimaCore.jl-mod/ext
+      hash: md5
+      md5: 1676457c141c9757cef3de16f32c0c87.dir
+      size: 234259
+      nfiles: 26
+    - path: ClimaCore.jl-mod/src
+      hash: md5
+      md5: 282b87c6311147ecb0d36fcd2bc3062d.dir
+      size: 1476933
+      nfiles: 105
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 3974e589a2618f7adb8c0164acb5807b
+      size: 855
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      hash: md5
+      md5: d963f97c56fe62279fc867356c75f022
+      size: 138539
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: ClimaCoupler.jl-mod/src
+      hash: md5
+      md5: 8175d14b441b725ab7b1e68604ad0136.dir
+      size: 331248
+      nfiles: 22
+    - path: CloudMicrophysics.jl-mod/src
+      hash: md5
+      md5: 344914f3192f21913abd262168ecb0c0.dir
+      size: 609324
+      nfiles: 70
+    - path: scripts/census-auto-register-cap.jl
+      hash: md5
+      md5: bf325326a2931025bc3dd93624d40af5
+      size: 6004
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: 2b491e48a8f15c4ea7ff76d19d95f830
+      size: 1040
+    outs:
+    - path: .calkit/scheduler/logs/register-cap-after-cm852/census.out
+      hash: md5
+      md5: 15b31b3dd20a37f86bde4e9ab78601dc
+      size: 115964
+    - path: results/experiments/register-cap-after-cm852/census-wide.toml
+      hash: md5
+      md5: 72b6ca8226cffe5e1a8c57b205d85caf
+      size: 187900
+  register-cap-after-cm852/values:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/experiments/register-cap-after-cm852.md/values.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: 
+        .calkit/markdown/docs/experiments/register-cap-after-cm852.md/values.py
+      hash: md5
+      md5: 8b08df7219709490468b04f168ad6275
+      size: 12787
+    - path: data/cm-852-registers.toml
+      hash: md5
+      md5: cbc8fcc081f43fc40e40bb418a57a969
+      size: 3136
+    - path: results/docs/auto-register-cap.json
+      hash: md5
+      md5: e6706bc8f0ff9565af7e581514f397cf
+      size: 2159
+    - path: results/experiments/register-cap-after-cm852/census-wide.toml
+      hash: md5
+      md5: 72b6ca8226cffe5e1a8c57b205d85caf
+      size: 187900
+    - path: results/experiments/register-cap-filter/census-wide.toml
+      hash: md5
+      md5: 7ccdc0f216e547f0babb42e3ce2bf0fe
+      size: 207553
+    - path: scripts/register_bands.py
+      hash: md5
+      md5: 8c775d93f8d35c3371392648e709e6b7
+      size: 4379
+    outs:
+    - path: results/docs/register-cap-after-cm852.json
+      hash: md5
+      md5: e06dbb1688676fcc4a04f53c1ef743d6
+      size: 15697

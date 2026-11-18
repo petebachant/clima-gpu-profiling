@@ -1,0 +1,2343 @@
+diff --git a/Project.toml b/Project.toml
+index 8e0c080d..d626131c 100644
+--- a/Project.toml
++++ b/Project.toml
+@@ -27,7 +27,7 @@ EmulatorModelsExt = ["DataFrames", "MLJ"]
+ 
+ [compat]
+ Adapt = "4"
+-ClimaParams = "1.3.7"
++ClimaParams = "1.3.11"
+ DataFrames = "1.6"
+ DocStringExtensions = "0.8, 0.9, 0.10"
+ FastGaussQuadrature = "1"
+diff --git a/docs/src/API.md b/docs/src/API.md
+index eabee864..94485470 100644
+--- a/docs/src/API.md
++++ b/docs/src/API.md
+@@ -383,6 +383,7 @@ Utilities.return_type_of
+ Utilities.find_zeros
+ Utilities.scan_zeros
+ Utilities.ϵ_numerics
++Utilities.precomputed
+ Utilities.gamma_inc
+ Utilities.gamma_inc_inv
+ Utilities.rime_mass_fraction
+@@ -406,6 +407,7 @@ Common.a_w_xT
+ Common.a_w_eT
+ Common.a_w_ice
+ Common.Chen2022_vel_coeffs
++Common.Chen2022_large_ice_table
+ Common.Chen2022_monodisperse_pdf
+ Common.Chen2022_exponential_pdf
+ Common.volume_sphere_D
+diff --git a/docs/src/Parameters.md b/docs/src/Parameters.md
+index 5af201d5..21f51989 100644
+--- a/docs/src/Parameters.md
++++ b/docs/src/Parameters.md
+@@ -147,6 +147,37 @@ The process functions guard against this with
+   and raise an `ArgumentError` that names the option and the constructor call
+   that fixes it, instead of failing with an obscure field-access error.
+ 
++## Parameter values as type parameters
++
++All parameter structs are defined with
++  [`ClimaParams.@params`](https://clima.github.io/ClimaParams.jl/dev/API/#ClimaParams.@params)
++  instead of `@kwdef`.
++By default (the "type" mode of the `CLIMA_PARAMS_MODE` preference), this
++  macro moves the field values into a type parameter, so every parameter struct
++  is a singleton whose values are compile-time constants.
++The compiler folds them into the code that reads them, which removes them from
++  the arguments of GPU kernels and lowers their register usage.
++Parameter structs are constructed, read and dispatched on the same way in both
++  modes, except for `getfield` and `fieldtype`, which return `nothing` and
++  `Nothing` in "type" mode: read a field with `getproperty` (`p.field`), and
++  get its type with `typeof(p.field)`.
++
++Because every set of values is a different type, code that uses a new set of
++  values is compiled again.
++Applications that construct many sets of values, such as calibrations and
++  parameter sweeps, should switch to "bits" mode, in which `@params` is
++  equivalent to `@kwdef` and new values need no recompilation.
++To do this, add the following to the `Project.toml` of the environment that
++  runs them, and restart Julia (the mode is fixed during compilation):
++
++```toml
++[preferences.ClimaParams]
++CLIMA_PARAMS_MODE = "bits"
++```
++
++The documentation of `ClimaParams.@params` describes both modes in more
++  detail, including how to set the preference from a script.
++
+ ## Overriding parameter values
+ 
+ Overrides are applied when the `ParamDict` is created, so a single override
+@@ -215,7 +246,9 @@ This writes all used parameters (with their final values) to a TOML file that
+    Prefer a long, descriptive ClimaParams name (they must be unique across all
+    CliMA packages) and a short field name that matches the notation of the
+    documentation.
+-   A new struct gets a `name_map` method and an entry in `parameter_groups()`;
++   A new struct is defined with `@params` (see
++   [Parameter values as type parameters](@ref)),
++   and it gets a `name_map` method and an entry in `parameter_groups()`;
+    add it to `PLAIN_PARAMETER_TYPES` if its constructor needs nothing beyond
+    the map, otherwise write the constructor by hand using
+    `make_params(td, name_map(T))`.
+diff --git a/ext/EmulatorModelsExt.jl b/ext/EmulatorModelsExt.jl
+index 2165d23d..9422bf51 100644
+--- a/ext/EmulatorModelsExt.jl
++++ b/ext/EmulatorModelsExt.jl
+@@ -110,7 +110,7 @@ function CMP.AerosolActivationParameters(ekp_params::AbstractArray{FT}) where {F
+     (f1, f2, g1, g2, p1, p2) = FT.(ekp_params)
+     cur_values = (;
+         (
+-            name => getfield(default_param_set, name) for
++            name => getproperty(default_param_set, name) for
+             name in fieldnames(typeof(default_param_set))
+         )...
+     )
+diff --git a/src/BulkMicrophysicsTendencies.jl b/src/BulkMicrophysicsTendencies.jl
+index b617bcc1..12c6d4d0 100644
+--- a/src/BulkMicrophysicsTendencies.jl
++++ b/src/BulkMicrophysicsTendencies.jl
+@@ -185,52 +185,96 @@ the term of the inactive branch is zero.
+     ::Microphysics1Moment, mp::CMP.Microphysics1MParams, tps,
+     ρ, T, w, q_tot, q_lcl, q_icl, q_rai, q_sno,
+ )
+-    # Clamp negative inputs to zero (robustness against numerical errors)
+-    ρ = UT.clamp_to_nonneg(ρ)
+-    q_tot = UT.clamp_to_nonneg(q_tot)
+-    q_lcl = UT.clamp_to_nonneg(q_lcl)
+-    q_icl = UT.clamp_to_nonneg(q_icl)
+-    q_rai = UT.clamp_to_nonneg(q_rai)
+-    q_sno = UT.clamp_to_nonneg(q_sno)
++    state = _source_state(mp, tps, ρ, T, w, q_tot, q_lcl, q_icl, q_rai, q_sno)
++    return _foldl_source_terms(merge, (;), mp, tps, state, _vapor_source_terms(mp, tps, state))
++end
++
++"""
++    _source_state(mp, tps, ρ, T, w, q_tot, q_lcl, q_icl, q_rai, q_sno)
++
++Inputs of the 1-moment process rates, with negative values clamped to zero (robustness against
++numerical errors): the state tuples `micro = (; q_tot, q_lcl, q_icl, q_rai, q_sno)` and
++`thermo = (; ρ, T, w)`, and the size-distribution and fall-speed quantities `sd` (λ⁻¹, n₀, v₀ of
++rain, snow and cloud ice), which are pow/exp-heavy and shared by several processes of a species.
++If a vapor-driven phase change is enabled (`_vapor_coupling`), `thermo` also holds the saturation
++vapor pressures over liquid and ice (`TDI.saturation_vapor_pressures`), which those processes share.
++"""
++@inline function _source_state(mp::CMP.Microphysics1MParams, tps, ρ, T, w, q_tot, q_lcl, q_icl, q_rai, q_sno)
++    micro = (;
++        q_tot = UT.clamp_to_nonneg(q_tot),
++        q_lcl = UT.clamp_to_nonneg(q_lcl), q_icl = UT.clamp_to_nonneg(q_icl),
++        q_rai = UT.clamp_to_nonneg(q_rai), q_sno = UT.clamp_to_nonneg(q_sno),
++    )
++    thermo = (; ρ = UT.clamp_to_nonneg(ρ), T, w)
++    thermo = isnothing(_vapor_coupling(mp.processes)) ? thermo : merge(thermo, TDI.saturation_vapor_pressures(tps, T))
++    return (; micro, thermo, sd = CM1.size_distr_parameters(mp, micro, thermo))
++end
+ 
+-    FT = UT.promote_typeof(ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno)
++"""
++    _vapor_source_terms(mp, tps, state)
++
++The terms of the four vapor-driven phase changes of the 1-moment scheme at the `state` of
++`_source_state`: the two cloud phase changes (bidirectional, with their relaxation timescales
++without Γ, `Inf` when disabled) and the two exchanges of the precipitation with the vapor.
++"""
++@inline function _vapor_source_terms(mp::CMP.Microphysics1MParams, tps, (; micro, thermo, sd))
+     procs = mp.processes
++    (; ρ, T) = thermo
++    FT = UT.promote_typeof(ρ, T, values(micro)...)
++    (S_icl, τ_icl) = CMNonEq.conv_and_τ_vap_to_q_icl(procs.cloud_ice_formation, mp, tps, micro, thermo)
++    return (;
++        S_phase_change_vap_lcl = VaporRelaxation(:q_lcl,
++            CMNonEq.conv_q_vap_to_q_lcl(procs.cloud_liquid_formation, mp, tps, micro, thermo),
++            CMNonEq.τ_vap_to_q_lcl(procs.cloud_liquid_formation, mp, tps, micro, thermo),
++        ),
++        S_phase_change_vap_icl = VaporRelaxation(:q_icl, S_icl, τ_icl,
++            CMNonEq.INP_limiter(
++                one(FT), tps, T; micro.q_lcl, CMNonEq._ice_deposition_limits(procs.cloud_ice_formation, mp)...,
++            ),
++        ),
++        S_phase_change_vap_rai = VaporExchange(:q_rai,
++            CM1.conv_q_rai_to_q_vap(procs.rain_condensation_evaporation, mp, tps, micro, thermo, sd),
++        ),
++        S_phase_change_vap_sno = VaporExchange(:q_sno,
++            CM1.conv_q_sno_to_q_vap(procs.snow_deposition_sublimation, mp, tps, micro, thermo, sd),
++            CM1._snow_deposition_blocked(procs.snow_deposition_sublimation, tps, micro, thermo),
++        ),
++    )
++end
+ 
+-    # Construct state tuples (reused across all process calls)
+-    micro = (; q_tot, q_lcl, q_icl, q_rai, q_sno)
+-    thermo = (; ρ, T, w)
++"""
++    _foldl_source_terms(op, init, mp, tps, state, vapor)
+ 
+-    # Size-distribution / fall-speed quantities (λ⁻¹, n₀, v₀ for rain/snow/ice) are
+-    # pow/exp-heavy and shared by several processes per species: compute once and pass
+-    # to each process via its `sd` argument so they are not recomputed per process.
+-    sd = CM1.size_distr_parameters(mp, micro, thermo)
++Left fold of `op` over the terms of the 1-moment processes at the `state` of `_source_state`:
++`op(acc, terms)` is called with the `NamedTuple` of the terms of one process at a time, in the
++order of the terms of `_microphysics_source_terms`, so that a rate is consumed as soon as it
++is computed. `vapor` holds the terms of the four vapor-driven phase changes, from
++`_vapor_source_terms` or solved jointly by `_vapor_terms`.
++"""
++@inline function _foldl_source_terms(
++    op::F, init, mp::CMP.Microphysics1MParams, tps, (; micro, thermo, sd), vapor,
++) where {F}
++    procs = mp.processes
++    (; ρ, T) = thermo
++    FT = UT.promote_typeof(ρ, T, values(micro)...)
++    is_warm = T >= TDI.T_freeze(tps)
+ 
+     # --- Phase change: vapor ↔ cloud condensate (bidirectional, ±) ---
+-    # Relaxation timescales (without Γ); `Inf` when disabled
+-    S_phase_change_vap_lcl = VaporRelaxation(:q_lcl,
+-        CMNonEq.conv_q_vap_to_q_lcl(procs.cloud_liquid_formation, mp, tps, micro, thermo),
+-        CMNonEq.τ_vap_to_q_lcl(procs.cloud_liquid_formation, mp, tps, micro, thermo),
+-    )
+-
+-    S_phase_change_vap_icl = VaporRelaxation(:q_icl,
+-        CMNonEq.conv_q_vap_to_q_icl(procs.cloud_ice_formation, mp, tps, micro, thermo),
+-        CMNonEq.τ_vap_to_q_icl(procs.cloud_ice_formation, mp, tps, micro, thermo),
+-        CMNonEq.INP_limiter(one(FT), tps, T; q_lcl, CMNonEq._ice_deposition_limits(procs.cloud_ice_formation, mp)...),
+-    )
++    acc = op(init, (; vapor.S_phase_change_vap_lcl, vapor.S_phase_change_vap_icl))
+ 
+     # --- Autoconversion (cloud → precipitation, ≥ 0) ---
+     S_acnv_lcl_rai =
+         Transfer(:q_lcl => :q_rai, CM1.conv_q_lcl_to_q_rai(procs.rain_autoconversion, mp, tps, micro, thermo))
+-
++    acc = op(acc, (; S_acnv_lcl_rai))
+     S_acnv_icl_sno =
+         Transfer(:q_icl => :q_sno, CM1.conv_q_icl_to_q_sno(procs.snow_autoconversion, mp, tps, micro, thermo, sd))
++    acc = op(acc, (; S_acnv_icl_sno))
+ 
+     # --- Accretion (collisions between species) ---
+-    is_warm = T >= TDI.T_freeze(tps)
+-
+     # Cloud liquid + rain → rain
+     S_accr_lcl_rai =
+         Transfer(:q_lcl => :q_rai, CM1.accretion(procs.cloud_liquid_rain_accretion, mp, tps, micro, thermo, sd))
++    acc = op(acc, (; S_accr_lcl_rai))
+ 
+     # Cloud liquid + snow: product goes to sno (cold) or rai (warm), plus thermal melt.
+     # The previous accretion versions return a single number, this one has to return a tuple.
+@@ -242,53 +286,45 @@ the term of the inactive branch is zero.
+     S_accr_lcl_sno_cold = Transfer(:q_lcl => :q_sno, ifelse(is_warm, zero(FT), S_accr)) # cold
+     S_accr_lcl_sno_warm = Transfer(:q_lcl => :q_rai, ifelse(is_warm, S_accr, zero(FT))) # warm
+     S_accr_melt_lcl_sno = Transfer(:q_sno => :q_rai, S_melt) # thermal melt, zero when cold
++    acc = op(acc, (; S_accr_lcl_sno_cold, S_accr_lcl_sno_warm, S_accr_melt_lcl_sno))
+ 
+     # Cloud ice + rain → snow (ice-side sink)
+     S_accr_icl_rai =
+         Transfer(:q_icl => :q_sno, CM1.accretion(procs.cloud_ice_rain_accretion, mp, tps, micro, thermo, sd))
++    acc = op(acc, (; S_accr_icl_rai))
+ 
+     # Rain frozen in cloud ice + rain collision → snow (rain sink)
+     S_accr_freeze_icl_rai =
+         Transfer(:q_rai => :q_sno, CM1.accretion_rain_sink(procs.cloud_ice_rain_accretion, mp, tps, micro, thermo, sd))
++    acc = op(acc, (; S_accr_freeze_icl_rai))
+ 
+     # Cloud ice + snow → snow
+     S_accr_icl_sno =
+         Transfer(:q_icl => :q_sno, CM1.accretion(procs.cloud_ice_snow_accretion, mp, tps, micro, thermo, sd))
++    acc = op(acc, (; S_accr_icl_sno))
+ 
+     # Rain-snow collisions: split into cold/warm arms (inactive arm = zero)
+     (; S_rai_sno, S_sno_rai, S_melt) = CM1.accretion_snow_rain(procs.rain_snow_accretion, mp, tps, micro, thermo, sd)
+     S_accr_rai_sno_cold = Transfer(:q_rai => :q_sno, ifelse(is_warm, zero(FT), S_rai_sno)) # cold
+     S_accr_rai_sno_warm = Transfer(:q_sno => :q_rai, ifelse(is_warm, S_sno_rai, zero(FT))) # warm
+     S_accr_melt_rai_sno = Transfer(:q_sno => :q_rai, ifelse(is_warm, S_melt, zero(FT)))    # thermal melt
++    acc = op(acc, (; S_accr_rai_sno_cold, S_accr_rai_sno_warm, S_accr_melt_rai_sno))
+ 
+     # --- Phase change: precipitation ↔ vapor ---
+-    S_phase_change_vap_rai =
+-        VaporExchange(:q_rai, CM1.conv_q_rai_to_q_vap(procs.rain_condensation_evaporation, mp, tps, micro, thermo, sd))
+-    S_phase_change_vap_sno = VaporExchange(:q_sno,
+-        CM1.conv_q_sno_to_q_vap(procs.snow_deposition_sublimation, mp, tps, micro, thermo, sd),
+-        CM1._snow_deposition_blocked(procs.snow_deposition_sublimation, tps, micro, thermo),
+-    )
++    acc = op(acc, (; vapor.S_phase_change_vap_rai, vapor.S_phase_change_vap_sno))
+ 
+     # --- Melting ---
+     S_melt_icl_lcl =
+         Transfer(:q_icl => :q_lcl, CM1.conv_q_icl_to_q_lcl(procs.cloud_ice_melt, mp, tps, micro, thermo, sd))
++    acc = op(acc, (; S_melt_icl_lcl))
+     S_melt_sno_rai =
+         Transfer(:q_sno => :q_rai, CM1.conv_q_sno_to_q_rai(procs.snow_melt, mp, tps, micro, thermo, sd))
++    acc = op(acc, (; S_melt_sno_rai))
+ 
+     # --- Freezing ---
+     S_freeze_lcl_icl =
+         Transfer(:q_lcl => :q_icl, CM1.conv_q_lcl_to_q_icl(procs.cloud_liquid_freezing, mp, tps, micro, thermo))
+-
+-    return (;
+-        S_phase_change_vap_lcl, S_phase_change_vap_icl,
+-        S_acnv_lcl_rai, S_acnv_icl_sno,
+-        S_accr_lcl_rai, S_accr_lcl_sno_cold, S_accr_lcl_sno_warm, S_accr_melt_lcl_sno,
+-        S_accr_icl_rai, S_accr_freeze_icl_rai, S_accr_icl_sno,
+-        S_accr_rai_sno_cold, S_accr_rai_sno_warm, S_accr_melt_rai_sno,
+-        S_phase_change_vap_rai, S_phase_change_vap_sno,
+-        S_melt_icl_lcl, S_melt_sno_rai,
+-        S_freeze_lcl_icl,
+-    )
++    return op(acc, (; S_freeze_lcl_icl))
+ end
+ 
+ """
+@@ -351,15 +387,27 @@ construction of the implicit decays). Negative species are clamped to zero on in
+ @inline function linearized_step_1m(mp::CMP.Microphysics1MParams, tps, ρ, T, w, q_tot, q, Δt)
+     FT = eltype(q)
+     q = max.(q, zero(FT))   # non-negative pools (hosts may pass slightly negative reconstructed values)
+-    terms = _microphysics_source_terms(Microphysics1Moment(), mp, tps, ρ, T, w, q_tot, q...)
+     q_min = TDI.TD.Parameters.q_min(tps)
+-    (terms, sf) = _vapor_terms(mp.processes.vapor_relaxation, terms, tps, ρ, T, q_tot, q, Δt)
+-    lin = donor_linearization(terms, q, q_min, Δt)
++    state = _source_state(mp, tps, ρ, T, w, q_tot, q...)
++    vapor = _vapor_source_terms(mp, tps, state)
++    (vapor, sf) = _vapor_terms(_vapor_coupling(mp.processes), vapor, tps, ρ, T, q_tot, q, Δt, state.thermo)
++    # each process adds its terms to the linearization and to the decay totals as soon as its rates are known
++    init = (LinearizedTendency(typeof(q)), zero(q), (;))
++    (lin, Dpc, terms) = _foldl_source_terms(init, mp, tps, state, vapor) do (lin, Dpc, terms), new_terms
++        @inline
++        donor_linearization!(lin, new_terms, q, q_min, Δt)
++        (lin, first(limiter_decay_totals(new_terms, q, q_min, Δt, (Dpc, zero(q)))), merge(terms, new_terms))
++    end
++    # the diagonal of M is minus the total decay of each donor, so the decay of its terms that do not change phase
++    # is what the phase changes leave of it, and only one total per donor is carried through the processes
++    Dcol = typeof(q)(-SA.diag(lin.M)) - Dpc
+     q1 = backward_euler_solve(lin, q, one(FT), Δt)
+-    (; α_cap, f_lim, f_k) = _limiter_factors(mp, tps, terms, lin, q, q1, sf, q_tot, q_min, Δt)
++    (; α_cap, f_lim, f_k) = _limiter_factors(mp, tps, lin, Dpc, Dcol, q, q1, sf, q_tot, Δt)
+ 
+-    lin2 = donor_linearization(terms, q, q_min, Δt, f_k)
+-    q2 = backward_euler_solve(lin2, q, α_cap * f_lim, Δt)
++    # with both limiters inactive the limited linearization is `lin` and the second step is the first
++    q2 =
++        (α_cap == one(FT)) & (f_lim == one(FT)) ? q1 :
++        backward_euler_solve(limited_linearization(lin, Dpc, Dcol, f_k), q, α_cap * f_lim, Δt)
+     g_uniform = _uniform_scale(mp, tps, q, q2, q_tot, Δt)
+ 
+     dq_dt = (q2 - q) * (g_uniform / Δt)
+@@ -368,16 +416,41 @@ construction of the implicit decays). Negative species are clamped to zero on in
+ end
+ 
+ """
+-    _vapor_terms(coupling, terms, tps, ρ, T, q_tot, q, Δt)
++    _vapor_coupling(procs)
++
++The option `procs.vapor_relaxation` that couples the vapor-driven phase changes of the process
++options `procs`, or `nothing` if all four of them are disabled.
++"""
++@inline _vapor_coupling(procs) =
++    isnothing(procs.cloud_liquid_formation) && isnothing(procs.cloud_ice_formation) &&
++    isnothing(procs.rain_condensation_evaporation) && isnothing(procs.snow_deposition_sublimation) ?
++    nothing : procs.vapor_relaxation
++
++"""
++    _vapor_terms(coupling, terms, tps, ρ, T, q_tot, q, Δt, thermo = (; ρ, T))
+ 
+ The process terms of the substep and the saturation quantities of the vapor limiter
+-(`q_smin`, `λ_min`, `Γ_min`, `q_tol`), for the option `coupling`:
+-with `JointVaporRelaxation` the four vapor-driven phase changes are replaced by the
++(`q_smin`, `λ_min`, `Γ_min`, `q_tol`), for the option `coupling` and `terms` that hold the
++four vapor-driven phase changes (`_vapor_source_terms`):
++with `JointVaporRelaxation` these are replaced by the
+ [`JointVaporTransfer`](@ref) terms solved by `_joint_vapor_transfers`; with
+-`PerProcessVaporRelaxation` the terms are returned unchanged.
++`PerProcessVaporRelaxation` the terms are returned unchanged. With `nothing` (`_vapor_coupling`)
++the terms are zero transfers and no saturation is evaluated: without a vapor source the limiter
++is inactive, which the infinite tolerance `q_tol` states. `thermo` is the thermodynamic state of
++`_source_state`, whose saturation vapor pressures are used if it holds them.
+ """
+-@inline function _vapor_terms(::CMP.JointVaporRelaxation, terms, tps, ρ, T, q_tot, q, Δt)
+-    jv = _joint_vapor_transfers(terms, tps, ρ, T, q_tot, q..., Δt)
++@inline function _vapor_terms(::Nothing, terms, tps, ρ, T, q_tot, q, Δt, thermo = (; ρ, T))
++    FT = eltype(q)
++    terms = (;
++        S_phase_change_vap_lcl = JointVaporTransfer(:q_lcl, zero(FT)),
++        S_phase_change_vap_icl = JointVaporTransfer(:q_icl, zero(FT)),
++        S_phase_change_vap_rai = JointVaporTransfer(:q_rai, zero(FT)),
++        S_phase_change_vap_sno = JointVaporTransfer(:q_sno, zero(FT)),
++    )
++    return (terms, (; q_smin = zero(FT), λ_min = zero(FT), Γ_min = one(FT), q_tol = FT(Inf)))
++end
++@inline function _vapor_terms(::CMP.JointVaporRelaxation, terms, tps, ρ, T, q_tot, q, Δt, thermo = (; ρ, T))
++    jv = _joint_vapor_transfers(terms, tps, ρ, T, q_tot, q..., Δt, thermo)
+     terms = merge(
+         terms,
+         (;
+@@ -389,21 +462,22 @@ with `JointVaporRelaxation` the four vapor-driven phase changes are replaced by
+     )
+     return (terms, (; jv.q_smin, jv.λ_min, jv.Γ_min, jv.q_tol))
+ end
+-@inline function _vapor_terms(::CMP.PerProcessVaporRelaxation, terms, tps, ρ, T, q_tot, q, Δt)
+-    st = _saturation_state(tps, ρ, T, q_tot, q...)
++@inline function _vapor_terms(::CMP.PerProcessVaporRelaxation, terms, tps, ρ, T, q_tot, q, Δt, thermo = (; ρ, T))
++    st = _saturation_state(tps, ρ, T, q_tot, q..., thermo)
+     return (terms, (; st.q_smin, st.λ_min, st.Γ_min, st.q_tol))
+ end
+ 
+ """
+-    _limiter_factors(mp, tps, terms, lin, q, q1, sf, q_tot, q_min, Δt)
++    _limiter_factors(mp, tps, lin, Dpc, Dcol, q, q1, sf, q_tot, Δt)
+ 
+ Factors of the vapor limiter and of the latent-heating limiter of `linearized_step_1m`,
+-from the first backward Euler step `q1` of the linearization `lin` of `terms` at `q`, with the
+-saturation quantities `sf` of the vapor limiter (`q_smin`, `λ_min`, `Γ_min`, `q_tol` of `_saturation_state`):
++from the first backward Euler step `q1` of the linearization `lin` of the terms at `q`, their
++decay totals `(Dpc, Dcol)` ([`limiter_decay_totals`](@ref)), and the saturation quantities `sf`
++of the vapor limiter (`q_smin`, `λ_min`, `Γ_min`, `q_tol` of `_saturation_state`):
+ `(; α_cap, f_lim, f_k)`, the scale of the vapor sources, the scale of the realized heating,
+ and the per-donor scale of the phase-change decays ([`_donor_limiter_scale`](@ref)).
+ """
+-@inline function _limiter_factors(mp, tps, terms, lin, q, q1, sf, q_tot, q_min, Δt)
++@inline function _limiter_factors(mp, tps, lin, Dpc, Dcol, q, q1, sf, q_tot, Δt)
+     FT = eltype(q)
+     ΔT1 = _latent_heating(q1 - q, tps)
+ 
+@@ -420,7 +494,6 @@ and the per-donor scale of the phase-change decays ([`_donor_limiter_scale`](@re
+     ΔT_α = ΔT1 - (one(FT) - α_cap) * _latent_heating(e, tps) * Δt
+     ΔT_max = mp.max_latent_heating_rate * Δt
+     f_lim = ifelse(abs(ΔT_α) > ΔT_max, ΔT_max / max(abs(ΔT_α), eps(FT)), one(FT))
+-    (Dpc, Dcol) = limiter_decay_totals(terms, q, q_min, Δt)
+     f_k = _donor_limiter_scale.(f_lim, Dpc, Dcol, Δt)
+     return (; α_cap, f_lim, f_k)
+ end
+@@ -486,12 +559,14 @@ end
+ """
+     _substep_1m(mp, tps, ρ, T, w, q_tot, q, Δt_sub)
+ 
+-Advance the species `q` and the temperature `T` over one substep of width `Δt_sub`, and
+-return them as `(; q, T, increments)` with the increment of each process [kg/kg].
++Advance the species `q`, from their non-negative part, and the temperature `T` over one substep
++of width `Δt_sub`, and return them as `(; q, T, increments)` with the increment of each process
++[kg/kg].
+ 
+ The temperature changes by the latent heat of the species increments.
+ """
+ @inline function _substep_1m(mp, tps, ρ, T, w, q_tot, q, Δt_sub)
++    q = max.(q, zero(eltype(q)))  # the pools the step starts from, the only species state kept through it
+     (; dq_dt, rates) = linearized_step_1m(mp, tps, ρ, T, w, q_tot, q, Δt_sub)
+     q += dq_dt * Δt_sub
+     T += _latent_heating(dq_dt, tps) * Δt_sub
+@@ -569,12 +644,14 @@ This is a pure function of local thermodynamic state, suitable for:
+     mode::Union{Instantaneous, InstantaneousVerbose}, ::Microphysics1Moment,
+     mp::CMP.Microphysics1MParams, tps, ρ, T, w, q_tot, q_lcl, q_icl, q_rai, q_sno,
+ )
+-    terms = _microphysics_source_terms(
+-        Microphysics1Moment(), mp, tps,
+-        ρ, T, w, q_tot, q_lcl, q_icl, q_rai, q_sno,
+-    )
+-    dq_dt = species_tendency(terms, Condensates1M{typeof(q_tot)})
+-    return _output_1m(mode, dq_dt, UU.unrolled_map(t -> t.S, terms))
++    state = _source_state(mp, tps, ρ, T, w, q_tot, q_lcl, q_icl, q_rai, q_sno)
++    init = (zero(Condensates1M{typeof(q_tot)}), (;))
++    (dq_dt, rates) =
++        _foldl_source_terms(init, mp, tps, state, _vapor_source_terms(mp, tps, state)) do (dq_dt, rates), terms
++            @inline
++            (species_tendency(terms, dq_dt), merge(rates, UU.unrolled_map(t -> t.S, terms)))
++        end
++    return _output_1m(mode, dq_dt, rates)
+ end
+ 
+ """
+@@ -608,7 +685,7 @@ near freezing.
+     Δt::AbstractFloat, nsub::Integer = 1,
+ )
+     FT = typeof(q_tot)
+-    q₀ = Condensates1M(q_lcl, q_icl, q_rai, q_sno)
++    q₀ = max.(Condensates1M(q_lcl, q_icl, q_rai, q_sno), zero(FT))  # non-negative pools
+     Δt_sub = Δt / FT(nsub)
+ 
+     q = q₀
+diff --git a/src/Common.jl b/src/Common.jl
+index a468b8bd..7da2480c 100644
+--- a/src/Common.jl
++++ b/src/Common.jl
+@@ -29,7 +29,7 @@ export KK2000_autoconversion
+ export KK2000_accretion
+ 
+ """
+-    G_func_liquid(air_props, tps, T)
++    G_func_liquid(air_props, tps, T, p_vs = TDI.saturation_vapor_pressure_over_liquid(tps, T))
+ 
+ Utility function combining thermal conductivity and vapor diffusivity effects
+ for vapor to liquid phase change.
+@@ -41,6 +41,7 @@ numerical robustness.
+ - `air_props`: air parameters struct (contains `K_therm`, `D_vapor`)
+ - `tps`: thermodynamics parameters struct
+ - `T`: air temperature [K]
++- `p_vs`: saturation vapor pressure over liquid at `T` [Pa]
+ 
+ # Returns
+ - G function for liquid [kg/m/s]
+@@ -53,10 +54,10 @@ numerical robustness.
+     (; K_therm, D_vapor)::CMP.AirProperties{FT},
+     tps::TDI.PS,
+     T,
++    p_vs = TDI.saturation_vapor_pressure_over_liquid(tps, T),
+ ) where {FT}
+     R_v = TDI.Rᵥ(tps)
+     L = TDI.Lᵥ(tps, T)
+-    p_vs = TDI.saturation_vapor_pressure_over_liquid(tps, T)
+ 
+     # Guard against division by zero
+     p_vs_safe = max(p_vs, UT.ϵ_numerics(FT))
+@@ -68,7 +69,7 @@ numerical robustness.
+ end
+ 
+ """
+-    G_func_ice(air_props, tps, T)
++    G_func_ice(air_props, tps, T, p_vs = TDI.saturation_vapor_pressure_over_ice(tps, T))
+ 
+ Utility function combining thermal conductivity and vapor diffusivity effects
+ for vapor to ice phase change.
+@@ -80,6 +81,7 @@ numerical robustness.
+ - `air_props`: air parameters struct (contains `K_therm`, `D_vapor`)
+ - `tps`: thermodynamics parameters struct
+ - `T`: air temperature [K]
++- `p_vs`: saturation vapor pressure over ice at `T` [Pa]
+ 
+ # Returns
+ - G function for ice [kg/m/s]
+@@ -92,10 +94,10 @@ numerical robustness.
+     (; K_therm, D_vapor)::CMP.AirProperties{FT},
+     tps::TDI.PS,
+     T,
++    p_vs = TDI.saturation_vapor_pressure_over_ice(tps, T),
+ ) where {FT}
+     R_v = TDI.Rᵥ(tps)
+     L = TDI.Lₛ(tps, T)
+-    p_vs = TDI.saturation_vapor_pressure_over_ice(tps, T)
+ 
+     # Guard against division by zero
+     p_vs_safe = max(p_vs, UT.ϵ_numerics(FT))
+@@ -146,7 +148,7 @@ For x < 0 the value at x = 0 is returned. For x_0 = 0, H(x) is returned.
+ end
+ 
+ """
+-    logistic_function_integral(x, x_0, k)
++    logistic_function_integral(x, x_0, k, trnslt = logistic_translation(k))
+ 
+ Returns the value of the indefinite integral of the logistic function, for smooth transitioning
+ of piecewise linear profiles at thresholds.
+@@ -157,20 +159,18 @@ This curve smoothly transitions from y = 0 for 0 < x < x_0 to y = x - x_0 for x_
+ - `x`: independent variable
+ - `x_0`: threshold value for x
+ - `k`: growth rate of the logistic function, characterizing steepness of the transition
++- `trnslt`: translation of the curve that enforces zero at x = 0, which depends only on `k`
+ 
+ # Returns
+ - Integral of logistic function (same units as x)
+ """
+-@inline function logistic_function_integral(x, x_0, k)
++@inline function logistic_function_integral(x, x_0, k, trnslt = logistic_translation(k))
+     FT = UT.promote_typeof(x, x_0, k)
+     # Branchless GPU-compatible implementation
+     x = max(FT(0), x)
+     x_safe = max(x, UT.ϵ_numerics(FT))
+     x_0_safe = max(x_0, UT.ϵ_numerics(FT))
+ 
+-    # translation of the curve in x and y to enforce zero at x = 0
+-    # Using log1mexp for numerical stability: log1mexp(x) = log(1 - exp(x))
+-    trnslt = -LEF.log1mexp(-k) / k
+     kt = k * (x_safe / x_0_safe - 1 + trnslt)
+     # log1pexp handles all kt values correctly
+     result = (LEF.log1pexp(kt) / k - trnslt) * x_0_safe
+@@ -179,6 +179,10 @@ This curve smoothly transitions from y = 0 for 0 < x < x_0 to y = x - x_0 for x_
+     return ifelse(x < UT.ϵ_numerics(FT), FT(0), ifelse(x_0 < UT.ϵ_numerics(FT), x, result))
+ end
+ 
++# The translation of the curve of `logistic_function_integral` in x and y that enforces zero at
++# x = 0, using log1mexp for numerical stability: log1mexp(x) = log(1 - exp(x))
++@inline logistic_translation(k) = -LEF.log1mexp(-k) / k
++
+ """
+     H2SO4_soln_saturation_vapor_pressure(prs, x, T)
+ 
+@@ -286,6 +290,7 @@ end
+ """
+     Chen2022_vel_coeffs(coeffs, ρₐ)
+     Chen2022_vel_coeffs(coeffs, ρₐ, ρᵢ)
++    Chen2022_vel_coeffs(coeffs::CMP.Chen2022VelTypeLargeIce, ρₐ, ρᵢ, table)
+ 
+ Compute the coefficients for the Chen 2022 terminal velocity parametrization.
+ 
+@@ -297,6 +302,8 @@ Compute the coefficients for the Chen 2022 terminal velocity parametrization.
+  - `ρₐ`: air density [kg/m³]
+  - `ρᵢ`: apparent density of ice particles [kg/m³],
+     only used for [`CMP.Chen2022VelTypeSmallIce`](@ref) and [`CMP.Chen2022VelTypeLargeIce`](@ref)
++ - `table`: the coefficients of [`CMP.Chen2022VelTypeLargeIce`](@ref) that depend only on `ρᵢ`
++   ([`Chen2022_large_ice_table`](@ref)), for a caller that precomputes them
+ 
+ # Returns
+  - A tuple `(aiu, bi, ciu)` of coefficient tuples, with `aiu` and `ciu`
+@@ -335,10 +342,28 @@ end
+     return chen2022_coeffs_si(ai, bi, ci)
+ end
+ 
+-@inline function Chen2022_vel_coeffs(coeffs::CMP.Chen2022VelTypeLargeIce, ρₐ, ρᵢ)
++@inline function Chen2022_vel_coeffs(
++    coeffs::CMP.Chen2022VelTypeLargeIce, ρₐ, ρᵢ, table = Chen2022_large_ice_table(coeffs, ρᵢ),
++)
++    (; Al, Bl, El, Hl, bi, ciu, scale) = table
++    ρₐ = max(ρₐ, UT.ϵ_numerics(ρₐ))
++    # Table B5
++    ρₐ_Al = ρₐ^Al
++    aiu = (Bl * ρₐ_Al * scale[1], El * ρₐ_Al * exp(Hl * ρₐ) * scale[2])
++    return (aiu, bi, ciu)
++end
++
++"""
++    Chen2022_large_ice_table(coeffs, ρᵢ)
++
++The coefficients of Table B5 of Chen et al. (2022) for [`CMP.Chen2022VelTypeLargeIce`](@ref)
++that depend only on the apparent density of the ice particles `ρᵢ` [kg/m³]:
++`(; Al, Bl, El, Hl, bi, ciu, scale)`, with the exponents `bi`, the rates `ciu` in SI units, and
++the factors `scale = 1000 .^ bi` of the prefactors in SI units.
++"""
++@inline function Chen2022_large_ice_table(coeffs::CMP.Chen2022VelTypeLargeIce, ρᵢ)
+     FT = eltype(coeffs)
+     (; A, B, C, E, F, G, H) = coeffs
+-    ρₐ = max(ρₐ, UT.ϵ_numerics(ρₐ))
+     # Table B5 - cache sqrt for reuse
+     log_ρᵢ = log(ρᵢ)
+     sqrt_ρᵢ = sqrt(ρᵢ)
+@@ -349,11 +374,9 @@ end
+     Fl = F[1] + F[2] * log_ρᵢ - exp(log(-F[3]) - ρᵢ)
+     Gl = 1 / (G[1] + G[2] * log_ρᵢ * sqrt_ρᵢ + G[3] / sqrt_ρᵢ)
+     Hl = H[1] + H[2] * ρᵢ^2 * sqrt_ρᵢ + exp(log(-H[3]) - ρᵢ)  # ρᵢ^(5/2) = ρᵢ^2 * sqrt(ρᵢ)
+-    # Table B5
+-    ai = (Bl * ρₐ^Al, El * ρₐ^Al * exp(Hl * ρₐ))
+     bi = (Cl, Fl)
+     ci = (FT(0), Gl)
+-    return chen2022_coeffs_si(ai, bi, ci)
++    return (; Al, Bl, El, Hl, bi, ciu = map(c -> c * 1000, ci), scale = map(b -> 1000^b, bi))
+ end
+ 
+ """
+@@ -435,6 +458,29 @@ Assumes exponential size distribution (μ=0).
+     return a * exp(-δ * log(λ_inv) - (b + δ) * log(1 / λ_inv + c)) * SF.gamma(b + δ) / gamma_delta
+ end
+ 
++"""
++    Chen2022_log_inv(c, log_λ_inv, λ_inv)
++
++`log(1 / λ_inv + c)`, computed as `-log_λ_inv` when `c` is zero, where
++`log_λ_inv = log(λ_inv)`.
++"""
++@inline Chen2022_log_inv(c, log_λ_inv, λ_inv) =
++    iszero(c) ? -log_λ_inv : log(1 / λ_inv + c)
++
++"""
++    Chen2022_exponential_pdf_k3(a, b, log_λ_inv, log_inv, gamma_b_δ)
++
++[`Chen2022_exponential_pdf`](@ref) for `k = 3`, given the logarithms and gamma
++function value that it would otherwise recompute, so that terms of a velocity
++curve can share them:
++
++- `log_λ_inv`: `log(λ_inv)`
++- `log_inv`: `log(1 / λ_inv + c)` ([`Chen2022_log_inv`](@ref))
++- `gamma_b_δ`: `gamma(b + 4)`
++"""
++@inline Chen2022_exponential_pdf_k3(a, b, log_λ_inv, log_inv, gamma_b_δ) =
++    a * exp(-4 * log_λ_inv - (b + 4) * log_inv) * gamma_b_δ / 6
++
+ """
+     particle_terminal_velocity(velocity_params, ρₐ)
+     particle_terminal_velocity(velocity_params, ρₐ, ρᵢ)
+diff --git a/src/Microphysics1M.jl b/src/Microphysics1M.jl
+index c8d6b47c..be83488b 100644
+--- a/src/Microphysics1M.jl
++++ b/src/Microphysics1M.jl
+@@ -117,8 +117,14 @@ Guards against unphysical density ratios (ρ > ρw) that would cause sqrt of neg
+ end
+ @inline get_v0((; v0)::CMP.Blk1MVelTypeSnow, args...) = v0
+ 
++# r0^(me + Δm) of the mass(radius) parameters
++@inline _r0_power((; r0, me, Δm)::CMP.ParticleMass) = r0^(me + Δm)
++
++# The cube root of the Schmidt number of the air (guard against division by near-zero D_vapor)
++@inline _cbrt_schmidt((; ν_air, D_vapor)::CMP.AirProperties) = cbrt(ν_air / max(D_vapor, UT.ϵ_numerics(D_vapor)))
++
+ """
+-    lambda_inverse(pdf, mass::ParticleMass, q, ρ)
++    lambda_inverse(pdf, mass::ParticleMass, q, ρ, n0 = get_n0(pdf, q, ρ))
+ 
+ Returns the inverse of the rate parameter (λ⁻¹) of the assumed Marshall-Palmer
+ size distribution of particles (rain drops, ice crystals, snow crystals).
+@@ -131,6 +137,7 @@ average particles. The value is clipped at `r0 * 1e-5` to prevent numerical issu
+ - `mass`: mass(radius) parameters (contains `r0`, `m0`, `me`, `Δm`, `χm`, `gamma_coeff`)
+ - `q`: specific content of rain, cloud ice, or snow [kg/kg]
+ - `ρ`: air density [kg/m³]
++- `n0`: intercept parameter of the size distribution (`get_n0`), for a caller that holds it
+ 
+ # Returns
+ - `λ⁻¹`: inverse rate parameter [m]
+@@ -141,10 +148,9 @@ average particles. The value is clipped at `r0 * 1e-5` to prevent numerical issu
+     mass::CMP.ParticleMass,
+     q,
+     ρ,
++    n0 = get_n0(pdf, q, ρ),
+ )
+     FT = UT.promote_typeof(q, ρ)
+-    # size distribution
+-    n0 = get_n0(pdf, q, ρ)
+     # mass(size)
+     (; r0, m0, me, Δm, χm, gamma_coeff) = mass
+ 
+@@ -160,7 +166,7 @@ average particles. The value is clipped at `r0 * 1e-5` to prevent numerical issu
+     qp = UT.clamp_to_nonneg(q)
+     ρp = UT.clamp_to_nonneg(ρ)
+     denom = χm * m0 * max(n0, UT.ϵ_numerics(n0)) * gamma_coeff
+-    λ_inv = (ρp * qp * r0^(me + Δm) / denom)^(1 / (me + Δm + 1))
++    λ_inv = (ρp * qp * UT.precomputed(_r0_power, mass) / denom)^(1 / (me + Δm + 1))
+     return max(r0 * FT(1e-5), λ_inv)
+ end
+ 
+@@ -310,39 +316,61 @@ end
+     # size distribution parameter
+     λ_inv_radius = lambda_inverse(pdf, mass, q, ρₐ)
+     λ_inv_diameter = 2 * λ_inv_radius
++    # Terms that share a coefficient share its logarithm and gamma function value.
++    log_λ_inv = log(λ_inv_diameter)
++    log_inv_1 = CO.Chen2022_log_inv(ciu[1], log_λ_inv, λ_inv_diameter)
++    log_inv_2 = CO.Chen2022_log_inv(ciu[2], log_λ_inv, λ_inv_diameter)
++    log_inv_3 =
++        vel.c[3] == vel.c[2] ? log_inv_2 :
++        CO.Chen2022_log_inv(ciu[3], log_λ_inv, λ_inv_diameter)
++    gamma_1 = SF.gamma(bi[1] + 4)
++    gamma_2 = vel.b[2] == vel.b[1] ? gamma_1 : SF.gamma(bi[2] + 4)
++    gamma_3 = vel.b[3] == vel.b[2] ? gamma_2 : SF.gamma(bi[3] + 4)
+     # eq 20 from Chen et al 2022 (loop unrolled for GPU performance)
+     fall_w =
+-        CO.Chen2022_exponential_pdf(aiu[1], bi[1], ciu[1], λ_inv_diameter, 3) +
+-        CO.Chen2022_exponential_pdf(aiu[2], bi[2], ciu[2], λ_inv_diameter, 3) +
+-        CO.Chen2022_exponential_pdf(aiu[3], bi[3], ciu[3], λ_inv_diameter, 3)
++        CO.Chen2022_exponential_pdf_k3(aiu[1], bi[1], log_λ_inv, log_inv_1, gamma_1) +
++        CO.Chen2022_exponential_pdf_k3(aiu[2], bi[2], log_λ_inv, log_inv_2, gamma_2) +
++        CO.Chen2022_exponential_pdf_k3(aiu[3], bi[3], log_λ_inv, log_inv_3, gamma_3)
+     # It should be ϕ^κ * fall_w, but for rain drops ϕ = 1 and κ = 0
+     fall_w = _bounded_fall_speed(UT.clamp_to_nonneg(fall_w), vel.v_max)
+     return ifelse(q > UT.ϵ_numerics(q), fall_w, zero(fall_w))
+ end
+ 
++# The large ice coefficients that depend only on parameters (`CO.Chen2022_large_ice_table`),
++# gamma(b + 4) of their exponents b, and ϕ^κ of the aspect ratio
++@inline function chen2022_large_ice_constants(vel, (; ρᵢ, aspr)::CMP.Snow)
++    table = CO.Chen2022_large_ice_table(vel, ρᵢ)
++    return (; table, gammas = map(b -> SF.gamma(b + 4), table.bi), ϕ_κ = aspr.ϕ^aspr.κ)
++end
++
+ @inline function terminal_velocity(
+-    (; pdf, mass, area, ρᵢ, aspr)::CMP.Snow,
++    snow::CMP.Snow,
+     vel::CMP.Chen2022VelTypeLargeIce,
+     ρₐ,
+     q,
+ )
++    (; pdf, mass, ρᵢ) = snow
++    (; table, gammas, ϕ_κ) = UT.precomputed(chen2022_large_ice_constants, vel, snow)
+     # We assume the B5 table coeffs for snow and B3 table coeffs for cloud ice.
+     # Instead we should do partial integrals
+     # from D=125um to D=625um using B3 and D=625um to inf using B5.
+     # coefficients from Table B5 from Chen et. al. 2022
+-    aiu, bi, ciu = CO.Chen2022_vel_coeffs(vel, ρₐ, ρᵢ)
++    aiu, bi, ciu = CO.Chen2022_vel_coeffs(vel, ρₐ, ρᵢ, table)
+     # size distribution parameter
+     λ_inv_radius = lambda_inverse(pdf, mass, q, ρₐ)
+     λ_inv_diameter = 2 * λ_inv_radius
++    # Terms that share a coefficient share its logarithm.
++    log_λ_inv = log(λ_inv_diameter)
++    log_inv_1 = CO.Chen2022_log_inv(ciu[1], log_λ_inv, λ_inv_diameter)
++    log_inv_2 = CO.Chen2022_log_inv(ciu[2], log_λ_inv, λ_inv_diameter)
+ 
+     # As a next step, we could keep ϕ(r) under the integrals
+-    # assume oblate shape and aspect ratio
+-    (; ϕ, κ) = aspr
++    # assume oblate shape and aspect ratio (ϕ_κ = ϕ^κ)
+ 
+     # eq 20 from Chen 2022 (loop unrolled for GPU performance)
+     fall_w =
+-        ϕ^κ * CO.Chen2022_exponential_pdf(aiu[1], bi[1], ciu[1], λ_inv_diameter, 3) +
+-        ϕ^κ * CO.Chen2022_exponential_pdf(aiu[2], bi[2], ciu[2], λ_inv_diameter, 3)
++        ϕ_κ * CO.Chen2022_exponential_pdf_k3(aiu[1], bi[1], log_λ_inv, log_inv_1, gammas[1]) +
++        ϕ_κ * CO.Chen2022_exponential_pdf_k3(aiu[2], bi[2], log_λ_inv, log_inv_2, gammas[2])
+     fall_w = _bounded_fall_speed(UT.clamp_to_nonneg(fall_w), vel.v_max)
+     return ifelse(q > UT.ϵ_numerics(q), fall_w, zero(fall_w))
+ end
+@@ -509,12 +537,16 @@ A mismatch between the option and the parameters stored in `mp` raises an `Argum
+ """
+ @inline conv_q_lcl_to_q_rai(::Nothing, mp, tps, micro, thermo) = zero(micro.q_lcl)
+ 
++# The translation of the logistic integral of the autoconversion parameters `pp` with the rate `k`
++@inline _logistic_translation((; k)) = CO.logistic_translation(k)
++
+ @inline function conv_q_lcl_to_q_rai(opt::CMP.Kessler1M, mp, tps, micro, thermo)
+-    (; k) = CMP.process_params(mp, opt)
++    pp = CMP.process_params(mp, opt)
+     (; w) = thermo
+     q_thr = rain_autoconversion_threshold(opt, mp, w)
+     τ_acnv = rain_autoconversion_timescale(opt, mp, w)
+-    return CO.logistic_function_integral(micro.q_lcl, q_thr, k) / τ_acnv
++    trnslt = UT.precomputed(_logistic_translation, pp)
++    return CO.logistic_function_integral(micro.q_lcl, q_thr, pp.k, trnslt) / τ_acnv
+ end
+ 
+ @inline function conv_q_lcl_to_q_rai(opt::CMP.PrescribedNd, mp, tps, micro, thermo)
+@@ -538,12 +570,13 @@ end
+ @inline function size_distr_parameters(mp, micro, thermo)
+     (; q_rai, q_sno, q_icl) = micro
+     ρ = thermo.ρ
++    n0_sno = get_n0(mp.precip.snow.pdf, q_sno, ρ)
+     return (;
+         λ_inv_rai = lambda_inverse(mp.precip.rain.pdf, mp.precip.rain.mass, q_rai, ρ),
+         n0_rai = get_n0(mp.precip.rain.pdf, q_rai, ρ),
+         v0_rai = get_v0(mp.terminal_velocity.rain, ρ),
+-        λ_inv_sno = lambda_inverse(mp.precip.snow.pdf, mp.precip.snow.mass, q_sno, ρ),
+-        n0_sno = get_n0(mp.precip.snow.pdf, q_sno, ρ),
++        λ_inv_sno = lambda_inverse(mp.precip.snow.pdf, mp.precip.snow.mass, q_sno, ρ, n0_sno),
++        n0_sno,
+         v0_sno = get_v0(mp.terminal_velocity.snow, ρ),
+         λ_inv_icl = lambda_inverse(mp.cloud.ice.pdf, mp.cloud.ice.mass, q_icl, ρ),
+         n0_icl = get_n0(mp.cloud.ice.pdf),
+@@ -575,9 +608,9 @@ Harrington et al. (1995) and Kaul et al. (2015).
+ @inline conv_q_icl_to_q_sno(::Nothing, mp, tps, micro, thermo, sd = nothing) = zero(micro.q_icl)
+ 
+ @inline function conv_q_icl_to_q_sno(opt::CMP.NoSupersaturation, mp, tps, micro, thermo, sd = nothing)
+-    (; τ, q_threshold, k) = CMP.process_params(mp, opt)
+-    q_icl = micro.q_icl
+-    return CO.logistic_function_integral(q_icl, q_threshold, k) / τ
++    pp = CMP.process_params(mp, opt)
++    trnslt = UT.precomputed(_logistic_translation, pp)
++    return CO.logistic_function_integral(micro.q_icl, pp.q_threshold, pp.k, trnslt) / pp.τ
+ end
+ 
+ @inline function conv_q_icl_to_q_sno(
+@@ -591,8 +624,9 @@ end
+     FT = eltype(ρ)
+     T_freeze = TDI.T_freeze(tps)
+ 
+-    S = TDI.supersaturation_over_ice(tps, q_tot, q_lcl + q_rai, q_icl + q_sno, ρ, T)
+-    G = CO.G_func_ice(aps, tps, T)
++    p_sat = TDI.saturation_vapor_pressure_over_ice(tps, thermo)
++    S = TDI.supersaturation_over_ice(tps, q_tot, q_lcl + q_rai, q_icl + q_sno, ρ, T, p_sat)
++    G = CO.G_func_ice(aps, tps, T, p_sat)
+     λ_inv = sd.λ_inv_icl
+ 
+     # Only allow ice autoconversion below freezing with positive supersaturation
+@@ -717,15 +751,17 @@ end
+     v0,
+     λ_inv,
+ )
+-    (; r0, m0, me, Δm, χm) = rain.mass
++    (; r0, gamma_coeff) = rain.mass
+     (; χv, ve, Δv, gamma_accr_rain_sink) = vel
+     (; a0, ae, χa, Δa) = rain.area
+ 
+-    # gamma_accr_rain_sink = SF.gamma(me + ae + ve + Δm + Δa + Δv + 1) (pre-computed in vel)
++    # gamma_accr_rain_sink = SF.gamma(me + ae + ve + Δm + Δa + Δv + 1) (pre-computed in vel).
++    # The rain mass content ρ q_rai = n0 m0 χm gamma_coeff λ_inv^(me + Δm + 1) / r0^(me + Δm)
++    # (`lambda_inverse`) is a factor of the rate, which leaves the power of the accretion rate.
+     accr_rate =
+-        E / ρ * n0 * n0_ice * m0 * a0 * v0 * χm * χa * χv * λ_ice_inv * λ_inv *
+-        gamma_accr_rain_sink /
+-        (r0 / λ_inv)^(me + ae + ve + Δm + Δa + Δv)
++        E * q_rai * n0_ice * λ_ice_inv * a0 * v0 * χa * χv *
++        gamma_accr_rain_sink / gamma_coeff /
++        (r0 / λ_inv)^(ae + ve + Δa + Δv)
+ 
+     ϵ = UT.ϵ_numerics(UT.promote_typeof(q_icl, q_rai))
+     cond = q_icl > ϵ && q_rai > ϵ
+@@ -786,6 +822,8 @@ deviations are proportional to the mean fall velocities, with coefficient
+ - `n0_i`, `n0_j`, `v0_i`, `v0_j`, `λ_i_inv`, `λ_j_inv`: (kernel form only)
+   precomputed size-distribution intercepts, fall-speed scales, and inverse
+   slopes for both species
++- `Δv_eff`: (kernel form only, optional) effective fall speed difference of the two
++  species (`_fall_speed_difference`), which is the same for both orders of the species
+ """
+ @inline function accretion_snow_rain(
+     type_i::CMP.PrecipitationType,
+@@ -803,33 +841,45 @@ deviations are proportional to the mean fall velocities, with coefficient
+     v0_j,
+     λ_i_inv,
+     λ_j_inv,
++    Δv_eff = _fall_speed_difference(
++        type_i, type_j, blk1mveltype_ti, blk1mveltype_tj, coeff_disp, q_i, q_j, ρ, v0_i, v0_j, λ_i_inv, λ_j_inv,
++    ),
+ )
+-    (; r0, m0, me, Δm, χm, gamma_coeff) = type_j.mass
++    (; me, Δm) = type_j.mass
+     δ = me + Δm
+ 
+-    v_ti = terminal_velocity(type_i, blk1mveltype_ti, ρ, q_i, v0_i, λ_i_inv)
+-    v_tj = terminal_velocity(type_j, blk1mveltype_tj, ρ, q_j, v0_j, λ_j_inv)
+-
+-    # Add simple parameterization for velocity dispersion, assuming that fall velocity
+-    # standard deviations are proportional to the mean fall velocities, with coefficient
+-    # coeff_disp
+-    Δv_eff = sqrt((v_ti - v_tj)^2 + coeff_disp * (v_ti^2 + v_tj^2))
+-
+-    # We use the recurrence relation Γ(x+1) = xΓ(x) to simplify gamma terms.
+-    # gamma_coeff = Γ(δ + 1) is pre-computed.
++    # We use the recurrence relation Γ(x+1) = xΓ(x) to simplify gamma terms. The common
++    # factor of the three terms, n0_j m0 χm Γ(δ + 1) λ_j_inv^(δ + 1) / r0^δ, is the mass
++    # content ρ q_j of species j (`lambda_inverse`), so no power is evaluated.
+     accr_rate =
+-        π / ρ * n0_i * n0_j * m0 * χm * E_ij * Δv_eff * gamma_coeff /
+-        r0^δ * (
+-            2 * λ_i_inv^3 * λ_j_inv^(δ + 1) +
+-            2 * (δ + 1) * λ_i_inv^2 * λ_j_inv^(δ + 2) +
+-            (δ + 2) * (δ + 1) * λ_i_inv * λ_j_inv^(δ + 3)
+-        )
++        π * n0_i * E_ij * Δv_eff * q_j * λ_i_inv *
++        (2 * λ_i_inv^2 + 2 * (δ + 1) * λ_i_inv * λ_j_inv + (δ + 2) * (δ + 1) * λ_j_inv^2)
+ 
+     ϵ = UT.ϵ_numerics(UT.promote_typeof(q_i, q_j))
+     cond = q_i > ϵ && q_j > ϵ
+     return ifelse(cond, accr_rate, zero(accr_rate))
+ end
+ 
++"""
++    _fall_speed_difference(
++        type_i, type_j, blk1mveltype_ti, blk1mveltype_tj, coeff_disp, q_i, q_j, ρ,
++        v0_i, v0_j, λ_i_inv, λ_j_inv,
++    )
++
++Effective difference of the mass-weighted fall speeds of two precipitation species [m/s],
++`√((v_i - v_j)² + coeff_disp (v_i² + v_j²))`: the difference of the mean fall speeds with a
++velocity dispersion that assumes fall speed standard deviations proportional to the mean fall
++speeds, with coefficient `coeff_disp`. The arguments are those of `accretion_snow_rain`; the
++result is unchanged when the species are exchanged.
++"""
++@inline function _fall_speed_difference(
++    type_i, type_j, blk1mveltype_ti, blk1mveltype_tj, coeff_disp, q_i, q_j, ρ, v0_i, v0_j, λ_i_inv, λ_j_inv,
++)
++    v_ti = terminal_velocity(type_i, blk1mveltype_ti, ρ, q_i, v0_i, λ_i_inv)
++    v_tj = terminal_velocity(type_j, blk1mveltype_tj, ρ, q_j, v0_j, λ_j_inv)
++    return sqrt((v_ti - v_tj)^2 + coeff_disp * (v_ti^2 + v_tj^2))
++end
++
+ @inline function accretion_snow_rain(
+     type_i::CMP.PrecipitationType,
+     type_j::CMP.PrecipitationType,
+@@ -1029,6 +1079,10 @@ end
+     sno = mp.precip.snow
+     rai = mp.precip.rain
+     (; e, coeff_disp) = CMP.process_params(mp, opt)
++    Δv_eff = _fall_speed_difference(
++        sno, rai, vel.snow, vel.rain, coeff_disp, q_sno, q_rai, ρ,
++        sd.v0_sno, sd.v0_rai, sd.λ_inv_sno, sd.λ_inv_rai,
++    )
+     S_rai_sno = accretion_snow_rain(
+         sno,
+         rai,
+@@ -1045,6 +1099,7 @@ end
+         sd.v0_rai,
+         sd.λ_inv_sno,
+         sd.λ_inv_rai,
++        Δv_eff,
+     )
+     S_sno_rai = accretion_snow_rain(
+         rai,
+@@ -1062,6 +1117,7 @@ end
+         sd.v0_sno,
+         sd.λ_inv_rai,
+         sd.λ_inv_sno,
++        Δv_eff,
+     )
+     α = warm_accretion_melt_factor(tps, T)
+     return (; S_rai_sno, S_sno_rai, S_melt = α * S_rai_sno)
+@@ -1130,10 +1186,11 @@ Only evaporation is considered (sub-saturated over liquid); result is clamped 
+     aps = mp.air_properties
+     FT = eltype(ρ)
+ 
+-    S = TDI.supersaturation_over_liquid(tps, q_tot, q_lcl + q_rai, q_icl + q_sno, ρ, T)
++    p_sat = TDI.saturation_vapor_pressure_over_liquid(tps, thermo)
++    S = TDI.supersaturation_over_liquid(tps, q_tot, q_lcl + q_rai, q_icl + q_sno, ρ, T, p_sat)
+ 
+-    (; ν_air, D_vapor) = aps
+-    G = CO.G_func_liquid(aps, tps, T)
++    (; ν_air) = aps
++    G = CO.G_func_liquid(aps, tps, T, p_sat)
+ 
+     n0 = sd.n0_rai
+     v0 = sd.v0_rai
+@@ -1144,13 +1201,11 @@ Only evaporation is considered (sub-saturated over liquid); result is clamped 
+     a_vent = vent.a
+     b_vent = vent.b
+ 
+-    Sc = ν_air / max(D_vapor, UT.ϵ_numerics(D_vapor))
+-
+     evap_rate =
+         4 * FT(π) * n0 / ρ * S * G * λ_inv^2 *
+         (
+             a_vent +
+-            b_vent * cbrt(Sc) /
++            b_vent * UT.precomputed(_cbrt_schmidt, aps) /
+             (r0 / λ_inv)^((ve + Δv) / 2) *
+             sqrt(2 * v0 * χv / ν_air * λ_inv) *
+             gamma_vent
+@@ -1209,29 +1264,32 @@ cloud liquid or cloud ice (`q_lcl`, `q_icl` [kg/kg]) exceeds the specific humidi
+ @inline function _snow_subl_dep_rate(mp, tps, micro, thermo, sd = size_distr_parameters(mp, micro, thermo))
+     (; q_tot, q_lcl, q_icl, q_rai, q_sno) = micro
+     (; ρ, T) = thermo
+-    S = TDI.supersaturation_over_ice(tps, q_tot, q_lcl + q_rai, q_icl + q_sno, ρ, T)
+-    C = _snow_subl_dep_coeff(mp, tps, ρ, T, sd.n0_sno, sd.v0_sno, sd.λ_inv_sno)
++    p_sat = TDI.saturation_vapor_pressure_over_ice(tps, thermo)
++    S = TDI.supersaturation_over_ice(tps, q_tot, q_lcl + q_rai, q_icl + q_sno, ρ, T, p_sat)
++    C = _snow_subl_dep_coeff(mp, tps, ρ, T, sd.n0_sno, sd.v0_sno, sd.λ_inv_sno, p_sat)
+     cond = q_sno > UT.ϵ_numerics(q_sno)
+     return ifelse(cond, C * S, zero(C * S))
+ end
+ # Internal helper: ventilation-integral prefactor C for snow sublimation/deposition.
+ # Returns 4π n0/ρ · G(T) · λ_inv² · vent(n0, v0, λ_inv).
+ # The phase-change rate is C · S_rel (relative supersaturation over ice).
+-@inline function _snow_subl_dep_coeff(mp, tps, ρ::FT, T, n0, v0, λ_inv) where {FT}
++# `p_sat` is the saturation vapor pressure over ice at `T`.
++@inline function _snow_subl_dep_coeff(
++    mp, tps, ρ::FT, T, n0, v0, λ_inv, p_sat = TDI.saturation_vapor_pressure_over_ice(tps, T),
++) where {FT}
+     (; mass, vent) = mp.precip.snow
+     vel = mp.terminal_velocity.snow
+     aps = mp.air_properties
+-    (; ν_air, D_vapor) = aps
+-    G = CO.G_func_ice(aps, tps, T)
++    (; ν_air) = aps
++    G = CO.G_func_ice(aps, tps, T, p_sat)
+     (; r0) = mass
+     (; χv, ve, Δv, gamma_vent) = vel
+     a_vent = vent.a
+     b_vent = vent.b
+-    Sc = ν_air / max(D_vapor, UT.ϵ_numerics(D_vapor))
+     return 4 * FT(π) * n0 / ρ * G * λ_inv^2 *
+            (
+                a_vent +
+-               b_vent * cbrt(Sc) /
++               b_vent * UT.precomputed(_cbrt_schmidt, aps) /
+                (r0 / λ_inv)^((ve + Δv) / 2) *
+                sqrt(2 * v0 * χv / ν_air * λ_inv) *
+                gamma_vent
+@@ -1386,7 +1444,7 @@ Returns the tendency due to snow melt.
+     FT = eltype(ρ)
+     T_freeze = TDI.T_freeze(tps)
+ 
+-    (; ν_air, D_vapor, K_therm) = aps
++    (; ν_air, K_therm) = aps
+ 
+     L = TDI.Lf(tps, T)
+ 
+@@ -1400,14 +1458,11 @@ Returns the tendency due to snow melt.
+     a_vent = vent.a
+     b_vent = vent.b
+ 
+-    # Schmidt number (guard against division by near-zero D_vapor)
+-    Sc = ν_air / max(D_vapor, UT.ϵ_numerics(D_vapor))
+-
+     snow_melt_rate =
+         4 * FT(π) * n0 / ρ * K_therm / L * (T - T_freeze) * λ_inv^2 *
+         (
+             a_vent +
+-            b_vent * cbrt(Sc) /
++            b_vent * UT.precomputed(_cbrt_schmidt, aps) /
+             (r0 / λ_inv)^((ve + Δv) / 2) *
+             sqrt(2 * v0 * χv / ν_air * λ_inv) *
+             gamma_vent
+diff --git a/src/MicrophysicsNonEq.jl b/src/MicrophysicsNonEq.jl
+index 2699d726..3379e932 100644
+--- a/src/MicrophysicsNonEq.jl
++++ b/src/MicrophysicsNonEq.jl
+@@ -209,7 +209,7 @@ end
+     cₚ_air = TDI.cpₘ(tps, q_tot, q_lcl + q_rai, q_icl + q_sno)
+     qᵥ = TDI.q_vap(q_tot, q_lcl + q_rai, q_icl + q_sno)
+ 
+-    qᵥ_sat_liq = TDI.saturation_vapor_specific_content_over_liquid(tps, T, ρ)
++    qᵥ_sat_liq = TDI.saturation_vapor_specific_content_over_liquid(tps, thermo)
+ 
+     dqsl_dT = dqcld_dT(qᵥ_sat_liq, Lᵥ, Rᵥ, T)
+     Γₗ = gamma_helper(Lᵥ, cₚ_air, dqsl_dT)
+@@ -264,13 +264,28 @@ end
+     τ = τ_relax(mp.cloud.ice, mp.air_properties, q_icl, ρ)
+     return _conv_q_vap_to_q_icl_const(τ, tps, micro, thermo)
+ end
+-@inline function conv_q_vap_to_q_icl(
+-    opt::CMP.TemperatureDependentIceNumber, mp, tps::TDI.PS, micro, thermo)
+-    (; q_icl) = micro
++@inline conv_q_vap_to_q_icl(opt::CMP.TemperatureDependentIceNumber, mp, tps::TDI.PS, micro, thermo) =
++    first(conv_and_τ_vap_to_q_icl(opt, mp, tps, micro, thermo))
++
++"""
++    conv_and_τ_vap_to_q_icl(opt, mp, tps, micro, thermo)
++
++The rate of `conv_q_vap_to_q_icl` and the timescale of `τ_vap_to_q_icl` at one state, `(S, τ)`
++[kg/kg/s, s]. With `TemperatureDependentIceNumber` the ice number concentration and the
++relaxation timescale that both use are evaluated once.
++"""
++@inline conv_and_τ_vap_to_q_icl(opt, mp, tps::TDI.PS, micro, thermo) =
++    (conv_q_vap_to_q_icl(opt, mp, tps, micro, thermo), τ_vap_to_q_icl(opt, mp, tps, micro, thermo))
++@inline function conv_and_τ_vap_to_q_icl(opt::CMP.TemperatureDependentIceNumber, mp, tps::TDI.PS, micro, thermo)
++    (; q_tot, q_lcl, q_icl, q_rai, q_sno) = micro
+     (; ρ, T) = thermo
+-    fit = CMP.process_params(mp, opt)
+-    τ = τ_relax(mp.cloud.ice, mp.air_properties, fit, q_icl, T, ρ)
+-    return _conv_q_vap_to_q_icl_const(τ, tps, micro, thermo; _ice_deposition_limits(opt, mp)...)
++    limits = _ice_deposition_limits(opt, mp)
++    τ = τ_relax(mp.cloud.ice, mp.air_properties, CMP.process_params(mp, opt), q_icl, T, ρ)
++    S = _conv_q_vap_to_q_icl_const(τ, tps, micro, thermo; limits...)
++    sat_excess =
++        TDI.q_vap(q_tot, q_lcl + q_rai, q_icl + q_sno) - TDI.saturation_vapor_specific_content_over_ice(tps, thermo)
++    blocked = INP_limiter(sat_excess, tps, T; q_lcl, limits...)
++    return (S, ifelse(blocked, oftype(τ, Inf), τ))
+ end
+ 
+ # Kernel for `conv_q_vap_to_q_icl` with a constant relaxation timescale `τ`
+@@ -283,7 +298,7 @@ end
+     cₚ_air = TDI.cpₘ(tps, q_tot, q_lcl + q_rai, q_icl + q_sno)
+     qᵥ = TDI.q_vap(q_tot, q_lcl + q_rai, q_icl + q_sno)
+ 
+-    qᵥ_sat_ice = TDI.saturation_vapor_specific_content_over_ice(tps, T, ρ)
++    qᵥ_sat_ice = TDI.saturation_vapor_specific_content_over_ice(tps, thermo)
+ 
+     dqsi_dT = dqcld_dT(qᵥ_sat_ice, Lₛ, Rᵥ, T)
+     Γᵢ = gamma_helper(Lₛ, cₚ_air, dqsi_dT)
+@@ -315,7 +330,7 @@ end
+     cₚ_air = TDI.cpₘ(tps, q_tot, q_lcl + q_rai, q_icl + q_sno)
+     qᵥ = TDI.q_vap(q_tot, q_lcl + q_rai, q_icl + q_sno)
+ 
+-    qᵥ_sat_ice = TDI.saturation_vapor_specific_content_over_ice(tps, T, ρ)
++    qᵥ_sat_ice = TDI.saturation_vapor_specific_content_over_ice(tps, thermo)
+ 
+     dqsi_dT = dqcld_dT(qᵥ_sat_ice, Lₛ, Rᵥ, T)
+     Γᵢ = gamma_helper(Lₛ, cₚ_air, dqsi_dT)
+@@ -384,21 +399,14 @@ for how the timescale is used.
+     CMP.process_params(mp, opt).τ_relax
+ @inline τ_vap_to_q_icl(::CMP.PrescribedIceNumber, mp, tps::TDI.PS, micro, thermo) =
+     τ_relax(mp.cloud.ice, mp.air_properties, micro.q_icl, thermo.ρ)
+-@inline function τ_vap_to_q_icl(opt::CMP.TemperatureDependentIceNumber, mp, tps::TDI.PS, micro, thermo)
+-    (; q_tot, q_lcl, q_icl, q_rai, q_sno) = micro
+-    (; ρ, T) = thermo
+-    τ = τ_relax(mp.cloud.ice, mp.air_properties, CMP.process_params(mp, opt), q_icl, T, ρ)
+-    sat_excess =
+-        TDI.q_vap(q_tot, q_lcl + q_rai, q_icl + q_sno) - TDI.saturation_vapor_specific_content_over_ice(tps, T, ρ)
+-    blocked = INP_limiter(sat_excess, tps, T; q_lcl, _ice_deposition_limits(opt, mp)...)
+-    return ifelse(blocked, oftype(τ, Inf), τ)
+-end
++@inline τ_vap_to_q_icl(opt::CMP.TemperatureDependentIceNumber, mp, tps::TDI.PS, micro, thermo) =
++    last(conv_and_τ_vap_to_q_icl(opt, mp, tps, micro, thermo))
+ @inline function τ_vap_to_q_icl(opt::CMP.TemperatureDependent, mp, tps::TDI.PS, micro, thermo)
+     (; q_tot, q_lcl, q_icl, q_rai, q_sno) = micro
+     (; ρ, T) = thermo
+     pp = CMP.process_params(mp, opt)
+     qᵥ = TDI.q_vap(q_tot, q_lcl + q_rai, q_icl + q_sno)
+-    qᵥ_sat_ice = TDI.saturation_vapor_specific_content_over_ice(tps, T, ρ)
++    qᵥ_sat_ice = TDI.saturation_vapor_specific_content_over_ice(tps, thermo)
+     τ_dep = τ_relax(mp.cloud.ice, mp.air_properties, pp.frostenberg, q_icl, T, ρ)
+     # promote the constant branch to the state type so that `ifelse` is type stable
+     return ifelse(qᵥ - qᵥ_sat_ice < 0, oftype(τ_dep, pp.τ_relax), τ_dep)
+diff --git a/src/Quadrature.jl b/src/Quadrature.jl
+index 6f9caca6..c0831361 100644
+--- a/src/Quadrature.jl
++++ b/src/Quadrature.jl
+@@ -21,6 +21,7 @@ the device, rather than being rebuilt inside a GPU kernel.
+ """
+ module Quadrature
+ 
++import ClimaParams: @params
+ import StaticArrays as SA
+ import UnrolledUtilities as UU
+ import FastGaussQuadrature as FGQ
+@@ -161,7 +162,7 @@ If we are interested in only the integral of `f(x)`, we can instead integrate `g
+ - https://en.wikipedia.org/wiki/Chebyshev–Gauss_quadrature
+ - https://en.wikipedia.org/wiki/Gaussian_quadrature
+ """
+-struct ChebyshevGauss{FT} <: QuadratureRule
++@params struct ChebyshevGauss{FT} <: QuadratureRule
+     n::Int
+ end
+ ChebyshevGauss(n::Int) = ChebyshevGauss(Float64, n)
+@@ -222,7 +223,7 @@ geometrically there too.
+ - https://en.wikipedia.org/wiki/Gauss–Legendre_quadrature
+ - A. Townsend, *FastGaussQuadrature.jl* (MIT); Bogaert (2014) O(n) nodes/weights.
+ """
+-struct GaussLegendre{FT, N} <: QuadratureRule
++@params struct GaussLegendre{FT, N} <: QuadratureRule
+     n::Int
+     nodes::SA.SVector{N, FT}
+     weights::SA.SVector{N, FT}
+diff --git a/src/ThermodynamicsInterface.jl b/src/ThermodynamicsInterface.jl
+index 38113911..3e7e4073 100644
+--- a/src/ThermodynamicsInterface.jl
++++ b/src/ThermodynamicsInterface.jl
+@@ -89,8 +89,32 @@ saturation_vapor_specific_content_over_ice(tps::PS, T, ρ) =
+     TD.q_vap_saturation(tps, T, ρ, TD.Ice())
+ 
+ """
+-    supersaturation_over_liquid(tps, qₜ, qₗ, qᵢ, ρ, T)
+-    supersaturation_over_ice(tps, qₜ, qₗ, qᵢ, ρ, T)
++    saturation_vapor_pressures(tps, T)
++
++Saturation vapor pressures over liquid and over ice at the temperature `T` [K], as
++`(; p_sat_liq, p_sat_ice)` [Pa]. A caller that evaluates several process rates at one
++thermodynamic state merges them into the state `thermo = (; ρ, T)` it passes to the rates,
++which then read them from it instead of evaluating them again (`saturation_vapor_pressure_over_liquid`).
++"""
++saturation_vapor_pressures(tps::PS, T) = (;
++    p_sat_liq = saturation_vapor_pressure_over_liquid(tps, T),
++    p_sat_ice = saturation_vapor_pressure_over_ice(tps, T),
++)
++
++# The saturation vapor pressure of a thermodynamic state `thermo = (; ρ, T)`: the one it carries
++# (`saturation_vapor_pressures`), or the one evaluated at its temperature.
++saturation_vapor_pressure_over_liquid(tps::PS, thermo::NamedTuple) =
++    hasproperty(thermo, :p_sat_liq) ? thermo.p_sat_liq : saturation_vapor_pressure_over_liquid(tps, thermo.T)
++saturation_vapor_pressure_over_ice(tps::PS, thermo::NamedTuple) =
++    hasproperty(thermo, :p_sat_ice) ? thermo.p_sat_ice : saturation_vapor_pressure_over_ice(tps, thermo.T)
++saturation_vapor_specific_content_over_liquid(tps::PS, thermo::NamedTuple) =
++    p2q(tps, thermo.T, thermo.ρ, saturation_vapor_pressure_over_liquid(tps, thermo))
++saturation_vapor_specific_content_over_ice(tps::PS, thermo::NamedTuple) =
++    p2q(tps, thermo.T, thermo.ρ, saturation_vapor_pressure_over_ice(tps, thermo))
++
++"""
++    supersaturation_over_liquid(tps, qₜ, qₗ, qᵢ, ρ, T, p_sat = saturation_vapor_pressure_over_liquid(tps, T))
++    supersaturation_over_ice(tps, qₜ, qₗ, qᵢ, ρ, T, p_sat = saturation_vapor_pressure_over_ice(tps, T))
+ 
+ Compute supersaturation with respect to liquid water or ice.
+ 
+@@ -104,6 +128,7 @@ negative humidity inputs while preserving AD compatibility.
+ - `qᵢ`: Total ice specific content [kg/kg]
+ - `ρ`: Air density [kg/m³]
+ - `T`: Temperature [K]
++- `p_sat`: Saturation vapor pressure over the phase at `T` [Pa]
+ 
+ # Returns
+ - Supersaturation: `S = (pᵥ / pᵥ_sat) - 1` (dimensionless)
+@@ -114,13 +139,13 @@ negative humidity inputs while preserving AD compatibility.
+ - Internally uses `q_vap` which clamps negative vapor values to zero
+ - This prevents unphysical supersaturation values from negative humidity inputs
+ """
+-function supersaturation_over_liquid(tps::PS, qₜ, qₗ, qᵢ, ρ, T)
++function supersaturation_over_liquid(tps::PS, qₜ, qₗ, qᵢ, ρ, T, p_sat = saturation_vapor_pressure_over_liquid(tps, T))
+     qᵥ = q_vap(qₜ, qₗ, qᵢ)
+-    return TD.supersaturation(tps, qᵥ, ρ, T, TD.Liquid())
++    return TD.supersaturation(tps, qᵥ, ρ, T, p_sat)
+ end
+-function supersaturation_over_ice(tps::PS, qₜ, qₗ, qᵢ, ρ, T)
++function supersaturation_over_ice(tps::PS, qₜ, qₗ, qᵢ, ρ, T, p_sat = saturation_vapor_pressure_over_ice(tps, T))
+     qᵥ = q_vap(qₜ, qₗ, qᵢ)
+-    return TD.supersaturation(tps, qᵥ, ρ, T, TD.Ice())
++    return TD.supersaturation(tps, qᵥ, ρ, T, p_sat)
+ end
+ 
+ end
+diff --git a/src/Utilities.jl b/src/Utilities.jl
+index a65b772d..1e4d858b 100644
+--- a/src/Utilities.jl
++++ b/src/Utilities.jl
+@@ -14,7 +14,7 @@ import RootSolvers as RS
+ 
+ export clamp_to_nonneg, ϵ_numerics
+ export promote_typeof, return_type_of, find_zeros, scan_zeros
+-export fac
++export fac, precomputed
+ 
+ """
+     promote_typeof(args...)
+@@ -408,6 +408,16 @@ representable in `Int64`.
+     return prod(1:n; init = one(n))
+ end
+ 
++"""
++    precomputed(f, params...)
++
++Return `f(params...)`, which the compiler evaluates when it compiles the caller if every
++element of `params` is a singleton (parameter structs whose values are stored in their type),
++and which is evaluated at run time otherwise. This keeps calls such as `exp`, `log`, `^`, and
++`gamma` of parameter-only values out of compiled kernels. `f` must be a function without state.
++"""
++Base.@assume_effects :foldable precomputed(f::F, params...) where {F} = f(params...)
++
+ """
+     ϵ_numerics(FT)
+     ϵ_numerics(x::Real)
+@@ -417,14 +427,15 @@ Physical smallness threshold for the **1-moment** and **2-moment** schemes.
+ Below this threshold a tracer is treated as absent.
+ 
+ Returns `cbrt(floatmin(float(FT)))`, a floatmin-derived floor
+-that also keeps `cbrt`/`^` arguments above `floatmin`.
++that also keeps `cbrt`/`^` arguments above `floatmin`. The value is computed once per type, since
++a GPU compiler does not fold the call of `cbrt`.
+ 
+ Can be called in three ways:
+ - With a floating-point type (e.g., `Float32` or `Float64`), returning the threshold for that type.
+ - With a concrete floating-point value, returning the threshold for its type.
+ - With an integer type or value, returning the threshold for its float counterpart (e.g., `Int32` → `Float32`).
+ """
+-@inline ϵ_numerics(FT) = cbrt(floatmin(float(FT)))
++@generated ϵ_numerics(::Type{FT}) where {FT} = cbrt(floatmin(float(FT)))
+ @inline ϵ_numerics(x::Real) = ϵ_numerics(typeof(x))
+ 
+ """
+diff --git a/src/bulk_donor_step.jl b/src/bulk_donor_step.jl
+index 19a6d562..9169e664 100644
+--- a/src/bulk_donor_step.jl
++++ b/src/bulk_donor_step.jl
+@@ -166,8 +166,9 @@ end
+ 
+ """
+     donor_linearization(terms, q, q_min, Δt, f_k = one.(q))
++    donor_linearization!(lin, terms, q, q_min, Δt, f_k = one.(q))
+ 
+-Return the donor-based [`LinearizedTendency`](@ref) of `terms` at the species `q`.
++Return the donor-based [`LinearizedTendency`](@ref) of `terms` at the species `q`, or add it to `lin`.
+ 
+ Each term adds the coefficients `(s, D)` of [`donor_coefficients`](@ref): `-D` to the
+ diagonal entry of its donor, `D` to the entry in the row of its receiver if the receiver is
+@@ -182,24 +183,22 @@ entry of their donor (the per-donor factors of the latent-heating limiter).
+ - `Δt`: width of the substep [s].
+ - `f_k`: decay scale per donor, a state like `q` [-].
+ """
+-@inline function donor_linearization(terms, q::Q, q_min, Δt, f_k = one.(q)) where {Q}
+-    lin = LinearizedTendency(Q)
++@inline donor_linearization(terms, q::Q, q_min, Δt, f_k = one.(q)) where {Q} =
++    donor_linearization!(LinearizedTendency(Q), terms, q, q_min, Δt, f_k)
++@inline function donor_linearization!(lin, terms, q, q_min, Δt, f_k = one.(q))
+     UU.unrolled_foreach(t -> (@inline; _add_donor_term!(lin, t, q, q_min, Δt, f_k)), values(terms))
+     return lin
+ end
+ 
+ """
+-    limiter_decay_totals(terms, q, q_min, Δt)
++    limiter_decay_totals(terms, q, q_min, Δt, init = (zero(q), zero(q)))
+ 
+ Return per donor the total decay of the terms that change phase and the total decay of the
+-other terms, `(Dpc, Dcol)`, as two states like `q` [1/s]; the inputs of
++other terms, `(Dpc, Dcol)`, as two states like `q` [1/s], added to `init`; the inputs of
+ [`_donor_limiter_scale`](@ref).
+ """
+-@inline function limiter_decay_totals(terms, q::Q, q_min, Δt) where {Q}
+-    return UU.unrolled_reduce(
+-        (acc, t) -> (@inline; _add_decay_total(acc, t, q, q_min, Δt)), values(terms), (zero(q), zero(q)),
+-    )
+-end
++@inline limiter_decay_totals(terms, q, q_min, Δt, init = (zero(q), zero(q))) =
++    UU.unrolled_reduce((acc, t) -> (@inline; _add_decay_total(acc, t, q, q_min, Δt)), values(terms), init)
+ @inline function _add_decay_total((Dpc, Dcol), t::Transfer{Donor}, q, q_min, Δt) where {Donor}
+     (_, D) = donor_coefficients(t, q, q_min, Δt)
+     return ifelse(
+@@ -230,6 +229,27 @@ terms that change phase and `Dcol` that of its other terms ([`limiter_decay_tota
+     return f * (one(FT) + Dcol * Δt) / (one(FT) + Dcol * Δt + (one(FT) - f) * Dpc * Δt)
+ end
+ 
++"""
++    limited_linearization(lin, Dpc, Dcol, f_k)
++
++Return the [`LinearizedTendency`](@ref) `lin` of unscaled terms with the decays of the terms that
++change phase scaled by the entry of their donor in `f_k`, from the totals `(Dpc, Dcol)` of
++[`limiter_decay_totals`](@ref) for the same terms; equal, up to rounding, to
++[`donor_linearization`](@ref) of the terms with `f_k`, and identical to `lin` where `f_k` is 1.
++
++A transfer changes phase if its donor and its receiver are of different phases, so an off-diagonal
++entry of `M` holds only decays that are scaled or only decays that are not, and the diagonal entry
++of a donor is minus its total decay, `f_k Dpc + Dcol`.
++"""
++@inline function limited_linearization((; M, e)::LinearizedTendency{Q}, Dpc, Dcol, f_k) where {Q}
++    is_ice = SA.SVector(map(_is_ice, fieldnames(Q)))
++    changes_phase = is_ice .!= is_ice'  # the receiver (row) and the donor (column) differ in phase
++    is_diagonal = SA.SMatrix{length(Q), length(Q), Bool}(SA.I)
++    D = ifelse.(isone.(f_k), -SA.diag(M), f_k .* Dpc .+ Dcol)
++    M_lim = ifelse.(is_diagonal, -D', ifelse.(changes_phase, f_k' .* M, M))
++    return LinearizedTendency{Q, typeof(M_lim), typeof(e)}(M_lim, e)
++end
++
+ """
+     donor_rates(terms, q, q_new, α, q_min, Δt, f_k = one.(q))
+ 
+diff --git a/src/bulk_joint_relaxation.jl b/src/bulk_joint_relaxation.jl
+index afd2c77a..9e8ff0c6 100644
+--- a/src/bulk_joint_relaxation.jl
++++ b/src/bulk_joint_relaxation.jl
+@@ -75,7 +75,7 @@ relaxation (see `_joint_vapor_transfers`), written in the excess of the primary
+ end
+ 
+ """
+-    _saturation_state(tps, ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno)
++    _saturation_state(tps, ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno, thermo = (; ρ, T))
+ 
+ Vapor content (with the same expression as the rate functions, so that a rate of exactly zero
+ corresponds to a zero excess), saturations over liquid and ice, the latent-heat factors `Γ`
+@@ -84,13 +84,14 @@ check of `_linearized_implicit_step`: the lower saturation `q_smin`, its tempera
+ `λ_min`, the corresponding `Γ_min`, and the round-off tolerance `q_tol` (one ulp of the larger saturation content) for a vanishing excess.
+ `Γ_min` uses the reference latent heat and the dry-air heat capacity of the substep temperature
+ update (`_latent_heating`), as the vapor limiter needs; `Γ` and `κ` use `L(T)` and the moist heat
+-capacity of the rate functions.
++capacity of the rate functions. The saturation vapor pressures are those of the thermodynamic
++state `thermo`, if it holds them (`TDI.saturation_vapor_pressures`).
+ """
+-@inline function _saturation_state(tps::TDI.PS, ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno)
++@inline function _saturation_state(tps::TDI.PS, ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno, thermo = (; ρ, T))
+     FT = typeof(q_tot)
+     qᵥ = TDI.q_vap(q_tot, q_lcl + q_rai, q_icl + q_sno)
+-    q_sl = TDI.saturation_vapor_specific_content_over_liquid(tps, T, ρ)
+-    q_si = TDI.saturation_vapor_specific_content_over_ice(tps, T, ρ)
++    q_sl = TDI.p2q(tps, T, ρ, TDI.saturation_vapor_pressure_over_liquid(tps, thermo))
++    q_si = TDI.p2q(tps, T, ρ, TDI.saturation_vapor_pressure_over_ice(tps, thermo))
+     Lᵥ = TDI.Lᵥ(tps, T)
+     Lₛ = TDI.Lₛ(tps, T)
+     Rᵥ = TDI.Rᵥ(tps)
+@@ -113,7 +114,7 @@ capacity of the rate functions.
+ end
+ 
+ """
+-    _joint_vapor_transfers(src, tps, ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno, Δt)
++    _joint_vapor_transfers(src, tps, ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno, Δt, thermo = (; ρ, T))
+ 
+ Transfers over the substep of the four vapor-driven phase changes (cloud liquid
+ condensation/evaporation, rain evaporation, cloud ice deposition/sublimation, snow
+@@ -150,9 +151,11 @@ positive = vapor → condensate] and, for the vapor check, the lower saturation
+ `q_smin = min(q*_liq, q*_ice)`, its temperature derivative `λ_min`, the corresponding
+ `Γ_min`, and the round-off tolerance `q_tol` used for the excesses.
+ """
+-@inline function _joint_vapor_transfers(src, tps::TDI.PS, ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno, Δt)
++@inline function _joint_vapor_transfers(
++    src, tps::TDI.PS, ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno, Δt, thermo = (; ρ, T),
++)
+     (; qᵥ, q_sl, q_si, Γₗ, Γᵢ, κ_il, κ_li, q_smin, λ_min, Γ_min, q_tol) =
+-        _saturation_state(tps, ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno)
++        _saturation_state(tps, ρ, T, q_tot, q_lcl, q_icl, q_rai, q_sno, thermo)
+     δₗ = qᵥ - q_sl
+     δᵢ = qᵥ - q_si
+     Δs = q_sl - q_si
+diff --git a/src/bulk_process_terms.jl b/src/bulk_process_terms.jl
+index bad04e33..6f8c51ee 100644
+--- a/src/bulk_process_terms.jl
++++ b/src/bulk_process_terms.jl
+@@ -101,8 +101,9 @@ end
+ 
+ """
+     species_tendency(terms, Q)
++    species_tendency(terms, dq_dt)
+ 
+-Sum the tendencies of `terms` into a state of the type `Q` [kg/kg/s].
++Sum the tendencies of `terms` into a state of the type `Q` [kg/kg/s], or add them to the state `dq_dt`.
+ 
+ `Q` is a state type with one field per species, for example `Condensates1M{FT}`. Each term adds its rate `S`:
+ - `Transfer(:Donor => :Receiver, S)`: `-S` to `Donor` and `S` to `Receiver`.
+@@ -110,8 +111,8 @@ Sum the tendencies of `terms` into a state of the type `Q` [kg/kg/s].
+ 
+ The vapor is not a species of `Q`; it changes by minus the sum of the tendencies.
+ """
+-@inline species_tendency(terms, ::Type{Q}) where {Q} =
+-    UU.unrolled_reduce(_add_tendency, values(terms), zero(Q))
++@inline species_tendency(terms, ::Type{Q}) where {Q} = species_tendency(terms, zero(Q))
++@inline species_tendency(terms, dq_dt) = UU.unrolled_reduce(_add_tendency, values(terms), dq_dt)
+ 
+ @inline function _add_tendency(dq_dt, t::Transfer{Donor, Receiver}) where {Donor, Receiver}
+     dq_dt = Base.setindex(dq_dt, dq_dt[Donor] - t.S, Donor)
+diff --git a/src/parameters/AbstractTypes.jl b/src/parameters/AbstractTypes.jl
+index f1ec840e..4b56493d 100644
+--- a/src/parameters/AbstractTypes.jl
++++ b/src/parameters/AbstractTypes.jl
+@@ -7,7 +7,8 @@ abstract type ParametersType end
+ 
+ 
+ # Temporary fallback until we stop checking eltype from the parameters
+-Base.eltype(p::ParametersType) = fieldcount(typeof(p)) > 0 ? eltype(getfield(p, 1)) : Any
++Base.eltype(p::ParametersType) =
++    isempty(propertynames(p)) ? Any : eltype(getproperty(p, first(propertynames(p))))
+ Base.broadcastable(x::ParametersType) = tuple(x)
+ Base.show(io::IO, x::ParametersType) =
+     ShowMethods.parseable_show_with_fields_no_type_header(io, x; with_module_prefix = false)
+diff --git a/src/parameters/AerosolATD.jl b/src/parameters/AerosolATD.jl
+index e944d918..23c8926e 100644
+--- a/src/parameters/AerosolATD.jl
++++ b/src/parameters/AerosolATD.jl
+@@ -9,7 +9,7 @@ Mohler et al, 2006. DOI: 10.5194/acp-6-3007-2006
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct ArizonaTestDust{FT} <: AerosolType
++@params struct ArizonaTestDust{FT} <: AerosolType
+     "S₀ for T > T_thr [-]"
+     S₀_warm::FT
+     "S₀ for T < T_thr [-]"
+diff --git a/src/parameters/AerosolActivation.jl b/src/parameters/AerosolActivation.jl
+index 0db9ba77..a44f38a1 100644
+--- a/src/parameters/AerosolActivation.jl
++++ b/src/parameters/AerosolActivation.jl
+@@ -9,7 +9,7 @@ DOI: 10.1029/1999JD901161
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct AerosolActivationParameters{FT} <: ParametersType
++@params struct AerosolActivationParameters{FT} <: ParametersType
+     "molar mass of water [kg/mol]"
+     M_w::FT
+     "gas constant [J/mol/K]"
+diff --git a/src/parameters/AerosolAsianDust.jl b/src/parameters/AerosolAsianDust.jl
+index d38998ab..03827f4c 100644
+--- a/src/parameters/AerosolAsianDust.jl
++++ b/src/parameters/AerosolAsianDust.jl
+@@ -8,7 +8,7 @@ Parameters for Asian Dust
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct AsianDust{FT} <: AerosolType
++@params struct AsianDust{FT} <: AerosolType
+     "m coefficient for deposition nucleation J [-]"
+     deposition_m::FT
+     "c coefficient for deposition nucleation J [-]"
+diff --git a/src/parameters/AerosolDesertDust.jl b/src/parameters/AerosolDesertDust.jl
+index feed2107..8544e896 100644
+--- a/src/parameters/AerosolDesertDust.jl
++++ b/src/parameters/AerosolDesertDust.jl
+@@ -10,7 +10,7 @@ and from Mohler et al, 2006 DOI: 10.5194/acp-6-3007-2006
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct DesertDust{FT} <: AerosolType
++@params struct DesertDust{FT} <: AerosolType
+     "S₀ for T > T_thr [-]"
+     S₀_warm::FT
+     "S₀ for T < T_thr [-]"
+diff --git a/src/parameters/AerosolDust.jl b/src/parameters/AerosolDust.jl
+index acb97b4d..b9c2962f 100644
+--- a/src/parameters/AerosolDust.jl
++++ b/src/parameters/AerosolDust.jl
+@@ -8,7 +8,7 @@ Parameters for generic dust.
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Dust{FT} <: AerosolType
++@params struct Dust{FT} <: AerosolType
+     "m coefficient for deposition nucleation J [-]"
+     deposition_m::FT
+     "c coefficient for deposition nucleation J [-]"
+diff --git a/src/parameters/AerosolFeldspar.jl b/src/parameters/AerosolFeldspar.jl
+index c419d514..1664ad0e 100644
+--- a/src/parameters/AerosolFeldspar.jl
++++ b/src/parameters/AerosolFeldspar.jl
+@@ -9,7 +9,7 @@ DOI: 10.1039/D1EA00077B
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Feldspar{FT} <: AerosolType
++@params struct Feldspar{FT} <: AerosolType
+     "m coefficient for deposition nucleation J [-]"
+     deposition_m::FT
+     "c coefficient for deposition nucleation J [-]"
+diff --git a/src/parameters/AerosolFerrihydrite.jl b/src/parameters/AerosolFerrihydrite.jl
+index 3afc3127..66dd5bb6 100644
+--- a/src/parameters/AerosolFerrihydrite.jl
++++ b/src/parameters/AerosolFerrihydrite.jl
+@@ -9,7 +9,7 @@ DOI: 10.1039/D1EA00077B
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Ferrihydrite{FT} <: AerosolType
++@params struct Ferrihydrite{FT} <: AerosolType
+     "m coefficient for deposition nucleation J [-]"
+     deposition_m::FT
+     "c coefficient for deposition nucleation J [-]"
+diff --git a/src/parameters/AerosolIllite.jl b/src/parameters/AerosolIllite.jl
+index bbfce8ed..1623be82 100644
+--- a/src/parameters/AerosolIllite.jl
++++ b/src/parameters/AerosolIllite.jl
+@@ -9,7 +9,7 @@ DOI: 10.1039/C3FD00035D
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Illite{FT} <: AerosolType
++@params struct Illite{FT} <: AerosolType
+     "m coefficient for deposition nucleation J [-]"
+     deposition_m::FT
+     "c coefficient for deposition nucleation J [-]"
+diff --git a/src/parameters/AerosolKaolinite.jl b/src/parameters/AerosolKaolinite.jl
+index 372e6b5f..7381f60b 100644
+--- a/src/parameters/AerosolKaolinite.jl
++++ b/src/parameters/AerosolKaolinite.jl
+@@ -10,7 +10,7 @@ DOI: 10.1002/2016JD025817
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Kaolinite{FT} <: AerosolType
++@params struct Kaolinite{FT} <: AerosolType
+     "m coefficient for deposition nucleation J [-]"
+     deposition_m::FT
+     "c coefficient for deposition nucleation J [-]"
+diff --git a/src/parameters/AerosolMiddleEasternDust.jl b/src/parameters/AerosolMiddleEasternDust.jl
+index 159736ff..c8ce994a 100644
+--- a/src/parameters/AerosolMiddleEasternDust.jl
++++ b/src/parameters/AerosolMiddleEasternDust.jl
+@@ -8,7 +8,7 @@ Parameters for Middle Eastern Dust
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct MiddleEasternDust{FT} <: AerosolType
++@params struct MiddleEasternDust{FT} <: AerosolType
+     "m coefficient for immersion freezing J [-]"
+     ABIFM_m::FT
+     "c coefficient for immersion freezing J [-]"
+diff --git a/src/parameters/AerosolModalNucleation.jl b/src/parameters/AerosolModalNucleation.jl
+index 2be835d2..630b73b2 100644
+--- a/src/parameters/AerosolModalNucleation.jl
++++ b/src/parameters/AerosolModalNucleation.jl
+@@ -10,7 +10,7 @@ DOI:10.1126/science.aaf2649
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct H2S04NucleationParameters{FT} <: ParametersType
++@params struct H2S04NucleationParameters{FT} <: ParametersType
+     p_b_n::FT
+     p_b_i::FT
+     u_b_n::FT
+@@ -42,7 +42,7 @@ DOI: 10.1038/nature17953
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct OrganicNucleationParameters{FT} <: ParametersType
++@params struct OrganicNucleationParameters{FT} <: ParametersType
+     a_1::FT
+     a_2::FT
+     a_3::FT
+@@ -65,7 +65,7 @@ DOI:10.1126/science.1243527
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct MixedNucleationParameters{FT} <: ParametersType
++@params struct MixedNucleationParameters{FT} <: ParametersType
+     k_H2SO4org::FT
+     k_MTOH::FT
+     exp_MTOH::FT
+diff --git a/src/parameters/AerosolSaharanDust.jl b/src/parameters/AerosolSaharanDust.jl
+index 7ad66ff0..467f0d81 100644
+--- a/src/parameters/AerosolSaharanDust.jl
++++ b/src/parameters/AerosolSaharanDust.jl
+@@ -8,7 +8,7 @@ Parameters for Saharan Dust
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct SaharanDust{FT} <: AerosolType
++@params struct SaharanDust{FT} <: AerosolType
+     "m coefficient for deposition nucleation J [-]"
+     deposition_m::FT
+     "c coefficient for deposition nucleation J [-]"
+diff --git a/src/parameters/AerosolSeasalt.jl b/src/parameters/AerosolSeasalt.jl
+index 65608bc1..22a2d39b 100644
+--- a/src/parameters/AerosolSeasalt.jl
++++ b/src/parameters/AerosolSeasalt.jl
+@@ -8,7 +8,7 @@ Parameters for seasalt
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Seasalt{FT} <: AerosolType
++@params struct Seasalt{FT} <: AerosolType
+     "molar mass [kg/mol]"
+     M::FT
+     "density [kg/m3]"
+diff --git a/src/parameters/AerosolSulfate.jl b/src/parameters/AerosolSulfate.jl
+index 22e276ed..74ffb88f 100644
+--- a/src/parameters/AerosolSulfate.jl
++++ b/src/parameters/AerosolSulfate.jl
+@@ -8,7 +8,7 @@ Parameters for sulfate aerosol
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Sulfate{FT} <: AerosolType
++@params struct Sulfate{FT} <: AerosolType
+     "molar mass [kg/mol]"
+     M::FT
+     "density [kg/m3]"
+diff --git a/src/parameters/Aerosol_H2SO4_Solution.jl b/src/parameters/Aerosol_H2SO4_Solution.jl
+index 2e840b35..162c0248 100644
+--- a/src/parameters/Aerosol_H2SO4_Solution.jl
++++ b/src/parameters/Aerosol_H2SO4_Solution.jl
+@@ -9,7 +9,7 @@ from Luo et al 1995. DOI: 10.1029/94GL02988
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct H2SO4SolutionParameters{FT} <: ParametersType
++@params struct H2SO4SolutionParameters{FT} <: ParametersType
+     "max temperature for which the parameterization is valid [K]"
+     T_max::FT
+     "min temperature for which the parameterization is valid [K]"
+diff --git a/src/parameters/AirProperties.jl b/src/parameters/AirProperties.jl
+index 84ba98c7..f97a23a9 100644
+--- a/src/parameters/AirProperties.jl
++++ b/src/parameters/AirProperties.jl
+@@ -8,7 +8,7 @@ Parameters with air properties.
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct AirProperties{FT} <: ParametersType
++@params struct AirProperties{FT} <: ParametersType
+     "thermal conductivity of air [W/m/K]"
+     K_therm::FT
+     "diffusivity of water vapor [m²/s]"
+diff --git a/src/parameters/IceNucleation.jl b/src/parameters/IceNucleation.jl
+index 21eada48..be5e6d1e 100644
+--- a/src/parameters/IceNucleation.jl
++++ b/src/parameters/IceNucleation.jl
+@@ -10,7 +10,7 @@ DOI: 10.5194/acp-6-3007-2006
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Mohler2006{FT} <: ParametersType
++@params struct Mohler2006{FT} <: ParametersType
+     "max allowed supersaturation [-]"
+     Sᵢ_max::FT
+     "threshold temperature [K]"
+@@ -26,7 +26,7 @@ DOI: 10.1038/35020537
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Koop2000{FT} <: ParametersType
++@params struct Koop2000{FT} <: ParametersType
+     "min Δaw [-]"
+     Δa_w_min::FT
+     "max Δaw [-]"
+@@ -54,7 +54,7 @@ DOI: 10.1175/JAS-D-14-0065.1
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct MorrisonMilbrandt2014{FT} <: ParametersType
++@params struct MorrisonMilbrandt2014{FT} <: ParametersType
+     "Cutoff temperature for deposition nucleation `[K]`; maps to the ClimaParams homogeneous nucleation temperature, 233 K"
+     T_dep_thres::FT
+     "coefficient [-]"
+@@ -88,7 +88,7 @@ $(DocStringExtensions.FIELDS)
+ 
+ Compute the volumetric freezing rate [m⁻³ s⁻¹]
+ """
+-@kwdef struct RainFreezing{FT} <: ParametersType
++@params struct RainFreezing{FT} <: ParametersType
+     "empirical parameter [K⁻¹]"
+     het_a::FT
+     "water-type dependent parameter [m⁻³ s⁻¹]"
+@@ -131,7 +131,7 @@ DOI: 10.5194/acp-23-10883-2023
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Frostenberg2023{FT} <: ParametersType
++@params struct Frostenberg2023{FT} <: ParametersType
+     "standard deviation"
+     σ::FT
+     "coefficient"
+@@ -163,8 +163,7 @@ clean air below it and the F23 channel artificially shuts off.
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-struct NIceProxyDepletion{FT}
++@params struct NIceProxyDepletion{FT}
+     "F23 activation relaxation timescale `[s]` (default `300`)"
+-    τ_act::FT
++    τ_act::FT = 300
+ end
+-NIceProxyDepletion(; τ_act = 300) = NIceProxyDepletion(τ_act)
+diff --git a/src/parameters/Microphysics0M.jl b/src/parameters/Microphysics0M.jl
+index 78b23c07..1f5f52f4 100644
+--- a/src/parameters/Microphysics0M.jl
++++ b/src/parameters/Microphysics0M.jl
+@@ -8,7 +8,7 @@ Parameters for zero-moment bulk microphysics scheme
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Parameters0M{FT} <: ParametersType
++@params struct Parameters0M{FT} <: ParametersType
+     "precipitation timescale [s]"
+     τ_precip::FT
+     "condensate specific content precipitation threshold [-]"
+@@ -27,7 +27,7 @@ precipitation flux in sub-saturated air, following
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Evaporation0M{FT} <: ParametersType
++@params struct Evaporation0M{FT} <: ParametersType
+     "evaporation coefficient (`0` disables evaporation) [1/s]"
+     k_E::FT
+     "critical relative humidity above which precipitation does not evaporate [-]"
+diff --git a/src/parameters/Microphysics1M.jl b/src/parameters/Microphysics1M.jl
+index dc81dc73..00312bd6 100644
+--- a/src/parameters/Microphysics1M.jl
++++ b/src/parameters/Microphysics1M.jl
+@@ -8,7 +8,7 @@ A struct with snow size distribution parameters
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct ParticlePDFSnow{FT} <: ParametersType
++@params struct ParticlePDFSnow{FT} <: ParametersType
+     "snow size distribution coefficient [1/m4]"
+     μ::FT
+     "snow size distribution coefficient [-]"
+@@ -23,7 +23,7 @@ A struct with cloud ice or rain size distribution parameters
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-struct ParticlePDFIceRain{FT} <: ParametersType
++@params struct ParticlePDFIceRain{FT} <: ParametersType
+     "size distribution coefficient [1/m⁴]"
+     n0::FT
+ end
+@@ -38,7 +38,7 @@ m(r) = m0 χm (r/r0)^(me + Δm)
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct ParticleMass{FT} <: ParametersType
++@params struct ParticleMass{FT} <: ParametersType
+     "particle length scale [m]"
+     r0::FT
+     "mass size relation coefficient [kg]"
+@@ -65,7 +65,7 @@ a(r) = a0 χa (r/r0)^(ae + Δa)
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct ParticleArea{FT} <: ParametersType
++@params struct ParticleArea{FT} <: ParametersType
+     "cross section size relation coefficient [m²]"
+     a0::FT
+     "cross section size relation coefficient [-]"
+@@ -85,7 +85,7 @@ A struct with ventilation coefficients
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-struct Ventilation{FT} <: ParametersType
++@params struct Ventilation{FT} <: ParametersType
+     "ventilation coefficient `a` [-]"
+     a::FT
+     "ventilation coefficient `b` [-]"
+@@ -100,7 +100,7 @@ A struct with aspect ratio coefficients
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-struct SnowAspectRatio{FT} <: ParametersType
++@params struct SnowAspectRatio{FT} <: ParametersType
+     "aspect ratio [-]"
+     ϕ::FT
+     "power law coefficient in terminal velocity parameterization from Chen et al 2022 [-]"
+@@ -116,7 +116,7 @@ cloud ice, `NoSupersaturation`). Rain autoconversion (`Kessler1M`) uses [`Kessle
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-struct Acnv1M{FT} <: ParametersType
++@params struct Acnv1M{FT} <: ParametersType
+     "autoconversion timescale [s]"
+     τ::FT
+     "condensate specific content autoconversion threshold [-]"
+@@ -133,7 +133,7 @@ The parameters and type for cloud liquid water condensate
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct CloudLiquid{FT} <: CloudCondensateType
++@params struct CloudLiquid{FT} <: CloudCondensateType
+     "water density [kg/m³]"
+     ρw::FT
+     "effective radius [m]"
+@@ -152,7 +152,7 @@ The parameters and type for cloud ice condensate
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct CloudIce{FT, PD, MS} <: CloudCondensateType
++@params struct CloudIce{FT, PD, MS} <: CloudCondensateType
+     "a struct with size distribution parameters"
+     pdf::PD
+     "a struct with mass size relation parameters"
+@@ -189,7 +189,7 @@ only where there is cloud liquid above `T_vap_nuc`.
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct IceNumberTemperatureFit{FT} <: ParametersType
++@params struct IceNumberTemperatureFit{FT} <: ParametersType
+     "prefactor of the fit [1/m³]"
+     N_ref::FT
+     "intercept of the exponent [-]"
+@@ -263,7 +263,7 @@ The parameters and type for snow
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Snow{FT, PD, MS, AR, VT, AP} <: PrecipitationType
++@params struct Snow{FT, PD, MS, AR, VT, AP} <: PrecipitationType
+     "a struct with size distribution parameters"
+     pdf::PD
+     "a struct with mass size relation parameters"
+@@ -334,7 +334,7 @@ Active when `PrescribedNd` is selected in `Microphysics1MOptions`.
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct VarTimescaleAcnv{FT} <: Precipitation2MType
++@params struct VarTimescaleAcnv{FT} <: Precipitation2MType
+     "Autoconversion timescale [s]"
+     τ::FT
+     "Powerlaw coefficient relating timescale to droplet number [-]"
+@@ -371,7 +371,7 @@ Active when `Kessler1M` is selected in in `Microphysics1MOptions`.
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct KesslerAcnv{FT} <: ParametersType
++@params struct KesslerAcnv{FT} <: ParametersType
+     "Autoconversion timescale for quiescent (stratiform) conditions [s]"
+     τ_slow::FT
+     "Autoconversion timescale for strong vertical motions (convective) [s]"
+diff --git a/src/parameters/Microphysics1MParams.jl b/src/parameters/Microphysics1MParams.jl
+index 1c9b2d2b..96c49d3a 100644
+--- a/src/parameters/Microphysics1MParams.jl
++++ b/src/parameters/Microphysics1MParams.jl
+@@ -84,7 +84,7 @@ mp = CMP.Microphysics1MParams(Float64;
+ )
+ ```
+ """
+-@kwdef struct Microphysics1MParams{OPT, PPR, CP, PP, AP, VL, FT} <: ParametersType
++@params struct Microphysics1MParams{OPT, PPR, CP, PP, AP, VL, FT} <: ParametersType
+     processes::OPT
+     process_params::PPR
+     cloud::CP
+diff --git a/src/parameters/Microphysics2M.jl b/src/parameters/Microphysics2M.jl
+index 3990226c..00053c04 100644
+--- a/src/parameters/Microphysics2M.jl
++++ b/src/parameters/Microphysics2M.jl
+@@ -9,7 +9,7 @@ Khairoutdinov and Kogan (2000) autoconversion parameters of the rate
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct AcnvKK2000{FT} <: ParametersType
++@params struct AcnvKK2000{FT} <: ParametersType
+     "Rate coefficient A [1/s]"
+     A::FT
+     "Exponent a of the cloud liquid specific content [-]"
+@@ -49,7 +49,7 @@ Khairoutdinov and Kogan (2000) accretion parameters of the rate
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct AccrKK2000{FT} <: ParametersType
++@params struct AccrKK2000{FT} <: ParametersType
+     "Rate coefficient A [1/s]"
+     A::FT
+     "Exponent a of the product of cloud liquid and rain specific contents [-]"
+@@ -89,7 +89,7 @@ Beheng (1994) autoconversion parameters
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct AcnvB1994{FT} <: ParametersType
++@params struct AcnvB1994{FT} <: ParametersType
+     "Autoconversion coeff C"
+     C::FT
+     "Autoconversion coeff a"
+@@ -116,7 +116,7 @@ Beheng (1994) accretion parameters
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct AccrB1994{FT} <: ParametersType
++@params struct AccrB1994{FT} <: ParametersType
+     "Accretion coefficient A"
+     A::FT
+ end
+@@ -148,7 +148,7 @@ Tripoli and Cotton (1980) autoconversion parameters
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct AcnvTC1980{FT} <: ParametersType
++@params struct AcnvTC1980{FT} <: ParametersType
+     "Autoconversion coefficient a"
+     a::FT
+     "Autoconversion coefficient b"
+@@ -179,7 +179,7 @@ Tripoli and Cotton (1980) accretion parameters
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct AccrTC1980{FT} <: ParametersType
++@params struct AccrTC1980{FT} <: ParametersType
+     "Accretion coefficient A"
+     A::FT
+ end
+@@ -216,7 +216,7 @@ DOI: 10.1175/1520-0469(2004)061<1539:POTAPI>2.0.CO;2
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct LD2004{FT} <: Precipitation2MType
++@params struct LD2004{FT} <: Precipitation2MType
+     "Autoconversion coefficient R_6C_0"
+     R_6C_0::FT
+     "Autoconversion coefficient E_0"
+@@ -261,7 +261,7 @@ on drop maximum mass and the size distribution coefficients N0 and lambda
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct RainParticlePDF_SB2006_limited{FT} <: RainParticlePDF_SB2006
++@params struct RainParticlePDF_SB2006_limited{FT} <: RainParticlePDF_SB2006
+     "Raindrop size distribution coefficient νr"
+     νr::FT
+     "Raindrop size distribution coefficient μr"
+@@ -292,7 +292,7 @@ Rain size distribution parameters from SB2006 but without the limiters
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct RainParticlePDF_SB2006_notlimited{FT} <: RainParticlePDF_SB2006
++@params struct RainParticlePDF_SB2006_notlimited{FT} <: RainParticlePDF_SB2006
+     "Raindrop size distribution coefficient νr"
+     νr::FT
+     "Raindrop size distribution coefficient μr"
+@@ -318,7 +318,7 @@ Cloud droplets size distribution parameters from SB2006
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct CloudParticlePDF_SB2006{FT} <: ParametersType
++@params struct CloudParticlePDF_SB2006{FT} <: ParametersType
+     "Cloud droplet size distribution coefficient νc"
+     νc::FT
+     "Cloud droplet size distribution coefficient μc"
+@@ -353,7 +353,7 @@ Autoconversion parameters from SB2006
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct AcnvSB2006{FT} <: ParametersType
++@params struct AcnvSB2006{FT} <: ParametersType
+     "Collection kernel coefficient"
+     kcc::FT
+     "Minimum mass of rain droplets"
+@@ -376,7 +376,7 @@ Accretion parameters from SB2006
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct AccrSB2006{FT} <: ParametersType
++@params struct AccrSB2006{FT} <: ParametersType
+     "Collection kernel coefficient Kcr"
+     kcr::FT
+     "Accretion correcting function coefficient τ_0"
+@@ -395,7 +395,7 @@ Rain selfcollection parameters from SB2006
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct SelfColSB2006{FT} <: ParametersType
++@params struct SelfColSB2006{FT} <: ParametersType
+     "Collection kernel coefficient krr"
+     krr::FT
+     "Collection kernel coefficient kappa rr"
+@@ -412,7 +412,7 @@ Rain breakup parameters from SB2006
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct BreakupSB2006{FT} <: ParametersType
++@params struct BreakupSB2006{FT} <: ParametersType
+     "Raindrop equilibrium mean diameter"
+     Deq::FT
+     "Raindrop breakup mean diameter threshold"
+@@ -431,7 +431,7 @@ Rain evaporation parameters from SB2006
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct EvaporationSB2006{FT} <: ParametersType
++@params struct EvaporationSB2006{FT} <: ParametersType
+     "Ventilation coefficient a"
+     av::FT
+     "Ventilation coefficient b"
+@@ -474,7 +474,7 @@ Number concentration adjustment parameter from Horn (2012, DOI: 10.5194/gmd-5-34
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct NumberAdjustmentHorn2012{FT} <: ParametersType
++@params struct NumberAdjustmentHorn2012{FT} <: ParametersType
+     "Number concentration adjustment timescale [s]"
+     τ::FT
+ end
+@@ -531,7 +531,7 @@ Relaxation parameters for 2-moment vapor condensation / liquid evaporation
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct CondEvap2M{FT} <: ParametersType
++@params struct CondEvap2M{FT} <: ParametersType
+     "condensation/evaporation relaxation timescale [s]"
+     τ_relax::FT
+ end
+@@ -544,7 +544,7 @@ Relaxation parameters for 2-moment vapor deposition / ice sublimation
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct SubDep2M{FT} <: ParametersType
++@params struct SubDep2M{FT} <: ParametersType
+     "deposition/sublimation relaxation timescale [s]"
+     τ_relax::FT
+ end
+diff --git a/src/parameters/MicrophysicsP3.jl b/src/parameters/MicrophysicsP3.jl
+index d2cde42c..b24f3571 100644
+--- a/src/parameters/MicrophysicsP3.jl
++++ b/src/parameters/MicrophysicsP3.jl
+@@ -23,7 +23,7 @@ A part of the [`ParametersP3`](@ref) parameter set.
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct MassPowerLaw{FT} <: ParametersType
++@params struct MassPowerLaw{FT} <: ParametersType
+     "Coefficient in mass(size) relation [`kg m^(-β_va)`]"
+     α_va::FT
+     "Coefficient in mass(size) relation [`-`]"
+@@ -53,7 +53,7 @@ A part of the [`ParametersP3`](@ref) parameter set.
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct AreaPowerLaw{FT} <: ParametersType
++@params struct AreaPowerLaw{FT} <: ParametersType
+     "Scale [`m^(2-σ)`]"
+     γ::FT
+     "Power [`-`]"
+@@ -96,7 +96,7 @@ A part of the [`ParametersP3`](@ref) parameter set.
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct SlopePowerLaw{FT} <: SlopeLaw
++@params struct SlopePowerLaw{FT} <: SlopeLaw
+     "Scale [`m^b`]"
+     a::FT
+     "Power [`-`]"
+@@ -129,7 +129,7 @@ A part of the [`ParametersP3`](@ref) parameter set.
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct SmoothSlopePowerLaw{FT} <: SlopeLaw
++@params struct SmoothSlopePowerLaw{FT} <: SlopeLaw
+     "Scale [`m^b`]"
+     a::FT
+     "Power [`-`]"
+@@ -156,7 +156,7 @@ A part of the [`ParametersP3`](@ref) parameter set.
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct SlopeConstant{FT} <: SlopeLaw
++@params struct SlopeConstant{FT} <: SlopeLaw
+     "Slope parameter μ [`-`]"
+     μ::FT
+ end
+@@ -179,7 +179,7 @@ A part of the [`ParametersP3`](@ref) parameter set.
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct VentilationFactor{FT} <: ParametersType
++@params struct VentilationFactor{FT} <: ParametersType
+     "Constant coefficient in ventilation factor [`-`]"
+     aᵥ::FT
+     "Linear coefficient in ventilation factor [`-`]"
+@@ -208,7 +208,7 @@ For calculating Rᵢ, see [`compute_local_rime_density`](@ref CloudMicrophysics.
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct LocalRimeDensity{FT} <: ParametersType
++@params struct LocalRimeDensity{FT} <: ParametersType
+     "Constant coefficient"
+     a::FT
+     "Linear coefficient"
+@@ -265,7 +265,7 @@ From Morrison and Milbrandt (2015) [MorrisonMilbrandt2015](@cite)
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct ParametersP3{FT, SLOPELAW <: SlopeLaw, AR <: AspectRatio} <: ParametersType
++@params struct ParametersP3{FT, SLOPELAW <: SlopeLaw, AR <: AspectRatio} <: ParametersType
+     "Mass-size relation, e.g. [`MassPowerLaw`](@ref)"
+     mass::MassPowerLaw{FT}
+     "Area-size relation, e.g. [`AreaPowerLaw`](@ref)"
+diff --git a/src/parameters/Parameters.jl b/src/parameters/Parameters.jl
+index 4f320989..48680db5 100644
+--- a/src/parameters/Parameters.jl
++++ b/src/parameters/Parameters.jl
+@@ -8,6 +8,7 @@ module Parameters
+ using DocStringExtensions
+ 
+ import ClimaParams as CP
++import ClimaParams: @params
+ import SpecialFunctions as SF
+ import Adapt
+ import UnrolledUtilities as UU
+diff --git a/src/parameters/TerminalVelocity.jl b/src/parameters/TerminalVelocity.jl
+index a5bf8fe8..a9a6b6d5 100644
+--- a/src/parameters/TerminalVelocity.jl
++++ b/src/parameters/TerminalVelocity.jl
+@@ -9,7 +9,7 @@ for rain
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Blk1MVelTypeRain{FT} <: ParametersType
++@params struct Blk1MVelTypeRain{FT} <: ParametersType
+     "particle length scale [m]"
+     r0::FT
+     "rain terminal velocity size relation coefficient [-]"
+@@ -54,7 +54,7 @@ for snow
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Blk1MVelTypeSnow{FT} <: ParametersType
++@params struct Blk1MVelTypeSnow{FT} <: ParametersType
+     "particle length scale [m]"
+     r0::FT
+     "snow terminal velocity size relation coefficient [-]"
+@@ -113,7 +113,7 @@ The type for precipitation terminal velocity in the Stokes regime (Re < 1)
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct StokesRegimeVelType{FT} <: TerminalVelocityType
++@params struct StokesRegimeVelType{FT} <: TerminalVelocityType
+     "liquid water density [kg/m³]"
+     ρw::FT
+     "kinematic viscosity of air [m²/s]"
+@@ -130,7 +130,7 @@ The type for precipitation terminal velocity from Seifert and Beheng 2006
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct SB2006VelType{FT} <: TerminalVelocityType
++@params struct SB2006VelType{FT} <: TerminalVelocityType
+     "reference air density [kg/m³]"
+     ρ0::FT
+     "raindrop terminal velocity coefficient aR [m/s]"
+@@ -156,7 +156,7 @@ See Table B3 for parameter definitions. DOI: 10.1016/j.atmosres.2022.106171
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Chen2022VelTypeSmallIce{FT, N, M} <: TerminalVelocityType
++@params struct Chen2022VelTypeSmallIce{FT, N, M} <: TerminalVelocityType
+     A::NTuple{N, FT}
+     B::NTuple{N, FT}
+     C::NTuple{M, FT}
+@@ -178,7 +178,7 @@ See Table B5 for parameter definitions. DOI: 10.1016/j.atmosres.2022.106171
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Chen2022VelTypeLargeIce{FT, N} <: TerminalVelocityType
++@params struct Chen2022VelTypeLargeIce{FT, N} <: TerminalVelocityType
+     A::NTuple{N, FT}
+     B::NTuple{N, FT}
+     C::NTuple{N, FT}
+@@ -202,7 +202,7 @@ DOI: 10.1016/j.atmosres.2022.106171
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct Chen2022VelTypeRain{FT, N} <: TerminalVelocityType
++@params struct Chen2022VelTypeRain{FT, N} <: TerminalVelocityType
+     "reference air density coefficient [m³/kg]"
+     ρ0::FT
+     "velocity coefficients a [-]"
+diff --git a/src/parameters/WaterProperties.jl b/src/parameters/WaterProperties.jl
+index f6ed1cf0..57aa164f 100644
+--- a/src/parameters/WaterProperties.jl
++++ b/src/parameters/WaterProperties.jl
+@@ -8,7 +8,7 @@ Parameters with water properties.
+ # Fields
+ $(DocStringExtensions.FIELDS)
+ """
+-@kwdef struct WaterProperties{FT} <: ParametersType
++@params struct WaterProperties{FT} <: ParametersType
+     "density of liquid water [kg/m3]"
+     ρw::FT
+     "density of ice [kg/m3]"
+diff --git a/src/show.jl b/src/show.jl
+index 66193d12..6c60604a 100644
+--- a/src/show.jl
++++ b/src/show.jl
+@@ -47,7 +47,7 @@ The verbose and compact show methods also display units, if defined.
+ If the contents of a struct are numbers, it may be useful to define
+ [`field_units`](@ref) for the struct:
+ ```julia
+-@kwdef struct MyStruct{FT}
++@params struct MyStruct{FT}
+     velocity::FT
+     mass::FT
+     constant_value::FT
+@@ -101,7 +101,7 @@ function verbose_show_type_and_fields(io::IO, mime::MIME"text/plain", x; with_mo
+     indent = get(io, :indent, "")::String
+     typename = _type_name(x; with_module_prefix)
+     keys = fieldnames(typeof(x))
+-    vals = [getfield(x, k) for k in keys]
++    vals = [getproperty(x, k) for k in keys]
+     units = field_units(x)
+     print(io, "$(typename)")
+     if compact
+@@ -151,7 +151,7 @@ Print a compact one-line representation of `x`: `TypeName(field = value, ...)`.
+     + When false, display only the value, e.g. `1.0`
+ - `with_kwargs = true`: Print fields as keyword arguments (`field = value`).
+     + It is recommended that this is `true` only when the struct has
+-        a `@kwdef` prefix to its definition, which provides a keyword constructor.
++        a `@kwdef`/`@params` prefix to its definition, which provides a keyword constructor.
+ - `with_module_prefix = false`: Use module-qualified type name.
+     + When true, display e.g. `CloudMicrophysics.Parameters.AirProperties`
+     + When false, display e.g. `AirProperties`
+@@ -174,7 +174,7 @@ function compact_show_type_and_fields(io::IO, ::MIME"text/plain", x;
+ )
+     typename = _type_name(x; with_module_prefix)
+     keys = fieldnames(typeof(x))
+-    vals = [getfield(x, k) for k in keys]
++    vals = [getproperty(x, k) for k in keys]
+     units = with_units ? field_units(x) : nothing
+     print(io, typename, "(")
+     printed_first = false
+@@ -196,7 +196,7 @@ Print a parseable (copy-pasteable) one-line representation of `x`.
+ Thin wrapper around [`compact_show_type_and_fields`](@ref) with
+ `with_units = false` and `with_module_prefix = true` by default.
+ 
+-Note: This assumes that the type has a `@kwdef` prefix to its definition,
++Note: This assumes that the type has a `@kwdef`/`@params` prefix to its definition,
+ which provides a keyword constructor.
+ 
+ # Examples
+@@ -245,7 +245,7 @@ To include unit annotations in the verbose or compact `show` output for a type,
+ define a method that associates field names with units, such as
+ 
+ ```julia
+-@kwdef struct MyStruct{FT}
++@params struct MyStruct{FT}
+     velocity::FT
+     mass::FT
+     constant_value::FT
+diff --git a/test/bulk_tendencies_tests.jl b/test/bulk_tendencies_tests.jl
+index 13263557..066530c4 100644
+--- a/test/bulk_tendencies_tests.jl
++++ b/test/bulk_tendencies_tests.jl
+@@ -1263,7 +1263,8 @@ function test_linearized_bulk_microphysics_1m_tendencies(FT)
+             src = BMT._microphysics_source_terms(args...)
+             terms = map(with_rate, src, NamedTuple{keys(src)}(verbose))
+             Σ = BMT.species_tendency(terms, BMT.Condensates1M{FT})
+-            @test Σ ≈ BMT.Condensates1M(values(avg)...) atol = atol
++            # each rate is rounded relative to its own magnitude, which can exceed the net tendencies
++            @test Σ ≈ BMT.Condensates1M(values(avg)...) atol = 10 * eps(FT) * sum(t -> abs(t.S), terms)
+         end
+     end
+ 
+diff --git a/test/common_types_tests.jl b/test/common_types_tests.jl
+index c84298be..13419b32 100644
+--- a/test/common_types_tests.jl
++++ b/test/common_types_tests.jl
+@@ -64,4 +64,17 @@ end
+ TT.@testset "Broadcasting over common types tests ($FT)" for FT in (Float64, Float32)
+     test_common_types_broadcasts(FT)
+ end
++
++TT.@testset "Showing parameter values ($FT)" for FT in (Float64, Float32)
++    # one struct for the compact method and one, with more than 7 fields, for the verbose method
++    for params in (CMP.AirProperties(FT), CMP.AerosolActivationParameters(FT))
++        compact_str = sprint(show, params)
++        verbose_str = sprint(show, MIME("text/plain"), params)
++        for name in propertynames(params)
++            value = getproperty(params, name)
++            TT.@test occursin(repr(value), compact_str)
++            TT.@test occursin(repr(value), verbose_str) || occursin(string(value), verbose_str)
++        end
++    end
++end
+ nothing
+diff --git a/test/microphysics0M_tests.jl b/test/microphysics0M_tests.jl
+index 6da2b4b2..73eb4916 100644
+--- a/test/microphysics0M_tests.jl
++++ b/test/microphysics0M_tests.jl
+@@ -161,8 +161,11 @@ function test_microphysics0M_evaporation(FT)
+         # type stability
+         TT.@inferred CM0.evaporate_precipitation(pe_on, q_vap, q_vap_sat, p_over_ps, F)
+         TT.@inferred CM0.evaporate_precipitation(nothing, q_vap, q_vap_sat, p_over_ps, F)
+-        TT.@test @allocated(CM0.evaporate_precipitation(pe_on, q_vap, q_vap_sat, p_over_ps, F)) == 0
+-        TT.@test @allocated(CM0.evaporate_precipitation(nothing, q_vap, q_vap_sat, p_over_ps, F)) == 0
++        # `allocated` is a function barrier: the type of `pe_on` holds its parameter values,
++        # so it is not inferred in this function
++        allocated(pe) = @allocated CM0.evaporate_precipitation(pe, q_vap, q_vap_sat, p_over_ps, F)
++        TT.@test allocated(pe_on) == 0
++        TT.@test allocated(nothing) == 0
+     end
+ end
+ 

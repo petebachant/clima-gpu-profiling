@@ -1,0 +1,8796 @@
+climacore_commit = "8c25c7c9ee92d6055cec926e09bfa309481e0386"
+climacore_path = "/home/pbachant/calkit/clima-gpu-profiling/ClimaCore.jl-mod"
+config_file = "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml"
+local_growth_pct = 25
+local_slack_bytes = 32
+max_shed = 12
+max_warps = 64
+measured = "2026-11-17"
+n_capped = 110
+n_specializations = 627
+note = "Every decision ClimaCore's automatic register cap made over 35 coupler steps of the benchmark configuration, with the policy on from process start. `reason` is the test that decided each kernel: `capped` launched capped, every other value launched unchanged. `registers` and `local_bytes` are what the kernel compiled to with no cap, `capped_*` what it compiled to at the band edge, and -1 marks a field the decision never reached. No profiler ran, so there are no kernel times here: this census says what the policy does, not what it is worth."
+steps = 35
+
+[by_reason]
+capped = 110
+edge_too_far = 6
+no_band_below = 510
+spill_over_budget = 1
+
+[decisions.1]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.10]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L517"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.100]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.101]
+cap = 80
+capped_local_bytes = 32
+capped_registers = 80
+capped_warps_per_sm = 24
+edge = 80
+kernel = "calc_saturation_profile__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1413"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 86
+shed = 6
+warps_per_sm = 20
+
+[decisions.102]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_10cm_water_mass__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L597"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.103]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_update_surface_fractions_from_land_fraction__FILE_ClimaCoupler_jl_mod_src_FieldExchanger_jl_L119"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.104]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L551"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.105]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_field__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaLandExt_climaland_integrated_jl_L304"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.106]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 27
+shed = -1
+warps_per_sm = 64
+
+[decisions.107]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1267"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.108]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "init_sfc_conditions_zero__FILE_ClimaAtmos_jl_mod_src_surface_conditions_surface_conditions_jl_L142"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.109]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_canopy_component_initial_conditions__FILE_ClimaLand_fEOwX_src_simulations_initial_conditions_jl_L714"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.11]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_exp_tendency__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_pmodel_jl_L762"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 31
+shed = -1
+warps_per_sm = 64
+
+[decisions.110]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Vegetation_radiation_jl_L349"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.111]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "orographic_gravity_wave_forcing__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L516"
+local_budget = 88
+local_bytes = 56
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.112]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_boundary_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.113]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "boundary_flux__FILE_ClimaLand_fEOwX_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L1087"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 21
+shed = -1
+warps_per_sm = 64
+
+[decisions.114]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.115]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "precomputed_quantities_FILE_ClimaAtmos_jl_mod_src_cache_precomputed_quantities_jl_L322"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.116]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl_L1071"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.117]
+cap = 48
+capped_local_bytes = 120
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "get_additional_coordinate_field_data_FILE_ClimaLand_fEOwX_src_shared_utilities_Domains_jl_L1214"
+local_budget = 152
+local_bytes = 120
+reason = "capped"
+registers = 53
+shed = 5
+warps_per_sm = 36
+
+[decisions.118]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.119]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl_L1071"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.12]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.120]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaUtilities_tOpcE_ext_TimeVaryingInputsExt_jl_L422"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.121]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_energy_hydrology_jl_L168"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.122]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.123]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.124]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.125]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "initial_condition_field_FILE_ClimaAtmos_jl_mod_src_setups_Setups_jl_L317"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.126]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "non_orographic_gravity_wave_cache_FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L224"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.127]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "non_orographic_gravity_wave_cache_FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L242"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.128]
+cap = 96
+capped_local_bytes = 48
+capped_registers = 96
+capped_warps_per_sm = 20
+edge = 96
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_soil_surface_temperature_jl_L627"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 103
+shed = 7
+warps_per_sm = 16
+
+[decisions.129]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.13]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 24
+shed = -1
+warps_per_sm = 64
+
+[decisions.130]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_file_jl_L72"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.131]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L492"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.132]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L496"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.133]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.134]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "orchestrate_diagnostics_NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.135]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 24
+shed = -1
+warps_per_sm = 64
+
+[decisions.136]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCoupler_jl_mod_src_Input_jl_L935"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.137]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_boundary_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.138]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.139]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "regrid_OGW_info_FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_helper_jl_L940"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.14]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 11
+shed = -1
+warps_per_sm = 64
+
+[decisions.140]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_10cm_water_mass__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L600"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.141]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "hydrostatic_pressure_FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_file_jl_L100"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.142]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 24
+shed = -1
+warps_per_sm = 64
+
+[decisions.143]
+cap = 80
+capped_local_bytes = 40
+capped_registers = 80
+capped_warps_per_sm = 24
+edge = 80
+kernel = "update_updraft_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1289"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 88
+shed = 8
+warps_per_sm = 20
+
+[decisions.144]
+cap = 32
+capped_local_bytes = 16
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L77"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 40
+shed = 8
+warps_per_sm = 48
+
+[decisions.145]
+cap = 56
+capped_local_bytes = 32
+capped_registers = 55
+capped_warps_per_sm = 36
+edge = 56
+kernel = "_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L259"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 57
+shed = 1
+warps_per_sm = 32
+
+[decisions.146]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "combine_surfaces__FILE_ClimaCoupler_jl_mod_src_FieldExchanger_jl_L436"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 25
+shed = -1
+warps_per_sm = 64
+
+[decisions.147]
+cap = 48
+capped_local_bytes = 0
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "sedimentation_rate_pair__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L782"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 52
+shed = 4
+warps_per_sm = 36
+
+[decisions.148]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 24
+shed = -1
+warps_per_sm = 64
+
+[decisions.149]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "component_specific_humidity_FILE_ClimaLand_fEOwX_src_standalone_Soil_energy_hydrology_jl_L1043"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.15]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl_L1071"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.150]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "non_orographic_gravity_wave_cache_FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L225"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.151]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "non_orographic_gravity_wave_forcing_FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L1070"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.152]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_heterotrophic_respiration__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L720"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.153]
+cap = 80
+capped_local_bytes = 32
+capped_registers = 80
+capped_warps_per_sm = 24
+edge = 80
+kernel = "weighted_screen_level_FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L1404"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 90
+shed = 10
+warps_per_sm = 20
+
+[decisions.154]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_flux_fields__FILE_ClimaCoupler_jl_mod_src_FluxCalculator_jl_L519"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.155]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.156]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "remap__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.157]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_energy_hydrology_jl_L170"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.158]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "assign_moisture_edmf__FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_file_jl_L321"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.159]
+cap = 56
+capped_local_bytes = 0
+capped_registers = 56
+capped_warps_per_sm = 36
+edge = 56
+kernel = "viscous_sponge_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 64
+shed = 8
+warps_per_sm = 32
+
+[decisions.16]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 27
+shed = -1
+warps_per_sm = 64
+
+[decisions.160]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "assign_velocity_energy__FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_file_jl_L131"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.161]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "apply_hyperdiffusion_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.162]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "initial_condition_field_FILE_ClimaAtmos_jl_mod_src_setups_Setups_jl_L317"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.163]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L851"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.164]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_soilo2__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L656"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 25
+shed = -1
+warps_per_sm = 64
+
+[decisions.165]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = 168
+kernel = "compute_surface_fluxes__NVTX"
+local_budget = 64
+local_bytes = 32
+reason = "edge_too_far"
+registers = 187
+shed = 19
+warps_per_sm = 8
+
+[decisions.166]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.167]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "check_land_equality_FILE_ClimaLand_fEOwX_src_shared_utilities_utils_jl_L54"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.168]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1266"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.169]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L500"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.17]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L271"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 21
+shed = -1
+warps_per_sm = 64
+
+[decisions.170]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Vegetation_spatially_varying_parameters_jl_L90"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.171]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_PAR__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_radiation_jl_L177"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.172]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_total_respiration__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L1042"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.173]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "total_liq_water_vol_per_area__FILE_ClimaLand_fEOwX_src_standalone_Soil_energy_hydrology_jl_L1202"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.174]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "EnergyHydrology_FILE_ClimaLand_fEOwX_src_standalone_Soil_Soil_jl_L260"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.175]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.176]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_subsurface_energy_runoff__FILE_ClimaLand_fEOwX_src_standalone_Soil_Runoff_Runoff_jl_L282"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.177]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_sedimentation_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1134"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.178]
+cap = 40
+capped_local_bytes = 8
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl_L1071"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 44
+shed = 4
+warps_per_sm = 40
+
+[decisions.179]
+cap = 72
+capped_local_bytes = 32
+capped_registers = 69
+capped_warps_per_sm = 28
+edge = 72
+kernel = "set_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1588"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 75
+shed = 3
+warps_per_sm = 24
+
+[decisions.18]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_density_and_depth__FILE_ClimaLand_fEOwX_src_standalone_Snow_snow_parameterizations_jl_L682"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.180]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.181]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_file_jl_L75"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.182]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "hypsography_FILE_ClimaAtmos_jl_mod_src_simulation_grids_jl_L404"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.183]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "sum_aerosol_bins__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L519"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.184]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "sedimentation_rate_pair__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L846"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.185]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_propagate_forcing__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1025"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 23
+shed = -1
+warps_per_sm = 64
+
+[decisions.186]
+cap = 32
+capped_local_bytes = 8
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "edmfx_sgs_mass_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L60"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 34
+shed = 2
+warps_per_sm = 48
+
+[decisions.187]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.188]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L140"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.189]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "lsm_radiant_energy_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 21
+shed = -1
+warps_per_sm = 64
+
+[decisions.19]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_dss_weights_FILE_ClimaCore_jl_mod_src_Grids_spectralelement_jl_L736"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.190]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.191]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_jacobian__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.192]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_surface_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.193]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "single_field_solve__FILE_ClimaCore_jl_mod_src_MatrixFields_single_field_solver_jl_L33"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.194]
+cap = 40
+capped_local_bytes = 24
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "edmfx_sgs_diffusive_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L532"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 48
+shed = 8
+warps_per_sm = 40
+
+[decisions.195]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "ClimaAtmosSimulation_FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L111"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.196]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "field_matrix_solve__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 25
+shed = -1
+warps_per_sm = 64
+
+[decisions.197]
+cap = 72
+capped_local_bytes = 32
+capped_registers = 68
+capped_warps_per_sm = 28
+edge = 72
+kernel = "set_sfc_sgs_precip_energy_flux__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_water_advection_jl_L345"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 75
+shed = 3
+warps_per_sm = 24
+
+[decisions.198]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "implicit_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_implicit_tendency_jl_L356"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 36
+shed = 4
+warps_per_sm = 48
+
+[decisions.199]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "snow_boundary_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.2]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.20]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varying_parameters_jl_L422"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.200]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.201]
+cap = 32
+capped_local_bytes = 32
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "_updraft_cloud_moments__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_cloud_inhomogeneity_jl_L309"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 36
+shed = 4
+warps_per_sm = 48
+
+[decisions.202]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "lsm_radiant_energy_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 23
+shed = -1
+warps_per_sm = 64
+
+[decisions.203]
+cap = 48
+capped_local_bytes = 0
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "update_sgs_massflux_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L2557"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 56
+shed = 8
+warps_per_sm = 36
+
+[decisions.204]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L271"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.205]
+cap = 32
+capped_local_bytes = 32
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "solve_sgs__a_implicit_stage_analytic__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L765"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 37
+shed = 5
+warps_per_sm = 48
+
+[decisions.206]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_jacobian__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 23
+shed = -1
+warps_per_sm = 64
+
+[decisions.207]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.208]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCoupler_jl_mod_src_Input_jl_L930"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.209]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.21]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_soil_snow_ground_heat_flux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.210]
+cap = 40
+capped_local_bytes = 32
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "non_orographic_gravity_wave_compute_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L362"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 41
+shed = 1
+warps_per_sm = 40
+
+[decisions.211]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 23
+shed = -1
+warps_per_sm = 64
+
+[decisions.212]
+cap = 72
+capped_local_bytes = 32
+capped_registers = 71
+capped_warps_per_sm = 28
+edge = 72
+kernel = "update_implicit_microphysics_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L2205"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 74
+shed = 2
+warps_per_sm = 24
+
+[decisions.213]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L149"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.214]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "soil_surface_vapor_conductance__FILE_ClimaLand_fEOwX_src_standalone_Soil_soil_surface_temperature_jl_L534"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.215]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_flux_fields__FILE_ClimaCoupler_jl_mod_src_FluxCalculator_jl_L501"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.216]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varying_parameters_jl_L421"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.217]
+cap = 48
+capped_local_bytes = 40
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Grids_extruded_jl_L113"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 53
+shed = 5
+warps_per_sm = 36
+
+[decisions.218]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L253"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.219]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.22]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.220]
+cap = 48
+capped_local_bytes = 112
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "_update_surface_fractions_from_land_fraction__FILE_ClimaCoupler_jl_mod_src_FieldExchanger_jl_L120"
+local_budget = 144
+local_bytes = 112
+reason = "capped"
+registers = 50
+shed = 2
+warps_per_sm = 36
+
+[decisions.221]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varying_parameters_jl_L296"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.222]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_coupler_set_ic__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaLandExt_climaland_helpers_jl_L149"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.223]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "piecewise_moisture_stress_thresholds_FILE_ClimaLand_fEOwX_src_standalone_Vegetation_soil_moisture_stress_jl_L238"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.224]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.225]
+cap = 32
+capped_local_bytes = 32
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "set_sw_cloud_optical_depth_factor__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_cloud_inhomogeneity_jl_L367"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 36
+shed = 4
+warps_per_sm = 48
+
+[decisions.226]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_net_ecosystem_exchange__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L133"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.227]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaLandExt_climaland_integrated_jl_L496"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 24
+shed = -1
+warps_per_sm = 64
+
+[decisions.228]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.229]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1268"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.23]
+cap = 32
+capped_local_bytes = 32
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "init_sfc_conditions_zero__FILE_ClimaAtmos_jl_mod_src_surface_conditions_surface_conditions_jl_L151"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 38
+shed = 6
+warps_per_sm = 48
+
+[decisions.230]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.231]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "non_orographic_gravity_wave_forcing_FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L1033"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.232]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "ClimaAtmosSimulation_FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L105"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.233]
+cap = 40
+capped_local_bytes = 32
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "set_buoyancy_gradient_inputs__NVTX"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 46
+shed = 6
+warps_per_sm = 40
+
+[decisions.234]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "source__FILE_ClimaLand_fEOwX_src_standalone_Soil_Runoff_Runoff_jl_L355"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.235]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_coriolis_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L414"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.236]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_infiltration_water_flux__FILE_ClimaLand_fEOwX_src_standalone_Soil_Runoff_Runoff_jl_L249"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 24
+shed = -1
+warps_per_sm = 64
+
+[decisions.237]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.238]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.239]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "source__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.24]
+cap = 40
+capped_local_bytes = 40
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "source__NVTX"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 47
+shed = 7
+warps_per_sm = 40
+
+[decisions.240]
+cap = 40
+capped_local_bytes = 16
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "update_advection_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L815"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 48
+shed = 8
+warps_per_sm = 40
+
+[decisions.241]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = 168
+kernel = "waveforcing_column_accumulate__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L1449"
+local_budget = 10830
+local_bytes = 8664
+reason = "edge_too_far"
+registers = 255
+shed = 87
+warps_per_sm = 8
+
+[decisions.242]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_file_jl_L68"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.243]
+cap = 32
+capped_local_bytes = 8
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "set_prognostic_edmf_precomputed_quantities_environment__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 40
+shed = 8
+warps_per_sm = 48
+
+[decisions.244]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.245]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L221"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.246]
+cap = 72
+capped_local_bytes = 8
+capped_registers = 72
+capped_warps_per_sm = 28
+edge = 72
+kernel = "horizontal_advection_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 80
+shed = 8
+warps_per_sm = 24
+
+[decisions.247]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varying_parameters_jl_L478"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.248]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "single_field_solve__FILE_ClimaCore_jl_mod_src_MatrixFields_single_field_solver_jl_L33"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.249]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_volume_mixing_ratios__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L188"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.25]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_cloud_properties__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L461"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.250]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "solve_fluxes__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L628"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.251]
+cap = 40
+capped_local_bytes = 0
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "explicit_vertical_advection_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 47
+shed = 7
+warps_per_sm = 40
+
+[decisions.252]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.253]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "microphysics_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_tendency_jl_L218"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 25
+shed = -1
+warps_per_sm = 64
+
+[decisions.254]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.255]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L153"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.256]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "surface_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_surface_flux_jl_L121"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.257]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "MoninObukhovCanopyFluxes_FILE_ClimaLand_fEOwX_src_standalone_Vegetation_canopy_turbulent_fluxes_jl_L63"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.258]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Grids_extruded_jl_L119"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.259]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "assign_moisture_edmf__FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_file_jl_L314"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.26]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = 80
+kernel = "apply_hyperdiffusion_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "edge_too_far"
+registers = 93
+shed = 13
+warps_per_sm = 20
+
+[decisions.260]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_energy_hydrology_jl_L171"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.261]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_biomass__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_biomass_jl_L327"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.262]
+cap = 40
+capped_local_bytes = 8
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "update_sgs_diffusion_and_entr_detr_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1986"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 48
+shed = 8
+warps_per_sm = 40
+
+[decisions.263]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1269"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.264]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "slab_ice_space_init_FILE_ClimaCoupler_jl_mod_src_Models_prescr_seaice_jl_L185"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.265]
+cap = 40
+capped_local_bytes = 32
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "edmfx_entr_detr_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_entr_detr_jl_L698"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 44
+shed = 4
+warps_per_sm = 40
+
+[decisions.266]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.267]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.268]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_radiative_transfer__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_radiation_jl_L938"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.269]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_sedimentation_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1092"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.27]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L256"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.270]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_boundary_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.271]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "soil_infiltration_capacity_FILE_ClimaLand_fEOwX_src_standalone_Soil_Runoff_Runoff_jl_L404"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.272]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.273]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixFields_field_matrix_solver_jl_L377"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.274]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 28
+capped_warps_per_sm = 64
+edge = 32
+kernel = "source__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 37
+shed = 5
+warps_per_sm = 48
+
+[decisions.275]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.276]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_precipitation_surface_fluxes__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L2047"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.277]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 25
+shed = -1
+warps_per_sm = 64
+
+[decisions.278]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L140"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.279]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "linear_interpolation_to_surface__FILE_ClimaLand_fEOwX_src_shared_utilities_Domains_jl_L1026"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 21
+shed = -1
+warps_per_sm = 64
+
+[decisions.28]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.280]
+cap = 64
+capped_local_bytes = 0
+capped_registers = 64
+capped_warps_per_sm = 32
+edge = 64
+kernel = "prep_hyperdiffusion_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 72
+shed = 8
+warps_per_sm = 28
+
+[decisions.281]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "remap__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.282]
+cap = 72
+capped_local_bytes = 0
+capped_registers = 72
+capped_warps_per_sm = 28
+edge = 72
+kernel = "edmfx_sgs_diffusive_flux_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_sgs_flux_jl_L403"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 78
+shed = 6
+warps_per_sm = 24
+
+[decisions.283]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_field__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L401"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 24
+shed = -1
+warps_per_sm = 64
+
+[decisions.284]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L149"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.285]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "constrain_state__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 25
+shed = -1
+warps_per_sm = 64
+
+[decisions.286]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_albedos__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L851"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.287]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_albedo__FILE_ClimaLand_fEOwX_src_standalone_Soil_soil_albedo_jl_L193"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.288]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_field__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaLandExt_climaland_integrated_jl_L329"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.289]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.29]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "solve_sgs__a_implicit_stage_analytic__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L862"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.290]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "orographic_gravity_wave_compute_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L293"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.291]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.292]
+cap = 48
+capped_local_bytes = 32
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "_set_covariance_cache_loop__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_cloud_fraction_jl_L774"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 52
+shed = 4
+warps_per_sm = 36
+
+[decisions.293]
+cap = 32
+capped_local_bytes = 32
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 36
+shed = 4
+warps_per_sm = 48
+
+[decisions.294]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "updraft_sedimentation_rate__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L757"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.295]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.296]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.297]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "soil_boundary_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.298]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_coupler_set_ic__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaLandExt_climaland_helpers_jl_L158"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.299]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_coriolis_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L413"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.3]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_jacobian__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 27
+shed = -1
+warps_per_sm = 64
+
+[decisions.30]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = 128
+kernel = "compute_surface_fluxes__NVTX"
+local_budget = 64
+local_bytes = 32
+reason = "edge_too_far"
+registers = 161
+shed = 33
+warps_per_sm = 12
+
+[decisions.300]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "implicit_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_implicit_tendency_jl_L297"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 34
+shed = 2
+warps_per_sm = 48
+
+[decisions.301]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_field__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L414"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.302]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L893"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.303]
+cap = 32
+capped_local_bytes = 16
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "orographic_gravity_wave_apply_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L422"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 40
+shed = 8
+warps_per_sm = 48
+
+[decisions.304]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "solve_sgs_u__implicit_stage_analytic__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L583"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.305]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 27
+shed = -1
+warps_per_sm = 64
+
+[decisions.306]
+cap = 96
+capped_local_bytes = 832
+capped_registers = 95
+capped_warps_per_sm = 20
+edge = 96
+kernel = "set_environment_1m_tendency__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1109"
+local_budget = 1040
+local_bytes = 832
+reason = "capped"
+registers = 99
+shed = 3
+warps_per_sm = 16
+
+[decisions.307]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_ic__FILE_ClimaLand_fEOwX_src_simulations_initial_conditions_jl_L1426"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.308]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_infiltration_water_flux__FILE_ClimaLand_fEOwX_src_standalone_Soil_Runoff_Runoff_jl_L261"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.309]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "component_specific_humidity_FILE_ClimaLand_fEOwX_src_standalone_Snow_snow_parameterizations_jl_L172"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.31]
+cap = 40
+capped_local_bytes = 24
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "set_precipitation_velocities__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L241"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 48
+shed = 8
+warps_per_sm = 40
+
+[decisions.310]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaUtilities_tOpcE_ext_TimeVaryingInputsExt_jl_L422"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.311]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L889"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.312]
+cap = 40
+capped_local_bytes = 32
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "update_photosynthesis__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_pmodel_jl_L808"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 48
+shed = 8
+warps_per_sm = 40
+
+[decisions.313]
+cap = 32
+capped_local_bytes = 16
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "set_implicit_precomputed_quantities_core__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 40
+shed = 8
+warps_per_sm = 48
+
+[decisions.314]
+cap = 56
+capped_local_bytes = 0
+capped_registers = 56
+capped_warps_per_sm = 36
+edge = 56
+kernel = "update_advection_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L906"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 64
+shed = 8
+warps_per_sm = 32
+
+[decisions.315]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varying_parameters_jl_L331"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.316]
+cap = 72
+capped_local_bytes = 8
+capped_registers = 72
+capped_warps_per_sm = 28
+edge = 72
+kernel = "_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl_L1071"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 78
+shed = 6
+warps_per_sm = 24
+
+[decisions.317]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L155"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.318]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1283"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 40
+shed = 8
+warps_per_sm = 48
+
+[decisions.319]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.32]
+cap = 32
+capped_local_bytes = 32
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "edmfx_boundary_condition_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_boundary_condition_jl_L374"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 38
+shed = 6
+warps_per_sm = 48
+
+[decisions.320]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl_L1071"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.321]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.322]
+cap = 56
+capped_local_bytes = 32
+capped_registers = 56
+capped_warps_per_sm = 36
+edge = 56
+kernel = "edmfx_tke_sources__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_tke_jl_L101"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 58
+shed = 2
+warps_per_sm = 32
+
+[decisions.323]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = 96
+kernel = "compute_fractional_absorbances__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_radiation_jl_L609"
+local_budget = 72
+local_bytes = 40
+reason = "edge_too_far"
+registers = 122
+shed = 26
+warps_per_sm = 16
+
+[decisions.324]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_coupler_set_ic__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaLandExt_climaland_helpers_jl_L156"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 15
+shed = -1
+warps_per_sm = 64
+
+[decisions.325]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "get_field_FILE_ClimaCoupler_jl_mod_src_Models_prescr_seaice_jl_L451"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.326]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_precip__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L528"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.327]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.328]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaLandExt_climaland_integrated_jl_L248"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.329]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 31
+shed = -1
+warps_per_sm = 64
+
+[decisions.33]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "additional_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 27
+shed = -1
+warps_per_sm = 64
+
+[decisions.330]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Vegetation_spatially_varying_parameters_jl_L89"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.331]
+cap = 32
+capped_local_bytes = 40
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L140"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 37
+shed = 5
+warps_per_sm = 48
+
+[decisions.332]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaUtilities_tOpcE_ext_TimeVaryingInputsExt_jl_L422"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.333]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCoupler_jl_mod_src_Input_jl_L929"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.334]
+cap = 48
+capped_local_bytes = 32
+capped_registers = 44
+capped_warps_per_sm = 40
+edge = 48
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L140"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 53
+shed = 5
+warps_per_sm = 36
+
+[decisions.335]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "boundary_flux__FILE_ClimaLand_fEOwX_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L946"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 31
+shed = -1
+warps_per_sm = 64
+
+[decisions.336]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "lsm_radiant_energy_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 21
+shed = -1
+warps_per_sm = 64
+
+[decisions.337]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "assign_moisture_edmf__FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_file_jl_L281"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.338]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_albedos__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L848"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.339]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "snow_boundary_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.34]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_steady_state_leaf_water_potential__FILE_ClimaLand_fEOwX_src_integrated_soil_canopy_root_interactions_jl_L315"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.340]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.341]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.342]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_diffuse_surface_elevation__FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L336"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.343]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = 96
+kernel = "_FILE_ClimaLand_fEOwX_src_shared_utilities_drivers_jl_L536"
+local_budget = 64
+local_bytes = 32
+reason = "edge_too_far"
+registers = 122
+shed = 26
+warps_per_sm = 16
+
+[decisions.344]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_sweep_sgs_updraft_tracers__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L1255"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.345]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCoupler_jl_mod_src_Models_prescr_seaice_jl_L291"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.346]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_relative_humidity__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L140"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 25
+shed = -1
+warps_per_sm = 64
+
+[decisions.347]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 31
+shed = -1
+warps_per_sm = 64
+
+[decisions.348]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 27
+shed = -1
+warps_per_sm = 64
+
+[decisions.349]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L155"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.35]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.350]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "hydrostatic_pressure_FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_file_jl_L95"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.351]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "fill_FILE_ClimaCore_jl_mod_src_Fields_Fields_jl_L471"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.352]
+cap = 80
+capped_local_bytes = 40
+capped_registers = 80
+capped_warps_per_sm = 24
+edge = 80
+kernel = "weighted_screen_level_FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L1404"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 85
+shed = 5
+warps_per_sm = 20
+
+[decisions.353]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "ice_rhs__FILE_ClimaCoupler_jl_mod_src_Models_prescr_seaice_jl_L610"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 21
+shed = -1
+warps_per_sm = 64
+
+[decisions.354]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L899"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.355]
+cap = 32
+capped_local_bytes = 40
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L140"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 37
+shed = 5
+warps_per_sm = 48
+
+[decisions.356]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.357]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "source__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.358]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.359]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCoupler_jl_mod_src_Models_prescr_ocean_jl_L134"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.36]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_imp_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.360]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.361]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_boundary_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.362]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.363]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1275"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 37
+shed = 5
+warps_per_sm = 48
+
+[decisions.364]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L261"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.365]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_canopy_conductance__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_stomatalconductance_jl_L151"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.366]
+cap = 72
+capped_local_bytes = 32
+capped_registers = 69
+capped_warps_per_sm = 28
+edge = 72
+kernel = "update_updraft_microphysics_tendency_cache__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1276"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 75
+shed = 3
+warps_per_sm = 24
+
+[decisions.367]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "compute_jacobian__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 34
+shed = 2
+warps_per_sm = 48
+
+[decisions.368]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "field_capacity_saturation_FILE_ClimaLand_fEOwX_src_standalone_Soil_retention_models_jl_L79"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.369]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L290"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.37]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "apply_preconditioner_NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 25
+shed = -1
+warps_per_sm = 64
+
+[decisions.370]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.371]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 15
+shed = -1
+warps_per_sm = 64
+
+[decisions.372]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "enforce_edmf_updraft_constraints__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_mass_flux_closures_jl_L309"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 35
+shed = 3
+warps_per_sm = 48
+
+[decisions.373]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_jacobian__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 25
+shed = -1
+warps_per_sm = 64
+
+[decisions.374]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L531"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.375]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1247"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 24
+shed = -1
+warps_per_sm = 64
+
+[decisions.376]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.377]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "lsm_radiant_energy_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.378]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "set_prognostic_edmf_precomputed_quantities_draft__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 40
+shed = 8
+warps_per_sm = 48
+
+[decisions.379]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_albedos__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L860"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.38]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_update_surface_fractions_from_land_fraction__FILE_ClimaCoupler_jl_mod_src_FieldExchanger_jl_L85"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.380]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_prognostic_edmf_precomputed_quantities_draft_thermo__FILE_ClimaAtmos_jl_mod_src_cache_prognostic_edmf_precomputed_quantities_jl_L314"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.381]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_exp_tendency__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_plant_hydraulics_jl_L430"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 21
+shed = -1
+warps_per_sm = 64
+
+[decisions.382]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_root_extraction__FILE_ClimaLand_fEOwX_src_integrated_soil_canopy_root_interactions_jl_L96"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.383]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_canopy_transpiration__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L235"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.384]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "orchestrate_diagnostics_NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.385]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "combine_surfaces__FILE_ClimaCoupler_jl_mod_src_FieldExchanger_jl_L408"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.386]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_precip_fraction__NVTX"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.387]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.388]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L155"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.389]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L155"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.39]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "sum_aerosol_bins__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L522"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.390]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_coupler_set_ic__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaLandExt_climaland_helpers_jl_L159"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 23
+shed = -1
+warps_per_sm = 64
+
+[decisions.391]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_sensible_heat_flux__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L1123"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.392]
+cap = 32
+capped_local_bytes = 16
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "update_advection_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L768"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 39
+shed = 7
+warps_per_sm = 48
+
+[decisions.393]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L187"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.394]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L155"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.395]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L191"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.396]
+cap = -1
+capped_local_bytes = 96
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L149"
+local_budget = 64
+local_bytes = 32
+reason = "spill_over_budget"
+registers = 40
+shed = 8
+warps_per_sm = 48
+
+[decisions.397]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 21
+shed = -1
+warps_per_sm = 64
+
+[decisions.398]
+cap = 40
+capped_local_bytes = 32
+capped_registers = 38
+capped_warps_per_sm = 48
+edge = 40
+kernel = "set_canopy_component_initial_conditions__FILE_ClimaLand_fEOwX_src_simulations_initial_conditions_jl_L717"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 44
+shed = 4
+warps_per_sm = 40
+
+[decisions.399]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L129"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.4]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.40]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.400]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L124"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.401]
+cap = 32
+capped_local_bytes = 32
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "_updraft_cloud_condensate_and_area__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_cloud_fraction_jl_L2654"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 36
+shed = 4
+warps_per_sm = 48
+
+[decisions.402]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "soil_surface_vapor_conductance__FILE_ClimaLand_fEOwX_src_standalone_Soil_soil_surface_temperature_jl_L531"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.403]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "make_compute_exp_tendency_FILE_ClimaLand_fEOwX_src_standalone_Vegetation_pmodel_jl_L745"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 25
+shed = -1
+warps_per_sm = 64
+
+[decisions.404]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.405]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "ClimaAtmosSimulation_FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L104"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.406]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 27
+shed = -1
+warps_per_sm = 64
+
+[decisions.407]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "ClimaAtmosSimulation_FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L122"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.408]
+cap = 32
+capped_local_bytes = 32
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 36
+shed = 4
+warps_per_sm = 48
+
+[decisions.409]
+cap = 48
+capped_local_bytes = 0
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "apply_tracer_hyperdiffusion_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 55
+shed = 7
+warps_per_sm = 36
+
+[decisions.41]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl_L1071"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.410]
+cap = 64
+capped_local_bytes = 16
+capped_registers = 64
+capped_warps_per_sm = 32
+edge = 64
+kernel = "vertical_advection_of_water_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_water_advection_jl_L98"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 72
+shed = 8
+warps_per_sm = 28
+
+[decisions.411]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "fill_FILE_ClimaCore_jl_mod_src_Fields_Fields_jl_L471"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.412]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L217"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.413]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_surface_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 25
+shed = -1
+warps_per_sm = 64
+
+[decisions.414]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.415]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.416]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_boundary_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.417]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_file_jl_L66"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.418]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.419]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCoupler_jl_mod_src_SimOutput_diagnostics_jl_L89"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.42]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "get_field_FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L429"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.420]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_cloud_fraction_jl_L1902"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.421]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_ic__FILE_ClimaLand_fEOwX_src_simulations_initial_conditions_jl_L1428"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.422]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "radiation_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_radiation_jl_L601"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.423]
+cap = 32
+capped_local_bytes = 32
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "update_soil_snow_ground_heat_flux__NVTX"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 36
+shed = 4
+warps_per_sm = 48
+
+[decisions.424]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "run_field_matrix_solver__FILE_ClimaCore_jl_mod_src_MatrixFields_field_matrix_solver_jl_L375"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.425]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "accumulate_stage_precipitation_surface_fluxes__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L2009"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.426]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_filtered_orography_variance_FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_helper_jl_L1349"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.427]
+cap = 32
+capped_local_bytes = 40
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "set_face_diffusivities__NVTX"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 38
+shed = 6
+warps_per_sm = 48
+
+[decisions.428]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "assign_velocity_energy__FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_file_jl_L130"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.429]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.43]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L149"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.430]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "postprocess_and_accumulate__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L1260"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.431]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_infiltration_water_flux__FILE_ClimaLand_fEOwX_src_standalone_Soil_Runoff_Runoff_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 23
+shed = -1
+warps_per_sm = 64
+
+[decisions.432]
+cap = 64
+capped_local_bytes = 0
+capped_registers = 64
+capped_warps_per_sm = 32
+edge = 64
+kernel = "prep_hyperdiffusion_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 70
+shed = 6
+warps_per_sm = 28
+
+[decisions.433]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.434]
+cap = 96
+capped_local_bytes = 48
+capped_registers = 96
+capped_warps_per_sm = 20
+edge = 96
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Snow_snow_parameterizations_jl_L1045"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 104
+shed = 8
+warps_per_sm = 16
+
+[decisions.435]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L155"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.436]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_sgs_boundary_condition_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L2091"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.437]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_ic__FILE_ClimaLand_fEOwX_src_simulations_initial_conditions_jl_L1434"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.438]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_imp_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.439]
+cap = 80
+capped_local_bytes = 832
+capped_registers = 80
+capped_warps_per_sm = 24
+edge = 80
+kernel = "set_environment_1m_tendency__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1109"
+local_budget = 1040
+local_bytes = 832
+reason = "capped"
+registers = 87
+shed = 7
+warps_per_sm = 20
+
+[decisions.44]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_energy_hydrology_jl_L172"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.440]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L137"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.441]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 24
+shed = -1
+warps_per_sm = 64
+
+[decisions.442]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_bf__FILE_ClimaLand_fEOwX_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L438"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.443]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "lsm_radiant_energy_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.444]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.445]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L882"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.446]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 40
+shed = 8
+warps_per_sm = 48
+
+[decisions.447]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_ground_albedo_PAR__FILE_ClimaLand_fEOwX_src_integrated_land_jl_L1170"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.448]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_update_surface_fractions_from_land_fraction__FILE_ClimaCoupler_jl_mod_src_FieldExchanger_jl_L98"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.449]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "combine_surfaces__FILE_ClimaCoupler_jl_mod_src_FieldExchanger_jl_L442"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 25
+shed = -1
+warps_per_sm = 64
+
+[decisions.45]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "interpolate__FILE_ClimaCore_jl_mod_src_Remapping_distributed_remapping_jl_L1270"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.450]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1225"
+local_budget = 80
+local_bytes = 48
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.451]
+cap = 40
+capped_local_bytes = 48
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "set_sgs_moments__NVTX"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 46
+shed = 6
+warps_per_sm = 40
+
+[decisions.452]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "orographic_gravity_wave_forcing__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L638"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.453]
+cap = 40
+capped_local_bytes = 40
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "update_drivers__FILE_ClimaLand_fEOwX_src_shared_utilities_drivers_jl_L1751"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 48
+shed = 8
+warps_per_sm = 40
+
+[decisions.454]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "remap__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.455]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_jacobian__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.456]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl_L1071"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.457]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.458]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_imp_tendency__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_canopy_energy_jl_L179"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.459]
+cap = 40
+capped_local_bytes = 0
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 42
+shed = 2
+warps_per_sm = 40
+
+[decisions.46]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "clip_absent_plant_area__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_biomass_jl_L346"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 21
+shed = -1
+warps_per_sm = 64
+
+[decisions.460]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "apply_tracer_hyperdiffusion_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.461]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.462]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "orographic_gravity_wave_compute_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L292"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 27
+shed = -1
+warps_per_sm = 64
+
+[decisions.463]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.464]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCoupler_jl_mod_src_Models_prescr_seaice_jl_L297"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.465]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "orchestrate_diagnostics_NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.466]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.467]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.468]
+cap = 48
+capped_local_bytes = 16
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "update_sgs_advection_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1784"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 56
+shed = 8
+warps_per_sm = 36
+
+[decisions.469]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.47]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "PrognosticMet_FILE_ClimaLand_fEOwX_src_integrated_soil_energy_hydrology_biogeochemistry_jl_L133"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.470]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 27
+shed = -1
+warps_per_sm = 64
+
+[decisions.471]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Grids_extruded_jl_L113"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.472]
+cap = 48
+capped_local_bytes = 32
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "set_albedos__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L841"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 55
+shed = 7
+warps_per_sm = 36
+
+[decisions.473]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.474]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L140"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.475]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCoupler_jl_mod_src_SimOutput_diagnostics_jl_L129"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.476]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L238"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 36
+shed = 4
+warps_per_sm = 48
+
+[decisions.477]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varying_parameters_jl_L302"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.478]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "remap__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 13
+shed = -1
+warps_per_sm = 64
+
+[decisions.479]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_autotrophic_respiration__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_autotrophic_respiration_jl_L85"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 23
+shed = -1
+warps_per_sm = 64
+
+[decisions.48]
+cap = 48
+capped_local_bytes = 56
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Grids_extruded_jl_L119"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 55
+shed = 7
+warps_per_sm = 36
+
+[decisions.480]
+cap = 80
+capped_local_bytes = 32
+capped_registers = 80
+capped_warps_per_sm = 24
+edge = 80
+kernel = "weighted_screen_level_FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L1404"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 90
+shed = 10
+warps_per_sm = 20
+
+[decisions.481]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "source__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.482]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "interpolate__FILE_ClimaCore_jl_mod_src_Remapping_distributed_remapping_jl_L1270"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.483]
+cap = 40
+capped_local_bytes = 40
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "source__NVTX"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 48
+shed = 8
+warps_per_sm = 40
+
+[decisions.484]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_piecewise_soil_moisture_stress__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.485]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L271"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.486]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "boundary_fields_FILE_ClimaCoupler_jl_mod_src_SimCoordinator_jl_L204"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.487]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1263"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.488]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L149"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.489]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl_L1071"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 9
+shed = -1
+warps_per_sm = 64
+
+[decisions.49]
+cap = 48
+capped_local_bytes = 120
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "get_additional_coordinate_field_data_FILE_ClimaLand_fEOwX_src_shared_utilities_Domains_jl_L1214"
+local_budget = 152
+local_bytes = 120
+reason = "capped"
+registers = 53
+shed = 5
+warps_per_sm = 36
+
+[decisions.490]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "boundary_flux__FILE_ClimaLand_fEOwX_src_standalone_Soil_Biogeochemistry_Biogeochemistry_jl_L934"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 21
+shed = -1
+warps_per_sm = 64
+
+[decisions.491]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "check_land_equality_FILE_ClimaLand_fEOwX_src_shared_utilities_utils_jl_L56"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.492]
+cap = 48
+capped_local_bytes = 112
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "_update_surface_fractions_from_land_fraction__FILE_ClimaCoupler_jl_mod_src_FieldExchanger_jl_L119"
+local_budget = 144
+local_bytes = 112
+reason = "capped"
+registers = 50
+shed = 2
+warps_per_sm = 36
+
+[decisions.493]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_updraft_cloud_moments__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_cloud_inhomogeneity_jl_L307"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 25
+shed = -1
+warps_per_sm = 64
+
+[decisions.494]
+cap = 80
+capped_local_bytes = 0
+capped_registers = 80
+capped_warps_per_sm = 24
+edge = 80
+kernel = "viscous_sponge_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 84
+shed = 4
+warps_per_sm = 20
+
+[decisions.495]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.496]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L149"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.497]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "single_field_solve__FILE_ClimaCore_jl_mod_src_MatrixFields_single_field_solver_jl_L38"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 15
+shed = -1
+warps_per_sm = 64
+
+[decisions.498]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 31
+capped_warps_per_sm = 64
+edge = 32
+kernel = "solve_sgs_u__implicit_stage_analytic__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L501"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 35
+shed = 3
+warps_per_sm = 48
+
+[decisions.499]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_boundary_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.5]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "sedimentation_rate_pair__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L846"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.50]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_jacobian__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 23
+shed = -1
+warps_per_sm = 64
+
+[decisions.500]
+cap = 32
+capped_local_bytes = 32
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 36
+shed = 4
+warps_per_sm = 48
+
+[decisions.501]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_snow_albedo__FILE_ClimaLand_fEOwX_src_standalone_Snow_snow_parameterizations_jl_L49"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.502]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L149"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.503]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "non_orographic_gravity_wave_compute_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L484"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.504]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaLandExt_climaland_integrated_jl_L512"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.505]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.506]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "dss__FILE_ClimaCore_jl_mod_src_Topologies_dss_jl_L417"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.507]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.508]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_saturation_profile__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1468"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.509]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varying_parameters_jl_L330"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.51]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.510]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "orographic_gravity_wave_apply_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L432"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.511]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "PrescribedBiomassModel_FILE_ClimaLand_fEOwX_src_standalone_Vegetation_Canopy_jl_L426"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.512]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "initialize_implicit_stage_problem__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L144"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.513]
+cap = 48
+capped_local_bytes = 0
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "add_vertical_advection_corrections__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_implicit_tendency_jl_L732"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 54
+shed = 6
+warps_per_sm = 36
+
+[decisions.514]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.515]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "get_atmos_height_delta_FILE_ClimaCoupler_jl_mod_src_Interfacer_jl_L843"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.516]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 27
+shed = -1
+warps_per_sm = 64
+
+[decisions.517]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_albedos__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L855"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.518]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_total_respiration__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L1032"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.519]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "dss__FILE_ClimaCore_jl_mod_src_Topologies_dss_jl_L425"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.52]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_cloud_properties__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L404"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.520]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L140"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.521]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.522]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_energy_hydrology_jl_L166"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.523]
+cap = 48
+capped_local_bytes = 48
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Grids_extruded_jl_L119"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 53
+shed = 5
+warps_per_sm = 36
+
+[decisions.524]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "solve_sgs__a_two_pass__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L905"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.525]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_screen_level__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L1421"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.526]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "zero_canopy_fluxes_without_plants__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_canopy_boundary_fluxes_jl_L303"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.527]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "hypsography_FILE_ClimaAtmos_jl_mod_src_simulation_grids_jl_L411"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.528]
+cap = 48
+capped_local_bytes = 120
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "get_additional_coordinate_field_data_FILE_ClimaLand_fEOwX_src_shared_utilities_Domains_jl_L1215"
+local_budget = 152
+local_bytes = 120
+reason = "capped"
+registers = 50
+shed = 2
+warps_per_sm = 36
+
+[decisions.529]
+cap = 48
+capped_local_bytes = 32
+capped_registers = 46
+capped_warps_per_sm = 40
+edge = 48
+kernel = "set_quadrature_cloud_fraction__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_cloud_fraction_jl_L1942"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 50
+shed = 2
+warps_per_sm = 36
+
+[decisions.53]
+cap = 40
+capped_local_bytes = 8
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "edmfx_sgs_vertical_advection_tendency__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L426"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 48
+shed = 8
+warps_per_sm = 40
+
+[decisions.530]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "get_field_FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L436"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.531]
+cap = 48
+capped_local_bytes = 32
+capped_registers = 47
+capped_warps_per_sm = 40
+edge = 48
+kernel = "set_quadrature_cloud_fraction__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_cloud_fraction_jl_L1942"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 50
+shed = 2
+warps_per_sm = 36
+
+[decisions.532]
+cap = 40
+capped_local_bytes = 32
+capped_registers = 39
+capped_warps_per_sm = 48
+edge = 40
+kernel = "set_prognostic_edmf_precomputed_quantities_explicit_closures__NVTX"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 46
+shed = 6
+warps_per_sm = 40
+
+[decisions.533]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "lsm_radiant_energy_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.534]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "single_field_solve__FILE_ClimaCore_jl_mod_src_MatrixFields_single_field_solver_jl_L33"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.535]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "dss__FILE_ClimaCore_jl_mod_src_Topologies_dss_jl_L409"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.536]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_screen_level__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L1421"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.537]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "non_orographic_gravity_wave_apply_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L939"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.538]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L155"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.539]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_screen_level__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L1421"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.54]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "record_stage_precipitation_linearization__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_water_advection_jl_L523"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.540]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 24
+shed = -1
+warps_per_sm = 64
+
+[decisions.541]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L190"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.542]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L155"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.543]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_propagate_forcing__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1028"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.544]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.545]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L245"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 36
+shed = 4
+warps_per_sm = 48
+
+[decisions.546]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "init_sfc_conditions_zero__FILE_ClimaAtmos_jl_mod_src_surface_conditions_surface_conditions_jl_L140"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.547]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "single_field_solve__FILE_ClimaCore_jl_mod_src_MatrixFields_single_field_solver_jl_L33"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.548]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "update_sedimentation_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1066"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 36
+shed = 4
+warps_per_sm = 48
+
+[decisions.549]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_updraft_cloud_moments__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_cloud_inhomogeneity_jl_L298"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.55]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "weighted_dss_internal__FILE_ClimaCore_jl_mod_src_Spaces_dss_jl_L140"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.550]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_updraft_cloud_moments__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_cloud_inhomogeneity_jl_L306"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.551]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.552]
+cap = 40
+capped_local_bytes = 0
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "explicit_vertical_advection_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 46
+shed = 6
+warps_per_sm = 40
+
+[decisions.553]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1291"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.554]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_ice_albedo__FILE_ClimaCoupler_jl_mod_src_Models_prescr_seaice_jl_L407"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.555]
+cap = 48
+capped_local_bytes = 0
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "sedimentation_rate_pair__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_advection_jl_L782"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 49
+shed = 1
+warps_per_sm = 36
+
+[decisions.556]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "single_field_solve__FILE_ClimaCore_jl_mod_src_MatrixFields_single_field_solver_jl_L33"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.557]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "non_orographic_gravity_wave_cache_FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L226"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.558]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCoupler_jl_mod_src_Models_prescr_seaice_jl_L313"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.559]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_SIF__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_solar_induced_fluorescence_jl_L92"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.56]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_environment_1m_tendency__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1078"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.560]
+cap = 40
+capped_local_bytes = 16
+capped_registers = 40
+capped_warps_per_sm = 48
+edge = 40
+kernel = "record_stage_precipitation_linearization__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_water_advection_jl_L536"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 48
+shed = 8
+warps_per_sm = 40
+
+[decisions.561]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "implicit_tendency__NVTX"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.562]
+cap = 56
+capped_local_bytes = 0
+capped_registers = 56
+capped_warps_per_sm = 36
+edge = 56
+kernel = "set_covariance_cache_and_cloud_fraction__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_cloud_fraction_jl_L60"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 64
+shed = 8
+warps_per_sm = 32
+
+[decisions.563]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L876"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.564]
+cap = 48
+capped_local_bytes = 0
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "update_diffusion_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1435"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 56
+shed = 8
+warps_per_sm = 36
+
+[decisions.565]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "assign_velocity_energy__FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_file_jl_L127"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 24
+shed = -1
+warps_per_sm = 64
+
+[decisions.566]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "orographic_gravity_wave_forcing__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L633"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.567]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "orographic_gravity_wave_compute_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L296"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.568]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "interpolate__FILE_ClimaCore_jl_mod_src_Remapping_distributed_remapping_jl_L1270"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.569]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.57]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "lsm_radiant_energy_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.570]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L555"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.571]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaLandExt_climaland_integrated_jl_L472"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.572]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl_L1071"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.573]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "soil_surface_vapor_conductance__FILE_ClimaLand_fEOwX_src_standalone_Soil_soil_surface_temperature_jl_L529"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.574]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 23
+shed = -1
+warps_per_sm = 64
+
+[decisions.575]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_cloud_properties__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L439"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.576]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "source__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.577]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "wilting_saturation_FILE_ClimaLand_fEOwX_src_standalone_Soil_retention_models_jl_L97"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.578]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "map_FILE_ClimaCore_jl_mod_src_Fields_mapreduce_jl_L1"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.579]
+cap = 32
+capped_local_bytes = 32
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "_updraft_cloud_moments__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_microphysics_cloud_inhomogeneity_jl_L308"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 36
+shed = 4
+warps_per_sm = 48
+
+[decisions.58]
+cap = 48
+capped_local_bytes = 32
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "set_sgs_moments_and_cloud_fraction__NVTX"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 56
+shed = 8
+warps_per_sm = 36
+
+[decisions.580]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_energy_hydrology_jl_L149"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.581]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl_L1071"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 23
+shed = -1
+warps_per_sm = 64
+
+[decisions.582]
+cap = 32
+capped_local_bytes = 32
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "update_photosynthesis__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_pmodel_jl_L822"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 40
+shed = 8
+warps_per_sm = 48
+
+[decisions.583]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.584]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.585]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "remap__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.586]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.587]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "import_atmos_fields__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaLandExt_climaland_integrated_jl_L375"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.588]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "soil_boundary_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.589]
+cap = 48
+capped_local_bytes = 48
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Grids_extruded_jl_L113"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 53
+shed = 5
+warps_per_sm = 36
+
+[decisions.59]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_orog__FILE_ClimaAtmos_jl_mod_src_diagnostics_core_diagnostics_jl_L786"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.590]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_twsa__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L884"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.591]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.592]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_velocity_at_boundaries__FILE_ClimaAtmos_jl_mod_src_cache_precomputed_quantities_jl_L596"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.593]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.594]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "assign_moisture_edmf__FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_file_jl_L292"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.595]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.596]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_imp_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.597]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "fill__FILE_ClimaCore_jl_mod_src_Fields_Fields_jl_L462"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.598]
+cap = 56
+capped_local_bytes = 32
+capped_registers = 55
+capped_warps_per_sm = 36
+edge = 56
+kernel = "_ExtrudedFiniteDifferenceGrid_FILE_ClimaCore_jl_mod_src_Hypsography_Hypsography_jl_L251"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 57
+shed = 1
+warps_per_sm = 32
+
+[decisions.599]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_infiltration_water_flux__FILE_ClimaLand_fEOwX_src_standalone_Soil_Runoff_Runoff_jl_L264"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.6]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "implicit_tendency__NVTX"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.60]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L880"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.600]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_Operators_integrals_jl_L150"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.601]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_root_extraction__FILE_ClimaLand_fEOwX_src_integrated_soil_canopy_root_interactions_jl_L93"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.602]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "remap__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.603]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "orographic_gravity_wave_compute_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L292"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.604]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "PrognosticMet_FILE_ClimaLand_fEOwX_src_integrated_soil_energy_hydrology_biogeochemistry_jl_L135"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.605]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "tofd_drag_coefficient__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L974"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 27
+shed = -1
+warps_per_sm = 64
+
+[decisions.606]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "init_sfc_conditions_zero__FILE_ClimaAtmos_jl_mod_src_surface_conditions_surface_conditions_jl_L146"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.607]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_soilco2_SOC_from_soilgrids__FILE_ClimaLand_fEOwX_src_simulations_initial_conditions_jl_L193"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.608]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_surface_fluxes__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaLandExt_climaland_integrated_jl_L484"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.609]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_evapotranspiration__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L995"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.61]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 23
+shed = -1
+warps_per_sm = 64
+
+[decisions.610]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaUtilities_tOpcE_ext_TimeVaryingInputsExt_jl_L422"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.611]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "get__z_FILE_ClimaLand_fEOwX_src_shared_utilities_Domains_jl_L1081"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 15
+shed = -1
+warps_per_sm = 64
+
+[decisions.612]
+cap = 32
+capped_local_bytes = 32
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "set_precipitation_surface_fluxes__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L2067"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 36
+shed = 4
+warps_per_sm = 48
+
+[decisions.613]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_10cm_water_mass__FILE_ClimaLand_fEOwX_src_diagnostics_land_compute_methods_jl_L584"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.614]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_nonpropagating_forcing__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L817"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.615]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "get_residual_melt_flux_FILE_ClimaLand_fEOwX_src_standalone_Snow_snow_parameterizations_jl_L1165"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.616]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aux__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.617]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_exp_tendency__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.618]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "assign_velocity_energy__FILE_ClimaAtmos_jl_mod_src_setups_common_overwrite_from_file_jl_L115"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.619]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_eff_land_radiation_properties__FILE_ClimaLand_fEOwX_src_integrated_land_radiation_jl_L14"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.62]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L271"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 15
+shed = -1
+warps_per_sm = 64
+
+[decisions.620]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.621]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "snow_boundary_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 21
+shed = -1
+warps_per_sm = 64
+
+[decisions.622]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "regridded_snapshot__FILE_ClimaUtilities_tOpcE_ext_DataHandlingExt_jl_L656"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.623]
+cap = 56
+capped_local_bytes = 40
+capped_registers = 56
+capped_warps_per_sm = 36
+edge = 56
+kernel = "set_edmfx_surface_conditions__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_edmfx_boundary_condition_jl_L70"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 61
+shed = 5
+warps_per_sm = 32
+
+[decisions.624]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "non_orographic_gravity_wave_forcing_FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L1026"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 15
+shed = -1
+warps_per_sm = 64
+
+[decisions.625]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Soil_spatially_varying_parameters_jl_L298"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 12
+shed = -1
+warps_per_sm = 64
+
+[decisions.626]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_snow_albedo__FILE_ClimaLand_fEOwX_src_standalone_Snow_snow_parameterizations_jl_L52"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.627]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "orographic_gravity_wave_forcing__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L515"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.63]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "add_vertical_advection_corrections__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_implicit_tendency_jl_L696"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 39
+shed = 7
+warps_per_sm = 48
+
+[decisions.64]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaAtmos_jl_mod_src_cache_cache_jl_L232"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 23
+shed = -1
+warps_per_sm = 64
+
+[decisions.65]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 22
+shed = -1
+warps_per_sm = 64
+
+[decisions.66]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.67]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L533"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.68]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field_FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L252"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 23
+shed = -1
+warps_per_sm = 64
+
+[decisions.69]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "interpolate__FILE_ClimaCore_jl_mod_src_Remapping_distributed_remapping_jl_L1270"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.7]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "ogw_face_pressure__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L680"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.70]
+cap = 32
+capped_local_bytes = 0
+capped_registers = 32
+capped_warps_per_sm = 64
+edge = 32
+kernel = "update_relative_humidity__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L147"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 37
+shed = 5
+warps_per_sm = 48
+
+[decisions.71]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_aerosol_concentrations__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_radiation_update_inputs_jl_L269"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 24
+shed = -1
+warps_per_sm = 64
+
+[decisions.72]
+cap = 48
+capped_local_bytes = 8
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "update_sedimentation_jacobian__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_manual_sparse_jacobian_jl_L1174"
+local_budget = 32
+local_bytes = 0
+reason = "capped"
+registers = 56
+shed = 8
+warps_per_sm = 36
+
+[decisions.73]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "apply_preconditioner_NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.74]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_infiltration_water_flux__FILE_ClimaLand_fEOwX_src_standalone_Soil_Runoff_Runoff_jl_L259"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.75]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_eff_land_radiation_properties__FILE_ClimaLand_fEOwX_src_integrated_land_radiation_jl_L12"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.76]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_jacobian__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_canopy_energy_jl_L256"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.77]
+cap = 48
+capped_local_bytes = 40
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "_sweep_sgs_updraft_tracers__FILE_ClimaAtmos_jl_mod_src_prognostic_equations_implicit_initialize_implicit_problem_jl_L1146"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 53
+shed = 5
+warps_per_sm = 36
+
+[decisions.78]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaLand_fEOwX_src_standalone_Vegetation_spatially_varying_parameters_jl_L407"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.79]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_surface_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 28
+shed = -1
+warps_per_sm = 64
+
+[decisions.8]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 29
+shed = -1
+warps_per_sm = 64
+
+[decisions.80]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "ogw_face_pressure__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L681"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 18
+shed = -1
+warps_per_sm = 64
+
+[decisions.81]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl_L1071"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.82]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "orchestrate_diagnostics_NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.83]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "hyperdiffusion_cache_FILE_ClimaAtmos_jl_mod_src_prognostic_equations_hyperdiffusion_jl_L68"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64
+
+[decisions.84]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_turbulent_fluxes__FILE_ClimaCoupler_jl_mod_ext_ClimaCouplerClimaAtmosExt_jl_L508"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.85]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "set_insolation_variables__FILE_ClimaAtmos_jl_mod_src_callbacks_callbacks_jl_L271"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 10
+shed = -1
+warps_per_sm = 64
+
+[decisions.86]
+cap = 48
+capped_local_bytes = 32
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "update_implicit_1m_tendency__FILE_ClimaAtmos_jl_mod_src_cache_microphysics_cache_jl_L1022"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 55
+shed = 7
+warps_per_sm = 36
+
+[decisions.87]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "non_orographic_gravity_wave_compute_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L365"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 30
+shed = -1
+warps_per_sm = 64
+
+[decisions.88]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "copyto_by_slices__FILE_ClimaCore_jl_mod_src_Operators_broadcast_jl_L294"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 23
+shed = -1
+warps_per_sm = 64
+
+[decisions.89]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "non_orographic_gravity_wave_compute_tendency__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L421"
+local_budget = 64
+local_bytes = 32
+reason = "no_band_below"
+registers = 32
+shed = -1
+warps_per_sm = 64
+
+[decisions.9]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 27
+shed = -1
+warps_per_sm = 64
+
+[decisions.90]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "get_atmos_height_delta_FILE_ClimaCoupler_jl_mod_src_Interfacer_jl_L843"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.91]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_jacobian__FILE_ClimaLand_fEOwX_src_standalone_Vegetation_canopy_energy_jl_L255"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.92]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "_FILE_ClimaCore_jl_mod_src_MatrixFields_field_name_dict_jl_L1071"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 16
+shed = -1
+warps_per_sm = 64
+
+[decisions.93]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "compute_field__FILE_ClimaDiagnostics_j56tX_src_clima_diagnostics_jl_L341"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.94]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "non_orographic_gravity_wave_cache_FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_non_orographic_gravity_wave_jl_L223"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 14
+shed = -1
+warps_per_sm = 64
+
+[decisions.95]
+cap = 48
+capped_local_bytes = 32
+capped_registers = 48
+capped_warps_per_sm = 40
+edge = 48
+kernel = "set_insolation_variables__FILE_ClimaAtmos_jl_mod_src_callbacks_callbacks_jl_L256"
+local_budget = 64
+local_bytes = 32
+reason = "capped"
+registers = 55
+shed = 7
+warps_per_sm = 36
+
+[decisions.96]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "lsm_radiant_energy_fluxes__NVTX"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 20
+shed = -1
+warps_per_sm = 64
+
+[decisions.97]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_density_and_depth__FILE_ClimaLand_fEOwX_src_standalone_Snow_snow_parameterizations_jl_L683"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 17
+shed = -1
+warps_per_sm = 64
+
+[decisions.98]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "update_snow_cover_fraction__FILE_ClimaLand_fEOwX_src_standalone_Snow_snow_parameterizations_jl_L73"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 19
+shed = -1
+warps_per_sm = 64
+
+[decisions.99]
+cap = -1
+capped_local_bytes = -1
+capped_registers = -1
+capped_warps_per_sm = -1
+edge = -1
+kernel = "calc_base_flux__FILE_ClimaAtmos_jl_mod_src_parameterized_tendencies_gravity_wave_drag_orographic_gravity_wave_jl_L1272"
+local_budget = 32
+local_bytes = 0
+reason = "no_band_below"
+registers = 26
+shed = -1
+warps_per_sm = 64

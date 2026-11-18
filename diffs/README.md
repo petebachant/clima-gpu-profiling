@@ -6,6 +6,6 @@ has to be inferred from a file's absence.
 
 - **ClimaAtmos.jl** --- identical in both arms, so no diff file.
 - **ClimaCore.jl** --- ClimaCore.jl.diff: 190 changed lines across 1 file(s). **Under test.**
-- **ClimaCoupler.jl** --- ClimaCoupler.jl.diff: 20 changed lines across 3 file(s). **Under test.**
+- **ClimaCoupler.jl** --- ClimaCoupler.jl.diff: 24 changed lines across 3 file(s). **Under test.**
 - **RRTMGP.jl** --- identical in both arms, so no diff file.
-- **CloudMicrophysics.jl** --- not dev'd by either arm, so its submodule does not reach the run and there is no arm difference to report. Both arms take the version pinned in the Coupler AMIP manifest.
+- **CloudMicrophysics.jl** --- CloudMicrophysics.diff (authored changes) and CloudMicrophysics-arm-delta.diff (full difference from what the baseline runs). **Under test.**
