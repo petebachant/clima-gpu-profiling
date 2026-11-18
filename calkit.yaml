@@ -1557,14 +1557,13 @@ pipeline:
         - path: results/gpoint-wallclock.toml
           storage: git
 
-      # Frozen on main, live at meas/2026-11-16-gpoint-group-sweeps. The mod arm
-      # no longer carries the g-point groups -- the register-cap isolation at
-      # 5050f9a dropped them, and RRTMGP.jl-mod has no ngpt_groups in src -- so
-      # this sweep would now sweep a group count that does not exist, and
-      # results/gpoint-sweep.toml is where the sweep table of
-      # CliMA/RRTMGP.jl#637 comes from. Unfreeze only with pb/gpoint-groups
-      # back in the arm, and tag the result rather than overwriting this one.
-      frozen: true
+      # Thawed 2026-11-18. The condition the freeze set is met: pb/gpoint-groups
+      # is back in the arm, with upstream main merged into it, and the rest of
+      # the stack is on main so the sweep measures the split against today's
+      # upstream rather than against our other experimental branches. The
+      # previous sweep stays reachable at meas/2026-11-16-gpoint-group-sweeps,
+      # which is where the table CliMA/RRTMGP.jl#637 currently cites came from;
+      # tag this one rather than letting it stand as that table's source.
     sw-gpoint-sweep:
       kind: shell-script
       environment: clima
@@ -1619,13 +1618,10 @@ pipeline:
         - path: results/sw-gpoint-wallclock.toml
           storage: git
 
-      # Frozen with gpoint-group-sweep, for the same reason and at the same
-      # tag: the treatment is absent from the mod arm, and this output is
-      # CliMA/RRTMGP.jl#637's shortwave sweep table. Freeze and unfreeze the
-      # two sweeps together, as the ncu pair rule in AGENTS.md requires --
-      # a band measured on one arm beside a band measured on another is not a
-      # comparison.
-      frozen: true
+      # Thawed 2026-11-18 with gpoint-group-sweep, and the two are thawed
+      # together for the reason the freeze gave: the ncu pair rule in AGENTS.md
+      # applies here too, since a band measured on one stack beside a band
+      # measured on another is not a comparison.
     wave-census:
       kind: python-script
       environment: py
@@ -1693,13 +1689,12 @@ pipeline:
         - path: results/gpoint-equivalence.toml
           storage: git
 
-      # Frozen with the two sweeps, at meas/2026-11-16-gpoint-group-sweeps. It
-      # compares the grouped solve against the serial one, and the mod arm has
-      # no grouped solve to compare, so a run would check nothing and overwrite
-      # the deviation table CliMA/RRTMGP.jl#637 cites. The branch now carries
-      # its own exact one-group check in test/all_sky_with_aerosols.jl, which
-      # is where that claim is asserted rather than measured.
-      frozen: true
+      # Thawed 2026-11-18 with the two sweeps: there is a grouped solve to
+      # compare again. It runs FIRST of the three, because merging upstream main
+      # into pb/gpoint-groups threaded a new precip lookup through both bands'
+      # solvers and reconciled two sets of optional positional arguments -- if
+      # that merge changed the answer, no timing from this stack is worth
+      # reading.
     kernel-population:
       kind: python-script
       environment: py
