@@ -531,6 +531,97 @@ questions:
           the device's drift sets. The device figure is what ships, so it sums
           only the site where the order is a resolved gain.
 
+  - question: >-
+      An automatic policy caps a kernel's registers to buy occupancy. Is it
+      worth having, and does fixing those kernels properly retire it?
+    answer: >-
+      Partly, and the upstream fix's own published table cannot tell you which
+      part: CloudMicrophysics #852 lifts {lifted:.0f} of the {priced:.0f}
+      kernels the cap's saving was priced over past its gate, worth
+      {lost_pct:.0f}% of that saving, while the largest earner is a kernel that
+      table never lists and is still capped at {regs_now:.0f} registers, so at
+      most {in_reach:.1f} of the original {device_saving:.1f} points of device
+      time stays in reach.
+      What the policy is not is a screened one: with its residency filter open
+      it caps {wide_capped:.0f} of {wide_specs:.0f} specializations while the
+      spill budget that reads as the safeguard declines {spill:.0f} of
+      {candidates:.0f}, so a residency threshold argued from one kernel's
+      occupancy step is the whole control.
+    evidence:
+      - kind: document
+        path: docs/experiments/register-cap-after-cm852.md
+        section: "The cap's own earnings: the prediction was answering a narrower question"
+        explanation: >-
+          Which of the cap's priced kernels the upstream fix removes from its
+          reach and which it leaves, measured by putting the fixed stack in the
+          arm rather than replaying the fix's published register counts. Also
+          why the ceiling is a ceiling: the kernel the retained saving rests on
+          compiles to a different register count now, so what the cap is worth
+          on that stack has to be measured and not carried across.
+      - kind: document
+        path: docs/experiments/register-cap-after-cm852.md
+        section: "What a 24-warp setting admits, and why the count flatters it"
+        explanation: >-
+          Why the obvious response -- widen the residency threshold -- buys less
+          than its count suggests. The gate is a strict comparison, so a kernel
+          already at the setting is admitted and capped one band above it rather
+          than lifted to it, and most of what a wider setting admits is in that
+          case. The strictness is load-bearing and not a wart: an inclusive gate
+          would decline the kernel carrying the policy's whole retained saving.
+      - kind: document
+        path: docs/experiments/register-cap-filter.md
+        git_ref: meas/2026-11-17-register-cap-filter
+        section: Verdict
+        explanation: >-
+          The census that establishes the residency filter as the only screen,
+          taken with that filter deliberately open so every setting is
+          answerable from one job. Its own verdict went further than the
+          evidence and is corrected in place: it inferred from the fix's
+          published table that the policy's saving would be spent, which the
+          census above measured and found false for most of it.
+      - kind: document
+        path: docs/experiments/auto-register-cap.md
+        git_ref: meas/2026-11-17-auto-register-cap
+        section: What the capped kernels are worth
+        explanation: >-
+          The measurement the value question is about: the policy's device
+          saving attributed kernel by kernel, with the capped kernels'
+          contribution and the drift of the ones it never touched as the error
+          bar. The wall clock cannot resolve it -- the margin over the null
+          floor is a fraction of the spread between nulls -- so the device
+          chain is the instrument here rather than a corroboration of a pair.
+      - kind: result
+        path: results/docs/register-cap-after-cm852.json
+        values:
+          lifted: retention.lost_kernels
+          priced: measured.capped_priced
+          lost_pct: retention.lost_pct
+          regs_now: retention.top.registers_now
+          in_reach: retention.device_pct_still_in_reach
+          device_saving: measured.device_saving_pct
+          wide_capped: curve.64.capped
+          wide_specs: stack.specializations
+          spill: curve.64.spill_over_budget
+          candidates: curve.64.candidates
+        explanation: >-
+          Every decision the policy made over 35 coupler steps of the benchmark
+          configuration on the fixed stack, with the residency gate at the
+          device's ceiling so the whole filter curve replays offline, plus the
+          cap's measured per-kernel saving matched against it by name. The
+          retained share is attributed to a profile row and therefore to a
+          kernel name, so the match asks whether that name still carries a
+          specialization the policy admits rather than whether the name
+          survives.
+      - kind: result
+        path: results/docs/auto-register-cap.json
+        git_ref: meas/2026-11-17-auto-register-cap
+        explanation: >-
+          The policy's own measurement, which is where the per-kernel savings
+          above come from: three priced kernels with their registers, caps,
+          resident warps and times in both arms. Not templated into the answer,
+          because the answer quotes it only through the share of it that
+          survives the upstream fix, which the census above computes.
+
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod
