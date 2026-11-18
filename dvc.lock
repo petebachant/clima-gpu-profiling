@@ -5613,3 +5613,66 @@ stages:
       hash: md5
       md5: e06dbb1688676fcc4a04f53c1ef743d6
       size: 15697
+  group-block-size:
+    cmd: calkit scheduler batch --name group-block-size --environment clima 
+      --dep scripts/measure-group-block-size.jl --dep RRTMGP.jl-mod/src --dep 
+      RRTMGP.jl-mod/ext --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml 
+      --dep .calkit/env-locks/clima --out results/group-block-size.toml --option
+      --gpus=1 --option --time=75 -- scripts/run-julia-script.sh 
+      --project=ClimaCoupler.jl-mod/experiments/AMIP 
+      scripts/measure-group-block-size.jl --config_file 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      hash: md5
+      md5: 66e9712dfb39a09d73ab08e096b614db
+      size: 1114
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 3974e589a2618f7adb8c0164acb5807b
+      size: 855
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      hash: md5
+      md5: 6af43332044d07c5c3de96455065c64b
+      size: 138581
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: RRTMGP.jl-mod/ext
+      hash: md5
+      md5: 6c7f2ccc2cfa6d5b6b0e85afc3cd5a90.dir
+      size: 83513
+      nfiles: 12
+    - path: RRTMGP.jl-mod/src
+      hash: md5
+      md5: 47699d72e49e46fef3ea88ed89565071.dir
+      size: 359767
+      nfiles: 44
+    - path: scripts/measure-group-block-size.jl
+      hash: md5
+      md5: 50a76d3dc49c0c3553bdeaf8902d19dc
+      size: 18685
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: 2b491e48a8f15c4ea7ff76d19d95f830
+      size: 1040
+    outs:
+    - path: .calkit/scheduler/logs/group-block-size.out
+      hash: md5
+      md5: b04d77cf2aa23b29d5619cc57ffd9c96
+      size: 43413
+    - path: results/group-block-size.toml
+      hash: md5
+      md5: 3bd42542fe72e963d593eeb8f14e3a2b
+      size: 9700
