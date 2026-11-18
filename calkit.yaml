@@ -1174,14 +1174,14 @@ pipeline:
       # Its values stage converts that TOML to JSON because value markers read
       # JSON only, and derives the per-GiB and increment columns the prose
       # argues from.
-      # Frozen on main, live at meas/2026-11-16-gpoint-group-sweeps. It reads
-      # results/gpoint-sweep.toml and results/sw-gpoint-sweep.toml, whose
-      # stages are frozen below for the same reason -- the mod arm no longer
-      # carries the groups -- and its values stage reads the transient
-      # results/top-kernels.csv. The sweep tables of CliMA/RRTMGP.jl#637 come
-      # from here, so a re-run against the baseline arm would overwrite the
-      # evidence for an open pull request.
-      frozen: true
+      # Thawed 2026-11-18: the three stages it reads were re-measured in one
+      # pass on a stack that is upstream main everywhere but RRTMGP, and the
+      # transient results/top-kernels.csv now describes that same pair. Its
+      # `decision()` block asserts the profile contains both grouped solves, so
+      # a mismatched pair fails the stage rather than repricing the document
+      # quietly. The previous rendering, which is the source of the tables
+      # CliMA/RRTMGP.jl#637 currently cites, stays reachable at
+      # meas/2026-11-16-gpoint-group-sweeps.
     sgs-substep-cost:
       kind: markdown
       target_path: docs/experiments/sgs-substep-cost.md
@@ -1243,6 +1243,16 @@ pipeline:
       kind: markdown
       target_path: docs/experiments/register-cap-after-cm852.md
       environment: py
+      # Frozen 2026-11-18, the day after it was measured, because the arm it
+      # censused no longer exists: the 2026-11-18 re-baseline put every
+      # submodule on upstream main, which takes ClimaCore's register cap,
+      # CloudMicrophysics #852 and ClimaAtmos #4985 all out of the stack at
+      # once. Its census is therefore stale on its inputs and a re-run would
+      # spend a reservation describing a different stack and overwrite the only
+      # census of the post-#852 one. Live at the commit that measured it; the
+      # pair it left measurable is rebuilt by checking those three branches
+      # back in rather than by thawing this.
+      frozen: true
     sgs-thread-order:
       kind: markdown
       target_path: docs/experiments/sgs-thread-order.md
@@ -1496,13 +1506,11 @@ pipeline:
       # profiled last. The file carries both arms' refs and both database
       # hashes so a stale freeze shows up in the snapshot itself.
 
-      # Frozen: it reads the two profiles for the grouped solve's kernels, and
-      # the mod arm no longer launches any, so a run against the current pair
-      # would write zeros over results/gpoint-groups.json. Frozen with the
-      # sweeps at meas/2026-11-16-gpoint-group-sweeps rather than separately,
-      # since a profile-derived export and the sweeps it is read beside have to
-      # describe the same arm.
-      frozen: true
+      # Thawed 2026-11-18 with the sweeps, and for the condition the freeze
+      # named: the mod arm launches grouped kernels again, 240 of them in the
+      # profiled window against the baseline arm's 0. A profile-derived export
+      # and the sweeps it is read beside have to describe the same arm, so this
+      # is thawed in the same pass that re-measured them.
     gpoint-group-sweep:
       kind: shell-script
       environment: clima
