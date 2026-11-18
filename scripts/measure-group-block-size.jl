@@ -27,6 +27,12 @@
 # g-point of each group rather than accumulating into what was there. So every
 # point must be bit-for-bit with the shipped one, and this asserts it rather
 # than assuming it.
+#
+# Every size is timed twice, the second pass in the reverse order, and the two
+# passes' medians are reported beside the pooled one. A sweep taken in one
+# order cannot tell a property of a block size from a drift across the sweep,
+# and the first run of this found one size whose time disagrees with its
+# occupancy -- which is worth separating from the clocks warming up.
 
 import CUDA
 import RRTMGP
@@ -51,6 +57,7 @@ end
 out_path = arg_value("--out", "results/group-block-size.toml")
 
 const REPEATS = 9
+const PASSES = 2
 const WARMUP_STEPS = 3
 
 # Every multiple of 32 the hardware allows below the solve's own 256, the two
@@ -234,9 +241,12 @@ function kernel_record(name, k)
     regs = CUDA.registers(k)
     maxthreads = CUDA.maxthreads(k)
     warps = Dict{String, Any}()
+    blocks_resident = Dict{String, Any}()
     for block in BLOCK_SIZES
-        warps[string(block)] =
-            block <= maxthreads ? driver_warps_per_sm(k, block) : 0
+        fits = block <= maxthreads
+        warps[string(block)] = fits ? driver_warps_per_sm(k, block) : 0
+        blocks_resident[string(block)] =
+            fits ? CUDA.active_blocks(k.fun, block) : 0
     end
     reached = maximum(values(warps))
     rec = Dict{String, Any}(
@@ -244,6 +254,7 @@ function kernel_record(name, k)
         "local_bytes" => CUDA.memory(k).local,
         "max_threads" => maxthreads,
         "warps_per_sm" => warps,
+        "blocks_per_sm" => blocks_resident,
         "best_warps_per_sm" => reached,
         "blocks_at_best" =>
             sort([parse(Int, b) for (b, w) in warps if w == reached]),
@@ -294,7 +305,7 @@ equal_blocks = blocks_at_everyones_best(kernels)
 # Timing. Median of repeats: one timing on this machine is worth little, and
 # the mean is dragged by whatever else lands on the GPU.
 # ---------------------------------------------------------------------------
-function timed_ms(f; repeats = REPEATS)
+function timed_samples(f; repeats = REPEATS)
     f()
     CUDA.synchronize()
     ts = Float64[]
@@ -302,9 +313,13 @@ function timed_ms(f; repeats = REPEATS)
         CUDA.synchronize()
         push!(ts, CUDA.@elapsed(f()) * 1e3)
     end
-    sort!(ts)
-    return (median = ts[(length(ts) + 1) ÷ 2], min = first(ts), max = last(ts))
+    return sort!(ts)
 end
+
+median_of(ts) = (s = sort(ts); s[(length(s) + 1) ÷ 2])
+
+pooled_stats(ts) =
+    (median = median_of(ts), min = minimum(ts), max = maximum(ts))
 
 # What a pass over the rounds wrote, on the host, so a later point cannot
 # overwrite the comparison. Every field the rounds touch is here: both sets of
@@ -347,16 +362,48 @@ end
 # level makes its assignments local, so a reference captured in one iteration
 # is not visible in the next -- the UndefVarError that has cost this project
 # four reservations.
+# The order each pass takes. The shipped size leads the first pass so it is the
+# reference in both time and bits; the second pass runs the whole sweep
+# backwards, so a point's two medians bracket it with different neighbors.
+pass_order(pass) =
+    pass == 1 ? vcat(SHIPPED_BLOCK, filter(!=(SHIPPED_BLOCK), BLOCK_SIZES)) :
+    reverse(BLOCK_SIZES)
+
 function sweep_band(b, kernels)
-    points = Dict{String, Any}()
     limit = band_max_threads(kernels, b.name)
     println("\n=== $(b.name) rounds, max $limit threads ===")
 
-    # The shipped size first, so it is the reference every other point is
-    # compared against in both time and bits.
+    samples = Dict{Int, Vector{Float64}}()
+    pass_medians = Dict{Int, Vector{Float64}}()
+    differing = Dict{Int, Int}()
     reference = nothing
-    reference_ms = 0.0
-    for block in vcat(SHIPPED_BLOCK, filter(!=(SHIPPED_BLOCK), BLOCK_SIZES))
+    compared = 0
+
+    for pass in 1:PASSES
+        println("  pass $pass of $PASSES")
+        for block in pass_order(pass)
+            block > limit && continue
+            ts = timed_samples(() -> timed_rounds!(b, block))
+            append!(get!(samples, block, Float64[]), ts)
+            push!(get!(pass_medians, block, Float64[]), median_of(ts))
+            # Bits on the first pass only: the second would compare the same
+            # computation again at the cost of copying every workspace back.
+            if pass == 1
+                CUDA.synchronize()
+                shot = rounds_snapshot(b.groups)
+                isnothing(reference) && (reference = shot; compared = total_values(shot))
+                differing[block] = differing_values(reference, shot)
+            end
+            println(
+                "    $block: $(round(median_of(ts), digits = 2)) ms" *
+                (pass == 1 ? ", $(differing[block]) of $compared values differ" : ""),
+            )
+        end
+    end
+
+    points = Dict{String, Any}()
+    reference_ms = median_of(samples[SHIPPED_BLOCK])
+    for block in BLOCK_SIZES
         if block > limit
             points[string(block)] = Dict{String, Any}(
                 "block_threads" => block,
@@ -366,34 +413,37 @@ function sweep_band(b, kernels)
             println("  $block: skipped, past this band's $limit-thread limit")
             continue
         end
-        t = timed_ms(() -> timed_rounds!(b, block))
-        CUDA.synchronize()
-        shot = rounds_snapshot(b.groups)
-        if isnothing(reference)
-            reference = shot
-            reference_ms = t.median
-        end
-        differing = differing_values(reference, shot)
+        t = pooled_stats(samples[block])
+        ms = pass_medians[block]
         points[string(block)] = Dict{String, Any}(
             "block_threads" => block,
             "rounds_ms" => t.median,
             "rounds_ms_min" => t.min,
             "rounds_ms_max" => t.max,
+            "pass_medians_ms" => ms,
+            # How far the two passes disagree about this point, which is what
+            # separates a property of the block size from a drift across the
+            # sweep.
+            "pass_gap_pct" => 100.0 * (maximum(ms) - minimum(ms)) / t.median,
             "change_pct" => 100.0 * (t.median - reference_ms) / reference_ms,
             "warps_per_sm_optics" =>
                 kernels["$(b.name)_optics"]["warps_per_sm"][string(block)],
             "warps_per_sm_sweeps" =>
                 kernels["$(b.name)_sweeps"]["warps_per_sm"][string(block)],
-            "values_differing_from_shipped" => differing,
-            "bit_for_bit_with_shipped" => differing == 0,
+            "blocks_per_sm_optics" =>
+                kernels["$(b.name)_optics"]["blocks_per_sm"][string(block)],
+            "grid_blocks" => cld(ncol * NGROUPS, min(block, ncol * NGROUPS)),
+            "values_differing_from_shipped" => differing[block],
+            "bit_for_bit_with_shipped" => differing[block] == 0,
         )
         println(
             "  $block: $(round(t.median, digits = 2)) ms, " *
             "$(round(points[string(block)]["change_pct"], digits = 2))% vs " *
-            "$SHIPPED_BLOCK, $differing of $(total_values(shot)) values differ",
+            "$SHIPPED_BLOCK, passes differ by " *
+            "$(round(points[string(block)]["pass_gap_pct"], digits = 2))%",
         )
     end
-    return points, total_values(reference)
+    return points, compared
 end
 
 function sweep(kernels)
@@ -423,6 +473,9 @@ function sweep(kernels)
             "measured_blocks" => measured,
             "band_max_threads" => band_max_threads(kernels, b.name),
             "repeat_spread_pct" => spread_pct,
+            "passes" => PASSES,
+            "worst_pass_gap_pct" =>
+                maximum(points[string(n)]["pass_gap_pct"] for n in measured),
             "shipped_rounds_ms" =>
                 points[string(SHIPPED_BLOCK)]["rounds_ms"],
             "best_change_pct" => best,
@@ -480,6 +533,11 @@ results = Dict{String, Any}(
               "comparisons and not a difference of runs. change_pct is " *
               "against the shipped block size, and a point is only faster if " *
               "it clears repeat_spread_pct, the shipped point's own spread. " *
+              "rounds_ms is the median over every repeat of both " *
+              "passes, and pass_gap_pct is how far the two passes' own " *
+              "medians disagree: the second pass runs the sweep backwards, so " *
+              "a point whose two medians agree is reporting a property of the " *
+              "block size rather than a drift across the sweep. " *
               "warps_per_sm is the CUDA driver's " *
               "cuOccupancyMaxActiveBlocksPerMultiprocessor times the block's " *
               "warps, not a model of the register file. A block size past a " *
