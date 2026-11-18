@@ -622,6 +622,55 @@ questions:
           because the answer quotes it only through the share of it that
           survives the upstream fix, which the census above computes.
 
+  - question: >-
+      The grouped radiation rounds launch 128 threads per block. Is that the right size, or just one that reached the occupancy target?
+    answer: >-
+      It is the right size and the target did not pick it: {n_at_ceiling} of the {n_swept} sizes swept reach the longwave's {lw_ceiling}-warp ceiling and {n_equal} reach every one of the four kernels' ceilings, so the occupancy argument the code gives admits them all.
+      Timed in one process against one settled state, 128 is the fastest of the ten in both bands: 64 threads, whose driver-reported occupancy is identical, costs {lw_at_64:+.2f}% in the longwave and {sw_at_64:+.2f}% in the shortwave.
+      384 is the case worth naming: it matches the longwave and leaves the shortwave at {sw_warps_384} of its own {sw_ceiling} warps, which is the asymmetry one shared constant hides.
+    evidence:
+      - kind: document
+        path: docs/experiments/group-block-size.md
+        section: "What the clock says"
+        explanation: >-
+          The driver's occupancy for all four kernels at every size beside the
+          timing of the rounds, which is the comparison the question needs: the
+          two answer differently and the document is about that gap. Live on
+          main rather than pinned, because the sweep writes its own results file
+          that no other experiment touches, so re-running cannot restate it
+          against a different run. Built by the group-block-size-doc stage,
+          whose values block converts the sweep's TOML to JSON and derives the
+          per-claim booleans the prose rests on.
+      - kind: result
+        path: results/group-block-size.toml
+        explanation: >-
+          Every block size taken in one process against one settled AMIP state
+          with the same workspaces, so the points differ by the launch
+          configuration and nothing else -- an in-block comparison, which is
+          the only way to resolve a few percent on this machine. The rounds are
+          timed rather than the whole solve because the rounds are what this
+          constant configures; the reduction and the state refresh compute their
+          own launches. Each size is timed twice with the second pass reversed,
+          so `pass_gap_pct` separates a property of a block size from a drift
+          across the sweep, and every point is checked bit-for-bit against the
+          shipped one -- which must hold, since a thread's wide column is its
+          global id whatever the block.
+      - kind: result
+        path: results/docs/group-block-size.json
+        values:
+          n_at_ceiling: kernels.lw_optics.n_blocks_at_ceiling
+          n_swept: n_blocks_swept
+          lw_ceiling: kernels.lw_optics.ceiling_warps
+          n_equal: n_equal_occupancy_blocks
+          lw_at_64: bands.lw.points.64.change_pct
+          sw_at_64: bands.sw.points.64.change_pct
+          sw_warps_384: kernels.sw_optics.warps_at_384
+          sw_ceiling: kernels.sw_optics.ceiling_warps
+        explanation: >-
+          The derived view the document renders from, including a boolean per
+          claim the prose makes, so a pass that moves a figure moves the thing
+          the sentence rests on with it.
+
 tables:
   - path: results/top-kernels.csv
     title: Top 20 GPU kernels, baseline vs. mod
@@ -1190,6 +1239,14 @@ pipeline:
       # from. That conversion is anchored on the one case where both ends are
       # measured, so it cancels the profiling window's length rather than
       # needing it declared.
+    group-block-size-doc:
+      kind: markdown
+      target_path: docs/experiments/group-block-size.md
+      environment: py
+      # Live on main. Its only input is the sweep's own results file, which no
+      # other experiment writes, so a later pass cannot restate this document
+      # against a different run -- the reason the shared-path documents need a
+      # freeze and this one does not.
     gpoint-group-count-doc:
       kind: markdown
       target_path: docs/experiments/gpoint-group-count.md

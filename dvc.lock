@@ -1379,8 +1379,8 @@ stages:
       nfiles: 2
     - path: calkit.yaml
       hash: md5
-      md5: ed55a81bfdf6036cac3240364a54c769
-      size: 98460
+      md5: b4b15d64730d9653d7d2b482e70da126
+      size: 104676
     - path: diffs
       hash: md5
       md5: d1606889b425da4a8739642b3e6aa4ef.dir
@@ -1393,7 +1393,7 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: 5ff67366e7217de4131bd6d910a5f7d7
+      md5: 524cca642d041ac42158dc96505eff2c
       size: 32553
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
@@ -5661,8 +5661,8 @@ stages:
       nfiles: 44
     - path: scripts/measure-group-block-size.jl
       hash: md5
-      md5: 50a76d3dc49c0c3553bdeaf8902d19dc
-      size: 18685
+      md5: cf68079d97b688066478a4afc7ba7750
+      size: 21525
     - path: scripts/run-julia-script.sh
       hash: md5
       md5: 2b491e48a8f15c4ea7ff76d19d95f830
@@ -5670,9 +5670,31 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/group-block-size.out
       hash: md5
-      md5: b04d77cf2aa23b29d5619cc57ffd9c96
-      size: 43413
+      md5: 42b9b3f09aa6d56eda3c83536f3e9101
+      size: 42365
     - path: results/group-block-size.toml
       hash: md5
-      md5: 3bd42542fe72e963d593eeb8f14e3a2b
-      size: 9700
+      md5: 791887a6977238e5da5100059f93ec4a
+      size: 13631
+  group-block-size-doc/values:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/experiments/group-block-size.md/values.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: .calkit/markdown/docs/experiments/group-block-size.md/values.py
+      hash: md5
+      md5: 1d9c989f33677499777f103d6a5555da
+      size: 6085
+    - path: results/group-block-size.toml
+      hash: md5
+      md5: 791887a6977238e5da5100059f93ec4a
+      size: 13631
+    outs:
+    - path: results/docs/group-block-size.json
+      hash: md5
+      md5: 5e94822652cfc053d8a5ff8f7cc1d91f
+      size: 9799

@@ -848,6 +848,19 @@ stages:
           persist: false
     desc: Automatically generated from the 'wave-census-doc/values' stage in
       calkit.yaml. Changes made here will be overwritten.
+  group-block-size-doc/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/group-block-size.md/values.py
+    deps:
+      - .calkit/markdown/docs/experiments/group-block-size.md/values.py
+      - results/group-block-size.toml
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/group-block-size.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'group-block-size-doc/values' stage
+      in calkit.yaml. Changes made here will be overwritten.
   gpoint-group-count-doc/values:
     cmd: calkit xenv -n py --no-check -- python
       .calkit/markdown/docs/experiments/gpoint-group-count.md/values.py
