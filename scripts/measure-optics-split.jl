@@ -238,7 +238,16 @@ RTE.n_gpt_groups(sws.gpt_groups) == NGROUPS ||
 
 # One workspace, two arms: everything but the flag is the same object, so the
 # arms cannot differ in what they allocated or in what state they read.
+#
+# The assertion is the whole measurement. Without the field, the comprehension
+# below copies every field and hands back an identical workspace, so both arms
+# run the same code and the comparison reports a null as a result -- which is
+# what a frozen stage looks like after the package has moved on.
 function with_split(g::G, split::Bool) where {G}
+    :split_optics in fieldnames(G) || error(
+        "$(G) has no `split_optics` field, so the two arms would be the same " *
+        "workspace and the split would be measured against itself",
+    )
     return G(
         (
             f === :split_optics ? split : getfield(g, f) for f in fieldnames(G)
