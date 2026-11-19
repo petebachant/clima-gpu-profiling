@@ -5698,3 +5698,49 @@ stages:
       hash: md5
       md5: 5e94822652cfc053d8a5ff8f7cc1d91f
       size: 9799
+  group-workspace-memory:
+    cmd: calkit scheduler batch --name group-workspace-memory --environment 
+      clima --dep scripts/measure-group-workspace-memory.jl --dep 
+      RRTMGP.jl-mod/src --dep RRTMGP.jl-mod/ext --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep 
+      .calkit/env-locks/clima --out results/group-workspace-memory.toml --option
+      --gpus=1 --option --time=30 -- scripts/run-julia-script.sh 
+      --project=ClimaCoupler.jl-mod/experiments/AMIP 
+      scripts/measure-group-workspace-memory.jl
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      hash: md5
+      md5: 6af43332044d07c5c3de96455065c64b
+      size: 138581
+    - path: RRTMGP.jl-mod/ext
+      hash: md5
+      md5: 6c7f2ccc2cfa6d5b6b0e85afc3cd5a90.dir
+      size: 83513
+      nfiles: 12
+    - path: RRTMGP.jl-mod/src
+      hash: md5
+      md5: 47699d72e49e46fef3ea88ed89565071.dir
+      size: 359767
+      nfiles: 44
+    - path: scripts/measure-group-workspace-memory.jl
+      hash: md5
+      md5: c1cc437391b47c8476b02599798c9228
+      size: 12661
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: 2b491e48a8f15c4ea7ff76d19d95f830
+      size: 1040
+    outs:
+    - path: .calkit/scheduler/logs/group-workspace-memory.out
+      hash: md5
+      md5: 8c9855e980cb476d2aad98754e51ec23
+      size: 8009
+    - path: results/group-workspace-memory.toml
+      hash: md5
+      md5: 29231e0f0416423d58354f9b64a5bf17
+      size: 16651

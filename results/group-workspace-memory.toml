@@ -1,0 +1,853 @@
+device = "NVIDIA A100-SXM4-80GB"
+device_total_gib = 79.250732421875
+float_type = "Float32"
+note = "bytes is the device free-memory delta across one band's workspace construction, so it charges the whole widening -- optics, sources, band fluxes, cloud mask and the two accumulators -- and not the accumulators alone, whose shapes give accumulator_bytes as a floor. The fit is bytes = wide_columns * (a * nlev + b) + c per band, least squares over the fit grid; worst_relative_residual is how far the worst fitted point misses. held_out is the high-resolution CI grid at its shipped group count, measured and compared against the law it was excluded from. configs prices the shipped default by prediction, and predicted_gib_by_nlay varies only the level count, which default_ngpt_groups does not read."
+
+[configs.amip_he16]
+default_ngroups = 16
+floor_ngroups = 16
+ncol = 24576
+nlay = 80
+nlev = 81
+predicted_bytes = 3.6331182025060377e9
+predicted_gib = 3.3836049982402825
+wide_columns = 393216
+wide_columns_over_target = 0.0
+
+    [configs.amip_he16.devices.a100_40gib]
+    device_gib = 40.0
+    workspace_share_pct = 8.459012495600707
+
+    [configs.amip_he16.devices.p100_16gib]
+    device_gib = 16.0
+    workspace_share_pct = 21.147531239001765
+
+    [configs.amip_he16.largest_ngroups_within_gib]
+    "0.5" = 2
+    "1.0" = 4
+    "2.0" = 9
+    "4.0" = 16
+
+    [configs.amip_he16.predicted_gib_by_nlay]
+    127 = 5.346322331568818
+    31 = 1.3373677783871267
+    63 = 2.6736859627810245
+    80 = 3.3836049982402825
+
+[configs.ci_highres]
+default_ngroups = 5
+floor_ngroups = 4
+ncol = 86400
+nlay = 63
+nlev = 64
+predicted_bytes = 3.153068246781092e9
+predicted_gib = 2.9365236375304797
+wide_columns = 432000
+wide_columns_over_target = 9.86328125
+
+    [configs.ci_highres.devices.a100_40gib]
+    device_gib = 40.0
+    workspace_share_pct = 7.341309093826199
+
+    [configs.ci_highres.devices.p100_16gib]
+    device_gib = 16.0
+    workspace_share_pct = 18.353272734565497
+
+    [configs.ci_highres.largest_ngroups_within_gib]
+    "0.5" = 0
+    "1.0" = 1
+    "2.0" = 3
+    "4.0" = 6
+
+    [configs.ci_highres.predicted_gib_by_nlay]
+    127 = 5.872769648161601
+    31 = 1.4684006322149186
+    63 = 2.9365236375304797
+    80 = 3.7164639841043714
+
+[configs.coarse_he8]
+default_ngroups = 16
+floor_ngroups = 16
+ncol = 6144
+nlay = 80
+nlev = 81
+predicted_bytes = 9.15427667600393e8
+predicted_gib = 0.8525584522638405
+wide_columns = 98304
+wide_columns_over_target = -75.0
+
+    [configs.coarse_he8.devices.a100_40gib]
+    device_gib = 40.0
+    workspace_share_pct = 2.1313961306596014
+
+    [configs.coarse_he8.devices.p100_16gib]
+    device_gib = 16.0
+    workspace_share_pct = 5.328490326649003
+
+    [configs.coarse_he8.largest_ngroups_within_gib]
+    "0.5" = 9
+    "1.0" = 16
+    "2.0" = 16
+    "4.0" = 16
+
+    [configs.coarse_he8.predicted_gib_by_nlay]
+    127 = 1.3432377855959747
+    31 = 0.34099914730055175
+    63 = 0.675078693399026
+    80 = 0.8525584522638405
+
+[fit.lw]
+bytes_fixed = 4.561791460825586e6
+bytes_per_wide_column = -10.462211442577999
+bytes_per_wide_column_per_level = 53.01509645917115
+n_points = 32
+worst_relative_residual = 0.0727492121216471
+
+[fit.sw]
+bytes_fixed = 4.96903117101948e6
+bytes_per_wide_column = -10.909832581813966
+bytes_per_wide_column_per_level = 61.01738860910809
+n_points = 32
+worst_relative_residual = 0.08358304889764163
+
+[held_out.lw]
+accumulator_bytes = 442368000
+band = "lw"
+bytes = 1470103552
+gib = 1.369140625
+ncol = 86400
+ngroups = 5
+nlay = 63
+nlev = 64
+over_accumulator_floor = 3.323259259259259
+predicted_bytes = 1.4658035030207958e9
+prediction_error_pct = -0.29249973400541635
+wide_columns = 432000
+
+[held_out.sw]
+accumulator_bytes = 663552000
+band = "sw"
+bytes = 1692401664
+gib = 1.576171875
+ncol = 86400
+ngroups = 5
+nlay = 63
+nlev = 64
+over_accumulator_floor = 2.5505185185185186
+predicted_bytes = 1.6872647437602963e9
+prediction_error_pct = -0.3035284323440405
+wide_columns = 432000
+
+[[points]]
+accumulator_bytes = 6291456
+band = "lw"
+bytes = 27262976
+gib = 0.025390625
+ncol = 6144
+ngroups = 2
+nlay = 31
+nlev = 32
+over_accumulator_floor = 4.333333333333333
+wide_columns = 12288
+[[points]]
+accumulator_bytes = 9437184
+band = "sw"
+bytes = 31457280
+gib = 0.029296875
+ncol = 6144
+ngroups = 2
+nlay = 31
+nlev = 32
+over_accumulator_floor = 3.3333333333333335
+wide_columns = 12288
+[[points]]
+accumulator_bytes = 12582912
+band = "lw"
+bytes = 48234496
+gib = 0.044921875
+ncol = 6144
+ngroups = 4
+nlay = 31
+nlev = 32
+over_accumulator_floor = 3.8333333333333335
+wide_columns = 24576
+[[points]]
+accumulator_bytes = 18874368
+band = "sw"
+bytes = 56623104
+gib = 0.052734375
+ncol = 6144
+ngroups = 4
+nlay = 31
+nlev = 32
+over_accumulator_floor = 3.0
+wide_columns = 24576
+[[points]]
+accumulator_bytes = 25165824
+band = "lw"
+bytes = 83886080
+gib = 0.078125
+ncol = 6144
+ngroups = 8
+nlay = 31
+nlev = 32
+over_accumulator_floor = 3.3333333333333335
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 37748736
+band = "sw"
+bytes = 96468992
+gib = 0.08984375
+ncol = 6144
+ngroups = 8
+nlay = 31
+nlev = 32
+over_accumulator_floor = 2.5555555555555554
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 50331648
+band = "lw"
+bytes = 169869312
+gib = 0.158203125
+ncol = 6144
+ngroups = 16
+nlay = 31
+nlev = 32
+over_accumulator_floor = 3.375
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 75497472
+band = "sw"
+bytes = 195035136
+gib = 0.181640625
+ncol = 6144
+ngroups = 16
+nlay = 31
+nlev = 32
+over_accumulator_floor = 2.5833333333333335
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 12582912
+band = "lw"
+bytes = 48234496
+gib = 0.044921875
+ncol = 6144
+ngroups = 2
+nlay = 63
+nlev = 64
+over_accumulator_floor = 3.8333333333333335
+wide_columns = 12288
+[[points]]
+accumulator_bytes = 18874368
+band = "sw"
+bytes = 56623104
+gib = 0.052734375
+ncol = 6144
+ngroups = 2
+nlay = 63
+nlev = 64
+over_accumulator_floor = 3.0
+wide_columns = 12288
+[[points]]
+accumulator_bytes = 25165824
+band = "lw"
+bytes = 83886080
+gib = 0.078125
+ncol = 6144
+ngroups = 4
+nlay = 63
+nlev = 64
+over_accumulator_floor = 3.3333333333333335
+wide_columns = 24576
+[[points]]
+accumulator_bytes = 37748736
+band = "sw"
+bytes = 96468992
+gib = 0.08984375
+ncol = 6144
+ngroups = 4
+nlay = 63
+nlev = 64
+over_accumulator_floor = 2.5555555555555554
+wide_columns = 24576
+[[points]]
+accumulator_bytes = 50331648
+band = "lw"
+bytes = 169869312
+gib = 0.158203125
+ncol = 6144
+ngroups = 8
+nlay = 63
+nlev = 64
+over_accumulator_floor = 3.375
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 75497472
+band = "sw"
+bytes = 195035136
+gib = 0.181640625
+ncol = 6144
+ngroups = 8
+nlay = 63
+nlev = 64
+over_accumulator_floor = 2.5833333333333335
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 100663296
+band = "lw"
+bytes = 335544320
+gib = 0.3125
+ncol = 6144
+ngroups = 16
+nlay = 63
+nlev = 64
+over_accumulator_floor = 3.3333333333333335
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 150994944
+band = "sw"
+bytes = 385875968
+gib = 0.359375
+ncol = 6144
+ngroups = 16
+nlay = 63
+nlev = 64
+over_accumulator_floor = 2.5555555555555554
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 15925248
+band = "lw"
+bytes = 56623104
+gib = 0.052734375
+ncol = 6144
+ngroups = 2
+nlay = 80
+nlev = 81
+over_accumulator_floor = 3.5555555555555554
+wide_columns = 12288
+[[points]]
+accumulator_bytes = 23887872
+band = "sw"
+bytes = 65011712
+gib = 0.060546875
+ncol = 6144
+ngroups = 2
+nlay = 80
+nlev = 81
+over_accumulator_floor = 2.7215363511659807
+wide_columns = 12288
+[[points]]
+accumulator_bytes = 31850496
+band = "lw"
+bytes = 113246208
+gib = 0.10546875
+ncol = 6144
+ngroups = 4
+nlay = 80
+nlev = 81
+over_accumulator_floor = 3.5555555555555554
+wide_columns = 24576
+[[points]]
+accumulator_bytes = 47775744
+band = "sw"
+bytes = 130023424
+gib = 0.12109375
+ncol = 6144
+ngroups = 4
+nlay = 80
+nlev = 81
+over_accumulator_floor = 2.7215363511659807
+wide_columns = 24576
+[[points]]
+accumulator_bytes = 63700992
+band = "lw"
+bytes = 220200960
+gib = 0.205078125
+ncol = 6144
+ngroups = 8
+nlay = 80
+nlev = 81
+over_accumulator_floor = 3.45679012345679
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 95551488
+band = "sw"
+bytes = 251658240
+gib = 0.234375
+ncol = 6144
+ngroups = 8
+nlay = 80
+nlev = 81
+over_accumulator_floor = 2.633744855967078
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 127401984
+band = "lw"
+bytes = 432013312
+gib = 0.40234375
+ncol = 6144
+ngroups = 16
+nlay = 80
+nlev = 81
+over_accumulator_floor = 3.3909465020576133
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 191102976
+band = "sw"
+bytes = 497025024
+gib = 0.462890625
+ncol = 6144
+ngroups = 16
+nlay = 80
+nlev = 81
+over_accumulator_floor = 2.60082304526749
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 25165824
+band = "lw"
+bytes = 83886080
+gib = 0.078125
+ncol = 6144
+ngroups = 2
+nlay = 127
+nlev = 128
+over_accumulator_floor = 3.3333333333333335
+wide_columns = 12288
+[[points]]
+accumulator_bytes = 37748736
+band = "sw"
+bytes = 96468992
+gib = 0.08984375
+ncol = 6144
+ngroups = 2
+nlay = 127
+nlev = 128
+over_accumulator_floor = 2.5555555555555554
+wide_columns = 12288
+[[points]]
+accumulator_bytes = 50331648
+band = "lw"
+bytes = 169869312
+gib = 0.158203125
+ncol = 6144
+ngroups = 4
+nlay = 127
+nlev = 128
+over_accumulator_floor = 3.375
+wide_columns = 24576
+[[points]]
+accumulator_bytes = 75497472
+band = "sw"
+bytes = 195035136
+gib = 0.181640625
+ncol = 6144
+ngroups = 4
+nlay = 127
+nlev = 128
+over_accumulator_floor = 2.5833333333333335
+wide_columns = 24576
+[[points]]
+accumulator_bytes = 100663296
+band = "lw"
+bytes = 335544320
+gib = 0.3125
+ncol = 6144
+ngroups = 8
+nlay = 127
+nlev = 128
+over_accumulator_floor = 3.3333333333333335
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 150994944
+band = "sw"
+bytes = 385875968
+gib = 0.359375
+ncol = 6144
+ngroups = 8
+nlay = 127
+nlev = 128
+over_accumulator_floor = 2.5555555555555554
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 201326592
+band = "lw"
+bytes = 668991488
+gib = 0.623046875
+ncol = 6144
+ngroups = 16
+nlay = 127
+nlev = 128
+over_accumulator_floor = 3.3229166666666665
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 301989888
+band = "sw"
+bytes = 769654784
+gib = 0.716796875
+ncol = 6144
+ngroups = 16
+nlay = 127
+nlev = 128
+over_accumulator_floor = 2.548611111111111
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 25165824
+band = "lw"
+bytes = 83886080
+gib = 0.078125
+ncol = 24576
+ngroups = 2
+nlay = 31
+nlev = 32
+over_accumulator_floor = 3.3333333333333335
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 37748736
+band = "sw"
+bytes = 96468992
+gib = 0.08984375
+ncol = 24576
+ngroups = 2
+nlay = 31
+nlev = 32
+over_accumulator_floor = 2.5555555555555554
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 50331648
+band = "lw"
+bytes = 169869312
+gib = 0.158203125
+ncol = 24576
+ngroups = 4
+nlay = 31
+nlev = 32
+over_accumulator_floor = 3.375
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 75497472
+band = "sw"
+bytes = 195035136
+gib = 0.181640625
+ncol = 24576
+ngroups = 4
+nlay = 31
+nlev = 32
+over_accumulator_floor = 2.5833333333333335
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 100663296
+band = "lw"
+bytes = 333447168
+gib = 0.310546875
+ncol = 24576
+ngroups = 8
+nlay = 31
+nlev = 32
+over_accumulator_floor = 3.3125
+wide_columns = 196608
+[[points]]
+accumulator_bytes = 150994944
+band = "sw"
+bytes = 383778816
+gib = 0.357421875
+ncol = 24576
+ngroups = 8
+nlay = 31
+nlev = 32
+over_accumulator_floor = 2.5416666666666665
+wide_columns = 196608
+[[points]]
+accumulator_bytes = 201326592
+band = "lw"
+bytes = 666894336
+gib = 0.62109375
+ncol = 24576
+ngroups = 16
+nlay = 31
+nlev = 32
+over_accumulator_floor = 3.3125
+wide_columns = 393216
+[[points]]
+accumulator_bytes = 301989888
+band = "sw"
+bytes = 767557632
+gib = 0.71484375
+ncol = 24576
+ngroups = 16
+nlay = 31
+nlev = 32
+over_accumulator_floor = 2.5416666666666665
+wide_columns = 393216
+[[points]]
+accumulator_bytes = 50331648
+band = "lw"
+bytes = 169869312
+gib = 0.158203125
+ncol = 24576
+ngroups = 2
+nlay = 63
+nlev = 64
+over_accumulator_floor = 3.375
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 75497472
+band = "sw"
+bytes = 195035136
+gib = 0.181640625
+ncol = 24576
+ngroups = 2
+nlay = 63
+nlev = 64
+over_accumulator_floor = 2.5833333333333335
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 100663296
+band = "lw"
+bytes = 335544320
+gib = 0.3125
+ncol = 24576
+ngroups = 4
+nlay = 63
+nlev = 64
+over_accumulator_floor = 3.3333333333333335
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 150994944
+band = "sw"
+bytes = 385875968
+gib = 0.359375
+ncol = 24576
+ngroups = 4
+nlay = 63
+nlev = 64
+over_accumulator_floor = 2.5555555555555554
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 201326592
+band = "lw"
+bytes = 666894336
+gib = 0.62109375
+ncol = 24576
+ngroups = 8
+nlay = 63
+nlev = 64
+over_accumulator_floor = 3.3125
+wide_columns = 196608
+[[points]]
+accumulator_bytes = 301989888
+band = "sw"
+bytes = 767557632
+gib = 0.71484375
+ncol = 24576
+ngroups = 8
+nlay = 63
+nlev = 64
+over_accumulator_floor = 2.5416666666666665
+wide_columns = 196608
+[[points]]
+accumulator_bytes = 402653184
+band = "lw"
+bytes = 1333788672
+gib = 1.2421875
+ncol = 24576
+ngroups = 16
+nlay = 63
+nlev = 64
+over_accumulator_floor = 3.3125
+wide_columns = 393216
+[[points]]
+accumulator_bytes = 603979776
+band = "sw"
+bytes = 1535115264
+gib = 1.4296875
+ncol = 24576
+ngroups = 16
+nlay = 63
+nlev = 64
+over_accumulator_floor = 2.5416666666666665
+wide_columns = 393216
+[[points]]
+accumulator_bytes = 63700992
+band = "lw"
+bytes = 220200960
+gib = 0.205078125
+ncol = 24576
+ngroups = 2
+nlay = 80
+nlev = 81
+over_accumulator_floor = 3.45679012345679
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 95551488
+band = "sw"
+bytes = 251658240
+gib = 0.234375
+ncol = 24576
+ngroups = 2
+nlay = 80
+nlev = 81
+over_accumulator_floor = 2.633744855967078
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 127401984
+band = "lw"
+bytes = 432013312
+gib = 0.40234375
+ncol = 24576
+ngroups = 4
+nlay = 80
+nlev = 81
+over_accumulator_floor = 3.3909465020576133
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 191102976
+band = "sw"
+bytes = 497025024
+gib = 0.462890625
+ncol = 24576
+ngroups = 4
+nlay = 80
+nlev = 81
+over_accumulator_floor = 2.60082304526749
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 254803968
+band = "lw"
+bytes = 851443712
+gib = 0.79296875
+ncol = 24576
+ngroups = 8
+nlay = 80
+nlev = 81
+over_accumulator_floor = 3.3415637860082303
+wide_columns = 196608
+[[points]]
+accumulator_bytes = 382205952
+band = "sw"
+bytes = 981467136
+gib = 0.9140625
+ncol = 24576
+ngroups = 8
+nlay = 80
+nlev = 81
+over_accumulator_floor = 2.567901234567901
+wide_columns = 196608
+[[points]]
+accumulator_bytes = 509607936
+band = "lw"
+bytes = 1692401664
+gib = 1.576171875
+ncol = 24576
+ngroups = 16
+nlay = 80
+nlev = 81
+over_accumulator_floor = 3.3209876543209877
+wide_columns = 393216
+[[points]]
+accumulator_bytes = 764411904
+band = "sw"
+bytes = 1948254208
+gib = 1.814453125
+ncol = 24576
+ngroups = 16
+nlay = 80
+nlev = 81
+over_accumulator_floor = 2.5486968449931413
+wide_columns = 393216
+[[points]]
+accumulator_bytes = 100663296
+band = "lw"
+bytes = 335544320
+gib = 0.3125
+ncol = 24576
+ngroups = 2
+nlay = 127
+nlev = 128
+over_accumulator_floor = 3.3333333333333335
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 150994944
+band = "sw"
+bytes = 385875968
+gib = 0.359375
+ncol = 24576
+ngroups = 2
+nlay = 127
+nlev = 128
+over_accumulator_floor = 2.5555555555555554
+wide_columns = 49152
+[[points]]
+accumulator_bytes = 201326592
+band = "lw"
+bytes = 668991488
+gib = 0.623046875
+ncol = 24576
+ngroups = 4
+nlay = 127
+nlev = 128
+over_accumulator_floor = 3.3229166666666665
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 301989888
+band = "sw"
+bytes = 769654784
+gib = 0.716796875
+ncol = 24576
+ngroups = 4
+nlay = 127
+nlev = 128
+over_accumulator_floor = 2.548611111111111
+wide_columns = 98304
+[[points]]
+accumulator_bytes = 402653184
+band = "lw"
+bytes = 1333788672
+gib = 1.2421875
+ncol = 24576
+ngroups = 8
+nlay = 127
+nlev = 128
+over_accumulator_floor = 3.3125
+wide_columns = 196608
+[[points]]
+accumulator_bytes = 603979776
+band = "sw"
+bytes = 1535115264
+gib = 1.4296875
+ncol = 24576
+ngroups = 8
+nlay = 127
+nlev = 128
+over_accumulator_floor = 2.5416666666666665
+wide_columns = 196608
+[[points]]
+accumulator_bytes = 805306368
+band = "lw"
+bytes = 2667577344
+gib = 2.484375
+ncol = 24576
+ngroups = 16
+nlay = 127
+nlev = 128
+over_accumulator_floor = 3.3125
+wide_columns = 393216
+[[points]]
+accumulator_bytes = 1207959552
+band = "sw"
+bytes = 3070230528
+gib = 2.859375
+ncol = 24576
+ngroups = 16
+nlay = 127
+nlev = 128
+over_accumulator_floor = 2.5416666666666665
+wide_columns = 393216
+
+[verdict]
+amip_gib_at_127_levels = 5.346322331568818
+amip_gib_at_31_levels = 1.3373677783871267
+amip_nlev_span_ratio = 3.997645537726738
+default_reads_nlev = false
+max_ngpt_groups = 16
+target_gpt_group_columns = 393216
+worst_relative_residual = 0.08358304889764163

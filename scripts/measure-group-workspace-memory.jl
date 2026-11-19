@@ -200,15 +200,16 @@ predict(law, ncol, nlay, ngroups) =
 predict_both(lw, sw, ncol, nlay, ngroups) =
     predict(lw, ncol, nlay, ngroups) + predict(sw, ncol, nlay, ngroups)
 
-# The shipped default, read from the module so this cannot drift from it.
-shipped_default(ncol) = clamp(
-    cld(RTE.TARGET_GPT_GROUP_COLUMNS, ncol),
-    1,
-    RTE.MAX_NGPT_GROUPS,
-)
+# The shipped default itself, not a copy of its arithmetic: it reads the level
+# count as well as the column count, so a mirror here would drift from it.
+shipped_default(ncol, nlay) = RTE.default_ngpt_groups(grid(ncol, nlay))
 
-# What `fld` would give instead, which is the rounding Teja's thread asks about.
-floor_default(ncol) =
+# The column target alone, rounded both ways. `cld` is what the default uses --
+# the target is a floor on parallelism -- and the difference is what the review
+# thread asks about, so both are recorded.
+ceil_columns_only(ncol) =
+    clamp(cld(RTE.TARGET_GPT_GROUP_COLUMNS, ncol), 1, RTE.MAX_NGPT_GROUPS)
+floor_columns_only(ncol) =
     clamp(fld(RTE.TARGET_GPT_GROUP_COLUMNS, ncol), 1, RTE.MAX_NGPT_GROUPS)
 
 function largest_within(lw, sw, ncol, nlay, budget_bytes)
@@ -222,7 +223,7 @@ end
 function price_configs(lw, sw)
     out = Dict{String, Any}()
     for cfg in PRICED
-        n = shipped_default(cfg.ncol)
+        n = shipped_default(cfg.ncol, cfg.nlay)
         bytes = predict_both(lw, sw, cfg.ncol, cfg.nlay, n)
         wide = cfg.ncol * n
         budgets = Dict{String, Any}()
@@ -236,19 +237,34 @@ function price_configs(lw, sw)
                 "workspace_share_pct" => 100.0 * (bytes / 2^30) / dev.gib,
             )
         end
-        # The level count the default never reads, priced: what the same column
-        # count costs at the other grids' level counts.
+        # The level term, isolated: this group count at the other grids' level
+        # counts. The default now responds to levels, so these are what it
+        # would have committed had it not, which is the span the byte bound
+        # exists to cover.
         by_nlay = Dict{String, Any}()
         for nlay in FIT_NLAYS
-            by_nlay[string(nlay)] =
-                predict_both(lw, sw, cfg.ncol, nlay, n) / 2^30
+            by_nlay[string(nlay)] = Dict{String, Any}(
+                "gib_at_this_ngroups" =>
+                    predict_both(lw, sw, cfg.ncol, nlay, n) / 2^30,
+                "default_ngroups_there" => shipped_default(cfg.ncol, nlay),
+                "gib_at_that_default" =>
+                    predict_both(
+                        lw,
+                        sw,
+                        cfg.ncol,
+                        nlay,
+                        shipped_default(cfg.ncol, nlay),
+                    ) / 2^30,
+            )
         end
         out[cfg.name] = Dict{String, Any}(
             "ncol" => cfg.ncol,
             "nlay" => cfg.nlay,
             "nlev" => cfg.nlay + 1,
             "default_ngroups" => n,
-            "floor_ngroups" => floor_default(cfg.ncol),
+            "ceil_columns_only_ngroups" => ceil_columns_only(cfg.ncol),
+            "floor_columns_only_ngroups" => floor_columns_only(cfg.ncol),
+            "byte_bound_binds" => n < ceil_columns_only(cfg.ncol),
             "wide_columns" => wide,
             "wide_columns_over_target" =>
                 100.0 * (wide - RTE.TARGET_GPT_GROUP_COLUMNS) /
@@ -277,7 +293,7 @@ function run()
 
     # The held-out grid at its shipped group count: measured against predicted,
     # which is what says the law holds off the grid it was fitted on.
-    n_held = shipped_default(HELD_OUT.ncol)
+    n_held = shipped_default(HELD_OUT.ncol, HELD_OUT.nlay)
     held = Dict{String, Any}()
     for (band, law) in (("lw", lw), ("sw", sw))
         sym = band == "lw" ? :lw : :sw
@@ -293,15 +309,24 @@ function run()
     configs = price_configs(lw, sw)
     amip = configs["amip_he16"]
     verdict = Dict{String, Any}(
-        # The level count is in the law but not in the default, which is the
-        # whole of the objection: the same column count commits different
-        # memory on grids the default cannot tell apart.
-        "default_reads_nlev" => false,
-        "amip_gib_at_31_levels" => amip["predicted_gib_by_nlay"]["31"],
-        "amip_gib_at_127_levels" => amip["predicted_gib_by_nlay"]["127"],
+        # The level count is in the law, and now in the default too, which is
+        # the objection answered: the same column count no longer commits
+        # whatever the grid's height asks for.
+        "default_reads_nlev" => true,
+        "amip_gib_at_31_levels" =>
+            amip["predicted_gib_by_nlay"]["31"]["gib_at_this_ngroups"],
+        "amip_gib_at_127_levels" =>
+            amip["predicted_gib_by_nlay"]["127"]["gib_at_this_ngroups"],
         "amip_nlev_span_ratio" =>
-            amip["predicted_gib_by_nlay"]["127"] /
-            amip["predicted_gib_by_nlay"]["31"],
+            amip["predicted_gib_by_nlay"]["127"]["gib_at_this_ngroups"] /
+            amip["predicted_gib_by_nlay"]["31"]["gib_at_this_ngroups"],
+        # What the bound buys where it binds: the tallest grid priced, at the
+        # count the default now gives it rather than the one columns alone would.
+        "amip_gib_at_127_under_bound" =>
+            amip["predicted_gib_by_nlay"]["127"]["gib_at_that_default"],
+        "bound_binds_at_127_levels" =>
+            amip["predicted_gib_by_nlay"]["127"]["default_ngroups_there"] <
+            amip["default_ngroups"],
         "worst_relative_residual" =>
             max(lw["worst_relative_residual"], sw["worst_relative_residual"]),
         "target_gpt_group_columns" => RTE.TARGET_GPT_GROUP_COLUMNS,
@@ -328,8 +353,10 @@ function run()
                   "high-resolution CI grid at its shipped group count, " *
                   "measured and compared against the law it was excluded " *
                   "from. configs prices the shipped default by prediction, " *
-                  "and predicted_gib_by_nlay varies only the level count, " *
-                  "which default_ngpt_groups does not read.",
+                  "and predicted_gib_by_nlay varies the level count at a " *
+                  "fixed group count, which is the span the default's byte " *
+                  "bound covers, beside the count the default itself gives " *
+                  "each of those grids.",
     )
 
     out_path = arg_value("--out", "results/group-workspace-memory.toml")
