@@ -271,6 +271,15 @@ def git(*args):
     return r.stdout.strip() if r.returncode == 0 else None
 
 
+def other_treatments():
+    """True if the arms differ in anything but RRTMGP and the AMIP manifest."""
+    rec = json.loads(Path("results/treatment.json").read_text())
+    differ = set(rec["arms_differ_in"])
+    # The Coupler arm differs in every pass by construction: its manifest is
+    # what points each arm at its own package copies.
+    return bool(differ - {"RRTMGP.jl-mod", "ClimaCoupler.jl-mod"})
+
+
 def digest(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -415,7 +424,11 @@ def main():
             "baseline_summed_equals_elapsed":
                 round(bsummed, 1) == round(btotal, 1),
             "mod_concurrency_inflation_ms": round(msummed - mtotal, 1),
-            "carries_other_treatments": True,
+            # Derived, because hardcoding it survived the pass that made it
+            # false: a device total is the whole arm, so it carries every
+            # treatment the arms differ in, and which those are is what
+            # `record-treatment` writes down.
+            "carries_other_treatments": other_treatments(),
         },
         "provenance": {
             "baseline_ref": git("-C", "RRTMGP.jl", "rev-parse", "HEAD"),
