@@ -319,12 +319,11 @@ questions:
   - question: >-
       The radiation solvers move enormous amounts of memory. Is that the next lever, and did the g-point split already collect it?
     answer: >-
-      It is a real inefficiency and not the binding constraint: the solvers fetch {amplification}x more sectors than their own bytes need, discarding {excessive_pct}% of all sector traffic, but DRAM runs at only {dram_pct_peak}% of peak, so nothing is saturated and the limit remains {registers:.0f} registers per thread holding the kernels to one block per multiprocessor.
-      The split did not collect it -- it left every memory figure unchanged, the L2 hit rate moving {l2_delta} points, and bought its {ms_change}% per call by filling 108 multiprocessors instead -- so the traffic is unspent and additive to it rather than already counted.
+      It is a real inefficiency and not the binding constraint: the solvers discard {excessive_pct}% of all sector traffic at {amplification}x the sectors their own bytes need, but the kernels carrying most of it run at {dram_pct_peak_min}% of DRAM peak, so the excess costs wavefronts and exposed latency rather than bandwidth.
+      The g-point and phase split neither collected it nor relieved it -- the gather holds {gather_pct}% of every sector in both arms, and raising achieved occupancy {occupancy_delta} points took memory dependency from {stall_base}% to {stall_mod}% of measured stall cycles -- so registers remain the binding constraint, now at {registers_min:.0f}--{registers:.0f} per thread rather than at the 255 cap.
     evidence:
       - kind: document
         path: docs/experiments/radiation-memory.md
-        git_ref: meas/2026-11-06-radiation-memory
         section: "How the prediction scored"
         explanation: >-
           Where the traffic goes, measured against a per-instruction ideal
@@ -334,23 +333,29 @@ questions:
           price the gather.
       - kind: document
         path: docs/experiments/radiation-memory.md
-        git_ref: meas/2026-11-06-radiation-memory
         section: "Result"
         explanation: >-
           The arm comparison that separates machine fill from locality. The
           prediction written before the data said the split would show as better
-          cache behavior; it is refuted, and the rules ncu retires say what the
-          split actually bought.
+          cache behavior; it is refuted in both arms, and what the split bought
+          instead was machine fill, the end of spilling, and 99 registers --
+          after which TheoreticalOccupancy is still the largest rule and
+          memory dependency is a larger share of stalls, not a smaller one.
+          Pinned to main rather than to a tag because the figures above are
+          the re-measurement against the split kernels, which supersedes
+          meas/2026-11-06-radiation-memory and is not yet tagged itself.
       - kind: result
         path: results/experiments/radiation-memory/stats.json
-        git_ref: meas/2026-11-06-radiation-memory
         values:
-          amplification: baseline.headline.worst_amplification_x
-          excessive_pct: baseline.headline.worst_excessive_pct
-          dram_pct_peak: baseline.headline.dram_pct_peak
-          registers: baseline.headline.registers
-          l2_delta: comparison.l2_hit_pts_delta
-          ms_change: comparison.ms_per_call_change_pct
+          amplification: mod.headline.worst_amplification_x
+          excessive_pct: mod.headline.worst_excessive_pct
+          dram_pct_peak_min: mod.headline.dram_pct_peak_min
+          gather_pct: mod.headline.lookup_gather_pct_of_all_sectors
+          occupancy_delta: comparison.occupancy_pts_delta
+          stall_base: baseline.headline.worst_long_scoreboard_share_of_measured_pct
+          stall_mod: mod.headline.worst_long_scoreboard_share_of_measured_pct
+          registers: mod.headline.registers
+          registers_min: mod.headline.registers_min
         explanation: >-
           Both arms' counters and ncu's own rule output, merged from the raw,
           details and source pages. The source page is the only one carrying a
@@ -1525,17 +1530,20 @@ pipeline:
       kind: markdown
       target_path: docs/experiments/radiation-memory.md
       environment: py
-      # Live, thawed 2026-11-20 as a deliberate pass. The frozen evidence
-      # describes the fused 255-register solves and the mod arm no longer runs
-      # them: the g-point groups and the phase split replaced each band's one
-      # kernel with an optics and a sweeps kernel, at 156 and 140 registers in
-      # the longwave and 124 and 117 in the shortwave, and 12 and 16 resident
-      # warps rather than 8. Occupancy and stalls are exactly what that moves,
-      # so the previous reading cannot be carried over to these arms. The two
-      # ncu stages are declared by this document, so thawing it thaws them
-      # together and the arms cannot come from different revisions. Re-freeze
-      # and tag when the pass is green, which is what
-      # meas/2026-11-06-radiation-memory records for the previous one.
+      frozen: true
+      # Re-measured 2026-11-20 against the split kernels and frozen again. The
+      # previous evidence described the fused 255-register solves, which the
+      # mod arm no longer runs: the g-point groups and the phase split replaced
+      # each band's one kernel with an optics and a sweeps kernel, at 156 and
+      # 140 registers in the longwave and 124 and 117 in the shortwave, for 12
+      # and 16 resident warps rather than 8. Occupancy and stalls are exactly
+      # what that moves, so the old reading could not be carried over. The two
+      # ncu stages are declared by this document, so a freeze covers them
+      # together and the arms cannot come from different revisions -- which is
+      # the pairing rule in AGENTS.md satisfied by construction. The ncu pair
+      # costs about three GPU hours and the document is regenerated from
+      # whichever profile ran last, so it stays frozen on main; at its tag the
+      # stage is live and `calkit run radiation-memory` reproduces it.
 
     occupancy-launch-model:
       kind: markdown

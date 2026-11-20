@@ -1,37 +1,57 @@
 {
   "baseline": {
     "headline": {
-      "achieved_occupancy_pct": 12.42,
-      "coalesced_instructions": 404,
-      "compute_pct_peak": 21.78,
-      "dram_gb_per_call": 313.965,
-      "dram_pct_peak": 10.49,
+      "achieved_occupancy_pct": 12.27,
+      "best_l1_hit_pct": 86.0042,
+      "coalesced_instructions": 452,
+      "compute_pct_peak": 20.22,
+      "dram_gb_per_call": 278.511,
+      "dram_pct_peak": 10.4,
+      "dram_pct_peak_min": 8.29,
+      "events_profiled": 2,
       "grid_size": 96.0,
+      "kernels_with_mask_strided": [
+        "rte_lw_2stream_solve_both_skies",
+        "rte_sw_2stream_solve_both_skies"
+      ],
       "lookup_gather_amplification_x": 8.0,
       "lookup_gather_instructions": 52,
+      "lookup_gather_pct_of_all_sectors": 45.56,
       "lookup_gather_pct_of_excess": 77.9,
-      "lw_kernel": "rte_lw_2stream_solve_both_skies",
+      "lw_kernels": [
+        "rte_lw_2stream_solve_both_skies"
+      ],
+      "mask_byte_strided_pct_of_all_sectors": 6.5,
       "mask_strided_amplification_x": 32.0,
       "mask_strided_instructions": 14,
       "mask_strided_pct_of_excess": 11.1,
-      "ms_per_call": 1493.01,
+      "ms_per_call": 1455.23,
+      "partially_coalesced_pct_of_all_sectors": 6.47,
       "partially_coalesced_pct_of_excess": 11.1,
       "registers": 255.0,
-      "sw_kernel": "rte_sw_2stream_solve_both_skies",
-      "worst_amplification_x": 2.34,
-      "worst_excessive_pct": 57.2,
-      "worst_l1_hit_pct": 82.5992,
-      "worst_l2_hit_pct": 57.5059,
-      "worst_ld_sectors_per_request": 5.38,
-      "worst_local_share_pct": 0.22,
-      "worst_long_scoreboard_share_of_measured_pct": 60.3,
-      "worst_long_scoreboard_stall": 4.3158,
+      "registers_by_kernel": {
+        "rte_lw_2stream_solve_both_skies": 255.0,
+        "rte_sw_2stream_solve_both_skies": 255.0
+      },
+      "registers_min": 255.0,
+      "sw_kernels": [
+        "rte_sw_2stream_solve_both_skies"
+      ],
+      "worst_amplification_x": 2.52,
+      "worst_excessive_pct": 60.3,
+      "worst_l1_hit_pct": 83.6906,
+      "worst_l2_hit_pct": 58.7244,
+      "worst_ld_sectors_per_request": 5.44,
+      "worst_local_share_pct": 0.63,
+      "worst_long_scoreboard_share_of_measured_pct": 59.2,
+      "worst_long_scoreboard_stall": 4.2303,
+      "worst_occupancy_shortfall_pts": 0.37,
       "worst_spill_overhead_pct": 100.0
     },
     "kernels": {
       "rte_lw_2stream_solve_both_skies": {
-        "achieved_occupancy_pct": 12.3982,
-        "avg_active_threads_per_warp": 31.25,
+        "achieved_occupancy_pct": 12.3959,
+        "avg_active_threads_per_warp": 31.18,
         "block_size": 256.0,
         "coalescing": {
           "amplification_x": 2.34,
@@ -39,11 +59,11 @@
           "groups": {
             "coalesced": {
               "amplification_x": 1.0,
-              "excessive": 27689504,
-              "ideal": 13591231248,
-              "instructions": 384,
+              "excessive": 27690976,
+              "ideal": 13591242128,
+              "instructions": 392,
               "pct_of_excess": 0.1,
-              "sectors": 13618920752
+              "sectors": 13618933104
             },
             "lookup_gather": {
               "amplification_x": 7.99,
@@ -63,78 +83,85 @@
             },
             "partially_coalesced": {
               "amplification_x": 1.44,
-              "excessive": 3891324928,
-              "ideal": 8747659264,
+              "excessive": 3891259392,
+              "ideal": 8747651072,
               "instructions": 72,
               "pct_of_excess": 11.0,
-              "sectors": 12638984192
+              "sectors": 12638910464
             }
           }
         },
-        "compute_pct_peak": 21.776,
+        "compute_pct_peak": 20.2246,
         "derived": {
           "global_ld_sectors_per_request": 5.15,
-          "global_sectors": 30623174564,
+          "global_sectors": 30623801927,
           "global_st_sectors_per_request": 5.39,
           "ld_waste_x_warp_average_diluted": 1.29,
           "local_ld_sectors_per_request": 4.0,
-          "local_sectors": 42620928,
-          "local_share_pct": 0.14,
+          "local_sectors": 195234816,
+          "local_share_pct": 0.63,
           "occupancy_shortfall_pts": 0.1,
-          "stall_long_scoreboard_share_of_measured_pct": 56.8
+          "stall_long_scoreboard_share_of_measured_pct": 58.8
         },
-        "dram_pct_peak": 10.1416,
-        "dram_read": 119.5199,
-        "dram_write": 38.9911,
-        "duration": 766.5278,
+        "dram_pct_peak": 10.3953,
+        "dram_read": 121.3934,
+        "dram_write": 39.0305,
+        "duration": 756.847,
         "global_ld_requests": 5609609712.0,
-        "global_ld_sectors": 28911004580.5,
+        "global_ld_sectors": 28911631943.0,
         "global_st_requests": 317511936.0,
         "global_st_sectors": 1712169984.0,
         "grid_size": 96.0,
-        "l1_hit_pct": 83.7342,
-        "l2_hit_pct": 59.1342,
+        "l1_hit_pct": 83.6906,
+        "l2_hit_pct": 58.7244,
         "launches_profiled": 2,
-        "local_ld_requests": 10228224.0,
-        "local_ld_sectors": 40912896.0,
-        "local_st_requests": 427008.0,
-        "local_st_sectors": 1708032.0,
-        "mem_throughput_pct": 10.13,
+        "local_ld_requests": 48365568.0,
+        "local_ld_sectors": 193462272.0,
+        "local_st_requests": 443136.0,
+        "local_st_sectors": 1772544.0,
+        "mem_throughput_pct": 10.4,
         "registers": 255.0,
         "rules": [
           {
             "description": "All compute pipelines are under-utilized. Either this workload is very small or it doesn't issue enough warps per scheduler. Check the Launch Statistics and Scheduler Statistics sections for further details.",
-            "estimated_speedup_pct": 83.71,
+            "estimated_speedup_pct": 84.6,
             "rule": "HighPipeUtilization",
             "section": "ComputeWorkloadAnalysis",
             "speedup_type": "local"
           },
           {
-            "description": "Every scheduler is capable of issuing one instruction per cycle, but for this workload each scheduler only issues an instruction every 4.0 cycles. This might leave hardware resources underutilized and may lead to less optimal performance. Out of the maximum of 16 warps per scheduler, this workload allocates an average of 1.99 active warps per scheduler, but only an average of 0.27 warps were eligible per cycle. Eligible warps are the subset of active warps that are ready to issue their next instruction. Every cycle with no eligible warp results in no instruction being issued and the issue slot remains unused. To increase the number of eligible warps, avoid possible load imbalances due to highly different execution durations per warp. Reducing stalls indicated on the Warp State Statistics and Source Counters sections can help, too.",
-            "estimated_speedup_pct": 74.96,
+            "description": "Every scheduler is capable of issuing one instruction per cycle, but for this workload each scheduler only issues an instruction every 4.3 cycles. This might leave hardware resources underutilized and may lead to less optimal performance. Out of the maximum of 16 warps per scheduler, this workload allocates an average of 1.99 active warps per scheduler, but only an average of 0.25 warps were eligible per cycle. Eligible warps are the subset of active warps that are ready to issue their next instruction. Every cycle with no eligible warp results in no instruction being issued and the issue slot remains unused. To increase the number of eligible warps, avoid possible load imbalances due to highly different execution durations per warp. Reducing stalls indicated on the Warp State Statistics and Source Counters sections can help, too.",
+            "estimated_speedup_pct": 76.66,
             "rule": "IssueSlotUtilization",
             "section": "SchedulerStats",
             "speedup_type": "local"
           },
           {
             "description": "The 2.00 theoretical warps per scheduler this kernel can issue according to its occupancy are below the hardware maximum of 16. This kernel's theoretical occupancy (12.5%) is limited by the number of required registers.",
-            "estimated_speedup_pct": 74.96,
+            "estimated_speedup_pct": 76.66,
             "rule": "TheoreticalOccupancy",
             "section": "Occupancy",
             "speedup_type": "global"
           },
           {
-            "description": "This kernel has uncoalesced global accesses resulting in a total of 17663341968 excessive sectors (57% of the total 30862683544 sectors). Check the L2 Theoretical Sectors Global Excessive table for the primary source locations. The CUDA Programming Guide (https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses) has additional information on reducing uncoalesced device memory accesses.",
-            "estimated_speedup_pct": 56.44,
+            "description": "This kernel has uncoalesced global accesses resulting in a total of 17663310768 excessive sectors (57% of the total 30862659384 sectors). Check the L2 Theoretical Sectors Global Excessive table for the primary source locations. The CUDA Programming Guide (https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses) has additional information on reducing uncoalesced device memory accesses.",
+            "estimated_speedup_pct": 56.38,
             "rule": "UncoalescedGlobalAccess",
             "section": "SourceCounters",
             "speedup_type": "global"
           },
           {
             "description": "The memory access pattern for local stores to L1TEX might not be optimal. On average, only 1.0 of the 32 bytes transmitted per sector are utilized by each thread. This could possibly be caused by a stride between threads. Check the Source Counters section for uncoalesced local stores.",
-            "estimated_speedup_pct": 15.18,
+            "estimated_speedup_pct": 15.41,
             "rule": "MemoryCacheAccessPattern",
             "section": "MemoryWorkloadAnalysis_Tables",
+            "speedup_type": "global"
+          },
+          {
+            "description": "One or more L1 Slices have a much lower number of active cycles than the average number of active cycles. Maximum instance value is 12.92% above the average, while the minimum instance value is 100.00% below the average.",
+            "estimated_speedup_pct": 11.25,
+            "rule": "WorkloadImbalance",
+            "section": "WorkloadDistribution",
             "speedup_type": "global"
           },
           {
@@ -145,15 +172,8 @@
             "speedup_type": "global"
           },
           {
-            "description": "One or more L1 Slices have a much lower number of active cycles than the average number of active cycles. Maximum instance value is 12.67% above the average, while the minimum instance value is 100.00% below the average.",
-            "estimated_speedup_pct": 11.06,
-            "rule": "WorkloadImbalance",
-            "section": "WorkloadDistribution",
-            "speedup_type": "global"
-          },
-          {
-            "description": "This kernel executes 5766457872 fused and 5731967920 non-fused FP32 instructions. By converting pairs of non-fused instructions to their fused (https://docs.nvidia.com/cuda/floating-point/#cuda-and-floating-point), higher-throughput equivalent, the achieved FP32 performance could be increased by up to 25% (relative to its current performance).",
-            "estimated_speedup_pct": 3.514,
+            "description": "This kernel executes 5766457872 fused and 5794882480 non-fused FP32 instructions. By converting pairs of non-fused instructions to their fused (https://docs.nvidia.com/cuda/floating-point/#cuda-and-floating-point), higher-throughput equivalent, the achieved FP32 performance could be increased by up to 25% (relative to its current performance).",
+            "estimated_speedup_pct": 3.029,
             "rule": "FPInstructions",
             "section": "InstructionStats",
             "speedup_type": "global"
@@ -181,41 +201,41 @@
           }
         ],
         "spill_overhead_pct": 100.0,
-        "spill_requests": 9862656.0,
-        "stack_size": 3600.0,
+        "spill_requests": 48019200.0,
+        "stack_size": 8672.0,
         "stall_lg_throttle": 0.0001,
-        "stall_long_scoreboard": 3.7058,
-        "stall_math_pipe_throttle": 0.0602,
-        "stall_mio_throttle": 0.0013,
-        "stall_no_instruction": 0.1195,
-        "stall_not_selected": 0.0928,
-        "stall_short_scoreboard": 0.1033,
-        "stall_wait": 2.4468,
+        "stall_long_scoreboard": 4.167,
+        "stall_math_pipe_throttle": 0.0522,
+        "stall_mio_throttle": 0.0014,
+        "stall_no_instruction": 0.1172,
+        "stall_not_selected": 0.085,
+        "stall_short_scoreboard": 0.1315,
+        "stall_wait": 2.5264,
         "theoretical_occupancy_pct": 12.5
       },
       "rte_sw_2stream_solve_both_skies": {
-        "achieved_occupancy_pct": 12.4427,
-        "avg_active_threads_per_warp": 31.26,
+        "achieved_occupancy_pct": 12.1252,
+        "avg_active_threads_per_warp": 30.79,
         "block_size": 256.0,
         "coalescing": {
-          "amplification_x": 2.33,
-          "excessive_pct": 57.1,
+          "amplification_x": 2.52,
+          "excessive_pct": 60.3,
           "groups": {
             "coalesced": {
-              "amplification_x": 1.0,
-              "excessive": 10270008,
-              "ideal": 11937400728,
-              "instructions": 404,
-              "pct_of_excess": 0.0,
-              "sectors": 11947670736
+              "amplification_x": 1.01,
+              "excessive": 47983400,
+              "ideal": 9097071240,
+              "instructions": 452,
+              "pct_of_excess": 0.2,
+              "sectors": 9145054640
             },
             "lookup_gather": {
               "amplification_x": 8.0,
-              "excessive": 23877419136,
-              "ideal": 3411159168,
+              "excessive": 23858103168,
+              "ideal": 3408455040,
               "instructions": 50,
-              "pct_of_excess": 77.8,
-              "sectors": 27288578304
+              "pct_of_excess": 77.6,
+              "sectors": 27266558208
             },
             "mask_byte_strided": {
               "amplification_x": 32.0,
@@ -227,76 +247,83 @@
             },
             "partially_coalesced": {
               "amplification_x": 1.44,
-              "excessive": 3404909312,
-              "ideal": 7654201856,
+              "excessive": 3404851968,
+              "ideal": 7654194688,
               "instructions": 72,
               "pct_of_excess": 11.1,
-              "sectors": 11059111168
+              "sectors": 11059046656
             }
           }
         },
-        "compute_pct_peak": 20.3206,
+        "compute_pct_peak": 17.5698,
         "derived": {
-          "global_ld_sectors_per_request": 5.38,
-          "global_sectors": 26702425219,
-          "global_st_sectors_per_request": 5.2,
-          "ld_waste_x_warp_average_diluted": 1.34,
-          "local_ld_sectors_per_request": 4.0,
-          "local_sectors": 57968640,
-          "local_share_pct": 0.22,
-          "occupancy_shortfall_pts": 0.06,
-          "stall_long_scoreboard_share_of_measured_pct": 60.3
+          "global_ld_sectors_per_request": 5.44,
+          "global_sectors": 25289598926,
+          "global_st_sectors_per_request": 5.66,
+          "ld_waste_x_warp_average_diluted": 1.36,
+          "local_ld_sectors_per_request": 3.97,
+          "local_sectors": 156872224,
+          "local_share_pct": 0.62,
+          "occupancy_shortfall_pts": 0.37,
+          "stall_long_scoreboard_share_of_measured_pct": 59.2
         },
-        "dram_pct_peak": 10.4944,
-        "dram_read": 115.7989,
-        "dram_write": 39.6548,
-        "duration": 726.4846,
-        "global_ld_requests": 4652747984.0,
-        "global_ld_sectors": 25028102275.0,
-        "global_st_requests": 321812736.0,
-        "global_st_sectors": 1674322944.0,
+        "dram_pct_peak": 8.2926,
+        "dram_read": 92.4732,
+        "dram_write": 25.6138,
+        "duration": 698.3851,
+        "global_ld_requests": 4422547506.0,
+        "global_ld_sectors": 24047411424.0,
+        "global_st_requests": 219389014.0,
+        "global_st_sectors": 1242187502.0,
         "grid_size": 96.0,
-        "l1_hit_pct": 82.5992,
-        "l2_hit_pct": 57.5059,
+        "l1_hit_pct": 86.0042,
+        "l2_hit_pct": 59.0184,
         "launches_profiled": 2,
-        "local_ld_requests": 13763328.0,
-        "local_ld_sectors": 55053312.0,
-        "local_st_requests": 728832.0,
-        "local_st_sectors": 2915328.0,
-        "mem_throughput_pct": 10.53,
+        "local_ld_requests": 39131936.0,
+        "local_ld_sectors": 155268640.0,
+        "local_st_requests": 400896.0,
+        "local_st_sectors": 1603584.0,
+        "mem_throughput_pct": 8.32,
         "registers": 255.0,
         "rules": [
           {
             "description": "All compute pipelines are under-utilized. Either this workload is very small or it doesn't issue enough warps per scheduler. Check the Launch Statistics and Scheduler Statistics sections for further details.",
-            "estimated_speedup_pct": 84.97,
+            "estimated_speedup_pct": 86.06,
             "rule": "HighPipeUtilization",
             "section": "ComputeWorkloadAnalysis",
             "speedup_type": "local"
           },
           {
-            "description": "Every scheduler is capable of issuing one instruction per cycle, but for this workload each scheduler only issues an instruction every 4.3 cycles. This might leave hardware resources underutilized and may lead to less optimal performance. Out of the maximum of 16 warps per scheduler, this workload allocates an average of 2.00 active warps per scheduler, but only an average of 0.25 warps were eligible per cycle. Eligible warps are the subset of active warps that are ready to issue their next instruction. Every cycle with no eligible warp results in no instruction being issued and the issue slot remains unused. To increase the number of eligible warps, avoid possible load imbalances due to highly different execution durations per warp. Reducing stalls indicated on the Warp State Statistics and Source Counters sections can help, too.",
-            "estimated_speedup_pct": 76.71,
+            "description": "Every scheduler is capable of issuing one instruction per cycle, but for this workload each scheduler only issues an instruction every 4.4 cycles. This might leave hardware resources underutilized and may lead to less optimal performance. Out of the maximum of 16 warps per scheduler, this workload allocates an average of 1.97 active warps per scheduler, but only an average of 0.25 warps were eligible per cycle. Eligible warps are the subset of active warps that are ready to issue their next instruction. Every cycle with no eligible warp results in no instruction being issued and the issue slot remains unused. To increase the number of eligible warps, avoid possible load imbalances due to highly different execution durations per warp. Reducing stalls indicated on the Warp State Statistics and Source Counters sections can help, too.",
+            "estimated_speedup_pct": 77.07,
             "rule": "IssueSlotUtilization",
             "section": "SchedulerStats",
             "speedup_type": "local"
           },
           {
             "description": "The 2.00 theoretical warps per scheduler this kernel can issue according to its occupancy are below the hardware maximum of 16. This kernel's theoretical occupancy (12.5%) is limited by the number of required registers.",
-            "estimated_speedup_pct": 76.71,
+            "estimated_speedup_pct": 77.07,
             "rule": "TheoreticalOccupancy",
             "section": "Occupancy",
             "speedup_type": "global"
           },
           {
-            "description": "This kernel has uncoalesced global accesses resulting in a total of 15354761308 excessive sectors (57% of the total 26911253864 sectors). Check the L2 Theoretical Sectors Global Excessive table for the primary source locations. The CUDA Programming Guide (https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses) has additional information on reducing uncoalesced device memory accesses.",
-            "estimated_speedup_pct": 56.6,
+            "description": "This kernel has uncoalesced global accesses resulting in a total of 15363931348 excessive sectors (60% of the total 25498903512 sectors). Check the L2 Theoretical Sectors Global Excessive table for the primary source locations. The CUDA Programming Guide (https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses) has additional information on reducing uncoalesced device memory accesses.",
+            "estimated_speedup_pct": 59.45,
             "rule": "UncoalescedGlobalAccess",
             "section": "SourceCounters",
             "speedup_type": "global"
           },
           {
+            "description": "One or more L1 Slices have a much lower number of active cycles than the average number of active cycles. Maximum instance value is 22.04% above the average, while the minimum instance value is 100.00% below the average.",
+            "estimated_speedup_pct": 17.18,
+            "rule": "WorkloadImbalance",
+            "section": "WorkloadDistribution",
+            "speedup_type": "global"
+          },
+          {
             "description": "The memory access pattern for local stores to L1TEX might not be optimal. On average, only 1.0 of the 32 bytes transmitted per sector are utilized by each thread. This could possibly be caused by a stride between threads. Check the Source Counters section for uncoalesced local stores.",
-            "estimated_speedup_pct": 13.77,
+            "estimated_speedup_pct": 13.96,
             "rule": "MemoryCacheAccessPattern",
             "section": "MemoryWorkloadAnalysis_Tables",
             "speedup_type": "global"
@@ -309,15 +336,8 @@
             "speedup_type": "global"
           },
           {
-            "description": "One or more L1 Slices have a much lower number of active cycles than the average number of active cycles. Maximum instance value is 12.37% above the average, while the minimum instance value is 100.00% below the average.",
-            "estimated_speedup_pct": 10.84,
-            "rule": "WorkloadImbalance",
-            "section": "WorkloadDistribution",
-            "speedup_type": "global"
-          },
-          {
-            "description": "This kernel executes 5522142024 fused and 6342879556 non-fused FP32 instructions. By converting pairs of non-fused instructions to their fused (https://docs.nvidia.com/cuda/floating-point/#cuda-and-floating-point), higher-throughput equivalent, the achieved FP32 performance could be increased by up to 27% (relative to its current performance).",
-            "estimated_speedup_pct": 3.762,
+            "description": "This kernel executes 4169083912 fused and 4542887832 non-fused FP32 instructions. By converting pairs of non-fused instructions to their fused (https://docs.nvidia.com/cuda/floating-point/#cuda-and-floating-point), higher-throughput equivalent, the achieved FP32 performance could be increased by up to 26% (relative to its current performance).",
+            "estimated_speedup_pct": 2.659,
             "rule": "FPInstructions",
             "section": "InstructionStats",
             "speedup_type": "global"
@@ -330,7 +350,7 @@
             "speedup_type": ""
           },
           {
-            "description": "The ratio of peak float (FP32) to double (FP64) performance on this device is 2:1. The workload achieved 5% of this device's FP32 peak performance and 0% of its FP64 peak performance. See the Profiling Guide (https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#roofline) for more details on roofline analysis.",
+            "description": "The ratio of peak float (FP32) to double (FP64) performance on this device is 2:1. The workload achieved 4% of this device's FP32 peak performance and 0% of its FP64 peak performance. See the Profiling Guide (https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#roofline) for more details on roofline analysis.",
             "estimated_speedup_pct": null,
             "rule": "SOLFPRoofline",
             "section": "SpeedOfLight_RooflineChart",
@@ -345,20 +365,34 @@
           }
         ],
         "spill_overhead_pct": 100.0,
-        "spill_requests": 13456896.0,
-        "stack_size": 3600.0,
+        "spill_requests": 39360032.0,
+        "stack_size": 8672.0,
         "stall_lg_throttle": 0.0,
-        "stall_long_scoreboard": 4.3158,
-        "stall_math_pipe_throttle": 0.0574,
+        "stall_long_scoreboard": 4.2303,
+        "stall_math_pipe_throttle": 0.0523,
         "stall_mio_throttle": 0.0009,
-        "stall_no_instruction": 0.1487,
-        "stall_not_selected": 0.0868,
-        "stall_short_scoreboard": 0.1272,
-        "stall_wait": 2.4232,
+        "stall_no_instruction": 0.1315,
+        "stall_not_selected": 0.0833,
+        "stall_short_scoreboard": 0.1105,
+        "stall_wait": 2.5422,
         "theoretical_occupancy_pct": 12.5
       }
     },
     "missing_metrics": [],
+    "steps": {
+      "lw_next_registers": 128,
+      "lw_next_warps": 16,
+      "lw_registers": 255.0,
+      "lw_registers_to_cut": 127,
+      "lw_time_pct": 52.0,
+      "lw_warps": 8,
+      "sw_next_registers": 128,
+      "sw_next_warps": 16,
+      "sw_registers": 255.0,
+      "sw_registers_to_cut": 127,
+      "sw_time_pct": 48.0,
+      "sw_warps": 8
+    },
     "units": {
       "achieved_occupancy_pct": "%",
       "block_size": "",
@@ -390,177 +424,209 @@
     }
   },
   "comparison": {
-    "amplification_delta_x": 0.0,
-    "grid_size_factor": 16.0,
-    "l1_hit_pts_delta": -0.107,
-    "l2_hit_pts_delta": -0.033,
+    "amplification_delta_x": 0.08,
+    "grid_size_factor": 32.0,
+    "l1_hit_pts_delta": -33.604,
+    "l2_hit_pts_delta": -1.81,
+    "long_scoreboard_share_pts_delta": 21.2,
+    "long_scoreboard_stall_delta_cycles": 5.97,
     "memory_rules_unchanged": {
       "MemoryCacheAccessPattern": [
-        15.18,
-        16.64
+        15.41,
+        29.13
       ],
       "TheoreticalOccupancy": [
-        74.96,
-        76.26
+        77.07,
+        73.9
       ],
       "UncoalescedGlobalAccess": [
-        56.44,
-        56.86
+        59.45,
+        60.42
       ]
     },
-    "ms_per_call_change_pct": -8.23,
-    "occupancy_pts_delta": 0.02,
+    "ms_per_call_change_pct": -38.94,
+    "occupancy_pts_delta": 8.49,
+    "occupancy_shortfall_pts_both_small": true,
     "prediction_l2_hit_rose": false,
     "prediction_sectors_per_request_fell": false,
-    "registers_delta": 0.0,
-    "rules_dropped_estimated_speedup_pct": 22.17,
+    "registers_delta": -99.0,
+    "rule_IssueSlotUtilization_baseline_pct": 77.07,
+    "rule_IssueSlotUtilization_mod_pct": 73.9,
+    "rule_MemoryCacheAccessPattern_baseline_pct": 15.41,
+    "rule_MemoryCacheAccessPattern_mod_pct": 29.13,
+    "rule_TheoreticalOccupancy_baseline_pct": 77.07,
+    "rule_TheoreticalOccupancy_mod_pct": 73.9,
+    "rule_UncoalescedGlobalAccess_baseline_pct": 59.45,
+    "rule_UncoalescedGlobalAccess_mod_pct": 60.42,
+    "rule_WorkloadImbalance_baseline_pct": 17.18,
+    "rule_WorkloadImbalance_mod_pct": 8.81,
+    "rules_dropped_estimated_speedup_pct": 97.17,
     "rules_dropped_in_mod": [
-      "LaunchConfiguration",
-      "WorkloadImbalance"
+      "HighPipeUtilization",
+      "LaunchConfiguration"
     ],
-    "sectors_per_request_delta": 0.0
+    "sectors_per_request_delta": 2.15
   },
   "mod": {
     "headline": {
-      "achieved_occupancy_pct": 12.44,
-      "coalesced_instructions": 454,
-      "compute_pct_peak": 22.58,
-      "dram_gb_per_call": 316.281,
-      "dram_pct_peak": 11.36,
-      "grid_size": 1536.0,
+      "achieved_occupancy_pct": 20.76,
+      "best_l1_hit_pct": 86.3467,
+      "coalesced_instructions": 1618,
+      "compute_pct_peak": 34.33,
+      "dram_gb_per_call": 246.027,
+      "dram_pct_peak": 28.99,
+      "dram_pct_peak_min": 8.87,
+      "events_profiled": 1,
+      "grid_size": 3072.0,
+      "kernels_with_mask_strided": [
+        "_lw_group_optics",
+        "_lw_group_sweeps",
+        "_sw_group_optics",
+        "_sw_group_sweeps"
+      ],
       "lookup_gather_amplification_x": 8.0,
-      "lookup_gather_instructions": 66,
-      "lookup_gather_pct_of_excess": 77.9,
-      "lw_kernel": "rte_lw_2stream_solve_grouped",
+      "lookup_gather_instructions": 317,
+      "lookup_gather_pct_of_all_sectors": 45.59,
+      "lookup_gather_pct_of_excess": 84.4,
+      "lw_kernels": [
+        "_lw_group_optics",
+        "_lw_group_sweeps"
+      ],
+      "mask_byte_strided_pct_of_all_sectors": 6.49,
       "mask_strided_amplification_x": 32.0,
-      "mask_strided_instructions": 14,
-      "mask_strided_pct_of_excess": 11.1,
-      "ms_per_call": 1370.12,
-      "partially_coalesced_pct_of_excess": 11.1,
-      "registers": 255.0,
-      "sw_kernel": "rte_sw_2stream_solve_grouped",
-      "worst_amplification_x": 2.34,
-      "worst_excessive_pct": 57.3,
-      "worst_l1_hit_pct": 82.4923,
-      "worst_l2_hit_pct": 57.4732,
-      "worst_ld_sectors_per_request": 5.38,
-      "worst_local_share_pct": 0.26,
-      "worst_long_scoreboard_share_of_measured_pct": 61.1,
-      "worst_long_scoreboard_stall": 4.6579,
-      "worst_spill_overhead_pct": 100.21
+      "mask_strided_instructions": 80,
+      "mask_strided_pct_of_excess": 75.5,
+      "ms_per_call": 888.57,
+      "partially_coalesced_pct_of_all_sectors": 6.48,
+      "partially_coalesced_pct_of_excess": 12.5,
+      "registers": 156.0,
+      "registers_by_kernel": {
+        "_lw_group_optics": 156.0,
+        "_lw_group_sweeps": 140.0,
+        "_sw_group_optics": 124.0,
+        "_sw_group_sweeps": 117.0
+      },
+      "registers_min": 117.0,
+      "sw_kernels": [
+        "_sw_group_optics",
+        "_sw_group_sweeps"
+      ],
+      "worst_amplification_x": 2.6,
+      "worst_excessive_pct": 61.5,
+      "worst_l1_hit_pct": 50.0864,
+      "worst_l2_hit_pct": 56.9145,
+      "worst_ld_sectors_per_request": 7.59,
+      "worst_local_share_pct": 0.0,
+      "worst_long_scoreboard_share_of_measured_pct": 80.4,
+      "worst_long_scoreboard_stall": 10.1959,
+      "worst_occupancy_shortfall_pts": 2.25,
+      "worst_spill_overhead_pct": 0.0
     },
     "kernels": {
-      "rte_lw_2stream_solve_grouped": {
-        "achieved_occupancy_pct": 12.4527,
-        "avg_active_threads_per_warp": 31.25,
-        "block_size": 256.0,
+      "_lw_group_optics": {
+        "achieved_occupancy_pct": 18.4106,
+        "avg_active_threads_per_warp": 30.98,
+        "block_size": 128.0,
         "coalescing": {
-          "amplification_x": 2.34,
-          "excessive_pct": 57.3,
+          "amplification_x": 2.49,
+          "excessive_pct": 59.9,
           "groups": {
             "coalesced": {
               "amplification_x": 1.0,
-              "excessive": 27689504,
-              "ideal": 13558477584,
-              "instructions": 372,
+              "excessive": 13821104,
+              "ideal": 4253015432,
+              "instructions": 1618,
               "pct_of_excess": 0.1,
-              "sectors": 13586167088
+              "sectors": 4266836536
             },
             "lookup_gather": {
               "amplification_x": 7.99,
-              "excessive": 27499669760,
-              "ideal": 3932647168,
-              "instructions": 50,
-              "pct_of_excess": 77.9,
-              "sectors": 31432316928
+              "excessive": 13276402816,
+              "ideal": 1898690432,
+              "instructions": 228,
+              "pct_of_excess": 84.4,
+              "sectors": 15175093248
             },
             "mask_byte_strided": {
               "amplification_x": 32.0,
-              "excessive": 3900702720,
-              "ideal": 125829120,
-              "instructions": 12,
-              "pct_of_excess": 11.0,
-              "sectors": 4026531840
+              "excessive": 487587840,
+              "ideal": 15728640,
+              "instructions": 16,
+              "pct_of_excess": 3.1,
+              "sectors": 503316480
             },
             "partially_coalesced": {
               "amplification_x": 1.44,
-              "excessive": 3891324928,
-              "ideal": 8747659264,
-              "instructions": 72,
-              "pct_of_excess": 11.0,
-              "sectors": 12638984192
+              "excessive": 1945629696,
+              "ideal": 4373825536,
+              "instructions": 576,
+              "pct_of_excess": 12.4,
+              "sectors": 6319455232
             }
           }
         },
-        "compute_pct_peak": 22.5798,
+        "compute_pct_peak": 30.9443,
         "derived": {
-          "global_ld_sectors_per_request": 5.15,
-          "global_sectors": 30603389266,
-          "global_st_sectors_per_request": 5.39,
-          "ld_waste_x_warp_average_diluted": 1.29,
-          "local_ld_sectors_per_request": 4.0,
-          "local_sectors": 53280768,
-          "local_share_pct": 0.17,
-          "occupancy_shortfall_pts": 0.05,
+          "global_ld_sectors_per_request": 4.99,
+          "global_sectors": 1624276162,
+          "global_st_sectors_per_request": 4.0,
+          "ld_waste_x_warp_average_diluted": 1.25,
+          "local_ld_sectors_per_request": null,
+          "local_sectors": 0,
+          "local_share_pct": 0.0,
+          "occupancy_shortfall_pts": 0.34,
           "stall_long_scoreboard_share_of_measured_pct": 57.0
         },
-        "dram_pct_peak": 11.2823,
-        "dram_read": 121.7913,
-        "dram_write": 39.0823,
-        "duration": 699.2948,
-        "global_ld_requests": 5605566960.0,
-        "global_ld_sectors": 28893636946.5,
-        "global_st_requests": 317337600.0,
-        "global_st_sectors": 1709752320.0,
-        "grid_size": 1536.0,
-        "l1_hit_pct": 83.6206,
-        "l2_hit_pct": 58.4143,
-        "launches_profiled": 2,
-        "local_ld_requests": 12263424.0,
-        "local_ld_sectors": 49053696.0,
-        "local_st_requests": 1056768.0,
-        "local_st_sectors": 4227072.0,
-        "mem_throughput_pct": 11.29,
-        "registers": 255.0,
+        "dram_pct_peak": 8.8681,
+        "dram_read": 3.5204,
+        "dram_write": 0.8842,
+        "duration": 24.4102,
+        "global_ld_requests": 319729311.0,
+        "global_ld_sectors": 1596652737.875,
+        "global_st_requests": 6905856.0,
+        "global_st_sectors": 27623424.0,
+        "grid_size": 3072.0,
+        "l1_hit_pct": 86.3467,
+        "l2_hit_pct": 68.0008,
+        "launches_profiled": 16,
+        "local_ld_requests": 0.0,
+        "local_ld_sectors": 0.0,
+        "local_st_requests": 0.0,
+        "local_st_sectors": 0.0,
+        "mem_throughput_pct": 14.55,
+        "registers": 156.0,
         "rules": [
           {
-            "description": "All compute pipelines are under-utilized. Either this workload is very small or it doesn't issue enough warps per scheduler. Check the Launch Statistics and Scheduler Statistics sections for further details.",
-            "estimated_speedup_pct": 82.38,
-            "rule": "HighPipeUtilization",
-            "section": "ComputeWorkloadAnalysis",
-            "speedup_type": "local"
-          },
-          {
-            "description": "Every scheduler is capable of issuing one instruction per cycle, but for this workload each scheduler only issues an instruction every 4.2 cycles. This might leave hardware resources underutilized and may lead to less optimal performance. Out of the maximum of 16 warps per scheduler, this workload allocates an average of 2.00 active warps per scheduler, but only an average of 0.26 warps were eligible per cycle. Eligible warps are the subset of active warps that are ready to issue their next instruction. Every cycle with no eligible warp results in no instruction being issued and the issue slot remains unused. To increase the number of eligible warps, avoid possible load imbalances due to highly different execution durations per warp. Reducing stalls indicated on the Warp State Statistics and Source Counters sections can help, too.",
-            "estimated_speedup_pct": 76.26,
+            "description": "Every scheduler is capable of issuing one instruction per cycle, but for this workload each scheduler only issues an instruction every 3.1 cycles. This might leave hardware resources underutilized and may lead to less optimal performance. Out of the maximum of 16 warps per scheduler, this workload allocates an average of 2.96 active warps per scheduler, but only an average of 0.39 warps were eligible per cycle. Eligible warps are the subset of active warps that are ready to issue their next instruction. Every cycle with no eligible warp results in no instruction being issued and the issue slot remains unused. To increase the number of eligible warps, avoid possible load imbalances due to highly different execution durations per warp. Reducing stalls indicated on the Warp State Statistics and Source Counters sections can help, too.",
+            "estimated_speedup_pct": 67.78,
             "rule": "IssueSlotUtilization",
             "section": "SchedulerStats",
             "speedup_type": "local"
           },
           {
-            "description": "The 2.00 theoretical warps per scheduler this kernel can issue according to its occupancy are below the hardware maximum of 16. This kernel's theoretical occupancy (12.5%) is limited by the number of required registers.",
-            "estimated_speedup_pct": 76.26,
+            "description": "The 3.00 theoretical warps per scheduler this kernel can issue according to its occupancy are below the hardware maximum of 16. This kernel's theoretical occupancy (18.8%) is limited by the number of required registers.",
+            "estimated_speedup_pct": 67.78,
             "rule": "TheoreticalOccupancy",
             "section": "Occupancy",
             "speedup_type": "global"
           },
           {
-            "description": "This kernel has uncoalesced global accesses resulting in a total of 17659717008 excessive sectors (57% of the total 30842374552 sectors). Check the L2 Theoretical Sectors Global Excessive table for the primary source locations. The CUDA Programming Guide (https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses) has additional information on reducing uncoalesced device memory accesses.",
-            "estimated_speedup_pct": 56.86,
+            "description": "This kernel has uncoalesced global accesses resulting in a total of 972489968 excessive sectors (60% of the total 1609289424 sectors). Check the L2 Theoretical Sectors Global Excessive table for the primary source locations. The CUDA Programming Guide (https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses) has additional information on reducing uncoalesced device memory accesses.",
+            "estimated_speedup_pct": 60.42,
             "rule": "UncoalescedGlobalAccess",
             "section": "SourceCounters",
             "speedup_type": "global"
           },
           {
-            "description": "The memory access pattern for local stores to L1TEX might not be optimal. On average, only 1.0 of the 32 bytes transmitted per sector are utilized by each thread. This could possibly be caused by a stride between threads. Check the Source Counters section for uncoalesced local stores.",
-            "estimated_speedup_pct": 16.64,
+            "description": "The memory access pattern for global loads from L1TEX might not be optimal. On average, only 5.6 of the 32 bytes transmitted per sector are utilized by each thread. This could possibly be caused by a stride between threads. Check the Source Counters section for uncoalesced global loads.",
+            "estimated_speedup_pct": 24.27,
             "rule": "MemoryCacheAccessPattern",
             "section": "MemoryWorkloadAnalysis_Tables",
             "speedup_type": "global"
           },
           {
-            "description": "This kernel executes 5766454032 fused and 5728111024 non-fused FP32 instructions. By converting pairs of non-fused instructions to their fused (https://docs.nvidia.com/cuda/floating-point/#cuda-and-floating-point), higher-throughput equivalent, the achieved FP32 performance could be increased by up to 25% (relative to its current performance).",
-            "estimated_speedup_pct": 3.857,
+            "description": "This kernel executes 194888704 fused and 180069376 non-fused FP32 instructions. By converting pairs of non-fused instructions to their fused (https://docs.nvidia.com/cuda/floating-point/#cuda-and-floating-point), higher-throughput equivalent, the achieved FP32 performance could be increased by up to 24% (relative to its current performance).",
+            "estimated_speedup_pct": 4.257,
             "rule": "FPInstructions",
             "section": "InstructionStats",
             "speedup_type": "global"
@@ -580,6 +646,13 @@
             "speedup_type": ""
           },
           {
+            "description": "ALU is the highest-utilized pipeline (26.0%) based on elapsed cycles in the workload, taking into account the rates of its different instructions. It executes integer and logic operations. It is well-utilized, but should not be a bottleneck.",
+            "estimated_speedup_pct": null,
+            "rule": "HighPipeUtilization",
+            "section": "ComputeWorkloadAnalysis",
+            "speedup_type": ""
+          },
+          {
             "description": "Check the Warp Stall Sampling (All Samples) table for the top stall locations in your source based on sampling data. The Profiling Guide (https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-reference) provides more details on each stall reason.",
             "estimated_speedup_pct": null,
             "rule": "CPIStall",
@@ -587,130 +660,272 @@
             "speedup_type": ""
           }
         ],
-        "spill_overhead_pct": 100.21,
-        "spill_requests": 11673600.0,
-        "stack_size": 3600.0,
-        "stall_lg_throttle": 0.0,
-        "stall_long_scoreboard": 3.9736,
-        "stall_math_pipe_throttle": 0.0672,
-        "stall_mio_throttle": 0.0024,
-        "stall_no_instruction": 0.1042,
-        "stall_not_selected": 0.0934,
-        "stall_short_scoreboard": 0.1249,
-        "stall_wait": 2.5998,
-        "theoretical_occupancy_pct": 12.5
+        "spill_overhead_pct": 0.0,
+        "spill_requests": 0.0,
+        "stack_size": 1024.0,
+        "stall_lg_throttle": 0.0005,
+        "stall_long_scoreboard": 4.3257,
+        "stall_math_pipe_throttle": 0.1492,
+        "stall_mio_throttle": 0.0026,
+        "stall_no_instruction": 0.1061,
+        "stall_not_selected": 0.2193,
+        "stall_short_scoreboard": 0.1161,
+        "stall_wait": 2.6659,
+        "theoretical_occupancy_pct": 18.75
       },
-      "rte_sw_2stream_solve_grouped": {
-        "achieved_occupancy_pct": 12.4317,
-        "avg_active_threads_per_warp": 31.26,
-        "block_size": 256.0,
+      "_lw_group_sweeps": {
+        "achieved_occupancy_pct": 17.9782,
+        "avg_active_threads_per_warp": 31.99,
+        "block_size": 128.0,
         "coalescing": {
-          "amplification_x": 2.33,
-          "excessive_pct": 57.1,
+          "amplification_x": 1.73,
+          "excessive_pct": 42.3,
           "groups": {
             "coalesced": {
               "amplification_x": 1.0,
-              "excessive": 10270008,
-              "ideal": 11860476312,
-              "instructions": 454,
+              "excessive": 0,
+              "ideal": 2525872128,
+              "instructions": 1053,
               "pct_of_excess": 0.0,
-              "sectors": 11870746320
+              "sectors": 2525872128
             },
             "lookup_gather": {
               "amplification_x": 8.0,
-              "excessive": 23873978496,
-              "ideal": 3410667648,
-              "instructions": 66,
-              "pct_of_excess": 77.8,
-              "sectors": 27284646144
+              "excessive": 473432064,
+              "ideal": 67633152,
+              "instructions": 128,
+              "pct_of_excess": 24.5,
+              "sectors": 541065216
             },
             "mask_byte_strided": {
               "amplification_x": 32.0,
-              "excessive": 3413114880,
-              "ideal": 110100480,
-              "instructions": 14,
-              "pct_of_excess": 11.1,
-              "sectors": 3523215360
-            },
-            "partially_coalesced": {
-              "amplification_x": 1.44,
-              "excessive": 3404909312,
-              "ideal": 7654201856,
-              "instructions": 144,
-              "pct_of_excess": 11.1,
-              "sectors": 11059111168
+              "excessive": 1462763520,
+              "ideal": 47185920,
+              "instructions": 80,
+              "pct_of_excess": 75.5,
+              "sectors": 1509949440
             }
           }
         },
-        "compute_pct_peak": 20.9789,
+        "compute_pct_peak": 24.1437,
         "derived": {
-          "global_ld_sectors_per_request": 5.38,
-          "global_sectors": 26659519894,
-          "global_st_sectors_per_request": 5.21,
-          "ld_waste_x_warp_average_diluted": 1.34,
-          "local_ld_sectors_per_request": 4.0,
-          "local_sectors": 69844992,
-          "local_share_pct": 0.26,
-          "occupancy_shortfall_pts": 0.07,
-          "stall_long_scoreboard_share_of_measured_pct": 61.1
+          "global_ld_sectors_per_request": 6.74,
+          "global_sectors": 285736220,
+          "global_st_sectors_per_request": 6.13,
+          "ld_waste_x_warp_average_diluted": 1.69,
+          "local_ld_sectors_per_request": null,
+          "local_sectors": 0,
+          "local_share_pct": 0.0,
+          "occupancy_shortfall_pts": 0.77,
+          "stall_long_scoreboard_share_of_measured_pct": 80.4
         },
-        "dram_pct_peak": 11.3617,
-        "dram_read": 115.8035,
-        "dram_write": 39.6041,
-        "duration": 670.8289,
-        "global_ld_requests": 4645178576.0,
-        "global_ld_sectors": 24995079574.5,
-        "global_st_requests": 319772160.0,
-        "global_st_sectors": 1664440320.0,
-        "grid_size": 1536.0,
-        "l1_hit_pct": 82.4923,
-        "l2_hit_pct": 57.4732,
-        "launches_profiled": 2,
-        "local_ld_requests": 16293888.0,
-        "local_ld_sectors": 65175552.0,
-        "local_st_requests": 1167360.0,
-        "local_st_sectors": 4669440.0,
-        "mem_throughput_pct": 11.39,
-        "registers": 255.0,
+        "dram_pct_peak": 28.9928,
+        "dram_read": 3.2418,
+        "dram_write": 1.5492,
+        "duration": 8.1029,
+        "global_ld_requests": 30618624.0,
+        "global_ld_sectors": 206500124.125,
+        "global_st_requests": 12927744.0,
+        "global_st_sectors": 79236096.0,
+        "grid_size": 3072.0,
+        "l1_hit_pct": 50.0864,
+        "l2_hit_pct": 56.9145,
+        "launches_profiled": 16,
+        "local_ld_requests": 0.0,
+        "local_ld_sectors": 0.0,
+        "local_st_requests": 0.0,
+        "local_st_sectors": 0.0,
+        "mem_throughput_pct": 29.12,
+        "registers": 140.0,
         "rules": [
           {
-            "description": "All compute pipelines are under-utilized. Either this workload is very small or it doesn't issue enough warps per scheduler. Check the Launch Statistics and Scheduler Statistics sections for further details.",
-            "estimated_speedup_pct": 84.14,
-            "rule": "HighPipeUtilization",
-            "section": "ComputeWorkloadAnalysis",
-            "speedup_type": "local"
-          },
-          {
-            "description": "Every scheduler is capable of issuing one instruction per cycle, but for this workload each scheduler only issues an instruction every 4.5 cycles. This might leave hardware resources underutilized and may lead to less optimal performance. Out of the maximum of 16 warps per scheduler, this workload allocates an average of 2.00 active warps per scheduler, but only an average of 0.24 warps were eligible per cycle. Eligible warps are the subset of active warps that are ready to issue their next instruction. Every cycle with no eligible warp results in no instruction being issued and the issue slot remains unused. To increase the number of eligible warps, avoid possible load imbalances due to highly different execution durations per warp. Reducing stalls indicated on the Warp State Statistics and Source Counters sections can help, too.",
-            "estimated_speedup_pct": 77.95,
+            "description": "Every scheduler is capable of issuing one instruction per cycle, but for this workload each scheduler only issues an instruction every 4.5 cycles. This might leave hardware resources underutilized and may lead to less optimal performance. Out of the maximum of 16 warps per scheduler, this workload allocates an average of 2.88 active warps per scheduler, but only an average of 0.27 warps were eligible per cycle. Eligible warps are the subset of active warps that are ready to issue their next instruction. Every cycle with no eligible warp results in no instruction being issued and the issue slot remains unused. To increase the number of eligible warps, avoid possible load imbalances due to highly different execution durations per warp. Reducing stalls indicated on the Warp State Statistics and Source Counters sections can help, too.",
+            "estimated_speedup_pct": 70.88,
             "rule": "IssueSlotUtilization",
             "section": "SchedulerStats",
             "speedup_type": "local"
           },
           {
-            "description": "The 2.00 theoretical warps per scheduler this kernel can issue according to its occupancy are below the hardware maximum of 16. This kernel's theoretical occupancy (12.5%) is limited by the number of required registers.",
-            "estimated_speedup_pct": 77.95,
+            "description": "The 3.00 theoretical warps per scheduler this kernel can issue according to its occupancy are below the hardware maximum of 16. This kernel's theoretical occupancy (18.8%) is limited by the number of required registers.",
+            "estimated_speedup_pct": 70.88,
             "rule": "TheoreticalOccupancy",
             "section": "Occupancy",
             "speedup_type": "global"
           },
           {
-            "description": "This kernel has uncoalesced global accesses resulting in a total of 15351136348 excessive sectors (57% of the total 26868859496 sectors). Check the L2 Theoretical Sectors Global Excessive table for the primary source locations. The CUDA Programming Guide (https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses) has additional information on reducing uncoalesced device memory accesses.",
-            "estimated_speedup_pct": 56.7,
+            "description": "This kernel has uncoalesced global accesses resulting in a total of 121012224 excessive sectors (42% of the total 287047680 sectors). Check the L2 Theoretical Sectors Global Excessive table for the primary source locations. The CUDA Programming Guide (https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses) has additional information on reducing uncoalesced device memory accesses.",
+            "estimated_speedup_pct": 41.95,
             "rule": "UncoalescedGlobalAccess",
             "section": "SourceCounters",
             "speedup_type": "global"
           },
           {
-            "description": "The memory access pattern for local stores to L1TEX might not be optimal. On average, only 1.0 of the 32 bytes transmitted per sector are utilized by each thread. This could possibly be caused by a stride between threads. Check the Source Counters section for uncoalesced local stores.",
-            "estimated_speedup_pct": 14.84,
+            "description": "This kernel executes 157433856 fused and 177070080 non-fused FP32 instructions. By converting pairs of non-fused instructions to their fused (https://docs.nvidia.com/cuda/floating-point/#cuda-and-floating-point), higher-throughput equivalent, the achieved FP32 performance could be increased by up to 26% (relative to its current performance).",
+            "estimated_speedup_pct": 6.372,
+            "rule": "FPInstructions",
+            "section": "InstructionStats",
+            "speedup_type": "global"
+          },
+          {
+            "description": "The memory access pattern for global stores to L2 might not be optimal. On average, only 19.7 of the 32 bytes transmitted per sector are utilized by each thread. This applies to the 40.6% of sectors missed in L1TEX. This could possibly be caused by a stride between threads. Check the Source Counters section for uncoalesced global stores.",
+            "estimated_speedup_pct": 5.822,
             "rule": "MemoryCacheAccessPattern",
             "section": "MemoryWorkloadAnalysis_Tables",
             "speedup_type": "global"
           },
           {
-            "description": "This kernel executes 5522138184 fused and 6311351620 non-fused FP32 instructions. By converting pairs of non-fused instructions to their fused (https://docs.nvidia.com/cuda/floating-point/#cuda-and-floating-point), higher-throughput equivalent, the achieved FP32 performance could be increased by up to 27% (relative to its current performance).",
-            "estimated_speedup_pct": 4.142,
+            "description": "This workload exhibits low compute throughput and memory bandwidth utilization relative to the peak performance of this device. Achieved compute throughput and/or memory bandwidth below 60.0% of peak typically indicate latency issues. Look at Scheduler Statistics and Warp State Statistics for potential reasons.",
+            "estimated_speedup_pct": null,
+            "rule": "SOLBottleneck",
+            "section": "SpeedOfLight",
+            "speedup_type": ""
+          },
+          {
+            "description": "The ratio of peak float (FP32) to double (FP64) performance on this device is 2:1. The workload achieved 12% of this device's FP32 peak performance and 0% of its FP64 peak performance. See the Profiling Guide (https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#roofline) for more details on roofline analysis.",
+            "estimated_speedup_pct": null,
+            "rule": "SOLFPRoofline",
+            "section": "SpeedOfLight_RooflineChart",
+            "speedup_type": ""
+          },
+          {
+            "description": "FMA is the highest-utilized pipeline (24.1%) based on elapsed cycles in the workload, taking into account the rates of its different instructions. It executes 32-bit floating point (FADD, FMUL, FMAD, ...) and integer (IMUL, IMAD) operations. It is well-utilized, but should not be a bottleneck.",
+            "estimated_speedup_pct": null,
+            "rule": "HighPipeUtilization",
+            "section": "ComputeWorkloadAnalysis",
+            "speedup_type": ""
+          },
+          {
+            "description": "Check the Warp Stall Sampling (All Samples) table for the top stall locations in your source based on sampling data. The Profiling Guide (https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-reference) provides more details on each stall reason.",
+            "estimated_speedup_pct": null,
+            "rule": "CPIStall",
+            "section": "WarpStateStats",
+            "speedup_type": ""
+          }
+        ],
+        "spill_overhead_pct": 0.0,
+        "spill_requests": 0.0,
+        "stack_size": 1024.0,
+        "stall_lg_throttle": 0.0001,
+        "stall_long_scoreboard": 9.3201,
+        "stall_math_pipe_throttle": 0.1627,
+        "stall_mio_throttle": 0.003,
+        "stall_no_instruction": 0.1067,
+        "stall_not_selected": 0.21,
+        "stall_short_scoreboard": 0.2258,
+        "stall_wait": 1.566,
+        "theoretical_occupancy_pct": 18.75
+      },
+      "_sw_group_optics": {
+        "achieved_occupancy_pct": 24.6933,
+        "avg_active_threads_per_warp": 30.85,
+        "block_size": 128.0,
+        "coalescing": {
+          "amplification_x": 2.6,
+          "excessive_pct": 61.5,
+          "groups": {
+            "coalesced": {
+              "amplification_x": 1.0,
+              "excessive": 5135100,
+              "ideal": 3059417132,
+              "instructions": 1460,
+              "pct_of_excess": 0.0,
+              "sectors": 3064552232
+            },
+            "lookup_gather": {
+              "amplification_x": 8.0,
+              "excessive": 11522736192,
+              "ideal": 1646154816,
+              "instructions": 317,
+              "pct_of_excess": 84.4,
+              "sectors": 13168891008
+            },
+            "mask_byte_strided": {
+              "amplification_x": 32.0,
+              "excessive": 426639360,
+              "ideal": 13762560,
+              "instructions": 28,
+              "pct_of_excess": 3.1,
+              "sectors": 440401920
+            },
+            "partially_coalesced": {
+              "amplification_x": 1.44,
+              "excessive": 1702425984,
+              "ideal": 3827097344,
+              "instructions": 1008,
+              "pct_of_excess": 12.5,
+              "sectors": 5529523328
+            }
+          }
+        },
+        "compute_pct_peak": 34.3271,
+        "derived": {
+          "global_ld_sectors_per_request": 5.25,
+          "global_sectors": 1563266175,
+          "global_st_sectors_per_request": 4.0,
+          "ld_waste_x_warp_average_diluted": 1.31,
+          "local_ld_sectors_per_request": null,
+          "local_sectors": 0,
+          "local_share_pct": 0.0,
+          "occupancy_shortfall_pts": 0.31,
+          "stall_long_scoreboard_share_of_measured_pct": 59.6
+        },
+        "dram_pct_peak": 9.2175,
+        "dram_read": 3.0352,
+        "dram_write": 0.7553,
+        "duration": 20.188,
+        "global_ld_requests": 293369505.1429,
+        "global_ld_sectors": 1539637667.3571,
+        "global_st_requests": 5907126.8571,
+        "global_st_sectors": 23628507.4286,
+        "grid_size": 3072.0,
+        "l1_hit_pct": 80.4141,
+        "l2_hit_pct": 76.3465,
+        "launches_profiled": 14,
+        "local_ld_requests": 0.0,
+        "local_ld_sectors": 0.0,
+        "local_st_requests": 0.0,
+        "local_st_sectors": 0.0,
+        "mem_throughput_pct": 19.44,
+        "registers": 124.0,
+        "rules": [
+          {
+            "description": "Every scheduler is capable of issuing one instruction per cycle, but for this workload each scheduler only issues an instruction every 2.7 cycles. This might leave hardware resources underutilized and may lead to less optimal performance. Out of the maximum of 16 warps per scheduler, this workload allocates an average of 3.97 active warps per scheduler, but only an average of 0.50 warps were eligible per cycle. Eligible warps are the subset of active warps that are ready to issue their next instruction. Every cycle with no eligible warp results in no instruction being issued and the issue slot remains unused. To increase the number of eligible warps, avoid possible load imbalances due to highly different execution durations per warp. Reducing stalls indicated on the Warp State Statistics and Source Counters sections can help, too.",
+            "estimated_speedup_pct": 63.04,
+            "rule": "IssueSlotUtilization",
+            "section": "SchedulerStats",
+            "speedup_type": "local"
+          },
+          {
+            "description": "The 4.00 theoretical warps per scheduler this kernel can issue according to its occupancy are below the hardware maximum of 16. This kernel's theoretical occupancy (25.0%) is limited by the number of required registers.",
+            "estimated_speedup_pct": 63.04,
+            "rule": "TheoreticalOccupancy",
+            "section": "Occupancy",
+            "speedup_type": "global"
+          },
+          {
+            "description": "This kernel has uncoalesced global accesses resulting in a total of 895185856 excessive sectors (61% of the total 1468486560 sectors). Check the L2 Theoretical Sectors Global Excessive table for the primary source locations. The CUDA Programming Guide (https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses) has additional information on reducing uncoalesced device memory accesses.",
+            "estimated_speedup_pct": 59.62,
+            "rule": "UncoalescedGlobalAccess",
+            "section": "SourceCounters",
+            "speedup_type": "global"
+          },
+          {
+            "description": "The memory access pattern for global loads from L1TEX might not be optimal. On average, only 5.4 of the 32 bytes transmitted per sector are utilized by each thread. This could possibly be caused by a stride between threads. Check the Source Counters section for uncoalesced global loads.",
+            "estimated_speedup_pct": 29.13,
+            "rule": "MemoryCacheAccessPattern",
+            "section": "MemoryWorkloadAnalysis_Tables",
+            "speedup_type": "global"
+          },
+          {
+            "description": "One or more L1 Slices have a much higher number of active cycles than the average number of active cycles. Maximum instance value is 9.76% above the average, while the minimum instance value is 2.70% below the average.",
+            "estimated_speedup_pct": 8.808,
+            "rule": "WorkloadImbalance",
+            "section": "WorkloadDistribution",
+            "speedup_type": "global"
+          },
+          {
+            "description": "This kernel executes 168110784 fused and 160361136 non-fused FP32 instructions. By converting pairs of non-fused instructions to their fused (https://docs.nvidia.com/cuda/floating-point/#cuda-and-floating-point), higher-throughput equivalent, the achieved FP32 performance could be increased by up to 24% (relative to its current performance).",
+            "estimated_speedup_pct": 4.626,
             "rule": "FPInstructions",
             "section": "InstructionStats",
             "speedup_type": "global"
@@ -730,6 +945,13 @@
             "speedup_type": ""
           },
           {
+            "description": "ALU is the highest-utilized pipeline (29.0%) based on elapsed cycles in the workload, taking into account the rates of its different instructions. It executes integer and logic operations. It is well-utilized, but should not be a bottleneck.",
+            "estimated_speedup_pct": null,
+            "rule": "HighPipeUtilization",
+            "section": "ComputeWorkloadAnalysis",
+            "speedup_type": ""
+          },
+          {
             "description": "Check the Warp Stall Sampling (All Samples) table for the top stall locations in your source based on sampling data. The Profiling Guide (https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-reference) provides more details on each stall reason.",
             "estimated_speedup_pct": null,
             "rule": "CPIStall",
@@ -737,21 +959,196 @@
             "speedup_type": ""
           }
         ],
-        "spill_overhead_pct": 100.15,
-        "spill_requests": 16220160.0,
-        "stack_size": 3600.0,
-        "stall_lg_throttle": 0.0001,
-        "stall_long_scoreboard": 4.6579,
-        "stall_math_pipe_throttle": 0.0664,
-        "stall_mio_throttle": 0.0011,
-        "stall_no_instruction": 0.1126,
-        "stall_not_selected": 0.0905,
-        "stall_short_scoreboard": 0.1338,
-        "stall_wait": 2.5592,
-        "theoretical_occupancy_pct": 12.5
+        "spill_overhead_pct": 0.0,
+        "spill_requests": 0.0,
+        "stack_size": 1024.0,
+        "stall_lg_throttle": 0.0012,
+        "stall_long_scoreboard": 5.3038,
+        "stall_math_pipe_throttle": 0.247,
+        "stall_mio_throttle": 0.0047,
+        "stall_no_instruction": 0.1145,
+        "stall_not_selected": 0.3527,
+        "stall_short_scoreboard": 0.1091,
+        "stall_wait": 2.7685,
+        "theoretical_occupancy_pct": 25.0
+      },
+      "_sw_group_sweeps": {
+        "achieved_occupancy_pct": 22.75,
+        "avg_active_threads_per_warp": 29.98,
+        "block_size": 128.0,
+        "coalescing": {
+          "amplification_x": 2.08,
+          "excessive_pct": 52.0,
+          "groups": {
+            "coalesced": {
+              "amplification_x": 1.01,
+              "excessive": 18950560,
+              "ideal": 1474170304,
+              "instructions": 1271,
+              "pct_of_excess": 1.1,
+              "sectors": 1493120864
+            },
+            "lookup_gather": {
+              "amplification_x": 8.0,
+              "excessive": 404595072,
+              "ideal": 57826944,
+              "instructions": 112,
+              "pct_of_excess": 23.8,
+              "sectors": 462422016
+            },
+            "mask_byte_strided": {
+              "amplification_x": 32.0,
+              "excessive": 1279918080,
+              "ideal": 41287680,
+              "instructions": 70,
+              "pct_of_excess": 75.1,
+              "sectors": 1321205760
+            }
+          }
+        },
+        "compute_pct_peak": 24.4576,
+        "derived": {
+          "global_ld_sectors_per_request": 7.59,
+          "global_sectors": 233693063,
+          "global_st_sectors_per_request": 6.63,
+          "ld_waste_x_warp_average_diluted": 1.9,
+          "local_ld_sectors_per_request": null,
+          "local_sectors": 0,
+          "local_share_pct": 0.0,
+          "occupancy_shortfall_pts": 2.25,
+          "stall_long_scoreboard_share_of_measured_pct": 79.8
+        },
+        "dram_pct_peak": 26.2278,
+        "dram_read": 2.1747,
+        "dram_write": 1.0989,
+        "duration": 6.1232,
+        "global_ld_requests": 22189465.1429,
+        "global_ld_sectors": 168468953.1429,
+        "global_st_requests": 9833140.5714,
+        "global_st_sectors": 65224109.7143,
+        "grid_size": 3072.0,
+        "l1_hit_pct": 59.9827,
+        "l2_hit_pct": 60.6766,
+        "launches_profiled": 14,
+        "local_ld_requests": 0.0,
+        "local_ld_sectors": 0.0,
+        "local_st_requests": 0.0,
+        "local_st_sectors": 0.0,
+        "mem_throughput_pct": 26.1,
+        "registers": 117.0,
+        "rules": [
+          {
+            "description": "Every scheduler is capable of issuing one instruction per cycle, but for this workload each scheduler only issues an instruction every 3.9 cycles. This might leave hardware resources underutilized and may lead to less optimal performance. Out of the maximum of 16 warps per scheduler, this workload allocates an average of 3.65 active warps per scheduler, but only an average of 0.33 warps were eligible per cycle. Eligible warps are the subset of active warps that are ready to issue their next instruction. Every cycle with no eligible warp results in no instruction being issued and the issue slot remains unused. To increase the number of eligible warps, avoid possible load imbalances due to highly different execution durations per warp. Reducing stalls indicated on the Warp State Statistics and Source Counters sections can help, too.",
+            "estimated_speedup_pct": 73.9,
+            "rule": "IssueSlotUtilization",
+            "section": "SchedulerStats",
+            "speedup_type": "local"
+          },
+          {
+            "description": "The 4.00 theoretical warps per scheduler this kernel can issue according to its occupancy are below the hardware maximum of 16. This kernel's theoretical occupancy (25.0%) is limited by the number of required registers.",
+            "estimated_speedup_pct": 73.9,
+            "rule": "TheoreticalOccupancy",
+            "section": "Occupancy",
+            "speedup_type": "global"
+          },
+          {
+            "description": "This kernel has uncoalesced global accesses resulting in a total of 121667648 excessive sectors (52% of the total 234041632 sectors). Check the L2 Theoretical Sectors Global Excessive table for the primary source locations. The CUDA Programming Guide (https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses) has additional information on reducing uncoalesced device memory accesses.",
+            "estimated_speedup_pct": 50.14,
+            "rule": "UncoalescedGlobalAccess",
+            "section": "SourceCounters",
+            "speedup_type": "global"
+          },
+          {
+            "description": "One or more L1 Slices have a much higher number of active cycles than the average number of active cycles. Maximum instance value is 7.67% above the average, while the minimum instance value is 4.37% below the average.",
+            "estimated_speedup_pct": 7.076,
+            "rule": "WorkloadImbalance",
+            "section": "WorkloadDistribution",
+            "speedup_type": "global"
+          },
+          {
+            "description": "This kernel executes 110652320 fused and 150662880 non-fused FP32 instructions. By converting pairs of non-fused instructions to their fused (https://docs.nvidia.com/cuda/floating-point/#cuda-and-floating-point), higher-throughput equivalent, the achieved FP32 performance could be increased by up to 29% (relative to its current performance).",
+            "estimated_speedup_pct": 7.02,
+            "rule": "FPInstructions",
+            "section": "InstructionStats",
+            "speedup_type": "global"
+          },
+          {
+            "description": "The memory access pattern for global stores to L1TEX might not be optimal. On average, only 16.4 of the 32 bytes transmitted per sector are utilized by each thread. This could possibly be caused by a stride between threads. Check the Source Counters section for uncoalesced global stores.",
+            "estimated_speedup_pct": 6.862,
+            "rule": "MemoryCacheAccessPattern",
+            "section": "MemoryWorkloadAnalysis_Tables",
+            "speedup_type": "global"
+          },
+          {
+            "description": "This workload exhibits low compute throughput and memory bandwidth utilization relative to the peak performance of this device. Achieved compute throughput and/or memory bandwidth below 60.0% of peak typically indicate latency issues. Look at Scheduler Statistics and Warp State Statistics for potential reasons.",
+            "estimated_speedup_pct": null,
+            "rule": "SOLBottleneck",
+            "section": "SpeedOfLight",
+            "speedup_type": ""
+          },
+          {
+            "description": "The ratio of peak float (FP32) to double (FP64) performance on this device is 2:1. The workload achieved 11% of this device's FP32 peak performance and 0% of its FP64 peak performance. See the Profiling Guide (https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#roofline) for more details on roofline analysis.",
+            "estimated_speedup_pct": null,
+            "rule": "SOLFPRoofline",
+            "section": "SpeedOfLight_RooflineChart",
+            "speedup_type": ""
+          },
+          {
+            "description": "FMA is the highest-utilized pipeline (24.4%) based on elapsed cycles in the workload, taking into account the rates of its different instructions. It executes 32-bit floating point (FADD, FMUL, FMAD, ...) and integer (IMUL, IMAD) operations. It is well-utilized, but should not be a bottleneck.",
+            "estimated_speedup_pct": null,
+            "rule": "HighPipeUtilization",
+            "section": "ComputeWorkloadAnalysis",
+            "speedup_type": ""
+          },
+          {
+            "description": "Check the Warp Stall Sampling (All Samples) table for the top stall locations in your source based on sampling data. The Profiling Guide (https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-reference) provides more details on each stall reason.",
+            "estimated_speedup_pct": null,
+            "rule": "CPIStall",
+            "section": "WarpStateStats",
+            "speedup_type": ""
+          }
+        ],
+        "spill_overhead_pct": 0.0,
+        "spill_requests": 0.0,
+        "stack_size": 1024.0,
+        "stall_lg_throttle": 0.0034,
+        "stall_long_scoreboard": 10.1959,
+        "stall_math_pipe_throttle": 0.2267,
+        "stall_mio_throttle": 0.0033,
+        "stall_no_instruction": 0.195,
+        "stall_not_selected": 0.2835,
+        "stall_short_scoreboard": 0.184,
+        "stall_wait": 1.6836,
+        "theoretical_occupancy_pct": 25.0
       }
     },
     "missing_metrics": [],
+    "steps": {
+      "lw_optics_next_registers": 128,
+      "lw_optics_next_warps": 16,
+      "lw_optics_registers": 156.0,
+      "lw_optics_registers_to_cut": 28,
+      "lw_optics_time_pct": 44.0,
+      "lw_optics_warps": 12,
+      "lw_sweeps_next_registers": 128,
+      "lw_sweeps_next_warps": 16,
+      "lw_sweeps_registers": 140.0,
+      "lw_sweeps_registers_to_cut": 12,
+      "lw_sweeps_time_pct": 14.6,
+      "lw_sweeps_warps": 12,
+      "sw_optics_next_registers": 96,
+      "sw_optics_next_warps": 20,
+      "sw_optics_registers": 124.0,
+      "sw_optics_registers_to_cut": 28,
+      "sw_optics_time_pct": 31.8,
+      "sw_optics_warps": 16,
+      "sw_sweeps_next_registers": 96,
+      "sw_sweeps_next_warps": 20,
+      "sw_sweeps_registers": 117.0,
+      "sw_sweeps_registers_to_cut": 21,
+      "sw_sweeps_time_pct": 9.6,
+      "sw_sweeps_warps": 16
+    },
     "units": {
       "achieved_occupancy_pct": "%",
       "block_size": "",
