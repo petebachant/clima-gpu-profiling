@@ -1,11 +1,13 @@
 device = "NVIDIA A100-SXM4-80GB"
 device_total_gib = 79.250732421875
 float_type = "Float32"
-note = "bytes is the device free-memory delta across one band's workspace construction, so it charges the whole widening -- optics, sources, band fluxes, cloud mask and the two accumulators -- and not the accumulators alone, whose shapes give accumulator_bytes as a floor. The fit is bytes = wide_columns * (a * nlev + b) + c per band, least squares over the fit grid; worst_relative_residual is how far the worst fitted point misses. held_out is the high-resolution CI grid at its shipped group count, measured and compared against the law it was excluded from. configs prices the shipped default by prediction, and predicted_gib_by_nlay varies only the level count, which default_ngpt_groups does not read."
+note = "bytes is the device free-memory delta across one band's workspace construction, so it charges the whole widening -- optics, sources, band fluxes, cloud mask and the two accumulators -- and not the accumulators alone, whose shapes give accumulator_bytes as a floor. The fit is bytes = wide_columns * (a * nlev + b) + c per band, least squares over the fit grid; worst_relative_residual is how far the worst fitted point misses. held_out is the high-resolution CI grid at its shipped group count, measured and compared against the law it was excluded from. configs prices the shipped default by prediction, and predicted_gib_by_nlay varies the level count at a fixed group count, which is the span the default's byte bound covers, beside the count the default itself gives each of those grids."
 
 [configs.amip_he16]
+byte_bound_binds = false
+ceil_columns_only_ngroups = 16
 default_ngroups = 16
-floor_ngroups = 16
+floor_columns_only_ngroups = 16
 ncol = 24576
 nlay = 80
 nlev = 81
@@ -28,15 +30,31 @@ wide_columns_over_target = 0.0
     "2.0" = 9
     "4.0" = 16
 
-    [configs.amip_he16.predicted_gib_by_nlay]
-    127 = 5.346322331568818
-    31 = 1.3373677783871267
-    63 = 2.6736859627810245
-    80 = 3.3836049982402825
+    [configs.amip_he16.predicted_gib_by_nlay.127]
+    default_ngroups_there = 11
+    gib_at_that_default = 3.6783704374134674
+    gib_at_this_ngroups = 5.346322331568818
+
+    [configs.amip_he16.predicted_gib_by_nlay.31]
+    default_ngroups_there = 16
+    gib_at_that_default = 1.3373677783871267
+    gib_at_this_ngroups = 1.3373677783871267
+
+    [configs.amip_he16.predicted_gib_by_nlay.63]
+    default_ngroups_there = 16
+    gib_at_that_default = 2.6736859627810245
+    gib_at_this_ngroups = 2.6736859627810245
+
+    [configs.amip_he16.predicted_gib_by_nlay.80]
+    default_ngroups_there = 16
+    gib_at_that_default = 3.3836049982402825
+    gib_at_this_ngroups = 3.3836049982402825
 
 [configs.ci_highres]
+byte_bound_binds = false
+ceil_columns_only_ngroups = 5
 default_ngroups = 5
-floor_ngroups = 4
+floor_columns_only_ngroups = 4
 ncol = 86400
 nlay = 63
 nlev = 64
@@ -59,15 +77,31 @@ wide_columns_over_target = 9.86328125
     "2.0" = 3
     "4.0" = 6
 
-    [configs.ci_highres.predicted_gib_by_nlay]
-    127 = 5.872769648161601
-    31 = 1.4684006322149186
-    63 = 2.9365236375304797
-    80 = 3.7164639841043714
+    [configs.ci_highres.predicted_gib_by_nlay.127]
+    default_ngroups_there = 3
+    gib_at_that_default = 3.5272122970056383
+    gib_at_this_ngroups = 5.872769648161601
+
+    [configs.ci_highres.predicted_gib_by_nlay.31]
+    default_ngroups_there = 5
+    gib_at_that_default = 1.4684006322149186
+    gib_at_this_ngroups = 1.4684006322149186
+
+    [configs.ci_highres.predicted_gib_by_nlay.63]
+    default_ngroups_there = 5
+    gib_at_that_default = 2.9365236375304797
+    gib_at_this_ngroups = 2.9365236375304797
+
+    [configs.ci_highres.predicted_gib_by_nlay.80]
+    default_ngroups_there = 5
+    gib_at_that_default = 3.7164639841043714
+    gib_at_this_ngroups = 3.7164639841043714
 
 [configs.coarse_he8]
+byte_bound_binds = false
+ceil_columns_only_ngroups = 16
 default_ngroups = 16
-floor_ngroups = 16
+floor_columns_only_ngroups = 16
 ncol = 6144
 nlay = 80
 nlev = 81
@@ -90,11 +124,25 @@ wide_columns_over_target = -75.0
     "2.0" = 16
     "4.0" = 16
 
-    [configs.coarse_he8.predicted_gib_by_nlay]
-    127 = 1.3432377855959747
-    31 = 0.34099914730055175
-    63 = 0.675078693399026
-    80 = 0.8525584522638405
+    [configs.coarse_he8.predicted_gib_by_nlay.127]
+    default_ngroups_there = 16
+    gib_at_that_default = 1.3432377855959747
+    gib_at_this_ngroups = 1.3432377855959747
+
+    [configs.coarse_he8.predicted_gib_by_nlay.31]
+    default_ngroups_there = 16
+    gib_at_that_default = 0.34099914730055175
+    gib_at_this_ngroups = 0.34099914730055175
+
+    [configs.coarse_he8.predicted_gib_by_nlay.63]
+    default_ngroups_there = 16
+    gib_at_that_default = 0.675078693399026
+    gib_at_this_ngroups = 0.675078693399026
+
+    [configs.coarse_he8.predicted_gib_by_nlay.80]
+    default_ngroups_there = 16
+    gib_at_that_default = 0.8525584522638405
+    gib_at_this_ngroups = 0.8525584522638405
 
 [fit.lw]
 bytes_fixed = 4.561791460825586e6
@@ -845,9 +893,11 @@ wide_columns = 393216
 
 [verdict]
 amip_gib_at_127_levels = 5.346322331568818
+amip_gib_at_127_under_bound = 3.6783704374134674
 amip_gib_at_31_levels = 1.3373677783871267
 amip_nlev_span_ratio = 3.997645537726738
-default_reads_nlev = false
+bound_binds_at_127_levels = true
+default_reads_nlev = true
 max_ngpt_groups = 16
 target_gpt_group_columns = 393216
 worst_relative_residual = 0.08358304889764163

@@ -1,58 +1,58 @@
-block_iqr_pct = 3.4271352183616597
-block_max_s = 99.324882733
-block_median_s = 51.579867276
-block_min_s = 51.13347989
-block_rel_se_pct = 7.772573517606643
-block_seconds = [51.13347989, 51.246037077, 51.325696125, 51.531389228, 51.547690916, 51.579867276, 51.896223921, 52.625932445, 53.093407922, 63.591887289, 63.602909499, 99.324882733]
-block_seconds_in_order = [52.625932445, 51.896223921, 53.093407922, 99.324882733, 51.531389228, 51.325696125, 51.579867276, 63.602909499, 51.13347989, 51.547690916, 51.246037077, 63.591887289]
-block_spread_pct = 93.43064530416764
+block_iqr_pct = 3.2036676176215595
+block_max_s = 97.001984672
+block_median_s = 50.554173944
+block_min_s = 50.322491321
+block_rel_se_pct = 7.7656968521316925
+block_seconds = [50.322491321, 50.342186639, 50.376933634, 50.457770488, 50.530855714, 50.554173944, 50.56742287, 50.613169412, 51.996521334, 62.86672357, 63.007735817, 97.001984672]
+block_seconds_in_order = [51.996521334, 50.457770488, 50.530855714, 97.001984672, 50.376933634, 50.322491321, 50.613169412, 62.86672357, 50.56742287, 50.554173944, 50.342186639, 63.007735817]
+block_spread_pct = 92.33558717170996
 block_steps = 180
 blocks = 12
 default_ngpt_groups = 16
-default_sypd_gain_pct = 3.4414352109455617
+default_sypd_gain_pct = 3.5355648990093838
 dt_cpl_s = 120.0
 note = "sypd_grouped is measured: a block of real coupler steps with the live solver, timed with the wall clock the coupler's own SYPD is defined on. Note what the live solver now is: the longwave split is already in it, so these blocks are faster than the longwave sweep's and the two runs' block times are not comparable. Each sweep is in-block, so that does not affect either gain. sypd_ungrouped adds the in-block solve saving back rather than differencing a second run, because the AMIP pair cannot resolve a sub-percent effect: one arm wandered 7.73% between two runs of identical code. It is a steady-state figure and is NOT comparable to the pipeline's end-to-end SYPD, which includes first-call compilation. Blocks are a whole number of radiation periods so each carries the same radiation work; the daily diagnostics write falls in one block in every write_period_steps / block_steps, which is why the median is quoted and the full spread reported beside it. gain_below_block_iqr is deliberately not reported here: it compares a ratio against a difference-of-blocks spread, which reads a resolved gain as unresolved."
 rad_period_steps = 30
 radiation_events_per_block = 6
-step_ms = 286.5548182
+step_ms = 280.85652191111114
 write_period_steps = 720
 
 [arms.16]
 ngroups = 16
-saved_per_block_s = 1.7750877141952515
-solve_saved_per_event_ms = 295.84795236587524
-sypd_gain_pct = 3.4414352109455617
-sypd_grouped = 1.146524412046519
-sypd_ungrouped = 1.108380224721786
+saved_per_block_s = 1.7873756289482117
+solve_saved_per_event_ms = 297.8959381580353
+sypd_gain_pct = 3.5355648990093838
+sypd_grouped = 1.1697862389673586
+sypd_ungrouped = 1.1298400120851138
 
 [arms.32]
 ngroups = 32
-saved_per_block_s = 1.854400634765625
-solve_saved_per_event_ms = 309.0667724609375
-sypd_gain_pct = 3.5952024165608383
-sypd_grouped = 1.146524412046519
-sypd_ungrouped = 1.1067350468956025
+saved_per_block_s = 1.8647046089172363
+solve_saved_per_event_ms = 310.78410148620605
+sypd_gain_pct = 3.6885275011768797
+sypd_grouped = 1.1697862389673586
+sypd_ungrouped = 1.1281732580820778
 
 [arms.4]
 ngroups = 4
-saved_per_block_s = 1.5816807746887207
-solve_saved_per_event_ms = 263.6134624481201
-sypd_gain_pct = 3.0664692606230752
-sypd_grouped = 1.146524412046519
-sypd_ungrouped = 1.1124126209730878
+saved_per_block_s = 1.5986189246177673
+solve_saved_per_event_ms = 266.43648743629456
+sypd_gain_pct = 3.1621897855330277
+sypd_grouped = 1.1697862389673586
+sypd_ungrouped = 1.1339292442311104
 
 [arms.64]
 ngroups = 64
-saved_per_block_s = 1.8715853691101074
-solve_saved_per_event_ms = 311.93089485168457
-sypd_gain_pct = 3.6285191644549886
-sypd_grouped = 1.146524412046519
-sypd_ungrouped = 1.1063792296665198
+saved_per_block_s = 1.8827769756317139
+solve_saved_per_event_ms = 313.79616260528564
+sypd_gain_pct = 3.724276016689163
+sypd_grouped = 1.1697862389673586
+sypd_ungrouped = 1.1277844337801313
 
 [arms.8]
 ngroups = 8
-saved_per_block_s = 1.725253701210022
-solve_saved_per_event_ms = 287.54228353500366
-sypd_gain_pct = 3.3448199701219057
-sypd_grouped = 1.146524412046519
-sypd_ungrouped = 1.109416429752349
+saved_per_block_s = 1.7364978790283203
+solve_saved_per_event_ms = 289.4163131713867
+sypd_gain_pct = 3.4349248411256372
+sypd_grouped = 1.1697862389673586
+sypd_ungrouped = 1.1309393232161487

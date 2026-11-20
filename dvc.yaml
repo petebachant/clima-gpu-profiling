@@ -226,7 +226,6 @@ stages:
       - .calkit/scheduler/logs/amip-baseline.out:
           cache: false
           persist: true
-    frozen: true
     desc: Automatically generated from the 'amip-baseline' stage in calkit.yaml.
       Changes made here will be overwritten.
   amip-mod:
@@ -267,7 +266,6 @@ stages:
       - .calkit/scheduler/logs/amip-mod.out:
           cache: false
           persist: true
-    frozen: true
     desc: Automatically generated from the 'amip-mod' stage in calkit.yaml.
       Changes made here will be overwritten.
   amip-nodiag:
@@ -335,7 +333,6 @@ stages:
       - results/summary.json:
           cache: false
           persist: false
-    frozen: true
     desc: Automatically generated from the 'summarize' stage in calkit.yaml.
       Changes made here will be overwritten.
   compare-kernels:
@@ -547,6 +544,7 @@ stages:
       - results/nsys/baseline.sqlite
       - results/nsys/mod.sqlite
       - .calkit/env-locks/py
+      - results/treatment.json
     outs:
       - results/gpoint-groups.json:
           cache: false
@@ -1316,7 +1314,6 @@ stages:
       - results/docs/wall-clock-conversion.json:
           cache: false
           persist: false
-    frozen: true
     desc: Automatically generated from the 'wall-clock-conversion-doc/values'
       stage in calkit.yaml. Changes made here will be overwritten.
   diagnostics-cost-doc/values:

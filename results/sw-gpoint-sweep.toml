@@ -1,5 +1,5 @@
 aod_bit_identical_at_every_count = true
-best_change_pct = -50.68636784946726
+best_change_pct = -50.739548934326315
 config_file = "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml"
 default_is_sufficient_only = false
 default_ngpt_groups = 16
@@ -10,7 +10,7 @@ n_gpt_sw = 224
 ncol = 24576
 nlay = 80
 note = "solve_ms times the whole shortwave both-skies solve, so it charges the grouped path for its reduction, its hoisted aerosol mask and its state refresh -- it is the net figure, not the kernel's. Every point shares one simulation's state and buffers and differs only in group count, so these are in-block comparisons and not a difference of runs. worst_flux_deviation is against ngroups = 1, the ungrouped specialization, and covers the direct beam as well as up, down and net in both skies: the split is not bit-for-bit, since a g-point sum taken in N partials is a different summation order. aod_bit_identical is equality rather than a tolerance because the 550 nm optical depth is a per-column read-modify-write with one nominated writer, so any difference there is groups interleaving and not roundoff. sufficient_is_sweep_maximum says whether the sweep found a knee or only moved the bound to its own endpoint. A group count whose predicted workspace does not fit the device is skipped rather than run, and carries skipped_out_of_memory instead of a timing."
-repeat_spread_pct = 0.20649050405184344
+repeat_spread_pct = 0.18601967812745523
 repeats = 7
 sufficient_is_sweep_maximum = true
 sufficient_ngroups = 64
@@ -21,9 +21,9 @@ accumulator_bytes = 0
 aod_bit_identical = true
 change_pct = 0.0
 ngroups = 1
-solve_ms = 615.4137849807739
-solve_ms_max = 616.1162257194519
-solve_ms_min = 614.8454546928406
+solve_ms = 618.4449195861816
+solve_ms_max = 618.5926198959351
+solve_ms_min = 617.4421906471252
 workspace_bytes = 0
 workspace_gib = 0.0
 worst_flux_deviation = 0.0
@@ -31,59 +31,59 @@ worst_flux_deviation = 0.0
 [points.16]
 accumulator_bytes = 1019215872
 aod_bit_identical = true
-change_pct = -48.073013570067786
+change_pct = -48.16854803453889
 ngroups = 16
-solve_ms = 319.5658326148987
-solve_ms_max = 320.0450539588928
-solve_ms_min = 318.6483085155487
+solve_ms = 320.54898142814636
+solve_ms_max = 321.13391160964966
+solve_ms_min = 320.1087713241577
 workspace_bytes = 1946157056
 workspace_gib = 1.8125
-worst_flux_deviation = 0.00128173828125
+worst_flux_deviation = 0.0013427734375
 
 [points.32]
 accumulator_bytes = 2038431744
 aod_bit_identical = true
-change_pct = -50.22097002110426
+change_pct = -50.25251103916581
 ngroups = 32
-solve_ms = 306.3470125198364
-solve_ms_max = 306.5948188304901
-solve_ms_min = 306.1330020427704
+solve_ms = 307.6608180999756
+solve_ms_max = 307.768315076828
+solve_ms_min = 307.47079849243164
 workspace_bytes = 3890216960
 workspace_gib = 3.623046875
-worst_flux_deviation = 0.0013427734375
+worst_flux_deviation = 0.001495361328125
 
 [points.4]
 accumulator_bytes = 254803968
 aod_bit_identical = true
-change_pct = -42.83515723593283
+change_pct = -43.08168423706584
 ngroups = 4
-solve_ms = 351.8003225326538
-solve_ms_max = 352.0921766757965
-solve_ms_min = 351.54739022254944
+solve_ms = 352.0084321498871
+solve_ms_max = 352.29209065437317
+solve_ms_min = 351.8301844596863
 workspace_bytes = 494927872
 workspace_gib = 0.4609375
-worst_flux_deviation = 0.00140380859375
+worst_flux_deviation = 0.00128173828125
 
 [points.64]
 accumulator_bytes = 4076863488
 aod_bit_identical = true
-change_pct = -50.68636784946726
+change_pct = -50.739548934326315
 ngroups = 64
-solve_ms = 303.48289012908936
-solve_ms_max = 303.6528527736664
-solve_ms_min = 303.102970123291
+solve_ms = 304.648756980896
+solve_ms_max = 304.8395812511444
+solve_ms_min = 304.30734157562256
 workspace_bytes = 7763656704
 workspace_gib = 7.23046875
-worst_flux_deviation = 0.001708984375
+worst_flux_deviation = 0.0015869140625
 
 [points.8]
 accumulator_bytes = 509607936
 aod_bit_identical = true
-change_pct = -46.72340635723438
+change_pct = -46.79742754860741
 ngroups = 8
-solve_ms = 327.87150144577026
-solve_ms_max = 328.1090557575226
-solve_ms_min = 327.6359438896179
+solve_ms = 329.0286064147949
+solve_ms_max = 329.29444313049316
+solve_ms_min = 328.83983850479126
 workspace_bytes = 979369984
 workspace_gib = 0.912109375
-worst_flux_deviation = 0.00128173828125
+worst_flux_deviation = 0.001251220703125

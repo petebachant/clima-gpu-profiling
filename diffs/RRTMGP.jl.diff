@@ -1,3 +1,33 @@
+diff --git a/RRTMGP.jl/NEWS.md b/RRTMGP.jl-mod/NEWS.md
+index 75e12f3..f51e5c5 100644
+--- a/RRTMGP.jl/NEWS.md
++++ b/RRTMGP.jl-mod/NEWS.md
+@@ -4,6 +4,25 @@ RRTMGP.jl Release Notes
+ main
+ ----
+ 
++- [#637](https://github.com/CliMA/RRTMGP.jl/pull/637) `TwoStreamLWRTE` and
++  `TwoStreamSWRTE` solve a column's g-point loop in `ngpt_groups` independent
++  pieces covered by one grid, in place of the serial loop each thread ran over
++  its own column, and compute each round's gas and aerosol optics in a kernel
++  of its own before sweeping them. **Default results change at roundoff.** The
++  group count is chosen per grid by `default_ngpt_groups` and is above one on a
++  GPU wherever the column count leaves the device underfilled, which reorders
++  the g-point sum; floating-point addition is not associative, so grouped
++  fluxes differ from a serial solve by about 1e-6 relative in the
++  configurations tested, and the clear-sky half of a both-skies solve no longer
++  equals a standalone clear-sky solve exactly. The cloud-cover tally is a count
++  of g-points and stays exact. Pass `ngpt_groups = 1` to any two-stream
++  constructor where bit-for-bit agreement with the serial order is required;
++  that is also what a CPU gets, whose driver ignores the grouped workspaces.
++  Grouping costs device memory: every widened workspace is linear in the group
++  count, the accumulators being `ncol * ngpt_groups * nlev` by two flux planes
++  in the longwave and three in the shortwave, so a run tight on memory should
++  pass a smaller `ngpt_groups` rather than take the default.
++
+ v1.1.0
+ ------
+ 
 diff --git a/RRTMGP.jl/docs/src/optics/RTE.md b/RRTMGP.jl-mod/docs/src/optics/RTE.md
 index 0bed839..1752d61 100644
 --- a/RRTMGP.jl/docs/src/optics/RTE.md
@@ -19,7 +49,7 @@ index 0bed839..1752d61 100644
 +default_ngpt_groups
 +```
 diff --git a/RRTMGP.jl/ext/RRTMGPCUDAExt.jl b/RRTMGP.jl-mod/ext/RRTMGPCUDAExt.jl
-index 44f0b18..30d5083 100644
+index 44f0b18..d5c52d9 100644
 --- a/RRTMGP.jl/ext/RRTMGPCUDAExt.jl
 +++ b/RRTMGP.jl-mod/ext/RRTMGPCUDAExt.jl
 @@ -44,9 +44,12 @@ import RRTMGP.RTESolver: lw_noscat_gpt_col!, lw_2stream_gpt_col!
@@ -35,22 +65,7 @@ index 44f0b18..30d5083 100644
  import CUDA: threadIdx, blockIdx, blockDim, @cuda
  
  _max_threads_cuda() = 256
-@@ -60,6 +63,14 @@ end
- _configure_threadblock(nitems) =
-     _configure_threadblock(_max_threads_cuda(), nitems)
- 
-+# Aerosol mask for every column, hoisted out of the grouped solves of both
-+# bands, which need it per column rather than per wide column.
-+function _aero_mask_CUDA!(aerosol_state::AerosolState, ncol)
-+    gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
-+    gcol ≤ ncol && _compute_aero_mask!(aerosol_state, gcol)
-+    return nothing
-+end
-+
- include(joinpath("cuda", "gray_atmospheric_states.jl"))
- include(joinpath("cuda", "rte_longwave_2stream.jl"))
- include(joinpath("cuda", "optics.jl"))
-@@ -67,5 +78,6 @@ include(joinpath("cuda", "rte_shortwave_noscat.jl"))
+@@ -67,5 +70,6 @@ include(joinpath("cuda", "rte_shortwave_noscat.jl"))
  include(joinpath("cuda", "gray_atmosphere.jl"))
  include(joinpath("cuda", "rte_shortwave_2stream.jl"))
  include(joinpath("cuda", "rte_longwave_noscat.jl"))
@@ -59,10 +74,10 @@ index 44f0b18..30d5083 100644
  end
 diff --git a/RRTMGP.jl-mod/ext/cuda/rte_gpt_groups.jl b/RRTMGP.jl-mod/ext/cuda/rte_gpt_groups.jl
 new file mode 100644
-index 0000000..af6cd01
+index 0000000..e0ad234
 --- /dev/null
 +++ b/RRTMGP.jl-mod/ext/cuda/rte_gpt_groups.jl
-@@ -0,0 +1,180 @@
+@@ -0,0 +1,213 @@
 +#####
 +##### One grid over `ncol * ngroups` threads, for either band.
 +#####
@@ -83,6 +98,39 @@ index 0000000..af6cd01
 +@inline _reduce_kernel(::SWGptGroups) = _reduce_sw_groups_CUDA!
 +@inline _optics_workspaces(g::LWGptGroups) = (g.op, g.src)
 +@inline _optics_workspaces(g::SWGptGroups) = (g.op,)
++
++# Aerosol mask for every column, hoisted out of the grouped solves of both
++# bands, which need it per column rather than per wide column.
++function _aero_mask_CUDA!(aerosol_state::AerosolState, ncol)
++    gcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
++    gcol ≤ ncol && _compute_aero_mask!(aerosol_state, gcol)
++    return nothing
++end
++
++# The planes recurse rather than iterate: a loop over the tuple indexes it with
++# a runtime variable, which forces the tuple to a stack slot and spills the
++# sweeps kernels. Recursion over `Base.tail` unrolls at compile time, because
++# each call takes a shorter tuple type than the one above it.
++@inline function _zero_planes!(planes::Tuple, wcol, ilev)
++    plane = first(planes)
++    @inbounds plane[wcol, ilev] = zero(eltype(plane))
++    return _zero_planes!(Base.tail(planes), wcol, ilev)
++end
++@inline _zero_planes!(::Tuple{}, wcol, ilev) = nothing
++
++# Zero a group's slice of the partial accumulators. The reduction reads every
++# slice whether or not a group had work, so a group with none has to write
++# zeros rather than leave whatever the workspace last held. One body for both
++# bands: the accumulator is a named tuple of flux planes, two in the longwave
++# and three in the shortwave, and this writes whichever it is handed.
++@inline function _zero_partials!(acc, acc_clear, wcol, nlev)
++    for ilev in 1:nlev
++        _zero_planes!(values(acc), wcol, ilev)
++        _zero_planes!(values(acc_clear), wcol, ilev)
++    end
++    return nothing
++end
++
 +@inline _cld_cover(::Nothing, _) = nothing
 +@inline _cld_cover(cs::CloudState, ::LWGptGroups) = cs.cld_cover_lw
 +@inline _cld_cover(cs::CloudState, ::SWGptGroups) = cs.cld_cover_sw
@@ -244,7 +292,7 @@ index 0000000..af6cd01
 +    return nothing
 +end
 diff --git a/RRTMGP.jl/ext/cuda/rte_longwave_2stream.jl b/RRTMGP.jl-mod/ext/cuda/rte_longwave_2stream.jl
-index 40ddae1..cb12c1c 100644
+index 40ddae1..53d4742 100644
 --- a/RRTMGP.jl/ext/cuda/rte_longwave_2stream.jl
 +++ b/RRTMGP.jl-mod/ext/cuda/rte_longwave_2stream.jl
 @@ -166,10 +166,28 @@ function rte_lw_2stream_solve_both_skies!(
@@ -286,7 +334,7 @@ index 40ddae1..cb12c1c 100644
  function rte_lw_2stream_solve_both_skies_CUDA!(
      flux::FluxLW,
      flux_lw::FluxLW,
-@@ -264,3 +283,178 @@ function rte_lw_2stream_solve_both_skies_CUDA!(
+@@ -264,3 +283,164 @@ function rte_lw_2stream_solve_both_skies_CUDA!(
      end
      return nothing
  end
@@ -294,20 +342,6 @@ index 40ddae1..cb12c1c 100644
 +#####
 +##### The g-point-grouped longwave solve, as optics and then sweeps.
 +#####
-+
-+# Zero a group's slice of the partial accumulators. The reduction reads every
-+# slice whether or not a group had work, so a group with none has to write zeros
-+# rather than leave whatever the workspace last held. The shortwave counterpart
-+# is `_zero_sw_partials!`.
-+@inline function _zero_lw_partials!(acc, acc_clear, wcol, nlev, ::Type{FT}) where {FT}
-+    @inbounds for ilev in 1:nlev
-+        acc.flux_up[wcol, ilev] = FT(0)
-+        acc.flux_dn[wcol, ilev] = FT(0)
-+        acc_clear.flux_up[wcol, ilev] = FT(0)
-+        acc_clear.flux_dn[wcol, ilev] = FT(0)
-+    end
-+    return nothing
-+end
 +
 +# This round's gas and aerosol optics for every `(column, group)` pair, into
 +# the wide `op` and `src` the sweep kernel reads. The cloud mask is not drawn
@@ -381,7 +415,7 @@ index 40ddae1..cb12c1c 100644
 +        igpt = grp + (round - 1) * ngroups
 +        if round == 1
 +            @inbounds cloudy_count[wcol] = Int32(0)
-+            grp > n_gpt && _zero_lw_partials!(acc, acc_clear, wcol, nlev, FT)
++            grp > n_gpt && _zero_partials!(acc, acc_clear, wcol, nlev)
 +        end
 +        if igpt ≤ n_gpt
 +            @inbounds begin
@@ -466,7 +500,7 @@ index 40ddae1..cb12c1c 100644
 +    return nothing
 +end
 diff --git a/RRTMGP.jl/ext/cuda/rte_shortwave_2stream.jl b/RRTMGP.jl-mod/ext/cuda/rte_shortwave_2stream.jl
-index f788db5..21dc2a7 100644
+index f788db5..b0705d6 100644
 --- a/RRTMGP.jl/ext/cuda/rte_shortwave_2stream.jl
 +++ b/RRTMGP.jl-mod/ext/cuda/rte_shortwave_2stream.jl
 @@ -182,10 +182,28 @@ function rte_sw_2stream_solve_both_skies!(
@@ -509,22 +543,10 @@ index f788db5..21dc2a7 100644
  function rte_sw_2stream_solve_both_skies_CUDA!(
      flux::FluxSW,
      flux_sw::FluxSW,
-@@ -288,3 +308,192 @@ function rte_sw_2stream_solve_both_skies_CUDA!(
+@@ -288,3 +308,180 @@ function rte_sw_2stream_solve_both_skies_CUDA!(
      end
      return nothing
  end
-+
-+@inline function _zero_sw_partials!(acc, acc_clear, wcol, nlev, ::Type{FT}) where {FT}
-+    @inbounds for ilev in 1:nlev
-+        acc.flux_up[wcol, ilev] = FT(0)
-+        acc.flux_dn[wcol, ilev] = FT(0)
-+        acc.flux_dn_dir[wcol, ilev] = FT(0)
-+        acc_clear.flux_up[wcol, ilev] = FT(0)
-+        acc_clear.flux_dn[wcol, ilev] = FT(0)
-+        acc_clear.flux_dn_dir[wcol, ilev] = FT(0)
-+    end
-+    return nothing
-+end
 +
 +#####
 +##### The g-point-grouped shortwave solve, as optics and then sweeps.
@@ -611,7 +633,7 @@ index f788db5..21dc2a7 100644
 +        if round == 1
 +            @inbounds cloudy_count[wcol] = Int32(0)
 +            (grp > n_gpt || μ₀ <= 0) &&
-+                _zero_sw_partials!(acc, acc_clear, wcol, nlev, FT)
++                _zero_partials!(acc, acc_clear, wcol, nlev)
 +        end
 +        if igpt <= n_gpt
 +            @inbounds begin
@@ -766,7 +788,7 @@ index b60492a..7f305ec 100644
      return RRTMGPSolver(
          grid_params,
 diff --git a/RRTMGP.jl/src/optics/compute_optical_props.jl b/RRTMGP.jl-mod/src/optics/compute_optical_props.jl
-index 74fafd5..d674caa 100644
+index 74fafd5..cc9d1b4 100644
 --- a/RRTMGP.jl/src/optics/compute_optical_props.jl
 +++ b/RRTMGP.jl-mod/src/optics/compute_optical_props.jl
 @@ -151,6 +151,7 @@ end
@@ -812,16 +834,27 @@ index 74fafd5..d674caa 100644
      end
      # Aerosol before cloud, matching solve_lw_both_skies! and
      # solve_sw_both_skies!, so both all-sky methods return the same
-@@ -238,7 +239,7 @@ end
+@@ -238,7 +239,18 @@ end
          )
      end
      if !isnothing(lkp_cld) # clouds need TwoStream optics
 -        add_cloud_optics_lw!(op, as, gcol, lkp_cld, ibnd, lkp_precip)
-+        add_cloud_optics_lw!(op, as, gcol, lkp_cld, ibnd, lkp_precip, wcol)
++        # Only the narrow space reaches here: the grouped optics kernel passes
++        # no cloud lookup, and the grouped sweeps add the increment themselves.
++        add_cloud_optics_lw!(
++            op,
++            as,
++            gcol,
++            lkp_cld,
++            ibnd,
++            lkp_precip,
++            wcol,
++            as.cloud_state.mask_lw,
++        )
      end
      return nothing
  end
-@@ -308,6 +309,8 @@ end
+@@ -308,6 +320,8 @@ end
      lkp_cld::Union{LookUpCld, Nothing} = nothing,
      lkp_aero::Union{LookUpAerosolMerra, Nothing} = nothing,
      lkp_precip::Union{LookUpPrecip, Nothing} = nothing,
@@ -830,7 +863,7 @@ index 74fafd5..d674caa 100644
  )
      nlay = AtmosphericStates.get_nlay(as)
      (; vmr) = as
-@@ -317,9 +320,9 @@ end
+@@ -317,9 +331,9 @@ end
          col_dry_col = AtmosphericStates.col_dry_view(state_cache, as, gcol)
          p_lay_col = AtmosphericStates.p_lay_view(state_cache, as, gcol)
          t_lay_col = AtmosphericStates.t_lay_view(state_cache, as, gcol)
@@ -843,7 +876,7 @@ index 74fafd5..d674caa 100644
      end
      @inbounds for glay in 1:nlay
          col_dry, p_lay, t_lay =
-@@ -343,8 +346,13 @@ end
+@@ -343,8 +357,13 @@ end
      # order is observable at roundoff.
      if !isnothing(lkp_aero)
          (; iband_550nm) = lkp_aero
@@ -859,24 +892,57 @@ index 74fafd5..d674caa 100644
          aero_mask = view(as.aerosol_state.aero_mask, :, gcol)
          aero_size = view(as.aerosol_state.aero_size, :, :, gcol)
          aero_mass = view(as.aerosol_state.aero_mass, :, :, gcol)
-@@ -367,7 +375,7 @@ end
+@@ -367,7 +386,18 @@ end
          )
      end
      if !isnothing(lkp_cld) # clouds need TwoStream optics
 -        add_cloud_optics_sw!(op, as, gcol, lkp_cld, ibnd, lkp_precip)
-+        add_cloud_optics_sw!(op, as, gcol, lkp_cld, ibnd, lkp_precip, wcol)
++        # Only the narrow space reaches here: the grouped optics kernel passes
++        # no cloud lookup, and the grouped sweeps add the increment themselves.
++        add_cloud_optics_sw!(
++            op,
++            as,
++            gcol,
++            lkp_cld,
++            ibnd,
++            lkp_precip,
++            wcol,
++            as.cloud_state.mask_sw,
++        )
      end
      return nothing
  end
-@@ -391,14 +399,19 @@ could drift apart without anything noticing.
+@@ -391,14 +421,41 @@ could drift apart without anything noticing.
      lkp_cld::LookUpCld,
      ibnd::Int,
      lkp_precip::Union{LookUpPrecip, Nothing} = nothing,
-+    wcol::Int = gcol,
-+    # A caller solving over wide columns writes `op` at `wcol`, so it passes a
-+    # mask store that is wide too (`LWGptGroups.mask`); the narrow default is
-+    # correct only when the two indices are the same.
-+    mask_store = as.cloud_state.mask_lw,
++)
++    # The narrow column space: `op` is indexed by the column itself, and the
++    # mask store is the one sized for it.
++    return add_cloud_optics_lw!(
++        op,
++        as,
++        gcol,
++        lkp_cld,
++        ibnd,
++        lkp_precip,
++        gcol,
++        as.cloud_state.mask_lw,
++    )
++end
++
++# Solving over wide columns writes `op` at `wcol`, which only means anything
++# beside a mask store sized the same way (`LWGptGroups.mask`). Neither has a
++# default, so the wide index cannot arrive next to the narrow mask.
++@inline function add_cloud_optics_lw!(
++    op::TwoStream,
++    as::AtmosphericState,
++    gcol::Int,
++    lkp_cld::LookUpCld,
++    ibnd::Int,
++    lkp_precip::Union{LookUpPrecip, Nothing},
++    wcol::Int,
++    mask_store,
  )
      cloud_state = as.cloud_state
      @inbounds begin
@@ -892,13 +958,37 @@ index 74fafd5..d674caa 100644
              view(cloud_state.cld_r_eff_liq, :, gcol),
              view(cloud_state.cld_r_eff_ice, :, gcol),
              view(cloud_state.cld_path_liq, :, gcol),
-@@ -429,14 +442,17 @@ and the longwave one does not.
+@@ -429,14 +486,41 @@ and the longwave one does not.
      lkp_cld::LookUpCld,
      ibnd::Int,
      lkp_precip::Union{LookUpPrecip, Nothing} = nothing,
-+    wcol::Int = gcol,
-+    # Narrow by default; see `add_cloud_optics_lw!`.
-+    mask_store = as.cloud_state.mask_sw,
++)
++    # The narrow column space: `op` is indexed by the column itself, and the
++    # mask store is the one sized for it.
++    return add_cloud_optics_sw!(
++        op,
++        as,
++        gcol,
++        lkp_cld,
++        ibnd,
++        lkp_precip,
++        gcol,
++        as.cloud_state.mask_sw,
++    )
++end
++
++# Solving over wide columns writes `op` at `wcol`, which only means anything
++# beside a mask store sized the same way (`SWGptGroups.mask`). Neither has a
++# default, so the wide index cannot arrive next to the narrow mask.
++@inline function add_cloud_optics_sw!(
++    op::TwoStream,
++    as::AtmosphericState,
++    gcol::Int,
++    lkp_cld::LookUpCld,
++    ibnd::Int,
++    lkp_precip::Union{LookUpPrecip, Nothing},
++    wcol::Int,
++    mask_store,
  )
      cloud_state = as.cloud_state
      @inbounds begin
@@ -915,7 +1005,7 @@ index 74fafd5..d674caa 100644
              view(cloud_state.cld_r_eff_ice, :, gcol),
              view(cloud_state.cld_path_liq, :, gcol),
 diff --git a/RRTMGP.jl/src/rte/RTE.jl b/RRTMGP.jl-mod/src/rte/RTE.jl
-index 44d5712..92498c1 100644
+index 44d5712..c9906e7 100644
 --- a/RRTMGP.jl/src/rte/RTE.jl
 +++ b/RRTMGP.jl-mod/src/rte/RTE.jl
 @@ -12,6 +12,7 @@ using ..BCs
@@ -926,36 +1016,63 @@ index 44d5712..92498c1 100644
  
  # Device-dependent default for the workspaces' `state_cache` keyword. On the
  # GPU, a `TransposedStateCache` gives the g-point loop coalesced state reads
-@@ -26,6 +27,49 @@ _default_state_cache(::ClimaComms.AbstractCPUDevice, gp::RRTMGPGridParams) =
+@@ -26,6 +27,87 @@ _default_state_cache(::ClimaComms.AbstractCPUDevice, gp::RRTMGPGridParams) =
  _default_state_cache(::ClimaComms.AbstractDevice, gp::RRTMGPGridParams) =
      TransposedStateCache(gp)
  
-+# How many pieces the fused g-point loop is split into. One is the serial loop
-+# every other solver uses; above one the solve widens its workspaces to
-+# `ncol * ngroups` and covers them in a single kernel launch, trading that
-+# memory for blocks the one wave cannot otherwise fill.
++# The most pieces the fused g-point loop may be split into. One is the serial
++# loop every other solver uses; above one the solve widens its workspaces to
++# `ncol * ngroups` and covers them in one launch, so its grid is `ngroups` times
++# the blocks the serial loop would have launched. This ceiling is a memory one:
++# see `TARGET_GPT_GROUP_COLUMNS` for what each group costs.
 +const MAX_NGPT_GROUPS = 16
 +
-+# Wide columns the default group count aims for: enough blocks to cover an A100
-+# many waves over, which is where the imbalance between columns stops showing,
-+# and past which another group adds no parallelism the scheduler can use. Every
-+# widened workspace is linear in `ngroups`, so this also bounds their memory --
-+# the accumulators are `ncol * ngroups * nlev` by two planes in the longwave and
-+# three in the shortwave.
++# Wide columns the default group count aims for, and where the number comes
++# from: the benchmark it was swept on runs 24,576 columns, and 16 groups of
++# those is what `MAX_NGPT_GROUPS` allows. At the grouped rounds' 128 threads
++# that is a grid of 3,072 blocks, of which the driver holds 3 of the longwave
++# optics kernel resident per multiprocessor and 4 of the shortwave's, so an
++# A100's 108 multiprocessors see about 9 waves in the longwave and 7 in the
++# shortwave where the ungrouped solve launches one.
++#
++# It is not the count past which another group buys nothing: the sweep has most
++# of its gain in by 8 groups and its best at 32, about 2% beyond 16. It is where
++# the workspaces stop being worth that 2%, because every one of them is linear
++# in `ngroups` -- the accumulators alone are `ncol * ngroups * nlev` by two flux
++# planes in the longwave and three in the shortwave.
 +const TARGET_GPT_GROUP_COLUMNS = 393216
++
++# Device bytes one wide column of workspace costs per level, both bands
++# together: 53 in the longwave and 61 in the shortwave, measured by building
++# them and reading the free-memory delta, of which the two partial accumulators
++# are the bulk. A coupled run builds both, so the default prices both.
++const GPT_GROUP_BYTES_PER_WIDE_COLUMN_LEVEL = 114
++
++# The most device memory the default will commit to those workspaces. The
++# column target above is a floor on how wide the solve wants to be, not a
++# licence to allocate: `nlev` is in the workspace's size and not in that target,
++# so without this bound the same column count commits four times the memory on
++# a 128-level grid as on a 32-level one, and a run can fail to allocate at a
++# default it never chose. This is inert at every resolution measured -- it first
++# binds above 80 layers at the benchmark's column count -- and a device too
++# small for it wants an explicit `ngpt_groups` rather than a different bound.
++const TARGET_GPT_GROUP_BYTES = 4 * 1024^3
 +
 +"""
 +    default_ngpt_groups(grid_params::RRTMGPGridParams)
 +
 +How many g-point groups a two-stream solver widens to when the caller names
 +none: enough to reach `TARGET_GPT_GROUP_COLUMNS` wide columns, capped at
-+`MAX_NGPT_GROUPS`.
++`MAX_NGPT_GROUPS` and at whatever `TARGET_GPT_GROUP_BYTES` affords on this
++grid's level count.
 +
 +A column count that already fills the device gets one group, and so does a CPU,
 +whose driver solves the whole g-point loop per column and ignores the workspaces.
 +Both gates matter because the count rises as columns fall, so an ungated default
 +would give the smallest runs the widest workspaces. Pass `ngpt_groups` to
-+override in either direction.
++override in either direction -- a device whose free memory is smaller than
++`TARGET_GPT_GROUP_BYTES` wants that rather than the default, since nothing here
++polls the device.
 +
 +Grouping changes the order in which a column's g-points are summed, and
 +floating-point addition is not associative, so grouped fluxes differ from a
@@ -967,16 +1084,27 @@ index 44d5712..92498c1 100644
 +are taken in the serial order, and the solve is then bit-for-bit with the serial
 +one, which is what the tests assert.
 +"""
-+default_ngpt_groups(grid_params::RRTMGPGridParams) =
-+    ClimaComms.device(grid_params) isa ClimaComms.AbstractCPUDevice ? 1 :
-+    clamp(cld(TARGET_GPT_GROUP_COLUMNS, grid_params.ncol), 1, MAX_NGPT_GROUPS)
++function default_ngpt_groups(grid_params::RRTMGPGridParams)
++    ClimaComms.device(grid_params) isa ClimaComms.AbstractCPUDevice && return 1
++    (; ncol, nlay) = grid_params
++    # `cld`, because the column target is a floor: rounding down would undershoot
++    # the parallelism it names. It can overshoot instead -- by 9.9% at the
++    # high-resolution benchmark's column count -- which costs memory, and that is
++    # what the byte bound is for.
++    wanted = cld(TARGET_GPT_GROUP_COLUMNS, ncol)
++    affordable = fld(
++        TARGET_GPT_GROUP_BYTES,
++        ncol * (nlay + 1) * GPT_GROUP_BYTES_PER_WIDE_COLUMN_LEVEL,
++    )
++    return clamp(min(wanted, affordable), 1, MAX_NGPT_GROUPS)
++end
 +
 +include("gpt_groups.jl")
 +
  """
      NoScatLWRTE(grid_params::RRTMGPGridParams; params, sfc_emis, inc_flux,
                  n_gauss_angles = 1)
-@@ -117,6 +161,7 @@ struct TwoStreamLWRTE{
+@@ -117,6 +199,7 @@ struct TwoStreamLWRTE{
      FXL <: FluxLW,
      FXBND,
      TSC,
@@ -984,7 +1112,7 @@ index 44d5712..92498c1 100644
  }
      context::C
      op::OP
-@@ -126,11 +171,25 @@ struct TwoStreamLWRTE{
+@@ -126,11 +209,25 @@ struct TwoStreamLWRTE{
      flux::FXL
      band_flux::FXBND
      state_cache::TSC
@@ -1011,7 +1139,7 @@ index 44d5712..92498c1 100644
  
  function TwoStreamLWRTE(
      grid_params::RRTMGPGridParams;
-@@ -138,6 +197,7 @@ function TwoStreamLWRTE(
+@@ -138,6 +235,7 @@ function TwoStreamLWRTE(
      sfc_emis,
      inc_flux,
      state_cache = _default_state_cache(grid_params),
@@ -1019,7 +1147,7 @@ index 44d5712..92498c1 100644
  )
      (; context) = grid_params
      op = TwoStream(grid_params)
-@@ -145,6 +205,10 @@ function TwoStreamLWRTE(
+@@ -145,6 +243,10 @@ function TwoStreamLWRTE(
      bcs = LwBCs(sfc_emis, inc_flux)
      fluxb = FluxLW(grid_params)
      flux = FluxLW(grid_params)
@@ -1030,7 +1158,7 @@ index 44d5712..92498c1 100644
      return TwoStreamLWRTE(
          context,
          op,
-@@ -154,6 +218,7 @@ function TwoStreamLWRTE(
+@@ -154,6 +256,7 @@ function TwoStreamLWRTE(
          flux,
          nothing,
          state_cache,
@@ -1038,7 +1166,7 @@ index 44d5712..92498c1 100644
      )
  end
  
-@@ -235,6 +300,7 @@ struct TwoStreamSWRTE{
+@@ -235,6 +338,7 @@ struct TwoStreamSWRTE{
      FXS <: FluxSW,
      FXBND,
      TSC,
@@ -1046,7 +1174,7 @@ index 44d5712..92498c1 100644
  }
      context::C
      op::OP
-@@ -244,11 +310,24 @@ struct TwoStreamSWRTE{
+@@ -244,11 +348,24 @@ struct TwoStreamSWRTE{
      flux::FXS
      band_flux::FXBND
      state_cache::TSC
@@ -1071,7 +1199,7 @@ index 44d5712..92498c1 100644
  
  function TwoStreamSWRTE(
      grid_params::RRTMGPGridParams;
-@@ -258,6 +337,7 @@ function TwoStreamSWRTE(
+@@ -258,6 +375,7 @@ function TwoStreamSWRTE(
      inc_flux_diffuse,
      sfc_alb_diffuse,
      state_cache = _default_state_cache(grid_params),
@@ -1079,7 +1207,7 @@ index 44d5712..92498c1 100644
  )
      (; context) = grid_params
      op = TwoStream(grid_params)
-@@ -271,6 +351,10 @@ function TwoStreamSWRTE(
+@@ -271,6 +389,10 @@ function TwoStreamSWRTE(
      )
      fluxb = FluxSW(grid_params)
      flux = FluxSW(grid_params)
@@ -1090,7 +1218,7 @@ index 44d5712..92498c1 100644
      return TwoStreamSWRTE(
          context,
          op,
-@@ -280,6 +364,7 @@ function TwoStreamSWRTE(
+@@ -280,6 +402,7 @@ function TwoStreamSWRTE(
          flux,
          nothing,
          state_cache,
@@ -1170,13 +1298,44 @@ index 31e416f..db7d9da 100644
              acc_dn[gcol, ilev] = dn[gcol, ilev]
 diff --git a/RRTMGP.jl-mod/src/rte/gpt_groups.jl b/RRTMGP.jl-mod/src/rte/gpt_groups.jl
 new file mode 100644
-index 0000000..1fcdea1
+index 0000000..2b3a70e
 --- /dev/null
 +++ b/RRTMGP.jl-mod/src/rte/gpt_groups.jl
-@@ -0,0 +1,152 @@
+@@ -0,0 +1,159 @@
 +#####
 +##### Wide workspaces for a g-point-parallel solve.
 +#####
++
++# What the two bands' workspaces have in common: the widened grid parameters,
++# the two partial accumulators, and the mask and cloud tally over wide columns.
++# `planes` is how many flux planes a band accumulates, which is the only shape
++# that differs between them.
++function _gpt_group_workspaces(
++    grid_params::RRTMGPGridParams,
++    ngroups::Int,
++    planes::Int,
++)
++    ngroups >= 1 || error("ngroups must be at least 1, got $ngroups")
++    (; context, ncol, nlay, isothermal_boundary_layer) = grid_params
++    DA = ClimaComms.array_type(grid_params)
++    FT = eltype(grid_params)
++    ncolw = ncol * ngroups
++    # The inner constructor, because `nlay` here is already the total and the
++    # keyword one would add the isothermal layer a second time.
++    wide_grid_params = RRTMGPGridParams{FT, typeof(context)}(
++        context,
++        nlay,
++        ncolw,
++        isothermal_boundary_layer,
++    )
++    return (;
++        wide_grid_params,
++        acc_data = DA{FT}(undef, ncolw, nlay + 1, planes),
++        acc_clear_data = DA{FT}(undef, ncolw, nlay + 1, planes),
++        mask = DA{Bool}(undef, nlay, ncolw),
++        cloudy = DA{Int32}(undef, ncolw),
++    )
++end
 +
 +"""
 +    LWGptGroups(grid_params::RRTMGPGridParams, ngroups; params)
@@ -1185,10 +1344,14 @@ index 0000000..1fcdea1
 +independent pieces, covered by one grid rather than by one column's serial
 +loop.
 +
-+At one thread per column the solve fills the device in a single wave of blocks,
-+so its tail and the imbalance between columns cannot be absorbed. Splitting the
-+g-point loop multiplies the blocks instead, and the scheduler refills a
-+multiprocessor as each retires.
++At one thread per column the whole solve fits in a single wave of blocks, so
++nothing is queued behind it: a block that finishes early frees its
++multiprocessor to no one, and the launch lasts as long as its slowest column.
++Columns are not equally expensive -- a column sweeps the cloudy increment only
++where its mask is set, and in the shortwave a night column exits at once (see
++[`SWGptGroups`](@ref)) -- so that difference is paid in idle warps instead of
++being absorbed. Splitting the g-point loop multiplies the blocks, and the
++scheduler refills a multiprocessor as each retires.
 +
 +Every workspace the solve indexes by column is widened to `ncol * ngroups`, so a
 +thread's `(column, group)` pair selects its slice by one index and the kernel
@@ -1219,38 +1382,24 @@ index 0000000..1fcdea1
 +    ngroups::Int;
 +    params,
 +)
-+    ngroups ≥ 1 || error("ngroups must be at least 1, got $ngroups")
-+    (; context, ncol, nlay, isothermal_boundary_layer) = grid_params
-+    DA = ClimaComms.array_type(grid_params)
-+    FT = eltype(grid_params)
-+    nlev = nlay + 1
-+    ncolw = ncol * ngroups
-+    # The inner constructor, because `nlay` here is already the total and the
-+    # keyword one would add the isothermal layer a second time.
-+    wide = RRTMGPGridParams{FT, typeof(context)}(
-+        context,
-+        nlay,
-+        ncolw,
-+        isothermal_boundary_layer,
-+    )
 +    # Up and down only: the reduction recomputes net from them, so a third
 +    # plane would be allocated per wide column and never written. The field
 +    # names match `FluxLW` because that is what these accumulate, but the type
 +    # does not, which is the point -- a `FluxLW` would carry the net plane.
-+    acc_data = DA{FT}(undef, ncolw, nlev, 2)
-+    acc_clear_data = DA{FT}(undef, ncolw, nlev, 2)
++    (; wide_grid_params, acc_data, acc_clear_data, mask, cloudy) =
++        _gpt_group_workspaces(grid_params, ngroups, 2)
 +    # `view(d, :, :, k)` is a contiguous block, so the accumulators index as
 +    # cheaply as the plain arrays the ungrouped path uses.
 +    fluxes(d) = (flux_up = view(d, :, :, 1), flux_dn = view(d, :, :, 2))
 +    return LWGptGroups(
 +        ngroups,
-+        TwoStream(wide),
-+        SourceLW2Str(wide; params),
-+        FluxLW(wide),
-+        DA{Bool}(undef, nlay, ncolw),
++        TwoStream(wide_grid_params),
++        SourceLW2Str(wide_grid_params; params),
++        FluxLW(wide_grid_params),
++        mask,
 +        fluxes(acc_data),
 +        fluxes(acc_clear_data),
-+        DA{Int32}(undef, ncolw),
++        cloudy,
 +    )
 +end
 +
@@ -1290,24 +1439,10 @@ index 0000000..1fcdea1
 +    grid_params::RRTMGPGridParams,
 +    ngroups::Int;
 +)
-+    ngroups >= 1 || error("ngroups must be at least 1, got $ngroups")
-+    (; context, ncol, nlay, isothermal_boundary_layer) = grid_params
-+    DA = ClimaComms.array_type(grid_params)
-+    FT = eltype(grid_params)
-+    nlev = nlay + 1
-+    ncolw = ncol * ngroups
-+    # The inner constructor, because `nlay` here is already the total and the
-+    # keyword one would add the isothermal layer a second time.
-+    wide = RRTMGPGridParams{FT, typeof(context)}(
-+        context,
-+        nlay,
-+        ncolw,
-+        isothermal_boundary_layer,
-+    )
 +    # Up, down and direct: the reduction recomputes net from up and down, so a
 +    # net plane would never be written (see `LWGptGroups`).
-+    acc_data = DA{FT}(undef, ncolw, nlev, 3)
-+    acc_clear_data = DA{FT}(undef, ncolw, nlev, 3)
++    (; wide_grid_params, acc_data, acc_clear_data, mask, cloudy) =
++        _gpt_group_workspaces(grid_params, ngroups, 3)
 +    fluxes(d) = (
 +        flux_up = view(d, :, :, 1),
 +        flux_dn = view(d, :, :, 2),
@@ -1315,19 +1450,19 @@ index 0000000..1fcdea1
 +    )
 +    return SWGptGroups(
 +        ngroups,
-+        TwoStream(wide),
-+        SourceSW2Str(wide),
-+        FluxSW(wide),
-+        DA{Bool}(undef, nlay, ncolw),
++        TwoStream(wide_grid_params),
++        SourceSW2Str(wide_grid_params),
++        FluxSW(wide_grid_params),
++        mask,
 +        fluxes(acc_data),
 +        fluxes(acc_clear_data),
-+        DA{Int32}(undef, ncolw),
++        cloudy,
 +    )
 +end
 +
 +n_gpt_groups(g::SWGptGroups) = g.ngroups
 diff --git a/RRTMGP.jl/src/rte/longwave_2stream.jl b/RRTMGP.jl-mod/src/rte/longwave_2stream.jl
-index 64a8a74..c0c9c42 100644
+index 64a8a74..f8f8391 100644
 --- a/RRTMGP.jl/src/rte/longwave_2stream.jl
 +++ b/RRTMGP.jl-mod/src/rte/longwave_2stream.jl
 @@ -259,6 +259,7 @@ Equations are after Shonk and Hogan 2008, doi:10.1175/2007JCLI1940.1 (SH08)
@@ -1430,32 +1565,33 @@ index 64a8a74..c0c9c42 100644
          flux_dn_ilevplus1 = flux_dn_ilev
          lev_src_top = lev_src_bot
          ilev -= 1
-@@ -363,8 +376,18 @@ function rte_lw_2stream_solve_both_skies! end
-     ibnd,
+@@ -364,7 +377,19 @@ function rte_lw_2stream_solve_both_skies! end
      nlev,
      ncol,
-+    mask_store = as.cloud_state isa CloudState ? as.cloud_state.mask_lw : nothing,
-+    first_igpt = 1,
-+    wcol = gcol,
  )
 -    cloudy = _build_cloud_mask!(as.cloud_state, Val(:mask_lw), gcol, igpt)
++    # One column per thread, so the column's own index is the wide one and the
++    # g-point loop runs from the first. `lw_2stream_gpt_col_sweeps!` is where
++    # those come apart.
++    mask_store =
++        as.cloud_state isa CloudState ? as.cloud_state.mask_lw : nothing
 +    cloudy = _build_cloud_mask!(
 +        as.cloud_state,
 +        Val(:mask_lw),
 +        gcol,
 +        igpt,
 +        mask_store,
-+        wcol,
++        gcol,
 +    )
      # Gas and aerosol only: this is the clear sky, and the shared half
      compute_optical_props!(
          op,
-@@ -376,9 +399,59 @@ function rte_lw_2stream_solve_both_skies! end
+@@ -376,9 +401,59 @@ function rte_lw_2stream_solve_both_skies! end
          lookup_lw,
          nothing,
          lookup_lw_aero,
 +        nothing,
-+        wcol,
++        gcol,
      )
 -    rte_lw_2stream!(op, flux, src_lw, bcs_lw, gcol, igpt, ibnd, nlev, ncol)
 -    _accumulate_fluxes!(flux_lw_clear, flux, gcol, nlev, igpt)
@@ -1476,8 +1612,8 @@ index 64a8a74..c0c9c42 100644
 +        nlev,
 +        ncol,
 +        mask_store,
-+        first_igpt,
-+        wcol,
++        1,
++        gcol,
 +    )
 +    return cloudy
 +end
@@ -1512,7 +1648,7 @@ index 64a8a74..c0c9c42 100644
      # Add the cloud increment on top of the same optics and sweep again
      if !isnothing(lookup_lw_cld)
          add_cloud_optics_lw!(
-@@ -388,19 +461,16 @@ function rte_lw_2stream_solve_both_skies! end
+@@ -388,19 +463,16 @@ function rte_lw_2stream_solve_both_skies! end
              lookup_lw_cld,
              ibnd,
              lookup_lw_precip,
@@ -1540,7 +1676,7 @@ index 64a8a74..c0c9c42 100644
  end
  
  """
-@@ -431,6 +501,7 @@ function solve_lw_both_skies!(
+@@ -431,6 +503,7 @@ function solve_lw_both_skies!(
          bcs,
          op,
          state_cache,
@@ -1548,7 +1684,7 @@ index 64a8a74..c0c9c42 100644
      )::TwoStreamLWRTE,
      flux_lw_clear::FluxLW,
      as::AtmosphericState,
-@@ -457,6 +528,7 @@ function solve_lw_both_skies!(
+@@ -457,6 +530,7 @@ function solve_lw_both_skies!(
          lookup_lw_cld,
          lookup_lw_aero,
          lookup_lw_precip,
@@ -1556,7 +1692,7 @@ index 64a8a74..c0c9c42 100644
      )
      apply_metric_scaling!(flux, metric_scaling)
      apply_metric_scaling!(flux_lw_clear, metric_scaling)
-@@ -483,6 +555,7 @@ function rte_lw_2stream_solve_both_skies!(
+@@ -483,6 +557,7 @@ function rte_lw_2stream_solve_both_skies!(
      lookup_lw_cld::Union{LookUpCld, Nothing},
      lookup_lw_aero::Union{LookUpAerosolMerra, Nothing},
      lookup_lw_precip::Union{LookUpPrecip, Nothing} = nothing,

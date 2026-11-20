@@ -1,4 +1,4 @@
-best_change_pct = -34.57615305624151
+best_change_pct = -34.12497426779202
 config_file = "ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml"
 default_is_sufficient_only = false
 default_ngpt_groups = 16
@@ -9,7 +9,7 @@ n_gpt_lw = 256
 ncol = 24576
 nlay = 80
 note = "solve_ms times the whole longwave both-skies solve, so it charges the grouped path for its reduction and its state refresh -- it is the net figure, not the kernel's. Every point shares one simulation's state and buffers and differs only in group count, so these are in-block comparisons and not a difference of runs. worst_flux_deviation is against ngroups = 1, which is the ungrouped specialization: the split is not bit-for-bit, since a g-point sum taken in N partials is a different summation order. workspace_bytes is the device memory the group workspace took, measured as a free-memory delta across its construction. sufficient_is_sweep_maximum says whether the sweep found a knee or only moved the bound to its own endpoint. A group count whose predicted workspace does not fit the device is skipped rather than run, and carries skipped_out_of_memory instead of a timing."
-repeat_spread_pct = 0.25730921664944506
+repeat_spread_pct = 0.32658127306788004
 repeats = 7
 sufficient_is_sweep_maximum = false
 sufficient_ngroups = 32
@@ -19,64 +19,64 @@ warmup_steps = 3
 accumulator_bytes = 0
 change_pct = 0.0
 ngroups = 1
-solve_ms = 669.3642139434814
-solve_ms_max = 670.0646281242371
-solve_ms_min = 668.3422923088074
+solve_ms = 670.581579208374
+solve_ms_max = 672.4095940589905
+solve_ms_min = 670.2196002006531
 workspace_bytes = 0
 workspace_gib = 0.0
 worst_flux_deviation = 0.0
 
 [points.16]
 accumulator_bytes = 764411904
-change_pct = -32.58555958877542
+change_pct = -32.20853807993464
 ngroups = 16
-solve_ms = 451.2481391429901
-solve_ms_max = 451.46214962005615
-solve_ms_min = 451.13345980644226
+solve_ms = 454.5970559120178
+solve_ms_max = 454.7293484210968
+solve_ms_min = 454.39133048057556
 workspace_bytes = 1690304512
 workspace_gib = 1.57421875
-worst_flux_deviation = 0.000823974609375
+worst_flux_deviation = 0.000762939453125
 
 [points.32]
 accumulator_bytes = 1528823808
-change_pct = -34.57615305624151
+change_pct = -34.12497426779202
 ngroups = 32
-solve_ms = 437.9238188266754
-solve_ms_max = 438.6959373950958
-solve_ms_min = 437.44972348213196
+solve_ms = 441.745787858963
+solve_ms_max = 442.5625801086426
+solve_ms_min = 441.2100911140442
 workspace_bytes = 3378511872
 workspace_gib = 3.146484375
-worst_flux_deviation = 0.000732421875
+worst_flux_deviation = 0.00078582763671875
 
 [points.4]
 accumulator_bytes = 191102976
-change_pct = -18.4450708579859
+change_pct = -18.105288195396255
 ngroups = 4
-solve_ms = 545.899510383606
-solve_ms_max = 546.4545488357544
-solve_ms_min = 545.8288788795471
+solve_ms = 549.1708517074585
+solve_ms_max = 549.4003891944885
+solve_ms_min = 548.9659905433655
 workspace_bytes = 429916160
 workspace_gib = 0.400390625
 worst_flux_deviation = 0.00079345703125
 
 [points.64]
 accumulator_bytes = 3057647616
-change_pct = -34.347289793792875
+change_pct = -33.9824382791437
 ngroups = 64
-solve_ms = 439.4557476043701
-solve_ms_max = 439.84487652778625
-solve_ms_min = 439.33284282684326
+solve_ms = 442.7016079425812
+solve_ms_max = 443.0252015590668
+solve_ms_min = 442.4857795238495
 workspace_bytes = 6744440832
 workspace_gib = 6.28125
-worst_flux_deviation = 0.00091552734375
+worst_flux_deviation = 0.000885009765625
 
 [points.8]
 accumulator_bytes = 382205952
-change_pct = -31.802300751874345
+change_pct = -31.52908779456045
 ngroups = 8
-solve_ms = 456.49099349975586
-solve_ms_max = 456.84531331062317
-solve_ms_min = 456.1797082424164
+solve_ms = 459.15332436561584
+solve_ms_max = 459.4798684120178
+solve_ms_min = 459.0303301811218
 workspace_bytes = 849346560
 workspace_gib = 0.791015625
-worst_flux_deviation = 0.00079345703125
+worst_flux_deviation = 0.000732421875
