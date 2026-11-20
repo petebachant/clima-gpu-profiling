@@ -955,23 +955,15 @@ pipeline:
           storage: git
           delete_before_run: true
     amip-baseline:
-      # Frozen 2026-11-18 with amip-mod, summarize and
-      # wall-clock-conversion-doc. The re-baseline that day put every submodule
-      # on upstream main except RRTMGP, where CliMA/RRTMGP.jl#637 is the only
-      # treatment, so this pair is stale on its inputs -- deliberately. Running
-      # it costs about four GPU hours for a figure that cannot resolve the
-      # treatment: the longwave sweep's own gain_below_block_iqr is true at the
-      # shipped group count, and one arm of this pair has wandered 7.73%
-      # between two runs of identical code, against a saving worth 2.50% of
-      # device time in the longwave and 3.37% in the shortwave. The paired
-      # kernel diff resolves it about twenty times finer and is fresh.
-      #
-      # Thaw all four together, and only as a deliberate pass. Freezing the
-      # pair alone would leave summarize dividing a fresh profile by a stale
-      # SYPD, and the pair alone with summarize would leave
-      # wall-clock-conversion-doc pricing #637's device saving against the
-      # register cap's wall clock -- the ncu failure in another costume.
-      frozen: true
+      # Live with amip-mod, summarize and wall-clock-conversion-doc, thawed
+      # 2026-11-19 as a deliberate pass: every submodule sits on upstream main
+      # and CliMA/RRTMGP.jl#637 is the only delta between the arms, so this
+      # pair is the isolated wall-clock measurement of it. It resolves about
+      # twenty times coarser than the paired kernel diff and one arm has
+      # wandered 7.73% between runs of identical code, so read it as a bound
+      # beside results/gpoint-groups.json, not as the headline. It is also a
+      # fresh diff digest, so results/sypd-repeats.json has no spread and
+      # results/null-census.json no floor for this stack yet.
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
@@ -997,11 +989,9 @@ pipeline:
         - ClimaAtmos.jl/src
         - ClimaAtmos.jl/toml
     amip-mod:
-      # Frozen 2026-11-18 with amip-baseline; see the reasoning there. A pair
-      # is frozen as a pair for the reason the ncu stages are: a fresh arm
-      # beside a stale one reads as a measurement, and nothing in the output
-      # says otherwise.
-      frozen: true
+      # Live with amip-baseline; see the reasoning there. A pair is thawed as a
+      # pair for the reason the ncu stages are: a fresh arm beside a stale one
+      # reads as a measurement, and nothing in the output says otherwise.
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
@@ -1091,12 +1081,11 @@ pipeline:
         - path: results/diagnostics-cost.json
           storage: git
     summarize:
-      # Frozen 2026-11-18 with the AMIP pair that supplies its SYPD; see the
-      # reasoning at amip-baseline. It is CPU-only and cheap -- it is frozen
-      # for correctness, not for time, because it would otherwise divide this
-      # pass's fresh kernel tables by the previous pass's wall clock and report
-      # the two as one summary.
-      frozen: true
+      # Live with the AMIP pair that supplies its SYPD; see the reasoning at
+      # amip-baseline. Its steady-state fields still come from the frozen
+      # step-breakdown pair and diagnostics-cost, so steady_state_pct and
+      # typical_step_saved_ms describe the previous stack; speedup_pct and
+      # nsys_speedup_pct are the fields this pass measures.
       kind: python-script
       environment: py
       script_path: scripts/summarize.py
@@ -1367,20 +1356,15 @@ pipeline:
       # experiment with the treatment back in the arm.
       frozen: true
     wall-clock-conversion-doc:
+      # Live with the AMIP pair; see the reasoning at amip-baseline. Its
+      # `current` block prices the live results/kernel-population.json against
+      # the newest recorded AMIP pair, which is this pass's, so both halves now
+      # describe the same treatment. Most of the rest quotes the snapshots
+      # under results/fold-record/ and results/null-record/ rather than the
+      # live results files, because the live ones describe whatever ran last.
       kind: markdown
       target_path: docs/wall-clock-conversion.md
       environment: py
-      # Frozen 2026-11-18 with the AMIP pair; see the reasoning at
-      # amip-baseline. Most of what it quotes comes from the snapshot copies
-      # under results/fold-record/ and results/null-record/ rather than the
-      # live results files, because the live ones describe whatever ran last.
-      # Its `current` block is the exception, and is why the freeze reaches
-      # here: device_predicted_pct reads the live
-      # results/kernel-population.json while mean_pct comes from the newest
-      # recorded AMIP pair, so a render now prices CliMA/RRTMGP.jl#637's device
-      # saving against the register cap's wall clock and reports the gap
-      # between two treatments as a disagreement about one.
-      frozen: true
     diagnostics-cost-doc:
       kind: markdown
       target_path: docs/diagnostics-cost.md
