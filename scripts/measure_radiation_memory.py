@@ -1,11 +1,13 @@
 """Extract the radiation solvers' memory behavior from an ncu report.
 
-The two `rte_*_2stream_solve_*` kernels are about 15% of device time between
-them and sit at the 255-register cap, which pins them to one block per SM and
-eight resident warps. At that occupancy there is nothing to hide a memory stall
-behind, so the question is not how much traffic they move but how much of it
-they move badly: a request that fetches more sectors than its warp asked for
-pays full latency with no other warp ready to issue in the meantime.
+The radiation solvers are about 15% of device time between them and are
+register-bound in both arms, so the question is not how much traffic they move
+but how much of it they move badly: a request that fetches more sectors than
+its warp asked for pays full latency, and how much that costs depends on
+whether another warp is resident and ready to issue meanwhile. The arms differ
+in exactly that, which is why both are read here rather than one -- the
+baseline solves a band in one fused launch and the grouped arm in a pair of
+phase kernels per round, at different register counts and different occupancy.
 
 `--set full` already collects every counter needed, so these stages reuse
 `scripts/run-ncu.sh` unchanged rather than adding a script with its own metric
@@ -178,7 +180,8 @@ def derive(k):
     contiguous 4-byte floats asks for 4 sectors, so 4 is ideal and 32 means
     every lane fetched its own 32-byte sector and 28/32 of the traffic was
     thrown away. `local_share_pct` is register spill as a fraction of all L1
-    traffic, which is what 255 registers per thread costs.
+    traffic, which is what a kernel's register count costs in traffic rather
+    than in occupancy.
     """
     def ratio(sec, req):
         s, q = k.get(sec), k.get(req)

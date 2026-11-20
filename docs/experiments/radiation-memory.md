@@ -69,19 +69,29 @@ The reason the coalescing pass missed them is that they are not allocated in RRT
 
 ## What is profiled
 
-Four launches per arm, filtered by kernel name so ncu replays nothing else.
-The filter is the bare substring `2stream_solve` rather than an anchored pattern: it is unique to these two kernels in the whole inventory, it matches the baseline's `both_skies` and the mod arm's `grouped` names alike, and a filter that matches nothing costs a reservation and still reports success.
+Two radiation events in the baseline and one in the mod arm, filtered by kernel name so ncu replays nothing else.
+The filter names two families rather than one substring, because the arms do not run the same kernels: the baseline solves a band in a single `rte_*_2stream_solve_both_skies` launch, while the grouped arm runs `cld(n_gpt, ngroups)` rounds of a `_*_group_optics` kernel and then a `_*_group_sweeps` kernel -- 16 rounds in the longwave and 14 in the shortwave, so one event is 2 matching launches on one side and 60 on the other.
+`--launch-count` is set to a whole number of events per arm rather than to a fixed number of launches, because a count that stops mid-event profiles one band and never reaches the other, which is a half-measurement that reads as a complete one.
+The reduction and the hoisted aerosol mask are outside the filter deliberately: they are not the solve, and the per-band totals in `results/gpoint-groups.json` these timings are checked against do not include them either.
+Each stage greps its own details page before exiting, because a filter that matches nothing costs a reservation and still reports success -- and a kernel rename is what causes that, which this experiment has now seen happen.
 The stages write under `results/experiments/radiation-memory/` rather than `results/ncu/`, so the shared ncu reports -- which are frozen and describe the microphysics kernels at a different revision -- cannot be overwritten by this experiment or overwrite it.
 
 ```sh calkit stage name=baseline-ncu environment=clima outputs=[results/experiments/radiation-memory/baseline.ncu-rep, {path: results/experiments/radiation-memory/baseline-details.csv, storage: git}, {path: results/experiments/radiation-memory/baseline-raw.csv, storage: git}] inputs=[scripts/run-ncu.sh, scripts/run.jl, ClimaCoupler.jl/src, ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml, ClimaCoupler.jl/experiments/AMIP/Manifest-v1.13.toml, ClimaCore.jl/src, ClimaCore.jl/ext, ClimaAtmos.jl/src, RRTMGP.jl/src] scheduler={options: [--gpus=1, --time=180]}
 #!/usr/bin/env bash
 set -euo pipefail
 P=results/experiments/radiation-memory/baseline
+# Two events, each one longwave and one shortwave launch.
 bash scripts/run-ncu.sh "$P" \
-  --kernel-name "regex:2stream_solve" \
+  --kernel-name "regex:(2stream_solve|_group_optics|_group_sweeps)" \
   --project ClimaCoupler.jl/experiments/AMIP \
   --config ClimaCoupler.jl/config/benchmark_configs/amip_progedmf_1m_land_he16.yml \
   --launch-count 4
+# Both bands, checked here rather than in the analysis so that a filter which
+# matched nothing fails while the reservation still means something.
+for band in _lw_ _sw_; do
+  grep -q "$band" "$P-details.csv" ||
+    { echo "ERROR: no $band kernel in $P-details.csv" >&2; exit 1; }
+done
 # The raw page as well as the details page: sectors and requests appear only
 # under their metric IDs, and coalescing is the ratio between them.
 NCU=$(command -v ncu || echo /usr/local/cuda/bin/ncu)
@@ -92,11 +102,18 @@ NCU=$(command -v ncu || echo /usr/local/cuda/bin/ncu)
 #!/usr/bin/env bash
 set -euo pipefail
 P=results/experiments/radiation-memory/mod
+# One event: 16 longwave rounds and 14 shortwave, each a pair of launches.
 bash scripts/run-ncu.sh "$P" \
-  --kernel-name "regex:2stream_solve" \
+  --kernel-name "regex:(2stream_solve|_group_optics|_group_sweeps)" \
   --project ClimaCoupler.jl-mod/experiments/AMIP \
   --config ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml \
-  --launch-count 4
+  --launch-count 60
+# Both bands, checked here rather than in the analysis so that a filter which
+# matched nothing fails while the reservation still means something.
+for band in _lw_ _sw_; do
+  grep -q "$band" "$P-details.csv" ||
+    { echo "ERROR: no $band kernel in $P-details.csv" >&2; exit 1; }
+done
 NCU=$(command -v ncu || echo /usr/local/cuda/bin/ncu)
 "$NCU" --csv -i "$P.ncu-rep" --page raw --log-file "$P-raw.csv"
 ```
@@ -138,89 +155,141 @@ for a in ("baseline", "mod"):
         f"{a}: the source page did not attach to every kernel"
     )
 
-# Headline per arm: the longwave and shortwave solvers, summed, since they are
-# the same code on different spectral data and a reader cares about radiation.
+# Launches per arm as whole radiation events, because the baseline does in one
+# launch what the grouped arm does in `rounds` pairs of launches, so a per-call
+# figure has to mean per event on both sides or the arms are not comparable.
+EVENTS = {"baseline": 2, "mod": 1}
+
+
+def pick(both, get, how=max):
+    """The worst reading over a solve's kernels, skipping the ones without it.
+
+    A phase kernel need not touch every access pattern -- the grouped optics
+    never reads the cloud mask, by design -- so a group missing from one kernel
+    is an absence and not an error. Indexing it directly raises, and does so
+    after the reservation is already spent.
+    """
+    vals = [v for v in (get(k) for k in both) if v is not None]
+    return how(vals) if vals else None
+
+
+def group(name, field):
+    return lambda k: k["coalescing"]["groups"].get(name, {}).get(field)
+
+
+# Headline per arm: every kernel a band's solve launches, since a reader cares
+# about radiation rather than about one phase of it.
 for a, data in out.items():
     ks = data["kernels"]
-    lw = next(k for k in ks if "_lw_" in k)
-    sw = next(k for k in ks if "_sw_" in k)
-    both = [ks[lw], ks[sw]]
+    lw = sorted(k for k in ks if "_lw_" in k)
+    sw = sorted(k for k in ks if "_sw_" in k)
+    assert lw and sw, f"{a}: the filter matched {sorted(ks)}, missing a band"
+    names = lw + sw
+    both = [ks[k] for k in names]
+    # Both of a band's kernels fire once per round, so unequal counts within one
+    # band mean the profile stopped mid-event, and every per-event sum below
+    # would then be weighted by wherever it stopped.
+    for band, bnames in (("longwave", lw), ("shortwave", sw)):
+        counts = {n: ks[n]["launches_profiled"] for n in bnames}
+        assert len(set(counts.values())) == 1, (
+            f"{a}: the {band} kernels were profiled unequally, {counts}, so the "
+            "launch count is not a whole number of events"
+        )
+    events = EVENTS[a]
+    # `duration` is the mean over the launches profiled, so a kernel's share of
+    # one event is that mean times the number of times it fires in one.
+    weight = {k: ks[k]["duration"] * ks[k]["launches_profiled"] for k in names}
     data["headline"] = {
-        "lw_kernel": lw,
-        "sw_kernel": sw,
-        "ms_per_call": round(sum(k["duration"] for k in both), 2),
+        "lw_kernels": lw,
+        "sw_kernels": sw,
+        "events_profiled": events,
+        "ms_per_call": round(sum(weight.values()) / events, 2),
         "registers": max(k["registers"] for k in both),
+        "registers_by_kernel": {k: ks[k]["registers"] for k in names},
+        # Weighted by each kernel's share of the event: an unweighted mean would
+        # give a sweeps launch the same standing as the optics launch that costs
+        # three times as much.
         "achieved_occupancy_pct": round(
-            sum(k["achieved_occupancy_pct"] for k in both) / 2, 2
+            sum(ks[k]["achieved_occupancy_pct"] * weight[k] for k in names)
+            / sum(weight.values()),
+            2,
         ),
         "dram_gb_per_call": round(
-            sum(k["dram_read"] + k["dram_write"] for k in both), 3
+            sum(
+                (ks[k]["dram_read"] + ks[k]["dram_write"])
+                * ks[k]["launches_profiled"]
+                for k in names
+            )
+            / events,
+            3,
         ),
-        # The two solvers should agree closely on these, being one algorithm;
-        # the worse of the pair is the one a fix has to clear.
-        "worst_ld_sectors_per_request": max(
-            k["derived"]["global_ld_sectors_per_request"] for k in both
+        # The solvers should agree closely on these, being one algorithm; the
+        # worse of them is the one a fix has to clear.
+        "worst_ld_sectors_per_request": pick(
+            both, lambda k: k["derived"]["global_ld_sectors_per_request"]
         ),
-        "worst_local_share_pct": max(
-            k["derived"]["local_share_pct"] for k in both
+        "worst_local_share_pct": pick(
+            both, lambda k: k["derived"]["local_share_pct"]
         ),
-        "worst_spill_overhead_pct": max(
-            k.get("spill_overhead_pct", 0) for k in both
+        "worst_spill_overhead_pct": pick(
+            both, lambda k: k.get("spill_overhead_pct", 0)
         ),
-        "worst_long_scoreboard_stall": max(
-            k["stall_long_scoreboard"] for k in both
+        "worst_long_scoreboard_stall": pick(
+            both, lambda k: k["stall_long_scoreboard"]
         ),
         # The per-instruction figures. `amplification_x` is sectors fetched per
-        # sector the same bytes would need packed, so 1.0 is perfect; the two
-        # group shares say which access pattern the excess is in.
-        "worst_amplification_x": max(
-            k["coalescing"]["amplification_x"] for k in both
+        # sector the same bytes would need packed, so 1.0 is perfect; the group
+        # shares say which access pattern the excess is in.
+        "worst_amplification_x": pick(
+            both, lambda k: k["coalescing"]["amplification_x"]
         ),
-        "worst_excessive_pct": max(
-            k["coalescing"]["excessive_pct"] for k in both
+        "worst_excessive_pct": pick(
+            both, lambda k: k["coalescing"]["excessive_pct"]
         ),
-        "lookup_gather_pct_of_excess": max(
-            k["coalescing"]["groups"]["lookup_gather"]["pct_of_excess"]
-            for k in both
+        "lookup_gather_pct_of_excess": pick(
+            both, group("lookup_gather", "pct_of_excess")
         ),
-        "lookup_gather_amplification_x": max(
-            k["coalescing"]["groups"]["lookup_gather"]["amplification_x"]
-            for k in both
+        "lookup_gather_amplification_x": pick(
+            both, group("lookup_gather", "amplification_x")
         ),
-        "mask_strided_pct_of_excess": max(
-            k["coalescing"]["groups"]["mask_byte_strided"]["pct_of_excess"]
-            for k in both
+        "mask_strided_pct_of_excess": pick(
+            both, group("mask_byte_strided", "pct_of_excess")
         ),
-        "mask_strided_amplification_x": max(
-            k["coalescing"]["groups"]["mask_byte_strided"]["amplification_x"]
-            for k in both
+        "mask_strided_amplification_x": pick(
+            both, group("mask_byte_strided", "amplification_x")
         ),
-        "partially_coalesced_pct_of_excess": max(
-            k["coalescing"]["groups"]["partially_coalesced"]["pct_of_excess"]
-            for k in both
+        "partially_coalesced_pct_of_excess": pick(
+            both, group("partially_coalesced", "pct_of_excess")
         ),
         # Instruction counts, because the shares above are concentrated in very
         # few instructions and that is what makes a fix tractable.
-        "lookup_gather_instructions": max(
-            k["coalescing"]["groups"]["lookup_gather"]["instructions"]
-            for k in both
+        "lookup_gather_instructions": pick(
+            both, group("lookup_gather", "instructions")
         ),
-        "mask_strided_instructions": max(
-            k["coalescing"]["groups"]["mask_byte_strided"]["instructions"]
-            for k in both
+        "mask_strided_instructions": pick(
+            both, group("mask_byte_strided", "instructions")
         ),
-        "coalesced_instructions": max(
-            k["coalescing"]["groups"]["coalesced"]["instructions"] for k in both
-        ),
+        "coalesced_instructions": pick(both, group("coalesced", "instructions")),
+        # Which kernels carry a pattern at all, so a share above reads as the
+        # worst of the solve rather than as the whole of it.
+        "kernels_with_mask_strided": [
+            k
+            for k in names
+            if "mask_byte_strided" in ks[k]["coalescing"]["groups"]
+        ],
         # The cache and bandwidth readings the gather hypothesis predicted.
-        "worst_l1_hit_pct": min(k["l1_hit_pct"] for k in both),
-        "worst_l2_hit_pct": min(k["l2_hit_pct"] for k in both),
-        "dram_pct_peak": round(max(k["dram_pct_peak"] for k in both), 2),
-        "compute_pct_peak": round(max(k["compute_pct_peak"] for k in both), 2),
-        "grid_size": max(k["grid_size"] for k in both),
-        "worst_long_scoreboard_share_of_measured_pct": max(
-            k["derived"]["stall_long_scoreboard_share_of_measured_pct"]
-            for k in both
+        "worst_l1_hit_pct": pick(both, lambda k: k["l1_hit_pct"], min),
+        "worst_l2_hit_pct": pick(both, lambda k: k["l2_hit_pct"], min),
+        "dram_pct_peak": round(pick(both, lambda k: k["dram_pct_peak"]), 2),
+        "compute_pct_peak": round(
+            pick(both, lambda k: k["compute_pct_peak"]), 2
+        ),
+        "grid_size": pick(both, lambda k: k["grid_size"]),
+        "worst_long_scoreboard_share_of_measured_pct": pick(
+            both,
+            lambda k: k["derived"][
+                "stall_long_scoreboard_share_of_measured_pct"
+            ],
         ),
     }
 
@@ -232,13 +301,20 @@ b, m = out["baseline"]["headline"], out["mod"]["headline"]
 
 
 def rules(arm):
+    """Every rule this arm's radiation kernels raise, at its worst estimate.
+
+    The union over the kernels rather than one of them: the grouped arm's
+    optics and sweeps phases raise different rules, so a rule counts as retired
+    only when no kernel of that arm's solve raises it.
+    """
     ks = out[arm]["kernels"]
-    lw = next(k for k in ks if "_lw_" in k)
-    return {
-        r["rule"]: r["estimated_speedup_pct"]
-        for r in ks[lw]["rules"]
-        if r.get("estimated_speedup_pct") is not None
-    }
+    worst = {}
+    for name in (k for k in ks if "_lw_" in k or "_sw_" in k):
+        for r in ks[name]["rules"]:
+            v = r.get("estimated_speedup_pct")
+            if v is not None:
+                worst[r["rule"]] = max(worst.get(r["rule"], v), v)
+    return worst
 
 
 base_rules, mod_rules = rules("baseline"), rules("mod")
