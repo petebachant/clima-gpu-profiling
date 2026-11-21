@@ -1810,6 +1810,14 @@ pipeline:
       # solve moves every configuration together and cannot change which
       # register budget is best, and declaring them would re-run a GPU stage
       # on every microphysics edit.
+      #
+      # Frozen now that the caps it chose are shipped. Its `uncapped` arm
+      # compiles whatever the tree asks for, so with the budgets in
+      # `rte_gpt_groups.jl` the sweep no longer has an uncapped baseline to
+      # measure against -- it would compare each cap with itself. The
+      # measurement stands at the commit that produced it, where the kernels
+      # were still uncapped; re-running it means reverting the budgets first.
+      frozen: true
       scheduler:
         options:
           - --gpus=1
@@ -1830,6 +1838,66 @@ pipeline:
         - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
       outputs:
         - path: results/radiation-register-cap.toml
+          storage: git
+    radiation-mask-layout:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # What is the grouped cloud mask's memory layout worth, and is it worth
+      # more once the register caps have raised occupancy? Every other wide
+      # workspace a grouped round writes is column-fast -- the optics arrays
+      # come from `_coalesced_3d_zeros(DA, FT, ncol, nlay, 3)` and the partial
+      # accumulators are `(ncolw, nlay + 1, planes)` -- so a `(nlay, ncolw)`
+      # mask stands a warp's threads `nlay` bytes apart and makes one one-byte
+      # access touch 32 sectors where it could touch one.
+      #
+      # What that costs is wavefronts, not bandwidth. The tile a warp walks is
+      # the same either way and L1 absorbs it, so the layer-fast layout does
+      # not move more bytes off the device -- it issues 32 times the requests
+      # to move them, and on a kernel whose stalls are 80% long_scoreboard
+      # that is paid in latency.
+      #
+      # The cap state is an axis and not a constant, which is the point of the
+      # 2x2: raising occupancy over the phase split made these kernels MORE
+      # latency-exposed, not less, so a treatment that removes requests should
+      # be worth more at the shipped caps than without them. Each layout is
+      # differenced against the layer-fast arm of its OWN cap state, so a
+      # layout figure never carries a cap, and `cap_only` and
+      # `both_treatments` put the two treatments in one table.
+      #
+      # Both layouts are live at once because the layout is a type: `WideMask`
+      # wraps the column-fast store and `_mask_column` slices each correctly.
+      # So the comparison is paired inside one job rather than taken across
+      # two, which is what radiation-register-cap's own figures show this
+      # machine requires.
+      #
+      # A layout cannot change the answer -- the McICA draw is keyed on
+      # `(key, gcol, igpt, ilay)`, not on memory order -- so the mask itself
+      # is compared in a canonical orientation, where a transposition error
+      # cannot read as agreement.
+      #
+      # ClimaAtmos and ClimaCore sources are deliberately NOT inputs, for the
+      # reason radiation-register-cap gives above.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=100
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/measure-radiation-mask-layout.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      inputs:
+        - scripts/measure-radiation-mask-layout.jl
+        - scripts/run-julia-script.sh
+        - RRTMGP.jl-mod/src
+        - RRTMGP.jl-mod/ext
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      outputs:
+        - path: results/radiation-mask-layout.toml
           storage: git
     group-workspace-memory:
       kind: shell-script
