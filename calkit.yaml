@@ -1770,6 +1770,67 @@ pipeline:
       outputs:
         - path: results/group-block-size.toml
           storage: git
+    radiation-register-cap:
+      kind: shell-script
+      environment: clima
+      script_path: scripts/run-julia-script.sh
+      # What does `ptxas` charge to shed registers off the grouped radiation
+      # kernels, now that the phase split has taken them off the 255-register
+      # cap? Each of the four sits at the most warps its own count permits, so
+      # the launch side is closed -- group-block-size closed it -- and what is
+      # left is the budget itself.
+      #
+      # The two earlier attempts on this family were caps on the FUSED
+      # solvers, and both lost: cramming a 255-register live state into 128
+      # roughly doubled a local frame that was already large. A dozen
+      # registers off a kernel carrying 32 bytes of local memory is a
+      # different question, and register-cap-filter found that `ptxas` meets a
+      # cut that small almost entirely without spilling -- which is also the
+      # trap, because the allocator can meet a budget by rematerializing
+      # instead, costing instructions and no local memory at all. So the local
+      # frame is a diagnostic here and the decision rests on the clock.
+      #
+      # Caps are computed from the allocation granularity rather than chosen,
+      # and every one is put to the driver's own occupancy query before it is
+      # timed: a step the model gets wrong reads as a recorded disagreement
+      # rather than as a silent premise, which is the mistake this project has
+      # made twice by dividing the register file.
+      #
+      # One reservation for every configuration, in one process against one
+      # settled AMIP state. Timing is interleaved and paired rather than
+      # blocked -- each round visits every configuration once in a rotating
+      # order -- because a blocked design on this machine reads the device's
+      # drift as the effect, and the drift has been larger than what is being
+      # measured. The sign of each effect is tested over the rounds and the
+      # rounds are split in half, so a magnitude that does not hold across the
+      # run says so.
+      #
+      # ClimaAtmos and ClimaCore sources are deliberately NOT inputs, for the
+      # reason group-block-size gives: a change upstream of the radiation
+      # solve moves every configuration together and cannot change which
+      # register budget is best, and declaring them would re-run a GPU stage
+      # on every microphysics edit.
+      scheduler:
+        options:
+          - --gpus=1
+          - --time=100
+      args:
+        - --project=ClimaCoupler.jl-mod/experiments/AMIP
+        - scripts/measure-radiation-register-cap.jl
+        - --config_file
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      inputs:
+        - scripts/measure-radiation-register-cap.jl
+        - scripts/run-julia-script.sh
+        - RRTMGP.jl-mod/src
+        - RRTMGP.jl-mod/ext
+        - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+        - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+        - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+        - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      outputs:
+        - path: results/radiation-register-cap.toml
+          storage: git
     group-workspace-memory:
       kind: shell-script
       environment: clima

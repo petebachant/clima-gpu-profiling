@@ -142,8 +142,11 @@ const GATED_FALLBACK = Dict(
 
 # A bare `name(` where `name` is exported by an import-only module, is not
 # bound in this file, and does not resolve in Main -- so it cannot resolve at
-# run time either. The `(?<![.\w])` is what keeps a qualified `CUDA.name(`
-# out of the match. Returns the hits and the import-only modules it could not
+# run time either. The `(?<![.\w@])` is what keeps a qualified `CUDA.name(`
+# out of the match, and the `@` keeps `CUDA.@elapsed(x)` out of it too -- that
+# is a macro call, whose name this check resolves separately, and without the
+# `@` it read as a bare call to `elapsed` and failed the repo's own working
+# scripts. Returns the hits and the import-only modules it could not
 # resolve, because a check that cannot see a module is UNCHECKED, not clean.
 function unqualified_import_calls(src)
     usings, imports = module_import_forms(src)
@@ -171,7 +174,7 @@ function unqualified_import_calls(src)
     hits = Tuple{Symbol, String, Int}[]
     isempty(gated) && return hits, unresolved
     for (ln, raw) in enumerate(split(src, '\n'))
-        for m in eachmatch(r"(?<![.\w])([A-Za-z_][A-Za-z0-9_!]*)\s*\(", strip_comment(raw))
+        for m in eachmatch(r"(?<![.\w@])([A-Za-z_][A-Za-z0-9_!]*)\s*\(", strip_comment(raw))
             sym = Symbol(m.captures[1])
             haskey(gated, sym) && push!(hits, (sym, gated[sym], ln))
         end
