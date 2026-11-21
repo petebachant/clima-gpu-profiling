@@ -4,11 +4,11 @@
     "baseline_summed_equals_elapsed": true,
     "baseline_summed_ms": 34416.3,
     "carries_other_treatments": false,
-    "change_pct": -5.97,
-    "change_pct_if_summed": -5.97,
+    "change_pct": -7.31,
+    "change_pct_if_summed": -7.31,
     "mod_concurrency_inflation_ms": 0.0,
-    "mod_elapsed_ms": 32360.9,
-    "mod_summed_ms": 32360.9
+    "mod_elapsed_ms": 31900.4,
+    "mod_summed_ms": 31900.4
   },
   "longwave": {
     "baseline": {
@@ -38,55 +38,55 @@
       "threads_agree": true,
       "warps_per_sm": 8
     },
-    "change_pct": -32.51,
-    "change_pct_if_summed": -32.51,
+    "change_pct": -46.52,
+    "change_pct_if_summed": -46.52,
     "mod": {
       "block": 128,
       "blocks_per_sm": 28.44,
-      "elapsed_ms": 1800.0,
+      "elapsed_ms": 1425.9,
       "grid": 3072,
       "kernels": [
         {
           "block": 128,
           "blocks_per_sm": 28.44,
-          "elapsed_ms": 1295.3,
+          "elapsed_ms": 1092.5,
           "grid": 3072,
           "launches": 64,
           "name": "_lw_group_optics_CUDA_",
-          "registers": 156,
+          "registers": 96,
           "threads": 393216,
-          "warps_per_sm": 12
+          "warps_per_sm": 20
         },
         {
           "block": 128,
           "blocks_per_sm": 28.44,
-          "elapsed_ms": 504.7,
+          "elapsed_ms": 333.4,
           "grid": 3072,
           "launches": 64,
           "name": "_lw_group_sweeps_CUDA_",
-          "registers": 140,
+          "registers": 72,
           "threads": 393216,
-          "warps_per_sm": 12
+          "warps_per_sm": 28
         }
       ],
       "launches": 128,
       "name": "_lw_group_optics_CUDA_ + _lw_group_sweeps_CUDA_",
-      "registers": 156,
-      "summed_ms": 1800.0,
+      "registers": 96,
+      "summed_ms": 1425.9,
       "summed_over_elapsed": 1.0,
       "threads": 393216,
       "threads_agree": true,
-      "warps_per_sm": 12
+      "warps_per_sm": 20
     },
-    "mod_charged_ms": 1801.3,
+    "mod_charged_ms": 1427.2,
     "mod_overhead_ms": 1.3,
     "pct_of_device_baseline": 7.75,
-    "saved_ms": 867.5,
-    "saved_pct_of_device": 2.521
+    "saved_ms": 1241.6,
+    "saved_pct_of_device": 3.608
   },
   "noise": {
     "untreated_kernels_compared": 21,
-    "worst_untreated_kernel_delta_ms": 8.6
+    "worst_untreated_kernel_delta_ms": 18.2
   },
   "note": "All device shares are ELAPSED time -- the union of the kernel intervals -- not `SUM(end-start)`, which counts a moment once per resident kernel and so is not elapsed time once a treatment launches concurrently. `change_pct_if_summed` is what the summed figure would have claimed, and for longwave it has the opposite sign. Both bands are treated as of 2026-11-05, and each is charged for its own reduction and hoisted aerosol mask; neither is a control any more, so each saving is resolved against the untreated kernels alone. The mod arm's solve kernels are different kernels from the baseline's, so the arms are paired by role. `waves` is a tested prediction, not an explanation: it rose from below one to many at unchanged blocks per SM and the longwave time did not move, and a concurrent-launch build of the same split measured the same saving at a low overlap factor. The device total carries the sedimentation fold as well and is not this treatment's figure.",
   "overhead": {
@@ -152,9 +152,9 @@
   "provenance": {
     "baseline_db_sha256_16": "516ceceb52fa3e1e",
     "baseline_ref": "b37294121359ce9971a8b73c30c63bd86597b39d",
-    "mod_db_sha256_16": "2e23c178d49a52ea",
-    "mod_ref": "b9bf78f43f642cae575a6bbd3c459d0914c45b92",
-    "source_commit": "aff4d4ff2410f5104a1500732ca3d5cb342cf6d0"
+    "mod_db_sha256_16": "722a630e24db2961",
+    "mod_ref": "b702067195f16e60ab2b42417bf9be2842ca4590",
+    "source_commit": "a8722867d54575628bba9be3060be62d46fa90d0"
   },
   "saving_resolved_against_controls": true,
   "shortwave": {
@@ -185,51 +185,51 @@
       "threads_agree": true,
       "warps_per_sm": 8
     },
-    "change_pct": -48.09,
-    "change_pct_if_summed": -48.09,
+    "change_pct": -53.79,
+    "change_pct_if_summed": -53.79,
     "mod": {
       "block": 128,
       "blocks_per_sm": 28.44,
-      "elapsed_ms": 1265.7,
+      "elapsed_ms": 1126.5,
       "grid": 3072,
       "kernels": [
         {
           "block": 128,
           "blocks_per_sm": 28.44,
-          "elapsed_ms": 934.1,
+          "elapsed_ms": 877.5,
           "grid": 3072,
           "launches": 56,
           "name": "_sw_group_optics_CUDA_",
-          "registers": 124,
+          "registers": 96,
           "threads": 393216,
-          "warps_per_sm": 16
+          "warps_per_sm": 20
         },
         {
           "block": 128,
           "blocks_per_sm": 28.44,
-          "elapsed_ms": 331.6,
+          "elapsed_ms": 249.0,
           "grid": 3072,
           "launches": 56,
           "name": "_sw_group_sweeps_CUDA_",
-          "registers": 117,
+          "registers": 64,
           "threads": 393216,
-          "warps_per_sm": 16
+          "warps_per_sm": 32
         }
       ],
       "launches": 112,
       "name": "_sw_group_optics_CUDA_ + _sw_group_sweeps_CUDA_",
-      "registers": 124,
-      "summed_ms": 1265.7,
+      "registers": 96,
+      "summed_ms": 1126.5,
       "summed_over_elapsed": 1.0,
       "threads": 393216,
       "threads_agree": true,
-      "warps_per_sm": 16
+      "warps_per_sm": 20
     },
-    "mod_charged_ms": 1267.9,
+    "mod_charged_ms": 1128.7,
     "mod_overhead_ms": 2.2,
     "pct_of_device_baseline": 7.1,
-    "saved_ms": 1174.7,
-    "saved_pct_of_device": 3.413,
+    "saved_ms": 1313.9,
+    "saved_pct_of_device": 3.818,
     "treated": true
   },
   "sw_saving_resolved_against_controls": true,
@@ -244,10 +244,10 @@
     "groups": 16,
     "mod": {
       "blocks": 3072,
-      "blocks_resident": 324,
-      "blocks_resident_per_sm": 3,
+      "blocks_resident": 540,
+      "blocks_resident_per_sm": 5,
       "launches": 128,
-      "waves": 9.48
+      "waves": 5.69
     },
     "occupancy_differs": true
   }

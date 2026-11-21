@@ -641,13 +641,13 @@ stages:
       nfiles: 22
     - path: RRTMGP.jl-mod/ext
       hash: md5
-      md5: 84e2faa9cd5154c16b603359b1aafc6f.dir
-      size: 83637
+      md5: 7f3299cf5b553cf1ebb234a265641aae.dir
+      size: 85186
       nfiles: 12
     - path: RRTMGP.jl-mod/src
       hash: md5
-      md5: 9a44c53e9e4fd6dfd02b6bea8dea63a4.dir
-      size: 364289
+      md5: ae43e1864cb8b5191849c2428c0d37e4.dir
+      size: 364813
       nfiles: 44
     - path: scripts/run-nsys.sh
       hash: md5
@@ -660,16 +660,16 @@ stages:
     outs:
     - path: .calkit/scheduler/logs/mod-nsys.out
       hash: md5
-      md5: 9db436e7e07e6acf59d5b9b7037ee077
-      size: 169421
+      md5: fdd85cedf74262c088d619740a42400a
+      size: 168326
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: 960d2211e7ee9a468addbedd844ae2df
-      size: 26941515
+      md5: a48f981d9ac6fe20bceec4a9eaa71e6b
+      size: 26848321
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 12770dc9c129d2c848141d1fd2783921
-      size: 69107712
+      md5: 347b9eb3afa2ad3c4b0e722a13df4d16
+      size: 68517888
   mod-nsys-to-sqlite:
     cmd: ' bash --noprofile --norc -c "nsys export results/nsys/mod.nsys-rep -t sqlite
       -o results/nsys/mod.sqlite"'
@@ -802,8 +802,8 @@ stages:
       size: 69652480
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 12770dc9c129d2c848141d1fd2783921
-      size: 69107712
+      md5: 347b9eb3afa2ad3c4b0e722a13df4d16
+      size: 68517888
     - path: results/step-comparison.json
       hash: md5
       md5: 68fe8b09f128dcb6c6a37aba06543241
@@ -815,8 +815,8 @@ stages:
     outs:
     - path: results/summary.json
       hash: md5
-      md5: 28d4fb0c4f87db9e3bc6be5c3beb2bb8
-      size: 2410
+      md5: eae061cf405a27d0ac19543c2786c63d
+      size: 2411
   mod-ncu:
     cmd: calkit scheduler batch --name mod-ncu --environment clima --dep 
       scripts/run.jl --dep ClimaCoupler.jl-mod/src --dep 
@@ -1182,8 +1182,8 @@ stages:
       size: 217924
     - path: .calkit/scheduler/logs/mod-nsys.out
       hash: md5
-      md5: 9db436e7e07e6acf59d5b9b7037ee077
-      size: 169421
+      md5: fdd85cedf74262c088d619740a42400a
+      size: 168326
     - path: results/nsys/baseline.nsys-rep
       hash: md5
       md5: c4d61093c74f3e42eee1919ffca9411a
@@ -1194,25 +1194,25 @@ stages:
       size: 69652480
     - path: results/nsys/mod.nsys-rep
       hash: md5
-      md5: 960d2211e7ee9a468addbedd844ae2df
-      size: 26941515
+      md5: a48f981d9ac6fe20bceec4a9eaa71e6b
+      size: 26848321
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 12770dc9c129d2c848141d1fd2783921
-      size: 69107712
+      md5: 347b9eb3afa2ad3c4b0e722a13df4d16
+      size: 68517888
     outs:
     - path: .calkit/notebooks/executed/notebooks/compare-kernels.ipynb
       hash: md5
-      md5: 297ad56cd48c7f6b3962205d8202185b
-      size: 95267
+      md5: 027c3fcd1f26a692996fdb85e670daa4
+      size: 93371
     - path: .calkit/notebooks/html/notebooks/compare-kernels.html
       hash: md5
-      md5: 1f8a550a50cbf647a98ffaeca67419ff
-      size: 462817
+      md5: 271fc2c3777f9d42e3280a84655f969b
+      size: 460647
     - path: results/top-kernels.csv
       hash: md5
-      md5: 5f4d7efb2bdcea684b8bee54100e4e1c
-      size: 3491
+      md5: 20868f1367379f4e6f876e8b89a41507
+      size: 3441
   analyze-logs:
     cmd: calkit nb execute --environment py --no-check --to html 
       "notebooks/analyze-logs.ipynb"
@@ -3985,8 +3985,8 @@ stages:
       size: 69652480
     - path: results/nsys/mod.sqlite
       hash: md5
-      md5: 12770dc9c129d2c848141d1fd2783921
-      size: 69107712
+      md5: 347b9eb3afa2ad3c4b0e722a13df4d16
+      size: 68517888
     - path: results/treatment.json
       hash: md5
       md5: af2422ad5b1ec1590168692c1264b385
@@ -3998,8 +3998,8 @@ stages:
     outs:
     - path: results/gpoint-groups.json
       hash: md5
-      md5: 60ad7d72e5af343f5ca2c2dda0fdf779
-      size: 7394
+      md5: fd0ac73036976cfa25eee59499ce8a70
+      size: 7390
   fold-compile-cost:
     cmd: calkit scheduler batch --name fold-compile-cost --environment clima 
       --dep scripts/measure-fold-compile-cost.jl --dep 
