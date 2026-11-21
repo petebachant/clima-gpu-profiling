@@ -243,9 +243,11 @@ function model_warps_per_sm(registers, block_threads)
     return min(blocks * warps_per_block, MAX_WARPS_PER_SM)
 end
 
-# The highest multiple of the granule strictly below `registers` that the model
-# says reaches more warps, and then the next such step below that one. Returned
-# smallest-first-free: a kernel with no step left returns an empty vector.
+# The `how_many` highest multiples of the granule strictly below `registers`
+# that the model says each reach more warps than the step above. Returned
+# largest-first: a kernel with no step left returns an empty vector. Four steps
+# rather than two because the first pass found longwave still falling at the
+# bottom of a two-step range, so a two-step search cannot see its own floor.
 function candidate_caps(registers, block_threads, how_many)
     caps = Int[]
     reached = model_warps_per_sm(registers, block_threads)
@@ -372,7 +374,7 @@ function all_kernels(how_many)
     return built, records
 end
 
-built, kernel_records = all_kernels(2)
+built, kernel_records = all_kernels(4)
 
 # ---------------------------------------------------------------------------
 # The configurations. One per band: the uncapped pair, then each cap applied to
@@ -698,9 +700,10 @@ results = Dict{String, Any}(
               "round, so the comparison is a register budget and not a " *
               "launch configuration -- that question is closed separately in " *
               "results/group-block-size.toml. Caps are computed, not chosen: " *
-              "for each kernel the highest multiple of 8 below its own count " *
-              "that the allocation granularity says reaches more warps, and " *
-              "the next such step below it. `predicted_warps` is that model " *
+              "for each kernel the four highest multiples of 8 below its " *
+              "own count that the allocation granularity says each reach " *
+              "more warps than the step above. `predicted_warps` is that " *
+              "model " *
               "and `warps_per_sm` is the driver's own " *
               "cuOccupancyMaxActiveBlocksPerMultiprocessor, so a step the " *
               "model gets wrong reads as a disagreement rather than as a " *
@@ -727,7 +730,15 @@ results = Dict{String, Any}(
               "rematerializes, it does not reassociate -- so " *
               "`bit_for_bit_with_uncapped` should hold everywhere, and a " *
               "failure means the cap is doing something other than what " *
-              "this measures.",
+              "this measures. The grid holds a point per kernel as well as " *
+              "the matched pair, because the first pass found the two halves " *
+              "compose: at every cap it tried, the matched `both_` point " *
+              "landed within 0.03 points of the sum of the two " *
+              "single-kernel points, against effects of 2 to 17 points. So " *
+              "a band's best budget is read off its single-kernel points " *
+              "independently, which is why they are swept deeper than the " *
+              "matched pairs need, and the matched pairs are kept as the " *
+              "check on that composition rather than as the candidates.",
 )
 
 mkpath(dirname(out_path))
