@@ -5811,3 +5811,93 @@ stages:
       hash: md5
       md5: 10d013a5af1d62ab0b42e98d61df10ea
       size: 28134
+  radiation-mask-layout:
+    cmd: calkit scheduler batch --name radiation-mask-layout --environment clima
+      --dep scripts/measure-radiation-mask-layout.jl --dep RRTMGP.jl-mod/src 
+      --dep RRTMGP.jl-mod/ext --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml 
+      --dep .calkit/env-locks/clima --out results/radiation-mask-layout.toml 
+      --option --gpus=1 --option --time=100 -- scripts/run-julia-script.sh 
+      --project=ClimaCoupler.jl-mod/experiments/AMIP 
+      scripts/measure-radiation-mask-layout.jl --config_file 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      hash: md5
+      md5: 043604dbc36fe3bebce33d96af302a3e
+      size: 1076
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 3974e589a2618f7adb8c0164acb5807b
+      size: 855
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      hash: md5
+      md5: cd5e54c250d47134e0fc5fa459829fce
+      size: 129293
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: RRTMGP.jl-mod/ext
+      hash: md5
+      md5: f166c9620baa2b4f841d702fb3842064.dir
+      size: 85202
+      nfiles: 12
+    - path: RRTMGP.jl-mod/src
+      hash: md5
+      md5: 6f8e37e4fc6aac3917f8a058bfbf5f8c.dir
+      size: 365561
+      nfiles: 44
+    - path: scripts/measure-radiation-mask-layout.jl
+      hash: md5
+      md5: d339b0424a7379fe1aff2a7ef2c6b856
+      size: 23660
+    - path: scripts/run-julia-script.sh
+      hash: md5
+      md5: 2b491e48a8f15c4ea7ff76d19d95f830
+      size: 1040
+    outs:
+    - path: .calkit/scheduler/logs/radiation-mask-layout.out
+      hash: md5
+      md5: eb0820fabc50a6a9bdd5f71513c0beb2
+      size: 45463
+    - path: results/radiation-mask-layout.toml
+      hash: md5
+      md5: efc717f826d8eb3941f32bc1e333e377
+      size: 13718
+  radiation-register-cap-doc/values:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/experiments/radiation-register-cap.md/values.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: 
+        .calkit/markdown/docs/experiments/radiation-register-cap.md/values.py
+      hash: md5
+      md5: 9a02bdaf5c297152f07a665197216145
+      size: 11962
+    - path: results/radiation-mask-layout.toml
+      hash: md5
+      md5: efc717f826d8eb3941f32bc1e333e377
+      size: 13718
+    - path: results/radiation-register-cap.toml
+      hash: md5
+      md5: 10d013a5af1d62ab0b42e98d61df10ea
+      size: 28134
+    outs:
+    - path: results/docs/radiation-register-cap.json
+      hash: md5
+      md5: 600d1eca68dc400de26be90700c80cd7
+      size: 22299

@@ -1233,6 +1233,23 @@ pipeline:
       # from. That conversion is anchored on the one case where both ends are
       # measured, so it cancels the profiling window's length rather than
       # needing it declared.
+    radiation-register-cap-doc:
+      kind: markdown
+      target_path: docs/experiments/radiation-register-cap.md
+      environment: py
+      # Live on main. Its only input is radiation-register-cap's own results
+      # file, which no other experiment writes, so a later pass cannot restate
+      # this document against a different run -- the reason group-block-size's
+      # document below needs no freeze either. The sweep stage upstream of it
+      # IS frozen, because the budgets it chose now ship and its uncapped arm
+      # no longer exists in the tree; this document renders from the TOML that
+      # pass committed.
+      #
+      # Its values stage converts that TOML to JSON because value markers read
+      # JSON only, and derives the per-kernel optima and the composition
+      # residuals the prose argues from -- including the two mixed pairs that
+      # ship, which are predicted from the single-kernel columns rather than
+      # timed. radiation-mask-layout's `cap_only` arm times them directly.
     group-block-size-doc:
       kind: markdown
       target_path: docs/experiments/group-block-size.md
@@ -1865,11 +1882,12 @@ pipeline:
       # layout figure never carries a cap, and `cap_only` and
       # `both_treatments` put the two treatments in one table.
       #
-      # Both layouts are live at once because the layout is a type: `WideMask`
-      # wraps the column-fast store and `_mask_column` slices each correctly.
-      # So the comparison is paired inside one job rather than taken across
-      # two, which is what radiation-register-cap's own figures show this
-      # machine requires.
+      # The comparison is paired inside one job rather than taken across two,
+      # which is what radiation-register-cap's own figures show this machine
+      # requires. That needs both layouts live at once, which is why the
+      # layout was a type in RRTMGP: a `WideMask` wrapper around the
+      # column-fast store, and a `_mask_column` seam that slices each store
+      # correctly at the three sites the grouped and ungrouped paths share.
       #
       # A layout cannot change the answer -- the McICA draw is keyed on
       # `(key, gcol, igpt, ilay)`, not on memory order -- so the mask itself
@@ -1878,6 +1896,14 @@ pipeline:
       #
       # ClimaAtmos and ClimaCore sources are deliberately NOT inputs, for the
       # reason radiation-register-cap gives above.
+      #
+      # Frozen with its answer taken. The column-fast store is not worth
+      # shipping -- it is slower than the layer-fast one in both bands with
+      # the kernels uncapped, and at the shipped caps it buys half a percent
+      # in the shortwave against nothing resolved in the longwave -- so the
+      # type it needed is not in the tree and this stage has only one of its
+      # two layouts to time. Re-measure by restoring the type first.
+      frozen: true
       scheduler:
         options:
           - --gpus=1

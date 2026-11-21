@@ -683,7 +683,41 @@ stages:
       - .calkit/scheduler/logs/radiation-register-cap.out:
           cache: false
           persist: true
+    frozen: true
     desc: Automatically generated from the 'radiation-register-cap' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  radiation-mask-layout:
+    cmd: calkit scheduler batch --name radiation-mask-layout --environment clima
+      --dep scripts/measure-radiation-mask-layout.jl --dep RRTMGP.jl-mod/src
+      --dep RRTMGP.jl-mod/ext --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      --dep .calkit/env-locks/clima --out results/radiation-mask-layout.toml
+      --option --gpus=1 --option --time=100 -- scripts/run-julia-script.sh
+      --project=ClimaCoupler.jl-mod/experiments/AMIP
+      scripts/measure-radiation-mask-layout.jl --config_file
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+    deps:
+      - scripts/run-julia-script.sh
+      - scripts/measure-radiation-mask-layout.jl
+      - RRTMGP.jl-mod/src
+      - RRTMGP.jl-mod/ext
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/config/atmos_configs/climaatmos_progedmf_1m.yml
+      - .calkit/env-locks/clima
+    outs:
+      - results/radiation-mask-layout.toml:
+          cache: false
+          persist: true
+      - .calkit/scheduler/logs/radiation-mask-layout.out:
+          cache: false
+          persist: true
+    frozen: true
+    desc: Automatically generated from the 'radiation-mask-layout' stage in
       calkit.yaml. Changes made here will be overwritten.
   group-workspace-memory:
     cmd: calkit scheduler batch --name group-workspace-memory --environment
@@ -903,6 +937,20 @@ stages:
           persist: false
     desc: Automatically generated from the 'wave-census-doc/values' stage in
       calkit.yaml. Changes made here will be overwritten.
+  radiation-register-cap-doc/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/radiation-register-cap.md/values.py
+    deps:
+      - .calkit/markdown/docs/experiments/radiation-register-cap.md/values.py
+      - results/radiation-register-cap.toml
+      - results/radiation-mask-layout.toml
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/radiation-register-cap.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'radiation-register-cap-doc/values'
+      stage in calkit.yaml. Changes made here will be overwritten.
   group-block-size-doc/values:
     cmd: calkit xenv -n py --no-check -- python
       .calkit/markdown/docs/experiments/group-block-size.md/values.py

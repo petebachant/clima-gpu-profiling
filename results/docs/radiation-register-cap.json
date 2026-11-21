@@ -1,0 +1,788 @@
+{
+  "block_threads": 128,
+  "rounds_interleaved": 12,
+  "timings_per_round": 3,
+  "ncol": 24576,
+  "nlay": 80,
+  "ngroups": 16,
+  "kernels": {
+    "lw_optics": {
+      "registers": 156,
+      "local_bytes": 32,
+      "max_threads": 384,
+      "warps_per_sm": 12,
+      "predicted_warps": 12,
+      "model_agrees": true,
+      "caps_compiled": "128, 96, 80 and 72",
+      "caps": {
+        "128": {
+          "cap": 128,
+          "compiled": true,
+          "registers": 128,
+          "registers_shed": 28,
+          "met_cap": true,
+          "local_bytes": 144,
+          "local_bytes_added": 112,
+          "warps_per_sm": 16,
+          "warps_gained": 4,
+          "predicted_warps": 16,
+          "model_agrees": true,
+          "local_growth_x": 4.5
+        },
+        "72": {
+          "cap": 72,
+          "compiled": true,
+          "registers": 72,
+          "registers_shed": 84,
+          "met_cap": true,
+          "local_bytes": 368,
+          "local_bytes_added": 336,
+          "warps_per_sm": 28,
+          "warps_gained": 16,
+          "predicted_warps": 28,
+          "model_agrees": true,
+          "local_growth_x": 11.5
+        },
+        "80": {
+          "cap": 80,
+          "compiled": true,
+          "registers": 80,
+          "registers_shed": 76,
+          "met_cap": true,
+          "local_bytes": 336,
+          "local_bytes_added": 304,
+          "warps_per_sm": 24,
+          "warps_gained": 12,
+          "predicted_warps": 24,
+          "model_agrees": true,
+          "local_growth_x": 10.5
+        },
+        "96": {
+          "cap": 96,
+          "compiled": true,
+          "registers": 96,
+          "registers_shed": 60,
+          "met_cap": true,
+          "local_bytes": 272,
+          "local_bytes_added": 240,
+          "warps_per_sm": 20,
+          "warps_gained": 8,
+          "predicted_warps": 20,
+          "model_agrees": true,
+          "local_growth_x": 8.5
+        }
+      }
+    },
+    "lw_sweeps": {
+      "registers": 140,
+      "local_bytes": 32,
+      "max_threads": 384,
+      "warps_per_sm": 12,
+      "predicted_warps": 12,
+      "model_agrees": true,
+      "caps_compiled": "128, 96, 80 and 72",
+      "caps": {
+        "128": {
+          "cap": 128,
+          "compiled": true,
+          "registers": 128,
+          "registers_shed": 12,
+          "met_cap": true,
+          "local_bytes": 40,
+          "local_bytes_added": 8,
+          "warps_per_sm": 16,
+          "warps_gained": 4,
+          "predicted_warps": 16,
+          "model_agrees": true,
+          "local_growth_x": 1.25
+        },
+        "72": {
+          "cap": 72,
+          "compiled": true,
+          "registers": 72,
+          "registers_shed": 68,
+          "met_cap": true,
+          "local_bytes": 216,
+          "local_bytes_added": 184,
+          "warps_per_sm": 28,
+          "warps_gained": 16,
+          "predicted_warps": 28,
+          "model_agrees": true,
+          "local_growth_x": 6.75
+        },
+        "80": {
+          "cap": 80,
+          "compiled": true,
+          "registers": 80,
+          "registers_shed": 60,
+          "met_cap": true,
+          "local_bytes": 184,
+          "local_bytes_added": 152,
+          "warps_per_sm": 24,
+          "warps_gained": 12,
+          "predicted_warps": 24,
+          "model_agrees": true,
+          "local_growth_x": 5.75
+        },
+        "96": {
+          "cap": 96,
+          "compiled": true,
+          "registers": 96,
+          "registers_shed": 44,
+          "met_cap": true,
+          "local_bytes": 144,
+          "local_bytes_added": 112,
+          "warps_per_sm": 20,
+          "warps_gained": 8,
+          "predicted_warps": 20,
+          "model_agrees": true,
+          "local_growth_x": 4.5
+        }
+      }
+    },
+    "sw_optics": {
+      "registers": 124,
+      "local_bytes": 32,
+      "max_threads": 512,
+      "warps_per_sm": 16,
+      "predicted_warps": 16,
+      "model_agrees": true,
+      "caps_compiled": "96, 80, 72 and 64",
+      "caps": {
+        "64": {
+          "cap": 64,
+          "compiled": true,
+          "registers": 64,
+          "registers_shed": 60,
+          "met_cap": true,
+          "local_bytes": 248,
+          "local_bytes_added": 216,
+          "warps_per_sm": 32,
+          "warps_gained": 16,
+          "predicted_warps": 32,
+          "model_agrees": true,
+          "local_growth_x": 7.75
+        },
+        "72": {
+          "cap": 72,
+          "compiled": true,
+          "registers": 72,
+          "registers_shed": 52,
+          "met_cap": true,
+          "local_bytes": 216,
+          "local_bytes_added": 184,
+          "warps_per_sm": 28,
+          "warps_gained": 12,
+          "predicted_warps": 28,
+          "model_agrees": true,
+          "local_growth_x": 6.75
+        },
+        "80": {
+          "cap": 80,
+          "compiled": true,
+          "registers": 80,
+          "registers_shed": 44,
+          "met_cap": true,
+          "local_bytes": 184,
+          "local_bytes_added": 152,
+          "warps_per_sm": 24,
+          "warps_gained": 8,
+          "predicted_warps": 24,
+          "model_agrees": true,
+          "local_growth_x": 5.75
+        },
+        "96": {
+          "cap": 96,
+          "compiled": true,
+          "registers": 96,
+          "registers_shed": 28,
+          "met_cap": true,
+          "local_bytes": 120,
+          "local_bytes_added": 88,
+          "warps_per_sm": 20,
+          "warps_gained": 4,
+          "predicted_warps": 20,
+          "model_agrees": true,
+          "local_growth_x": 3.75
+        }
+      }
+    },
+    "sw_sweeps": {
+      "registers": 117,
+      "local_bytes": 32,
+      "max_threads": 512,
+      "warps_per_sm": 16,
+      "predicted_warps": 16,
+      "model_agrees": true,
+      "caps_compiled": "96, 80, 72 and 64",
+      "caps": {
+        "64": {
+          "cap": 64,
+          "compiled": true,
+          "registers": 64,
+          "registers_shed": 53,
+          "met_cap": true,
+          "local_bytes": 192,
+          "local_bytes_added": 160,
+          "warps_per_sm": 32,
+          "warps_gained": 16,
+          "predicted_warps": 32,
+          "model_agrees": true,
+          "local_growth_x": 6.0
+        },
+        "72": {
+          "cap": 72,
+          "compiled": true,
+          "registers": 72,
+          "registers_shed": 45,
+          "met_cap": true,
+          "local_bytes": 144,
+          "local_bytes_added": 112,
+          "warps_per_sm": 28,
+          "warps_gained": 12,
+          "predicted_warps": 28,
+          "model_agrees": true,
+          "local_growth_x": 4.5
+        },
+        "80": {
+          "cap": 80,
+          "compiled": true,
+          "registers": 80,
+          "registers_shed": 37,
+          "met_cap": true,
+          "local_bytes": 112,
+          "local_bytes_added": 80,
+          "warps_per_sm": 24,
+          "warps_gained": 8,
+          "predicted_warps": 24,
+          "model_agrees": true,
+          "local_growth_x": 3.5
+        },
+        "96": {
+          "cap": 96,
+          "compiled": true,
+          "registers": 96,
+          "registers_shed": 21,
+          "met_cap": true,
+          "local_bytes": 56,
+          "local_bytes_added": 24,
+          "warps_per_sm": 20,
+          "warps_gained": 4,
+          "predicted_warps": 20,
+          "model_agrees": true,
+          "local_growth_x": 1.75
+        }
+      }
+    }
+  },
+  "bands": {
+    "lw": {
+      "band": "lw",
+      "any_cap_timed": true,
+      "n_gpt": 256,
+      "rounds": 16,
+      "uncapped_rounds_ms": 435.4,
+      "n_configs_timed": 12,
+      "configs_timed": "sweeps_128, sweeps_96, sweeps_80, sweeps_72, optics_128, optics_96, optics_80, optics_72, both_128, both_96, both_80 and both_72",
+      "best_config": "both_96",
+      "best_change_pct": -17.61,
+      "best_is_resolved": true,
+      "n_faster": 12,
+      "n_slower": 0,
+      "configs_slower": "none",
+      "all_bit_for_bit": true,
+      "worst_change_pct": -0.73,
+      "points": {
+        "uncapped": {
+          "config": "uncapped",
+          "rounds_ms": 435.4,
+          "change_pct": 0.0,
+          "change_pct_first_half": 0.0,
+          "change_pct_second_half": 0.0,
+          "rounds_faster": 0,
+          "rounds_slower": 0,
+          "sign_test_p": 1.0,
+          "resolved": false,
+          "halves_agree": false,
+          "bit_for_bit": true
+        },
+        "sweeps_128": {
+          "config": "sweeps_128",
+          "rounds_ms": 416.6,
+          "change_pct": -4.32,
+          "change_pct_first_half": -4.31,
+          "change_pct_second_half": -4.35,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "sweeps_96": {
+          "config": "sweeps_96",
+          "rounds_ms": 408.4,
+          "change_pct": -6.2,
+          "change_pct_first_half": -6.2,
+          "change_pct_second_half": -6.23,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "sweeps_80": {
+          "config": "sweeps_80",
+          "rounds_ms": 401.7,
+          "change_pct": -7.75,
+          "change_pct_first_half": -7.73,
+          "change_pct_second_half": -7.75,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "sweeps_72": {
+          "config": "sweeps_72",
+          "rounds_ms": 400.5,
+          "change_pct": -8.02,
+          "change_pct_first_half": -8.02,
+          "change_pct_second_half": -8.04,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "optics_128": {
+          "config": "optics_128",
+          "rounds_ms": 401.6,
+          "change_pct": -7.81,
+          "change_pct_first_half": -7.86,
+          "change_pct_second_half": -7.77,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "optics_96": {
+          "config": "optics_96",
+          "rounds_ms": 385.8,
+          "change_pct": -11.41,
+          "change_pct_first_half": -11.41,
+          "change_pct_second_half": -11.41,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "optics_80": {
+          "config": "optics_80",
+          "rounds_ms": 395.1,
+          "change_pct": -9.27,
+          "change_pct_first_half": -9.28,
+          "change_pct_second_half": -9.27,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "optics_72": {
+          "config": "optics_72",
+          "rounds_ms": 432.3,
+          "change_pct": -0.73,
+          "change_pct_first_half": -0.73,
+          "change_pct_second_half": -0.74,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "both_128": {
+          "config": "both_128",
+          "rounds_ms": 382.7,
+          "change_pct": -12.1,
+          "change_pct_first_half": -12.15,
+          "change_pct_second_half": -12.09,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "both_96": {
+          "config": "both_96",
+          "rounds_ms": 358.8,
+          "change_pct": -17.61,
+          "change_pct_first_half": -17.61,
+          "change_pct_second_half": -17.61,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "both_80": {
+          "config": "both_80",
+          "rounds_ms": 361.5,
+          "change_pct": -17.0,
+          "change_pct_first_half": -17.03,
+          "change_pct_second_half": -17.0,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "both_72": {
+          "config": "both_72",
+          "rounds_ms": 397.4,
+          "change_pct": -8.75,
+          "change_pct_first_half": -8.77,
+          "change_pct_second_half": -8.72,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        }
+      }
+    },
+    "sw": {
+      "band": "sw",
+      "any_cap_timed": true,
+      "n_gpt": 224,
+      "rounds": 14,
+      "uncapped_rounds_ms": 305.6,
+      "n_configs_timed": 12,
+      "configs_timed": "sweeps_96, sweeps_80, sweeps_72, sweeps_64, optics_96, optics_80, optics_72, optics_64, both_96, both_80, both_72 and both_64",
+      "best_config": "both_96",
+      "best_change_pct": -7.25,
+      "best_is_resolved": true,
+      "n_faster": 9,
+      "n_slower": 3,
+      "configs_slower": "optics_72, optics_64 and both_72",
+      "all_bit_for_bit": true,
+      "worst_change_pct": 6.29,
+      "points": {
+        "uncapped": {
+          "config": "uncapped",
+          "rounds_ms": 305.6,
+          "change_pct": 0.0,
+          "change_pct_first_half": 0.0,
+          "change_pct_second_half": 0.0,
+          "rounds_faster": 0,
+          "rounds_slower": 0,
+          "sign_test_p": 1.0,
+          "resolved": false,
+          "halves_agree": false,
+          "bit_for_bit": true
+        },
+        "sweeps_96": {
+          "config": "sweeps_96",
+          "rounds_ms": 297.6,
+          "change_pct": -2.61,
+          "change_pct_first_half": -2.58,
+          "change_pct_second_half": -2.68,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "sweeps_80": {
+          "config": "sweeps_80",
+          "rounds_ms": 290.3,
+          "change_pct": -5.08,
+          "change_pct_first_half": -5.09,
+          "change_pct_second_half": -5.08,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "sweeps_72": {
+          "config": "sweeps_72",
+          "rounds_ms": 290.4,
+          "change_pct": -4.91,
+          "change_pct_first_half": -4.94,
+          "change_pct_second_half": -4.89,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "sweeps_64": {
+          "config": "sweeps_64",
+          "rounds_ms": 288.7,
+          "change_pct": -5.51,
+          "change_pct_first_half": -5.51,
+          "change_pct_second_half": -5.53,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "optics_96": {
+          "config": "optics_96",
+          "rounds_ms": 291.4,
+          "change_pct": -4.65,
+          "change_pct_first_half": -4.65,
+          "change_pct_second_half": -4.71,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "optics_80": {
+          "config": "optics_80",
+          "rounds_ms": 299.4,
+          "change_pct": -2.03,
+          "change_pct_first_half": -2.03,
+          "change_pct_second_half": -2.05,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "optics_72": {
+          "config": "optics_72",
+          "rounds_ms": 325.0,
+          "change_pct": 6.29,
+          "change_pct_first_half": 6.35,
+          "change_pct_second_half": 6.26,
+          "rounds_faster": 0,
+          "rounds_slower": 12,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "optics_64": {
+          "config": "optics_64",
+          "rounds_ms": 319.0,
+          "change_pct": 4.37,
+          "change_pct_first_half": 4.41,
+          "change_pct_second_half": 4.33,
+          "rounds_faster": 0,
+          "rounds_slower": 12,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "both_96": {
+          "config": "both_96",
+          "rounds_ms": 283.5,
+          "change_pct": -7.25,
+          "change_pct_first_half": -7.27,
+          "change_pct_second_half": -7.25,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "both_80": {
+          "config": "both_80",
+          "rounds_ms": 284.0,
+          "change_pct": -7.07,
+          "change_pct_first_half": -7.07,
+          "change_pct_second_half": -7.08,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "both_72": {
+          "config": "both_72",
+          "rounds_ms": 309.9,
+          "change_pct": 1.35,
+          "change_pct_first_half": 1.41,
+          "change_pct_second_half": 1.33,
+          "rounds_faster": 0,
+          "rounds_slower": 12,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        },
+        "both_64": {
+          "config": "both_64",
+          "rounds_ms": 301.9,
+          "change_pct": -1.23,
+          "change_pct_first_half": -1.24,
+          "change_pct_second_half": -1.23,
+          "rounds_faster": 12,
+          "rounds_slower": 0,
+          "sign_test_p": 0.00048828125,
+          "resolved": true,
+          "halves_agree": true,
+          "bit_for_bit": true
+        }
+      }
+    }
+  },
+  "verdict": {
+    "all_bit_for_bit": true,
+    "any_cap_is_worth_shipping": true,
+    "bands_with_a_faster_cap": [
+      "lw",
+      "sw"
+    ],
+    "model_agrees_with_driver_everywhere": true
+  },
+  "any_cap_is_worth_shipping": true,
+  "bands_with_a_faster_cap": "lw and sw",
+  "model_agrees_everywhere": true,
+  "all_bit_for_bit": true,
+  "n_occupancy_bought_nothing": 3,
+  "occupancy_bought_nothing": "sw both_72, sw optics_64 and sw optics_72",
+  "compositions": {
+    "lw": {
+      "checked": 4,
+      "rows": {
+        "128": {
+          "cap": 128,
+          "predicted_pct": -12.13,
+          "measured_pct": -12.1,
+          "residual_pts": 0.025
+        },
+        "96": {
+          "cap": 96,
+          "predicted_pct": -17.61,
+          "measured_pct": -17.61,
+          "residual_pts": 0.003
+        },
+        "80": {
+          "cap": 80,
+          "predicted_pct": -17.02,
+          "measured_pct": -17.0,
+          "residual_pts": 0.017
+        },
+        "72": {
+          "cap": 72,
+          "predicted_pct": -8.76,
+          "measured_pct": -8.75,
+          "residual_pts": 0.013
+        }
+      },
+      "worst_residual_pts": 0.025
+    },
+    "sw": {
+      "checked": 4,
+      "rows": {
+        "96": {
+          "cap": 96,
+          "predicted_pct": -7.26,
+          "measured_pct": -7.25,
+          "residual_pts": 0.004
+        },
+        "80": {
+          "cap": 80,
+          "predicted_pct": -7.11,
+          "measured_pct": -7.07,
+          "residual_pts": 0.044
+        },
+        "72": {
+          "cap": 72,
+          "predicted_pct": 1.39,
+          "measured_pct": 1.35,
+          "residual_pts": -0.036
+        },
+        "64": {
+          "cap": 64,
+          "predicted_pct": -1.14,
+          "measured_pct": -1.23,
+          "residual_pts": -0.088
+        }
+      },
+      "worst_residual_pts": 0.088
+    }
+  },
+  "per_kernel": {
+    "lw": {
+      "available": true,
+      "optics_cap": 96,
+      "sweeps_cap": 72,
+      "optics_change_pct": -11.41,
+      "sweeps_change_pct": -8.02,
+      "halves_agree_on_a_cap": false,
+      "predicted_change_pct": -19.43,
+      "is_measured": false,
+      "gain_over_best_timed_pts": -1.82
+    },
+    "sw": {
+      "available": true,
+      "optics_cap": 96,
+      "sweeps_cap": 64,
+      "optics_change_pct": -4.65,
+      "sweeps_change_pct": -5.51,
+      "halves_agree_on_a_cap": false,
+      "predicted_change_pct": -10.16,
+      "is_measured": false,
+      "gain_over_best_timed_pts": -2.91
+    }
+  },
+  "n_composition_checks": 8,
+  "worst_composition_residual_pts": 0.088,
+  "bands_whose_halves_want_different_caps": "lw and sw",
+  "worst_local_growth_x": 11.5,
+  "all_caps_met": true,
+  "confirmation": {
+    "lw": {
+      "predicted_pct": -19.43,
+      "measured_pct": -19.38,
+      "residual_pts": 0.05,
+      "shipped_optics": 96,
+      "shipped_sweeps": 72,
+      "rounds": 20,
+      "rounds_faster": 20,
+      "sign_test_p": 1.9073486328125e-06,
+      "halves_agree": 0.01
+    },
+    "sw": {
+      "predicted_pct": -10.16,
+      "measured_pct": -10.07,
+      "residual_pts": 0.09,
+      "shipped_optics": 96,
+      "shipped_sweeps": 64,
+      "rounds": 20,
+      "rounds_faster": 20,
+      "sign_test_p": 1.9073486328125e-06,
+      "halves_agree": 0.04
+    }
+  },
+  "worst_confirmation_residual_pts": 0.09,
+  "shipped_pairs_confirmed": true
+}
