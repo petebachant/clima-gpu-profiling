@@ -1233,6 +1233,17 @@ pipeline:
       # from. That conversion is anchored on the one case where both ends are
       # measured, so it cancels the profiling window's length rather than
       # needing it declared.
+    radiation-mask-layout-doc:
+      kind: markdown
+      target_path: docs/experiments/radiation-mask-layout.md
+      environment: py
+      # Live on main although the stage it reads is frozen. Its only input is
+      # radiation-mask-layout's own results file, which no other experiment
+      # writes, so there is nothing for a later pass to clobber and nothing to
+      # protect with a freeze of its own -- the same position as
+      # group-block-size's document. The sweep is frozen because the type it
+      # needs is no longer in the tree; this write-up renders from the TOML
+      # that pass committed.
     radiation-register-cap-doc:
       kind: markdown
       target_path: docs/experiments/radiation-register-cap.md

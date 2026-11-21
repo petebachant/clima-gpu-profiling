@@ -937,6 +937,19 @@ stages:
           persist: false
     desc: Automatically generated from the 'wave-census-doc/values' stage in
       calkit.yaml. Changes made here will be overwritten.
+  radiation-mask-layout-doc/values:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/radiation-mask-layout.md/values.py
+    deps:
+      - .calkit/markdown/docs/experiments/radiation-mask-layout.md/values.py
+      - results/radiation-mask-layout.toml
+      - .calkit/env-locks/py
+    outs:
+      - results/docs/radiation-mask-layout.json:
+          cache: false
+          persist: false
+    desc: Automatically generated from the 'radiation-mask-layout-doc/values'
+      stage in calkit.yaml. Changes made here will be overwritten.
   radiation-register-cap-doc/values:
     cmd: calkit xenv -n py --no-check -- python
       .calkit/markdown/docs/experiments/radiation-register-cap.md/values.py
