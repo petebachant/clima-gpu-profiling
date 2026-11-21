@@ -4,7 +4,7 @@ float_type = "Float32"
 ncol = 24576
 ngroups = 16
 nlay = 80
-note = "Asks what `ptxas` charges to shed registers off the four kernels the g-point-grouped radiation solves launch, now that the phase split has taken them off the 255-register cap. Every point launches at the shipped block size and differs only in the `maxregs` passed to one or both halves of a round, so the comparison is a register budget and not a launch configuration -- that question is closed separately in results/group-block-size.toml. Caps are computed, not chosen: for each kernel the highest multiple of 8 below its own count that the allocation granularity says reaches more warps, and the next such step below it. `predicted_warps` is that model and `warps_per_sm` is the driver's own cuOccupancyMaxActiveBlocksPerMultiprocessor, so a step the model gets wrong reads as a disagreement rather than as a silent premise; a cap the driver gives no extra warps is recorded in `skipped` and never timed. `local_bytes_added` bounds what the cap cost in spill but does not measure it: the allocator can also meet a budget by rematerializing, which costs instructions and no local memory, so a clean local frame is not a free cap and the decision rests on the clock. Timing is interleaved and paired rather than blocked: each round visits every configuration once in an order that rotates by one per round, and `change_pct` is the median of the per-round differences against the uncapped point of the same round, so a drift slow compared with a round falls on both arms of every difference. `sign_test_p` is an exact two-sided sign test over those differences and is what `best_is_resolved` tests, because the spread of one point's own repeats is set by the device's drift and is not an error bar for the difference. The rounds are split in half and reported as `change_pct_first_half` and `change_pct_second_half`: a magnitude whose halves disagree is reporting drift as well as a cap. A register budget cannot change arithmetic -- the allocator spills and rematerializes, it does not reassociate -- so `bit_for_bit_with_uncapped` should hold everywhere, and a failure means the cap is doing something other than what this measures."
+note = "Asks what `ptxas` charges to shed registers off the four kernels the g-point-grouped radiation solves launch, now that the phase split has taken them off the 255-register cap. Every point launches at the shipped block size and differs only in the `maxregs` passed to one or both halves of a round, so the comparison is a register budget and not a launch configuration -- that question is closed separately in results/group-block-size.toml. Caps are computed, not chosen: for each kernel the four highest multiples of 8 below its own count that the allocation granularity says each reach more warps than the step above. `predicted_warps` is that model and `warps_per_sm` is the driver's own cuOccupancyMaxActiveBlocksPerMultiprocessor, so a step the model gets wrong reads as a disagreement rather than as a silent premise; a cap the driver gives no extra warps is recorded in `skipped` and never timed. `local_bytes_added` bounds what the cap cost in spill but does not measure it: the allocator can also meet a budget by rematerializing, which costs instructions and no local memory, so a clean local frame is not a free cap and the decision rests on the clock. Timing is interleaved and paired rather than blocked: each round visits every configuration once in an order that rotates by one per round, and `change_pct` is the median of the per-round differences against the uncapped point of the same round, so a drift slow compared with a round falls on both arms of every difference. `sign_test_p` is an exact two-sided sign test over those differences and is what `best_is_resolved` tests, because the spread of one point's own repeats is set by the device's drift and is not an error bar for the difference. The rounds are split in half and reported as `change_pct_first_half` and `change_pct_second_half`: a magnitude whose halves disagree is reporting drift as well as a cap. A register budget cannot change arithmetic -- the allocator spills and rematerializes, it does not reassociate -- so `bit_for_bit_with_uncapped` should hold everywhere, and a failure means the cap is doing something other than what this measures. The grid holds a point per kernel as well as the matched pair, because the first pass found the two halves compose: at every cap it tried, the matched `both_` point landed within 0.03 points of the sum of the two single-kernel points, against effects of 2 to 17 points. So a band's best budget is read off its single-kernel points independently, which is why they are swept deeper than the matched pairs need, and the matched pairs are kept as the check on that composition rather than as the candidates."
 register_alloc_unit = 256
 regs_per_sm = 65536
 rounds_interleaved = 12
@@ -15,39 +15,69 @@ warmup_steps = 3
 all_bit_for_bit = true
 any_cap_timed = true
 band = "lw"
-best_change_pct = -17.034779964909653
+best_change_pct = -17.60921068680158
 best_configuration = "both_96"
 best_is_resolved = true
-configurations = ["uncapped", "sweeps_128", "sweeps_96", "optics_128", "optics_96", "both_128", "both_96"]
+configurations = ["uncapped", "sweeps_128", "sweeps_96", "sweeps_80", "sweeps_72", "optics_128", "optics_96", "optics_80", "optics_72", "both_128", "both_96", "both_80", "both_72"]
 n_gpt = 256
 rounds = 16
-uncapped_rounds_ms = 431.88732862472534
+uncapped_rounds_ms = 435.4192614555359
 values_compared = 127795200
 
     [bands.lw.points.both_128]
     bit_for_bit_with_uncapped = true
-    change_pct = -11.59785295534682
-    change_pct_first_half = -11.617215717594595
-    change_pct_second_half = -11.59785295534682
-    median_diff_ms = -50.08965730667114
+    change_pct = -12.101548461264786
+    change_pct_first_half = -12.15267696382388
+    change_pct_second_half = -12.093184467941198
+    median_diff_ms = -52.6924729347229
     optics_kernel = "optics_128"
-    per_round_diff_ms = [-50.22403597831726, -49.827247858047485, -50.173282623291016, -49.72770810127258, -49.72010850906372, -50.18126964569092, -50.1905083656311, -50.08965730667114, -49.919307231903076, -50.21032691001892, -49.92064833641052, -49.608707427978516]
-    rounds_ms = 381.85304403305054
+    per_round_diff_ms = [-52.915096282958984, -52.412062883377075, -52.6924729347229, -53.215086460113525, -52.937328815460205, -52.46543884277344, -52.55824327468872, -52.59960889816284, -53.09575796127319, -52.65605449676514, -53.34821343421936, -52.316874265670776]
+    rounds_ms = 382.7185928821564
     rounds_negative = 12
     rounds_positive = 0
     sign_test_p = 0.00048828125
     sweeps_kernel = "sweeps_128"
     values_differing_from_uncapped = 0
 
+    [bands.lw.points.both_72]
+    bit_for_bit_with_uncapped = true
+    change_pct = -8.745814409969551
+    change_pct_first_half = -8.768018005993875
+    change_pct_second_half = -8.719250859978676
+    median_diff_ms = -38.080960512161255
+    optics_kernel = "optics_72"
+    per_round_diff_ms = [-38.17763924598694, -38.13174366950989, -38.23798894882202, -38.26481103897095, -37.81810402870178, -38.03643584251404, -38.080960512161255, -37.773191928863525, -38.5606586933136, -37.96529769897461, -37.6792848110199, -37.695348262786865]
+    rounds_ms = 397.4093496799469
+    rounds_negative = 12
+    rounds_positive = 0
+    sign_test_p = 0.00048828125
+    sweeps_kernel = "sweeps_72"
+    values_differing_from_uncapped = 0
+
+    [bands.lw.points.both_80]
+    bit_for_bit_with_uncapped = true
+    change_pct = -16.998604951620937
+    change_pct_first_half = -17.031821367005044
+    change_pct_second_half = -16.998604951620937
+    median_diff_ms = -74.01520013809204
+    optics_kernel = "optics_80"
+    per_round_diff_ms = [-74.33947920799255, -74.15983080863953, -73.98766279220581, -74.19481873512268, -73.80878925323486, -73.7389624118805, -74.01520013809204, -73.90919327735901, -73.8254189491272, -74.10439848899841, -74.17523860931396, -73.93622398376465]
+    rounds_ms = 361.4501357078552
+    rounds_negative = 12
+    rounds_positive = 0
+    sign_test_p = 0.00048828125
+    sweeps_kernel = "sweeps_80"
+    values_differing_from_uncapped = 0
+
     [bands.lw.points.both_96]
     bit_for_bit_with_uncapped = true
-    change_pct = -17.034779964909653
-    change_pct_first_half = -17.059042071845923
-    change_pct_second_half = -17.034779964909653
-    median_diff_ms = -73.57105612754822
+    change_pct = -17.60921068680158
+    change_pct_first_half = -17.610353720259056
+    change_pct_second_half = -17.60921068680158
+    median_diff_ms = -76.67389512062073
     optics_kernel = "optics_96"
-    per_round_diff_ms = [-73.80306720733643, -73.48817586898804, -73.4466016292572, -73.46606254577637, -73.67584109306335, -73.71285557746887, -73.5732913017273, -73.42907786369324, -73.48200678825378, -73.57105612754822, -73.74832034111023, -73.19143414497375]
-    rounds_ms = 358.29034447669983
+    per_round_diff_ms = [-76.8592357635498, -76.67210698127747, -76.67887210845947, -76.76061987876892, -76.59006118774414, -76.57119631767273, -76.9171416759491, -76.46363973617554, -76.75033807754517, -76.4564573764801, -76.67389512062073, -76.37640833854675]
+    rounds_ms = 358.7520718574524
     rounds_negative = 12
     rounds_positive = 0
     sign_test_p = 0.00048828125
@@ -56,13 +86,43 @@ values_compared = 127795200
 
     [bands.lw.points.optics_128]
     bit_for_bit_with_uncapped = true
-    change_pct = -7.205742252790452
-    change_pct_first_half = -7.211055626607554
-    change_pct_second_half = -7.157569963677225
-    median_diff_ms = -31.12068772315979
+    change_pct = -7.809519429036308
+    change_pct_first_half = -7.859498053626202
+    change_pct_second_half = -7.765365483921352
+    median_diff_ms = -34.004151821136475
     optics_kernel = "optics_128"
-    per_round_diff_ms = [-31.238973140716553, -31.143635511398315, -31.037122011184692, -30.974358320236206, -31.387656927108765, -31.12068772315979, -31.18664026260376, -31.44124150276184, -30.7290256023407, -30.353635549545288, -30.91263771057129, -30.845433473587036]
-    rounds_ms = 400.8500576019287
+    per_round_diff_ms = [-34.29630398750305, -34.424394369125366, -33.77196192741394, -34.221768379211426, -34.004151821136475, -34.057825803756714, -33.766478300094604, -33.81189703941345, -34.47943925857544, -33.77801179885864, -33.93158316612244, -33.492714166641235]
+    rounds_ms = 401.5660583972931
+    rounds_negative = 12
+    rounds_positive = 0
+    sign_test_p = 0.00048828125
+    sweeps_kernel = "sweeps_base"
+    values_differing_from_uncapped = 0
+
+    [bands.lw.points.optics_72]
+    bit_for_bit_with_uncapped = true
+    change_pct = -0.7336495223968166
+    change_pct_first_half = -0.7272909710076065
+    change_pct_second_half = -0.7406993694698912
+    median_diff_ms = -3.194451332092285
+    optics_kernel = "optics_72"
+    per_round_diff_ms = [-3.5964548587799072, -3.0039846897125244, -3.008425235748291, -3.166764974594116, -3.194451332092285, -3.0207037925720215, -3.15779447555542, -3.224968910217285, -3.2251477241516113, -3.4342408180236816, -3.652721643447876, -3.142625093460083]
+    rounds_ms = 432.258278131485
+    rounds_negative = 12
+    rounds_positive = 0
+    sign_test_p = 0.00048828125
+    sweeps_kernel = "sweeps_base"
+    values_differing_from_uncapped = 0
+
+    [bands.lw.points.optics_80]
+    bit_for_bit_with_uncapped = true
+    change_pct = -9.267010288533129
+    change_pct_first_half = -9.28182865641003
+    change_pct_second_half = -9.267010288533129
+    median_diff_ms = -40.35034775733948
+    optics_kernel = "optics_80"
+    per_round_diff_ms = [-40.69715738296509, -40.41486978530884, -40.001124143600464, -40.45596718788147, -40.29819369316101, -40.05351662635803, -40.09974002838135, -40.45096039772034, -40.35034775733948, -40.275901556015015, -40.5297577381134, -40.24657607078552]
+    rounds_ms = 395.1330780982971
     rounds_negative = 12
     rounds_positive = 0
     sign_test_p = 0.00048828125
@@ -71,13 +131,13 @@ values_compared = 127795200
 
     [bands.lw.points.optics_96]
     bit_for_bit_with_uncapped = true
-    change_pct = -10.82983582226944
-    change_pct_first_half = -10.85131703355858
-    change_pct_second_half = -10.804048708042806
-    median_diff_ms = -46.77268862724304
+    change_pct = -11.410649759080032
+    change_pct_first_half = -11.413373874745162
+    change_pct_second_half = -11.410649759080032
+    median_diff_ms = -49.68416690826416
     optics_kernel = "optics_96"
-    per_round_diff_ms = [-46.86546325683594, -46.773284673690796, -46.960264444351196, -46.49987816810608, -46.77268862724304, -46.93731665611267, -46.56726121902466, -46.657174825668335, -46.669960021972656, -46.49248719215393, -46.830326318740845, -46.661317348480225]
-    rounds_ms = 385.15546917915344
+    per_round_diff_ms = [-49.866318702697754, -49.69602823257446, -49.496084451675415, -49.62518811225891, -49.874454736709595, -49.475401639938354, -49.561768770217896, -49.68416690826416, -49.9822199344635, -49.70654845237732, -49.67689514160156, -49.6080219745636]
+    rounds_ms = 385.8419358730316
     rounds_negative = 12
     rounds_positive = 0
     sign_test_p = 0.00048828125
@@ -86,28 +146,58 @@ values_compared = 127795200
 
     [bands.lw.points.sweeps_128]
     bit_for_bit_with_uncapped = true
-    change_pct = -4.366454697553792
-    change_pct_first_half = -4.383988831150226
-    change_pct_second_half = -4.340798692551216
-    median_diff_ms = -18.8581645488739
+    change_pct = -4.317148390246133
+    change_pct_first_half = -4.307107491550792
+    change_pct_second_half = -4.35098081168517
+    median_diff_ms = -18.797695636749268
     optics_kernel = "optics_base"
-    per_round_diff_ms = [-18.967926502227783, -18.933892250061035, -18.93937587738037, -18.8581645488739, -18.77930760383606, -18.897324800491333, -18.785923719406128, -18.901467323303223, -18.6346173286438, -18.66459846496582, -18.65479350090027, -18.74735951423645]
-    rounds_ms = 413.0555987358093
+    per_round_diff_ms = [-18.752753734588623, -18.927335739135742, -18.75397562980652, -18.70778203010559, -18.654197454452515, -18.78654956817627, -18.766194581985474, -18.945008516311646, -19.037723541259766, -18.896907567977905, -18.971353769302368, -18.797695636749268]
+    rounds_ms = 416.5858030319214
     rounds_negative = 12
     rounds_positive = 0
     sign_test_p = 0.00048828125
     sweeps_kernel = "sweeps_128"
     values_differing_from_uncapped = 0
 
+    [bands.lw.points.sweeps_72]
+    bit_for_bit_with_uncapped = true
+    change_pct = -8.024957279980091
+    change_pct_first_half = -8.024957279980091
+    change_pct_second_half = -8.043327949440414
+    median_diff_ms = -34.94220972061157
+    optics_kernel = "optics_base"
+    per_round_diff_ms = [-34.94220972061157, -35.01701354980469, -34.684181213378906, -34.959226846694946, -34.85956788063049, -34.728407859802246, -34.72527861595154, -35.02219915390015, -35.070180892944336, -34.88162159919739, -35.2136492729187, -34.8706841468811]
+    rounds_ms = 400.53805708885193
+    rounds_negative = 12
+    rounds_positive = 0
+    sign_test_p = 0.00048828125
+    sweeps_kernel = "sweeps_72"
+    values_differing_from_uncapped = 0
+
+    [bands.lw.points.sweeps_80]
+    bit_for_bit_with_uncapped = true
+    change_pct = -7.7490002563954095
+    change_pct_first_half = -7.73069118754058
+    change_pct_second_half = -7.750458137392074
+    median_diff_ms = -33.74063968658447
+    optics_kernel = "optics_base"
+    per_round_diff_ms = [-33.60706567764282, -33.802956342697144, -33.612191677093506, -33.80227088928223, -33.659905195236206, -33.66091847419739, -33.71316194534302, -33.74063968658447, -33.84631872177124, -33.52424502372742, -33.87889266014099, -33.74698758125305]
+    rounds_ms = 401.69501304626465
+    rounds_negative = 12
+    rounds_positive = 0
+    sign_test_p = 0.00048828125
+    sweeps_kernel = "sweeps_80"
+    values_differing_from_uncapped = 0
+
     [bands.lw.points.sweeps_96]
     bit_for_bit_with_uncapped = true
-    change_pct = -6.228046968016388
-    change_pct_first_half = -6.264612640557714
-    change_pct_second_half = -6.2224920772076
-    median_diff_ms = -26.89814567565918
+    change_pct = -6.20178469274234
+    change_pct_first_half = -6.1960969035018305
+    change_pct_second_half = -6.234036031973726
+    median_diff_ms = -27.003765106201172
     optics_kernel = "optics_base"
-    per_round_diff_ms = [-27.133584022521973, -27.056068181991577, -26.811033487319946, -26.84655785560608, -27.075141668319702, -27.02900767326355, -26.874154806137085, -26.89814567565918, -26.83234214782715, -26.7503559589386, -27.026623487472534, -26.703208684921265]
-    rounds_ms = 404.94903922080994
+    per_round_diff_ms = [-27.065932750701904, -26.978999376296997, -26.896923780441284, -27.003765106201172, -26.958346366882324, -26.85779333114624, -26.845872402191162, -27.144193649291992, -26.7791748046875, -27.042865753173828, -27.331113815307617, -27.198433876037598]
+    rounds_ms = 408.44109654426575
     rounds_negative = 12
     rounds_positive = 0
     sign_test_p = 0.00048828125
@@ -122,7 +212,7 @@ values_compared = 127795200
     median_diff_ms = 0.0
     optics_kernel = "optics_base"
     per_round_diff_ms = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    rounds_ms = 431.88732862472534
+    rounds_ms = 435.4192614555359
     rounds_negative = 0
     rounds_positive = 0
     sign_test_p = 1.0
@@ -135,24 +225,54 @@ values_compared = 127795200
 all_bit_for_bit = true
 any_cap_timed = true
 band = "sw"
-best_change_pct = -7.107042133313751
+best_change_pct = -7.252524850677519
 best_configuration = "both_96"
 best_is_resolved = true
-configurations = ["uncapped", "sweeps_96", "sweeps_80", "optics_96", "optics_80", "both_96", "both_80"]
+configurations = ["uncapped", "sweeps_96", "sweeps_80", "sweeps_72", "sweeps_64", "optics_96", "optics_80", "optics_72", "optics_64", "both_96", "both_80", "both_72", "both_64"]
 n_gpt = 224
 rounds = 14
-uncapped_rounds_ms = 305.1912486553192
+uncapped_rounds_ms = 305.64236640930176
 values_compared = 191496192
+
+    [bands.sw.points.both_64]
+    bit_for_bit_with_uncapped = true
+    change_pct = -1.229438662919271
+    change_pct_first_half = -1.2411297726834831
+    change_pct_second_half = -1.229438662919271
+    median_diff_ms = -3.757685422897339
+    optics_kernel = "optics_64"
+    per_round_diff_ms = [-3.7934184074401855, -3.410637378692627, -3.872811794281006, -3.448665142059326, -3.569960594177246, -4.056006669998169, -3.649681806564331, -3.9729177951812744, -3.8782060146331787, -3.6415159702301025, -3.757685422897339, -3.751695156097412]
+    rounds_ms = 301.8846809864044
+    rounds_negative = 12
+    rounds_positive = 0
+    sign_test_p = 0.00048828125
+    sweeps_kernel = "sweeps_64"
+    values_differing_from_uncapped = 0
+
+    [bands.sw.points.both_72]
+    bit_for_bit_with_uncapped = true
+    change_pct = 1.352590219484741
+    change_pct_first_half = 1.4064726820010343
+    change_pct_second_half = 1.3279014038692405
+    median_diff_ms = 4.134088754653931
+    optics_kernel = "optics_72"
+    per_round_diff_ms = [4.026323556900024, 4.298776388168335, 3.9115548133850098, 4.738479852676392, 4.608482122421265, 4.299640655517578, 4.058629274368286, 4.0495991706848145, 3.9992332458496094, 4.3596625328063965, 4.251807928085327, 4.134088754653931]
+    rounds_ms = 309.8549246788025
+    rounds_negative = 0
+    rounds_positive = 12
+    sign_test_p = 0.00048828125
+    sweeps_kernel = "sweeps_72"
+    values_differing_from_uncapped = 0
 
     [bands.sw.points.both_80]
     bit_for_bit_with_uncapped = true
-    change_pct = -6.872561830118181
-    change_pct_first_half = -6.872561830118181
-    change_pct_second_half = -6.960164811959237
-    median_diff_ms = -20.974457263946533
+    change_pct = -7.068138790926684
+    change_pct_first_half = -7.068138790926684
+    change_pct_second_half = -7.079303361969239
+    median_diff_ms = -21.60322666168213
     optics_kernel = "optics_80"
-    per_round_diff_ms = [-20.95845341682434, -21.364301443099976, -20.974457263946533, -20.928263664245605, -21.11145853996277, -20.87441086769104, -20.784109830856323, -21.67031168937683, -20.893365144729614, -20.55835723876953, -21.241813898086548, -21.625369787216187]
-    rounds_ms = 284.1310501098633
+    per_round_diff_ms = [-21.60322666168213, -21.397948265075684, -21.957039833068848, -21.58978581428528, -21.107882261276245, -21.786868572235107, -21.519094705581665, -21.63735032081604, -21.73835039138794, -21.176666021347046, -21.34019136428833, -22.143840789794922]
+    rounds_ms = 284.01508927345276
     rounds_negative = 12
     rounds_positive = 0
     sign_test_p = 0.00048828125
@@ -161,28 +281,58 @@ values_compared = 191496192
 
     [bands.sw.points.both_96]
     bit_for_bit_with_uncapped = true
-    change_pct = -7.107042133313751
-    change_pct_first_half = -7.138397965962468
-    change_pct_second_half = -7.107042133313751
-    median_diff_ms = -21.690070629119873
+    change_pct = -7.252524850677519
+    change_pct_first_half = -7.268116247268824
+    change_pct_second_half = -7.252524850677519
+    median_diff_ms = -22.166788578033447
     optics_kernel = "optics_96"
-    per_round_diff_ms = [-21.632850170135498, -21.952956914901733, -21.785765886306763, -21.575123071670532, -21.80171012878418, -21.16057276725769, -21.349012851715088, -21.955907344818115, -21.567195653915405, -20.81739902496338, -21.690070629119873, -21.88977599143982]
-    rounds_ms = 283.5746109485626
+    per_round_diff_ms = [-22.217273712158203, -22.071540355682373, -22.435516119003296, -22.126615047454834, -21.707534790039062, -22.214442491531372, -22.128373384475708, -22.27836847305298, -22.166788578033447, -21.999746561050415, -22.122561931610107, -22.55973219871521]
+    rounds_ms = 283.46583247184753
     rounds_negative = 12
     rounds_positive = 0
     sign_test_p = 0.00048828125
     sweeps_kernel = "sweeps_96"
     values_differing_from_uncapped = 0
 
+    [bands.sw.points.optics_64]
+    bit_for_bit_with_uncapped = true
+    change_pct = 4.371860756640043
+    change_pct_first_half = 4.4105516019648086
+    change_pct_second_half = 4.325993383553427
+    median_diff_ms = 13.362258672714233
+    optics_kernel = "optics_64"
+    per_round_diff_ms = [13.480514287948608, 13.541311025619507, 12.920230627059937, 13.740211725234985, 13.663232326507568, 13.304173946380615, 13.362258672714233, 12.890785932540894, 13.222068548202515, 13.506382703781128, 13.450324535369873, 12.840092182159424]
+    rounds_ms = 318.9719617366791
+    rounds_negative = 0
+    rounds_positive = 12
+    sign_test_p = 0.00048828125
+    sweeps_kernel = "sweeps_base"
+    values_differing_from_uncapped = 0
+
+    [bands.sw.points.optics_72]
+    bit_for_bit_with_uncapped = true
+    change_pct = 6.294594904509277
+    change_pct_first_half = 6.350066733907612
+    change_pct_second_half = 6.26387039502885
+    median_diff_ms = 19.238948822021484
+    optics_kernel = "optics_72"
+    per_round_diff_ms = [18.859118223190308, 19.585251808166504, 19.423305988311768, 19.408494234085083, 20.167261362075806, 19.320815801620483, 19.07077431678772, 19.238948822021484, 19.145041704177856, 19.916564226150513, 19.165903329849243, 18.839657306671143]
+    rounds_ms = 324.96997714042664
+    rounds_negative = 0
+    rounds_positive = 12
+    sign_test_p = 0.00048828125
+    sweeps_kernel = "sweeps_base"
+    values_differing_from_uncapped = 0
+
     [bands.sw.points.optics_80]
     bit_for_bit_with_uncapped = true
-    change_pct = -1.8906463627478256
-    change_pct_first_half = -1.8906463627478256
-    change_pct_second_half = -1.8979702102989116
-    median_diff_ms = -5.770087242126465
+    change_pct = -2.0318641732913036
+    change_pct_first_half = -2.031786167554762
+    change_pct_second_half = -2.0503612835687934
+    median_diff_ms = -6.210237741470337
     optics_kernel = "optics_80"
-    per_round_diff_ms = [-5.770087242126465, -6.052732467651367, -5.6626200675964355, -5.556643009185791, -6.005346775054932, -5.069613456726074, -5.581170320510864, -6.348133087158203, -5.792438983917236, -5.107313394546509, -5.643516778945923, -6.118804216384888]
-    rounds_ms = 299.48145151138306
+    per_round_diff_ms = [-6.640344858169556, -6.101071834564209, -6.660163402557373, -6.059765815734863, -5.664467811584473, -6.209999322891235, -6.210237741470337, -6.149262189865112, -6.479442119598389, -5.896240472793579, -6.266772747039795, -6.939053535461426]
+    rounds_ms = 299.37559366226196
     rounds_negative = 12
     rounds_positive = 0
     sign_test_p = 0.00048828125
@@ -191,28 +341,58 @@ values_compared = 191496192
 
     [bands.sw.points.optics_96]
     bit_for_bit_with_uncapped = true
-    change_pct = -4.463396825883532
-    change_pct_first_half = -4.463396825883532
-    change_pct_second_half = -4.4779956953353635
-    median_diff_ms = -13.621896505355835
+    change_pct = -4.645982665565226
+    change_pct_first_half = -4.6455243818630425
+    change_pct_second_half = -4.714062172132139
+    median_diff_ms = -14.200091361999512
     optics_kernel = "optics_96"
-    per_round_diff_ms = [-13.569891452789307, -13.867288827896118, -13.539940118789673, -13.621896505355835, -13.812601566314697, -13.146787881851196, -13.440132141113281, -13.929158449172974, -13.544261455535889, -13.07716965675354, -13.66645097732544, -14.024525880813599]
-    rounds_ms = 291.5995419025421
+    per_round_diff_ms = [-14.200091361999512, -14.12743330001831, -14.345645904541016, -13.996601104736328, -13.650745153427124, -14.19869065284729, -13.94626498222351, -14.4081711769104, -14.455854892730713, -13.84204626083374, -14.224082231521606, -14.608561992645264]
+    rounds_ms = 291.41828417778015
     rounds_negative = 12
     rounds_positive = 0
     sign_test_p = 0.00048828125
     sweeps_kernel = "sweeps_base"
     values_differing_from_uncapped = 0
 
+    [bands.sw.points.sweeps_64]
+    bit_for_bit_with_uncapped = true
+    change_pct = -5.513191940135277
+    change_pct_first_half = -5.513191940135277
+    change_pct_second_half = -5.530957746632687
+    median_diff_ms = -16.850650310516357
+    optics_kernel = "optics_base"
+    per_round_diff_ms = [-16.963332891464233, -16.850650310516357, -17.570525407791138, -16.664475202560425, -16.762971878051758, -16.664594411849976, -16.90495014190674, -16.77405834197998, -17.16133952140808, -16.790926456451416, -16.735434532165527, -17.12515950202942]
+    rounds_ms = 288.6943519115448
+    rounds_negative = 12
+    rounds_positive = 0
+    sign_test_p = 0.00048828125
+    sweeps_kernel = "sweeps_64"
+    values_differing_from_uncapped = 0
+
+    [bands.sw.points.sweeps_72]
+    bit_for_bit_with_uncapped = true
+    change_pct = -4.905741768249637
+    change_pct_first_half = -4.942053438609875
+    change_pct_second_half = -4.888814523420052
+    median_diff_ms = -14.994025230407715
+    optics_kernel = "optics_base"
+    per_round_diff_ms = [-15.38461446762085, -14.994025230407715, -15.481829643249512, -15.105009078979492, -14.165341854095459, -14.478474855422974, -15.350371599197388, -15.591323375701904, -14.942288398742676, -14.729529619216919, -14.658689498901367, -14.846384525299072]
+    rounds_ms = 290.3907001018524
+    rounds_negative = 12
+    rounds_positive = 0
+    sign_test_p = 0.00048828125
+    sweeps_kernel = "sweeps_72"
+    values_differing_from_uncapped = 0
+
     [bands.sw.points.sweeps_80]
     bit_for_bit_with_uncapped = true
-    change_pct = -4.96888878385949
-    change_pct_first_half = -4.96888878385949
-    change_pct_second_half = -5.001045357173791
-    median_diff_ms = -15.164613723754883
+    change_pct = -5.080260102327925
+    change_pct_first_half = -5.091366169068073
+    change_pct_second_half = -5.080260102327925
+    median_diff_ms = -15.527427196502686
     optics_kernel = "optics_base"
-    per_round_diff_ms = [-15.383243560791016, -15.446245670318604, -15.08060097694397, -15.164613723754883, -15.16103744506836, -14.869004487991333, -15.054017305374146, -15.667319297790527, -15.262752771377563, -14.627844095230103, -15.575975179672241, -15.16297459602356]
-    rounds_ms = 289.98640179634094
+    per_round_diff_ms = [-15.56137204170227, -15.921354293823242, -15.715688467025757, -14.615684747695923, -14.904171228408813, -15.065133571624756, -14.908432960510254, -15.977323055267334, -15.527427196502686, -15.073686838150024, -14.8601233959198, -15.68111777305603]
+    rounds_ms = 290.3282642364502
     rounds_negative = 12
     rounds_positive = 0
     sign_test_p = 0.00048828125
@@ -221,13 +401,13 @@ values_compared = 191496192
 
     [bands.sw.points.sweeps_96]
     bit_for_bit_with_uncapped = true
-    change_pct = -2.671739586636185
-    change_pct_first_half = -2.671739586636185
-    change_pct_second_half = -2.6956250947827938
-    median_diff_ms = -8.153915405273438
+    change_pct = -2.610676489149012
+    change_pct_first_half = -2.5779823348209026
+    change_pct_second_half = -2.6810669156609777
+    median_diff_ms = -7.979333400726318
     optics_kernel = "optics_base"
-    per_round_diff_ms = [-8.257746696472168, -8.153915405273438, -7.733464241027832, -7.787942886352539, -8.333384990692139, -7.337331771850586, -7.543981075286865, -8.346408605575562, -8.034706115722656, -6.968140602111816, -8.22681188583374, -8.451223373413086]
-    rounds_ms = 297.3414361476898
+    per_round_diff_ms = [-7.744401693344116, -8.666425943374634, -7.979333400726318, -7.879406213760376, -7.7991485595703125, -7.658064365386963, -7.719606161117554, -8.19447636604309, -8.346378803253174, -7.2311460971832275, -8.01175832748413, -8.33982229232788]
+    rounds_ms = 297.6306080818176
     rounds_negative = 12
     rounds_positive = 0
     sign_test_p = 0.00048828125
@@ -242,7 +422,7 @@ values_compared = 191496192
     median_diff_ms = 0.0
     optics_kernel = "optics_base"
     per_round_diff_ms = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    rounds_ms = 305.1912486553192
+    rounds_ms = 305.64236640930176
     rounds_negative = 0
     rounds_positive = 0
     sign_test_p = 1.0
@@ -277,6 +457,40 @@ registers_shed = 28
 requested_cap = 128
 warps_gained = 4
 warps_per_sm = 16
+
+[kernels.lw_optics_cap72]
+blocks_per_sm = 7
+cap = 72
+compiled = true
+local_bytes = 368
+local_bytes_added = 336
+max_threads = 896
+met_cap = true
+model_agrees_with_driver = true
+natural_registers = 156
+predicted_warps = 28
+registers = 72
+registers_shed = 84
+requested_cap = 72
+warps_gained = 16
+warps_per_sm = 28
+
+[kernels.lw_optics_cap80]
+blocks_per_sm = 6
+cap = 80
+compiled = true
+local_bytes = 336
+local_bytes_added = 304
+max_threads = 768
+met_cap = true
+model_agrees_with_driver = true
+natural_registers = 156
+predicted_warps = 24
+registers = 80
+registers_shed = 76
+requested_cap = 80
+warps_gained = 12
+warps_per_sm = 24
 
 [kernels.lw_optics_cap96]
 blocks_per_sm = 5
@@ -322,6 +536,40 @@ requested_cap = 128
 warps_gained = 4
 warps_per_sm = 16
 
+[kernels.lw_sweeps_cap72]
+blocks_per_sm = 7
+cap = 72
+compiled = true
+local_bytes = 216
+local_bytes_added = 184
+max_threads = 896
+met_cap = true
+model_agrees_with_driver = true
+natural_registers = 140
+predicted_warps = 28
+registers = 72
+registers_shed = 68
+requested_cap = 72
+warps_gained = 16
+warps_per_sm = 28
+
+[kernels.lw_sweeps_cap80]
+blocks_per_sm = 6
+cap = 80
+compiled = true
+local_bytes = 184
+local_bytes_added = 152
+max_threads = 768
+met_cap = true
+model_agrees_with_driver = true
+natural_registers = 140
+predicted_warps = 24
+registers = 80
+registers_shed = 60
+requested_cap = 80
+warps_gained = 12
+warps_per_sm = 24
+
 [kernels.lw_sweeps_cap96]
 blocks_per_sm = 5
 cap = 96
@@ -348,6 +596,40 @@ model_agrees_with_driver = true
 predicted_warps = 16
 registers = 124
 warps_per_sm = 16
+
+[kernels.sw_optics_cap64]
+blocks_per_sm = 8
+cap = 64
+compiled = true
+local_bytes = 248
+local_bytes_added = 216
+max_threads = 1024
+met_cap = true
+model_agrees_with_driver = true
+natural_registers = 124
+predicted_warps = 32
+registers = 64
+registers_shed = 60
+requested_cap = 64
+warps_gained = 16
+warps_per_sm = 32
+
+[kernels.sw_optics_cap72]
+blocks_per_sm = 7
+cap = 72
+compiled = true
+local_bytes = 216
+local_bytes_added = 184
+max_threads = 896
+met_cap = true
+model_agrees_with_driver = true
+natural_registers = 124
+predicted_warps = 28
+registers = 72
+registers_shed = 52
+requested_cap = 72
+warps_gained = 12
+warps_per_sm = 28
 
 [kernels.sw_optics_cap80]
 blocks_per_sm = 6
@@ -392,6 +674,40 @@ model_agrees_with_driver = true
 predicted_warps = 16
 registers = 117
 warps_per_sm = 16
+
+[kernels.sw_sweeps_cap64]
+blocks_per_sm = 8
+cap = 64
+compiled = true
+local_bytes = 192
+local_bytes_added = 160
+max_threads = 1024
+met_cap = true
+model_agrees_with_driver = true
+natural_registers = 117
+predicted_warps = 32
+registers = 64
+registers_shed = 53
+requested_cap = 64
+warps_gained = 16
+warps_per_sm = 32
+
+[kernels.sw_sweeps_cap72]
+blocks_per_sm = 7
+cap = 72
+compiled = true
+local_bytes = 144
+local_bytes_added = 112
+max_threads = 896
+met_cap = true
+model_agrees_with_driver = true
+natural_registers = 117
+predicted_warps = 28
+registers = 72
+registers_shed = 45
+requested_cap = 72
+warps_gained = 12
+warps_per_sm = 28
 
 [kernels.sw_sweeps_cap80]
 blocks_per_sm = 6
