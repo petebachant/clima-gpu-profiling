@@ -7,5 +7,5 @@ has to be inferred from a file's absence.
 - **ClimaAtmos.jl** --- identical in both arms, so no diff file.
 - **ClimaCore.jl** --- identical in both arms, so no diff file.
 - **ClimaCoupler.jl** --- not-treatments/ClimaCoupler.jl.diff: 14 changed lines, all in experiments/AMIP/Manifest-v1.13.toml experiments/AMIP/Project.toml. This is the dev-path rewiring that points the mod arm at the -mod submodules. It is how the arm is built, not what is under test.
-- **RRTMGP.jl** --- RRTMGP.jl.diff: 2219 changed lines across 63 file(s). **Under test.** The arms also differ by 8 line(s) under .buildkite/, which no stage reads, so that is not in the diff.
+- **RRTMGP.jl** --- RRTMGP.jl.diff: 1524 changed lines across 14 file(s). **Under test.**
 - **CloudMicrophysics.jl** --- not dev'd by either arm, so its submodule does not reach the run and there is no arm difference to report. Both arms take the version pinned in the Coupler AMIP manifest.
