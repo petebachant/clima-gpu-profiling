@@ -1217,6 +1217,10 @@ pipeline:
       # tag, so the figures do not move when a later pass measures something
       # else.
     wave-census-doc:
+      # Frozen 2026-11-22. It imports the state-shift figure from
+      # gpoint-group-count, so it inherits that document's mixed-stack
+      # comparison and has to be unfrozen with it and with both sweeps.
+      frozen: true
       kind: markdown
       target_path: docs/experiments/wave-census.md
       environment: py
@@ -1270,6 +1274,12 @@ pipeline:
       # against a different run -- the reason the shared-path documents need a
       # freeze and this one does not.
     gpoint-group-count-doc:
+      # Frozen 2026-11-22, with the two sweeps it rests on. It cross-checks
+      # the sweeps' per-solve cost against the profile's to measure state
+      # dependence, so with the sweeps frozen and the profile re-measured on
+      # upstream main that check would read a change of stack as a change of
+      # atmospheric state. Unfreeze it only together with both sweeps.
+      frozen: true
       kind: markdown
       target_path: docs/experiments/gpoint-group-count.md
       environment: py
@@ -1629,6 +1639,12 @@ pipeline:
       # and the sweeps it is read beside have to describe the same arm, so this
       # is thawed in the same pass that re-measured them.
     gpoint-group-sweep:
+      # Frozen 2026-11-22. The re-baseline onto upstream main restaled it
+      # without moving what it measures: the four grouped kernels recompiled to
+      # the same register budgets at the same warps per SM, and the wave counts
+      # reproduced, so the group count this sweep found is still the optimum.
+      # Unfreeze it with the shortwave sweep if RRTMGP's grouped solve changes.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
@@ -1690,6 +1706,10 @@ pipeline:
       # which is where the table CliMA/RRTMGP.jl#637 currently cites came from;
       # tag this one rather than letting it stand as that table's source.
     sw-gpoint-sweep:
+      # Frozen 2026-11-22, for the reason given on gpoint-group-sweep: the
+      # upstream update left this band's occupancy structure untouched. The two
+      # sweeps are a pair -- unfreeze and re-run them together, never one alone.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
@@ -1748,6 +1768,10 @@ pipeline:
       # applies here too, since a band measured on one stack beside a band
       # measured on another is not a comparison.
     group-block-size:
+      # Frozen 2026-11-22. The block shape is settled against an occupancy
+      # structure the re-baseline did not move; each band's two kernels still sit
+      # at the most warps their own register counts permit.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
@@ -1937,6 +1961,10 @@ pipeline:
         - path: results/radiation-mask-layout.toml
           storage: git
     group-workspace-memory:
+      # Frozen 2026-11-22. It fits a law in grid parameters alone, and both
+      # the law's inputs and RRTMGP's workspace sizing are untouched by the
+      # upstream update, so re-running it would re-derive the same coefficients.
+      frozen: true
       kind: shell-script
       environment: clima
       script_path: scripts/run-julia-script.sh
