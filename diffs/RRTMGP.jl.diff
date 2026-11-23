@@ -74,10 +74,10 @@ index 44f0b18..d5c52d9 100644
  end
 diff --git a/RRTMGP.jl-mod/ext/cuda/rte_gpt_groups.jl b/RRTMGP.jl-mod/ext/cuda/rte_gpt_groups.jl
 new file mode 100644
-index 0000000..00199bc
+index 0000000..2f3951e
 --- /dev/null
 +++ b/RRTMGP.jl-mod/ext/cuda/rte_gpt_groups.jl
-@@ -0,0 +1,245 @@
+@@ -0,0 +1,253 @@
 +#####
 +##### One grid over `ncol * ngroups` threads, for either band.
 +#####
@@ -122,6 +122,10 @@ index 0000000..00199bc
 +@inline _reduce_kernel(::SWGptGroups) = _reduce_sw_groups_CUDA!
 +@inline _optics_workspaces(g::LWGptGroups) = (g.op, g.src)
 +@inline _optics_workspaces(g::SWGptGroups) = (g.op,)
++# The shortwave optics takes the zenith angle so it can leave a night column
++# alone. The longwave has no such thread: every column emits.
++@inline _optics_zenith(::LWGptGroups, bcs) = ()
++@inline _optics_zenith(::SWGptGroups, bcs) = (bcs.cos_zenith,)
 +
 +# Aerosol mask for every column, hoisted out of the grouped solves of both
 +# bands, which need it per column rather than per wide column.
@@ -184,11 +188,14 @@ index 0000000..00199bc
 +
 +Two things are specific to the shortwave. The partials carry a direct-beam
 +profile as well as up and down, so the reduction sums three. And a night column
-+never sweeps, so the sweeps kernel zeroes that thread's slice rather than leaving
-+whatever the workspace last held, and the reduction sums zeros to the same
-+result. The 550 nm aerosol optical depth **is** bit-for-bit, and needs care to
-+be: it is a read-modify-write on one per-column address that concurrent groups
-+would interleave, so the kernel nominates one g-point as its only writer.
++is left out of nearly all of a round: the optics kernel returns without filling
++`op`, and the sweeps kernel zeroes that thread's slice rather than leaving
++whatever the workspace last held, so the reduction sums zeros to the same result.
++The exception is the 550 nm aerosol optical depth, which every column has
++whether or not the sun is up. It is a read-modify-write on one per-column
++address that concurrent groups would interleave, so the kernel nominates one
++g-point as its only writer -- and that one thread runs for a dark column too,
++being the only thing such a column still owes. It is 1 g-point in 224.
 +"""
 +function _solve_both_skies_grouped!(
 +    groups::Union{LWGptGroups, SWGptGroups},
@@ -298,6 +305,7 @@ index 0000000..00199bc
 +            ngroups,
 +            n_gpt,
 +            round,
++            _optics_zenith(groups, bcs)...,
 +        )
 +        _launch_round_half!(optics!, optics_args, tx, bx, optics_maxregs)
 +        sweeps_args = (
@@ -532,7 +540,7 @@ index 40ddae1..53d4742 100644
 +    return nothing
 +end
 diff --git a/RRTMGP.jl/ext/cuda/rte_shortwave_2stream.jl b/RRTMGP.jl-mod/ext/cuda/rte_shortwave_2stream.jl
-index f788db5..8a1bf67 100644
+index f788db5..9e2c6ae 100644
 --- a/RRTMGP.jl/ext/cuda/rte_shortwave_2stream.jl
 +++ b/RRTMGP.jl-mod/ext/cuda/rte_shortwave_2stream.jl
 @@ -182,10 +182,28 @@ function rte_sw_2stream_solve_both_skies!(
@@ -575,7 +583,7 @@ index f788db5..8a1bf67 100644
  function rte_sw_2stream_solve_both_skies_CUDA!(
      flux::FluxSW,
      flux_sw::FluxSW,
-@@ -288,3 +308,179 @@ function rte_sw_2stream_solve_both_skies_CUDA!(
+@@ -288,3 +308,194 @@ function rte_sw_2stream_solve_both_skies_CUDA!(
      end
      return nothing
  end
@@ -584,10 +592,12 @@ index f788db5..8a1bf67 100644
 +##### The g-point-grouped shortwave solve, as optics and then sweeps.
 +#####
 +
-+# This round's gas and aerosol optics for every `(column, group)` pair. It runs
-+# for a night column too: the 550 nm aerosol optical depth is collected here
-+# and does not depend on the sun being up, which is also why the ungrouped
-+# kernel computes the optics before it tests the zenith angle.
++# This round's gas and aerosol optics for every `(column, group)` pair whose sun
++# is up, and for the one thread per dark column that owes it a 550 nm optical
++# depth.
++@inline _is_550nm_band(::Nothing, ibnd) = false
++@inline _is_550nm_band(lkp::LookUpAerosolMerra, ibnd) = ibnd == lkp.iband_550nm
++
 +function _sw_group_optics_CUDA!(
 +    op::TwoStream,
 +    as::AtmosphericState,
@@ -598,6 +608,7 @@ index f788db5..8a1bf67 100644
 +    ngroups,
 +    n_gpt,
 +    round,
++    cos_zenith,
 +)
 +    wcol = threadIdx().x + (blockIdx().x - 1) * blockDim().x
 +    (; major_gpt2bnd) = lookup_sw.band_data
@@ -606,23 +617,35 @@ index f788db5..8a1bf67 100644
 +        grp = (wcol - 1) ÷ ncol + 1
 +        igpt = grp + (round - 1) * ngroups
 +        if igpt <= n_gpt
-+            @inbounds compute_optical_props!(
-+                op,
-+                as,
-+                state_cache,
-+                gcol,
-+                igpt,
-+                lookup_sw,
-+                nothing,
-+                lookup_sw_aero,
-+                nothing,
-+                wcol,
++            @inbounds begin
++                ibnd = major_gpt2bnd[igpt]
 +                # G-points are contiguous within a band, so this is the last
 +                # one of its own band: exactly one thread writes the 550 nm
 +                # optical depth, and it is the g-point the ungrouped loop
 +                # leaves standing.
-+                igpt == n_gpt || major_gpt2bnd[igpt + 1] != major_gpt2bnd[igpt],
-+            )
++                collect_aod = igpt == n_gpt || major_gpt2bnd[igpt + 1] != ibnd
++                # Nothing else reads a dark column's optics: its thread in the
++                # sweeps zeroes the partials instead of sweeping, and the cloud
++                # increment is behind the same test. So of that column's 224
++                # g-points only the one owing it an optical depth runs. `igpt`
++                # is uniform across a block, so a block skips or runs whole.
++                if cos_zenith[gcol] > 0 ||
++                   (collect_aod && _is_550nm_band(lookup_sw_aero, ibnd))
++                    compute_optical_props!(
++                        op,
++                        as,
++                        state_cache,
++                        gcol,
++                        igpt,
++                        lookup_sw,
++                        nothing,
++                        lookup_sw_aero,
++                        nothing,
++                        wcol,
++                        collect_aod,
++                    )
++                end
++            end
 +        end
 +    end
 +    return nothing
@@ -1723,7 +1746,7 @@ index 7ddeb3b..b75242e 100644
      nlay, ncol = AtmosphericStates.get_dims(as)
      nlev = nlay + 1
 diff --git a/RRTMGP.jl/src/rte/shortwave_2stream.jl b/RRTMGP.jl-mod/src/rte/shortwave_2stream.jl
-index b645322..6002c22 100644
+index b645322..28980b5 100644
 --- a/RRTMGP.jl/src/rte/shortwave_2stream.jl
 +++ b/RRTMGP.jl-mod/src/rte/shortwave_2stream.jl
 @@ -314,6 +314,7 @@ Equations are after Shonk and Hogan 2008, doi:10.1175/2007JCLI1940.1 (SH08)
@@ -1906,7 +1929,7 @@ index b645322..6002c22 100644
      if μ₀ > 0
          @inbounds solar_frac = lookup_sw.solar_src_scaled[igpt]
          rte_sw_2stream!(
-@@ -448,8 +514,9 @@ function rte_sw_2stream_solve_both_skies! end
+@@ -448,11 +514,14 @@ function rte_sw_2stream_solve_both_skies! end
              ibnd,
              nlev,
              gcol,
@@ -1915,9 +1938,16 @@ index b645322..6002c22 100644
 -        _accumulate_fluxes!(flux_sw_clear, flux, gcol, nlev, igpt)
 +        _accumulate_fluxes!(flux_sw_clear, flux, wcol, nlev, igpt, first_igpt)
      end
-     # Add the cloud increment to the same optics and sweep again
-     if !isnothing(lookup_sw_cld)
-@@ -460,6 +527,8 @@ function rte_sw_2stream_solve_both_skies! end
+-    # Add the cloud increment to the same optics and sweep again
+-    if !isnothing(lookup_sw_cld)
++    # Add the cloud increment to the same optics and sweep again. A dark column
++    # skips it: every reader of `op` is behind the same test, and in the grouped
++    # solve the optics kernel leaves `op` unfilled for such a thread.
++    if μ₀ > 0 && !isnothing(lookup_sw_cld)
+         add_cloud_optics_sw!(
+             op,
+             as,
+@@ -460,6 +529,8 @@ function rte_sw_2stream_solve_both_skies! end
              lookup_sw_cld,
              ibnd,
              lookup_sw_precip,
@@ -1926,7 +1956,7 @@ index b645322..6002c22 100644
          )
      end
      if μ₀ > 0
-@@ -475,8 +544,9 @@ function rte_sw_2stream_solve_both_skies! end
+@@ -475,8 +546,9 @@ function rte_sw_2stream_solve_both_skies! end
              ibnd,
              nlev,
              gcol,
@@ -1937,7 +1967,7 @@ index b645322..6002c22 100644
          accumulate_band_flux!(
              band_flux,
              flux.flux_up,
-@@ -486,7 +556,7 @@ function rte_sw_2stream_solve_both_skies! end
+@@ -486,7 +558,7 @@ function rte_sw_2stream_solve_both_skies! end
              nlev,
          )
      end
@@ -1946,7 +1976,7 @@ index b645322..6002c22 100644
  end
  
  """
-@@ -505,6 +575,7 @@ function solve_sw_both_skies!(
+@@ -505,6 +577,7 @@ function solve_sw_both_skies!(
          bcs,
          op,
          state_cache,
@@ -1954,7 +1984,7 @@ index b645322..6002c22 100644
      )::TwoStreamSWRTE,
      flux_sw_clear::FluxSW,
      as::AtmosphericState,
-@@ -531,6 +602,7 @@ function solve_sw_both_skies!(
+@@ -531,6 +604,7 @@ function solve_sw_both_skies!(
          lookup_sw_cld,
          lookup_sw_aero,
          lookup_sw_precip,
@@ -1962,7 +1992,7 @@ index b645322..6002c22 100644
      )
      apply_metric_scaling!(flux, metric_scaling)
      apply_metric_scaling!(flux_sw_clear, metric_scaling)
-@@ -556,6 +628,7 @@ function rte_sw_2stream_solve_both_skies!(
+@@ -556,6 +630,7 @@ function rte_sw_2stream_solve_both_skies!(
      lookup_sw_cld::Union{LookUpCld, Nothing},
      lookup_sw_aero::Union{LookUpAerosolMerra, Nothing},
      lookup_sw_precip::Union{LookUpPrecip, Nothing} = nothing,
