@@ -236,12 +236,15 @@ function check_band(name, n_gpt, make_groups, with_groups, live, solve!, snapsho
             "fields" => worst,
             "cover_exact" => exact_match(reference.cover, shot.cover),
             "aod_exact" => exact_dicts_match(reference.aod, shot.aod),
-            # Exactness alone does not say whether a miss is a few ULP of a
-            # reordered sum or the wrong band entirely, and that is the whole
-            # question when it fails.
-            "aod_fields" => isnothing(reference.aod) ? nothing :
-                compare_fluxes(reference.aod, shot.aod),
         )
+        # Exactness alone does not say whether a miss is a few ULP of a
+        # reordered sum or the wrong band entirely, and that is the whole
+        # question when it fails. The longwave has no aod and so no key:
+        # `nothing` is not a TOML value.
+        if !isnothing(reference.aod)
+            points[string(n)]["aod_fields"] =
+                compare_fluxes(reference.aod, shot.aod)
+        end
 
         groups = nothing
         GC.gc()
@@ -264,8 +267,8 @@ function check_band(name, n_gpt, make_groups, with_groups, live, solve!, snapsho
         "all_cover_exact" => all(p["cover_exact"] for p in values(points)),
         "all_aod_exact" => all(p["aod_exact"] for p in values(points)),
         "aod_worst_relative_deviation" => maximum(
-            isnothing(p["aod_fields"]) ? 0.0 :
-            maximum(v["rel"] for v in values(p["aod_fields"])) for
+            haskey(p, "aod_fields") ?
+            maximum(v["rel"] for v in values(p["aod_fields"])) : 0.0 for
             p in values(points)
         ),
         "worst_relative_deviation" =>
@@ -330,8 +333,9 @@ results = Dict{String, Any}(
               "is what separates roundoff from a dropped or double-counted " *
               "g-point. Cloud cover is a count and is asserted exactly. The " *
               "550 nm aerosol optical depth is asserted exactly and shortwave " *
-              "only: it is a per-column read-modify-write with one nominated " *
-              "writer, so any difference is groups interleaving. This does " *
+              "only: its own per-column kernel computes it, so any difference " *
+              "is that kernel disagreeing with the per-g-point accumulation " *
+              "the ungrouped solve does inline. This does " *
               "NOT cover ngroups > n_gpt, where a group has no g-points at " *
               "all; that needs more groups than there are g-points and so " *
               "belongs in the unit tests, at a column count where the " *
