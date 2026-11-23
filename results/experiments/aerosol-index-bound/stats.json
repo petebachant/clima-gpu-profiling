@@ -1,0 +1,51 @@
+{
+  "optics": {
+    "_lw_group_optics_CUDA_": {
+      "reference_ms": 1088.7,
+      "probe_ms": 549.5,
+      "saved_ms": 539.2,
+      "saved_pct": 49.53
+    },
+    "_sw_group_optics_CUDA_": {
+      "reference_ms": 518.6,
+      "probe_ms": 236.0,
+      "saved_ms": 282.6,
+      "saved_pct": 54.49
+    }
+  },
+  "controls": {
+    "_lw_group_sweeps_CUDA_": {
+      "reference_ms": 333.0,
+      "probe_ms": 333.1,
+      "saved_ms": -0.1,
+      "saved_pct": -0.03
+    },
+    "_sw_group_sweeps_CUDA_": {
+      "reference_ms": 245.2,
+      "probe_ms": 245.3,
+      "saved_ms": -0.1,
+      "saved_pct": -0.04
+    }
+  },
+  "totals": {
+    "reference_optics_ms": 1607.3,
+    "bound_ms": 821.8,
+    "bound_pct_of_optics": 51.13,
+    "bound_pct_of_device": 3.29,
+    "bound_ms_per_step": 6.85,
+    "bound_pct_of_wall_clock": 2.75,
+    "null_floor_pct": 1.869,
+    "would_clear_null_floor": true,
+    "drift_ms": 0.1,
+    "resolved_against_controls": true
+  },
+  "provenance": {
+    "reference_source": "results/gpoint-groups.json",
+    "reference_mod_ref": "419e8027d615c7bddf30a76b8cd12f60cfdfa27f",
+    "probe_base_ref": "419e8027d615c7bddf30a76b8cd12f60cfdfa27f",
+    "probe_diff": "diff --git a/src/optics/aerosol_optics.jl b/src/optics/aerosol_optics.jl\nindex 9ae36f1d..8cd39933 100644\n--- a/src/optics/aerosol_optics.jl\n+++ b/src/optics/aerosol_optics.jl\n@@ -247,7 +247,7 @@ function compute_lookup_dust_props(\n     aerosize::FT,\n ) where {FT}\n     (; size_bin_limits, dust) = lkp_aero\n-    bin = locate_merra_size_bin(size_bin_limits, aerosize)\n+    bin = 1  # PROBE: size-bin scan removed\n     @inbounds begin\n         \u03c4 = aeromass * dust[1, bin, ibnd]\n         \u03c4_ssa = \u03c4 * dust[2, bin, ibnd]\n@@ -271,8 +271,8 @@ function compute_lookup_sea_salt_props(\n ) where {FT}\n     (; size_bin_limits, rh_levels, sea_salt) = lkp_aero\n     @inbounds begin\n-        bin = locate_merra_size_bin(size_bin_limits, aerosize)\n-        loc, factor = interp1d_loc_factor(rh, rh_levels)\n+        bin = 1  # PROBE: size-bin scan removed\n+        loc, factor = (1, FT(0.5))  # PROBE: index search removed\n         \u03c4 =\n             aeromass * (\n                 sea_salt[1, loc, bin, ibnd] * (FT(1) - factor) +\n@@ -306,7 +306,7 @@ function compute_lookup_sulfate_props(\n ) where {FT}\n     (; rh_levels, sulfate) = lkp_aero\n     @inbounds begin\n-        loc, factor = interp1d_loc_factor(rh, rh_levels)\n+        loc, factor = (1, FT(0.5))  # PROBE: index search removed\n         \u03c4 =\n             aeromass * (\n                 sulfate[1, loc, ibnd] * (FT(1) - factor) +\n@@ -360,7 +360,7 @@ function compute_lookup_black_carbon_props(\n ) where {FT}\n     (; rh_levels, black_carbon_rh) = lkp_aero\n     @inbounds begin\n-        loc, factor = interp1d_loc_factor(rh, rh_levels)\n+        loc, factor = (1, FT(0.5))  # PROBE: index search removed\n         \u03c4 =\n             aeromass * (\n                 black_carbon_rh[1, loc, ibnd] * (FT(1) - factor) +\n@@ -410,7 +410,7 @@ function compute_lookup_organic_carbon_props(\n ) where {FT}\n     (; rh_levels, organic_carbon_rh) = lkp_aero\n     @inbounds begin\n-        loc, factor = interp1d_loc_factor(rh, rh_levels)\n+        loc, factor = (1, FT(0.5))  # PROBE: index search removed\n         \u03c4 =\n             aeromass * (\n                 organic_carbon_rh[1, loc, ibnd] * (FT(1) - factor) +\n",
+    "probe_diff_sha256_16": "d498709061f5c8e2",
+    "probe_db_sha256_16": "e9a5b20e8f18f7a0",
+    "nsys_steps": 120
+  }
+}

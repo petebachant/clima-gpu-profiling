@@ -1429,6 +1429,62 @@ stages:
           persist: false
     desc: Automatically generated from the 'diagnostics-cost-doc/values' stage
       in calkit.yaml. Changes made here will be overwritten.
+  aerosol-index-bound/probe:
+    cmd: calkit scheduler batch --name aerosol-index-bound/probe --environment
+      clima --dep scripts/run-nsys.sh --dep scripts/run.jl --dep
+      ClimaCoupler.jl-mod/src --dep
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep
+      ClimaCore.jl-mod/src --dep ClimaCore.jl-mod/ext --dep
+      ClimaAtmos.jl-mod/src --dep RRTMGP.jl-mod/src --dep
+      .calkit/env-locks/clima --out
+      results/experiments/aerosol-index-bound/probe.nsys-rep --out
+      results/experiments/aerosol-index-bound/probe.sqlite --option --gpus=1
+      --option --time=180 --
+      .calkit/markdown/docs/experiments/aerosol-index-bound.md/probe.sh
+    deps:
+      - .calkit/markdown/docs/experiments/aerosol-index-bound.md/probe.sh
+      - scripts/run-nsys.sh
+      - scripts/run.jl
+      - ClimaCoupler.jl-mod/src
+      - ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      - ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      - ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      - ClimaCore.jl-mod/src
+      - ClimaCore.jl-mod/ext
+      - ClimaAtmos.jl-mod/src
+      - RRTMGP.jl-mod/src
+      - .calkit/env-locks/clima
+    outs:
+      - results/experiments/aerosol-index-bound/probe.nsys-rep:
+          persist: true
+      - results/experiments/aerosol-index-bound/probe.sqlite:
+          persist: true
+      - .calkit/scheduler/logs/aerosol-index-bound/probe.out:
+          cache: false
+          persist: true
+    frozen: true
+    desc: Automatically generated from the 'aerosol-index-bound/probe' stage in
+      calkit.yaml. Changes made here will be overwritten.
+  aerosol-index-bound/analyze:
+    cmd: calkit xenv -n py --no-check -- python
+      .calkit/markdown/docs/experiments/aerosol-index-bound.md/analyze.py
+    deps:
+      - .calkit/markdown/docs/experiments/aerosol-index-bound.md/analyze.py
+      - scripts/export-gpoint-groups.py
+      - results/experiments/aerosol-index-bound/probe.sqlite
+      - results/gpoint-groups.json
+      - results/summary.json
+      - results/null-census.json
+      - .calkit/env-locks/py
+    outs:
+      - results/experiments/aerosol-index-bound/stats.json:
+          cache: false
+          persist: false
+    frozen: true
+    desc: Automatically generated from the 'aerosol-index-bound/analyze' stage
+      in calkit.yaml. Changes made here will be overwritten.
   launch-cost/baseline:
     cmd: calkit scheduler batch --name launch-cost/baseline --environment clima
       --dep scripts/run-nsys.sh --dep scripts/run.jl --dep ClimaCoupler.jl/src

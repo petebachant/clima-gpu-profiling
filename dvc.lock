@@ -1379,8 +1379,8 @@ stages:
       nfiles: 2
     - path: calkit.yaml
       hash: md5
-      md5: 20596b09ad2faa3b9501cf20f1c29d33
-      size: 117706
+      md5: 0b207a2e7d048f5398472fcb139c7d4c
+      size: 118373
     - path: diffs
       hash: md5
       md5: 3640e1065a834e2c1a50295f596124f2.dir
@@ -1393,7 +1393,7 @@ stages:
     outs:
     - path: results/treatment.json
       hash: md5
-      md5: 92b249fd1a4b8acffd23a9697b25fc34
+      md5: 0c8386bf02bd0a6ce569946cc0798597
       size: 31435
   build-experiment-index:
     cmd: calkit xenv -n py --no-check -- python 
@@ -3755,7 +3755,7 @@ stages:
       size: 2220
     - path: results/treatment.json
       hash: md5
-      md5: 92b249fd1a4b8acffd23a9697b25fc34
+      md5: 0c8386bf02bd0a6ce569946cc0798597
       size: 31435
     - path: scripts/record-sypd-repeat.py
       hash: md5
@@ -3989,7 +3989,7 @@ stages:
       size: 65310720
     - path: results/treatment.json
       hash: md5
-      md5: 92b249fd1a4b8acffd23a9697b25fc34
+      md5: 0c8386bf02bd0a6ce569946cc0798597
       size: 31435
     - path: scripts/export-gpoint-groups.py
       hash: md5
@@ -3998,7 +3998,7 @@ stages:
     outs:
     - path: results/gpoint-groups.json
       hash: md5
-      md5: 9d013844216d20b4f0a92045d9843058
+      md5: 528abc4a73254bf80b0cc81fb0e52e5f
       size: 7389
   fold-compile-cost:
     cmd: calkit scheduler batch --name fold-compile-cost --environment clima 
@@ -5923,3 +5923,124 @@ stages:
       hash: md5
       md5: ea3057c5986336af163e74c28c1d82d0
       size: 4467
+  aerosol-index-bound/probe:
+    cmd: calkit scheduler batch --name aerosol-index-bound/probe --environment 
+      clima --dep scripts/run-nsys.sh --dep scripts/run.jl --dep 
+      ClimaCoupler.jl-mod/src --dep 
+      ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      --dep ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml --dep 
+      ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl --dep 
+      ClimaCore.jl-mod/src --dep ClimaCore.jl-mod/ext --dep 
+      ClimaAtmos.jl-mod/src --dep RRTMGP.jl-mod/src --dep 
+      .calkit/env-locks/clima --out 
+      results/experiments/aerosol-index-bound/probe.nsys-rep --out 
+      results/experiments/aerosol-index-bound/probe.sqlite --option --gpus=1 
+      --option --time=180 -- 
+      .calkit/markdown/docs/experiments/aerosol-index-bound.md/probe.sh
+    deps:
+    - path: .calkit/env-locks/clima
+      hash: md5
+      md5: 4a492b1cd086cf3c57903dc68d414c8c.dir
+      size: 118
+      nfiles: 1
+    - path: .calkit/markdown/docs/experiments/aerosol-index-bound.md/probe.sh
+      hash: md5
+      md5: 6eafb0621dd347c0f67a88812694ac58
+      size: 204
+    - path: ClimaAtmos.jl-mod/src
+      hash: md5
+      md5: 25612cfb6ea971f9a2a5b4a9a7e15025.dir
+      size: 2777121
+      nfiles: 178
+    - path: ClimaCore.jl-mod/ext
+      hash: md5
+      md5: 05950e138736b1430bc069db9f19c6d6.dir
+      size: 224613
+      nfiles: 26
+    - path: ClimaCore.jl-mod/src
+      hash: md5
+      md5: f4eeed93c4f3893045395c917bc7850e.dir
+      size: 1477074
+      nfiles: 105
+    - path: 
+        ClimaCoupler.jl-mod/config/benchmark_configs/amip_progedmf_1m_land_he16.yml
+      hash: md5
+      md5: 3974e589a2618f7adb8c0164acb5807b
+      size: 855
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/Manifest-v1.13.toml
+      hash: md5
+      md5: 1120405c14f7a1e5891fc75dc9cd7059
+      size: 129753
+    - path: ClimaCoupler.jl-mod/experiments/AMIP/code_loading.jl
+      hash: md5
+      md5: c84c1d820efdb3c8305bce06460d15d1
+      size: 889
+    - path: ClimaCoupler.jl-mod/src
+      hash: md5
+      md5: 280196912e887d04b35632ac6c51926d.dir
+      size: 330640
+      nfiles: 22
+    - path: RRTMGP.jl-mod/src
+      hash: md5
+      md5: 473fcdca4c6f2de9fe12905709ba6d79.dir
+      size: 364998
+      nfiles: 44
+    - path: scripts/run-nsys.sh
+      hash: md5
+      md5: bdf2e29b8711bf22dbc0f295951cdc51
+      size: 2069
+    - path: scripts/run.jl
+      hash: md5
+      md5: 4f2b60cda5845786541c8cb3831dd4ba
+      size: 3877
+    outs:
+    - path: .calkit/scheduler/logs/aerosol-index-bound/probe.out
+      hash: md5
+      md5: 1bdb3f435c9b94c1925215ad504c3f81
+      size: 168689
+    - path: results/experiments/aerosol-index-bound/probe.nsys-rep
+      hash: md5
+      md5: 6092d85686df5c8c39b82c86e618972e
+      size: 25826795
+    - path: results/experiments/aerosol-index-bound/probe.sqlite
+      hash: md5
+      md5: 8cd646bda35946c48789a25cd6e6fefb
+      size: 64778240
+  aerosol-index-bound/analyze:
+    cmd: calkit xenv -n py --no-check -- python 
+      .calkit/markdown/docs/experiments/aerosol-index-bound.md/analyze.py
+    deps:
+    - path: .calkit/env-locks/py
+      hash: md5
+      md5: e0f4c683bacd0ff85dac0d32b92f4cad.dir
+      size: 2104
+      nfiles: 2
+    - path: .calkit/markdown/docs/experiments/aerosol-index-bound.md/analyze.py
+      hash: md5
+      md5: 3998c563c23097ed063a872e54276736
+      size: 4144
+    - path: results/experiments/aerosol-index-bound/probe.sqlite
+      hash: md5
+      md5: 8cd646bda35946c48789a25cd6e6fefb
+      size: 64778240
+    - path: results/gpoint-groups.json
+      hash: md5
+      md5: 9d013844216d20b4f0a92045d9843058
+      size: 7389
+    - path: results/null-census.json
+      hash: md5
+      md5: d9cf08faa89fb2705fba87bf4efe4da1
+      size: 2548
+    - path: results/summary.json
+      hash: md5
+      md5: 33bbfc9faa05325e86aa638ce9c8a68c
+      size: 2402
+    - path: scripts/export-gpoint-groups.py
+      hash: md5
+      md5: 6257306456e0052566367a22524d30c4
+      size: 21888
+    outs:
+    - path: results/experiments/aerosol-index-bound/stats.json
+      hash: md5
+      md5: 05a52194aacdc34370409aad48c8e462
+      size: 3512

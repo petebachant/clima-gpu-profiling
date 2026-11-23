@@ -1416,6 +1416,18 @@ pipeline:
       # benchmark, and both halves of the difference it reports are regenerated
       # together by the same pass, so the ratio cannot come to mix two
       # configurations.
+    aerosol-index-bound:
+      kind: markdown
+      target_path: docs/experiments/aerosol-index-bound.md
+      environment: py
+      frozen: true
+      # Frozen on main. The probe is a deliberately incorrect edit to
+      # RRTMGP.jl-mod/src/optics/aerosol_optics.jl, so the moment it is
+      # reverted the profiling stage reads as stale and an unguarded pass
+      # would re-profile the UNPROBED source over probe.sqlite and restate
+      # the bound as zero. It owns its own output directory, so nothing else
+      # is at risk; the record is stats.json, which carries the probe's diff
+      # and the commit it applies to, and which is the way to reproduce it.
     launch-cost:
       kind: markdown
       target_path: docs/experiments/launch-cost.md
