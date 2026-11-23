@@ -263,6 +263,100 @@ Assert on every replacement, and after a multi-part edit verify each piece is
 present before submitting a job. A parse check is not enough -- the file above
 parsed.
 
+### A post-check looser than the edit pattern matches the definition
+
+The assertion above guards what was replaced. The natural companion --- assert
+the old call is *gone* --- needs the same precision, and on 2026-11-22 it did
+not have it. The edit replaced the two call sites
+`bin = locate_merra_size_bin(size_bin_limits, aerosize)`, and the post-check
+asked whether `locate_merra_size_bin(size_bin_limits` still appeared. It did:
+in the function's own docstring and in its `function` line, neither of which
+the edit should touch.
+
+This failed in the safe direction, because the assertion ran before the write
+and the file was left untouched --- confirmed with `git status` before
+retrying. That is the whole argument for putting the absence checks before
+`open(..., "w")` rather than after. Write the post-check against the same
+anchored form the edit used (`bin = locate_merra_size_bin`), and assert the
+definition SURVIVED:
+
+    assert "bin = locate_merra_size_bin" not in s, "a call site survived"
+    assert s.count("function locate_merra_size_bin") == 1, "the definition went"
+
+A bare grep count is the trap underneath it: counting `locate_merra_size_bin`
+returns 4 where there are 2 call sites, because the docstring and the
+signature carry the name too. Count the form you are editing, never the name.
+
+## Duplicating floating-point code is not duplicating its value
+
+A bit-for-bit claim about rearranged GPU arithmetic is a claim about FMA
+contraction, and the NVPTX backend contracts `a*b + c` into `fma` by default.
+So two spellings of the same formula can differ by one ULP with no reordering
+at all, and the equivalence check is what finds out.
+
+On 2026-11-22 the dark-column skip needed the 550 nm aerosol optical depth off
+the critical path, and the first design hoisted it into a new per-column
+kernel --- a second copy of the accumulation arithmetic. It failed exactness
+twice:
+
+  * A register accumulator let the multiply fuse into the accumulating add,
+    where the original's load-modify-store through global memory blocks the
+    fusion. Fixed by accumulating through a 0-d view, which restored the
+    barrier.
+  * Then `aod_sw_sca` moved by exactly 2^-23 while `aod_sw_ext` stayed exact.
+    The cause was discarding a return value with `_`: that dropped
+    `τ_ssa`'s use count from two to one, which re-enabled a contraction the
+    original prevented. **A value's use count is part of its arithmetic**, and
+    nothing in the source says so.
+
+The fix was structural --- delete the duplicate and nominate one g-point
+inside the existing kernel as the sole writer --- which makes exactness true
+by construction instead of by reasoning about the backend. Two reservations
+went to the two FP failures. Prefer nominating a writer inside the kernel that
+already computes the value over copying the computation somewhere cheaper, and
+if a copy is unavoidable, expect the check to fail and budget a reservation
+for it.
+
+`scripts/check-gpoint-group-equivalence.jl` is the instrument. It builds the
+real coupled simulation and compares the grouped solve against the ungrouped
+one on live AMIP state, and its first group count is the reference compared
+with itself --- a first point reading `worst_relative_deviation = 0.0` is not
+evidence of anything.
+
+### Report a deviation's magnitude, not just its exactness
+
+The same pass hit a second, self-inflicted failure: all fourteen solves ran,
+and the TOML write then died with `type Nothing is not a valid TOML type`
+because the longwave has no aerosol optical depth and the new reporting field
+was `nothing`. A whole reservation went to a serialization bug in the
+instrumentation, after the measurement it was instrumenting had succeeded.
+
+Omit the key instead of writing `nothing`, read it back with `haskey`, and
+round-trip a hand-built example of the structure locally before spending a
+reservation on it. The reporting was worth adding --- exactness alone does not
+distinguish a few ULP of a reordered sum from the wrong band entirely, which
+is the only question that matters when it fails --- but an output format is
+not checked by the job that produces it.
+
+## A `for` over a tuple in a GPU kernel spills it to local memory
+
+Iterating a tuple indexes it with a runtime variable, which forces the whole
+tuple into a stack slot --- so a kernel that writes a handful of arrays held
+in a tuple pays local-memory traffic for the indexing rather than for the
+writes. Recursing over `Base.tail` unrolls at compile time instead, because
+each call takes a strictly shorter tuple type than the one above it, and the
+spill disappears.
+
+`_zero_planes!` in `RRTMGP.jl-mod/ext/cuda/rte_gpt_groups.jl` is the worked
+example and carries the reason in a comment beside it. The shape to recognize:
+local memory per thread on a kernel whose source has no array allocation in
+it, with register pressure that does not fall when the cap is lowered. Both
+sweeps kernels showed it before the unroll.
+
+This is not the same failure as the register caps. A cap bounds how many
+registers the compiler may use; a spilled tuple is the compiler being unable
+to keep something in registers at all, and lowering the cap does not fix it.
+
 ## Use American spelling everywhere
 
 Code comments, commit messages, docs/learnings.md, calkit.yaml answers, PR
