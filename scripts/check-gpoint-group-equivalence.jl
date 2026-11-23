@@ -236,6 +236,11 @@ function check_band(name, n_gpt, make_groups, with_groups, live, solve!, snapsho
             "fields" => worst,
             "cover_exact" => exact_match(reference.cover, shot.cover),
             "aod_exact" => exact_dicts_match(reference.aod, shot.aod),
+            # Exactness alone does not say whether a miss is a few ULP of a
+            # reordered sum or the wrong band entirely, and that is the whole
+            # question when it fails.
+            "aod_fields" => isnothing(reference.aod) ? nothing :
+                compare_fluxes(reference.aod, shot.aod),
         )
 
         groups = nothing
@@ -258,6 +263,11 @@ function check_band(name, n_gpt, make_groups, with_groups, live, solve!, snapsho
             all(p["within_tolerance"] for p in values(points)),
         "all_cover_exact" => all(p["cover_exact"] for p in values(points)),
         "all_aod_exact" => all(p["aod_exact"] for p in values(points)),
+        "aod_worst_relative_deviation" => maximum(
+            isnothing(p["aod_fields"]) ? 0.0 :
+            maximum(v["rel"] for v in values(p["aod_fields"])) for
+            p in values(points)
+        ),
         "worst_relative_deviation" =>
             maximum(p["worst_relative_deviation"] for p in values(points)),
         # The property that separates roundoff from a reordering bug: a sum
