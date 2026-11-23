@@ -333,9 +333,10 @@ results = Dict{String, Any}(
               "is what separates roundoff from a dropped or double-counted " *
               "g-point. Cloud cover is a count and is asserted exactly. The " *
               "550 nm aerosol optical depth is asserted exactly and shortwave " *
-              "only: its own per-column kernel computes it, so any difference " *
-              "is that kernel disagreeing with the per-g-point accumulation " *
-              "the ungrouped solve does inline. This does " *
+              "only: the grouped optics kernel nominates one g-point per band " *
+              "as its only writer, which is the g-point the ungrouped loop " *
+              "leaves standing, so both paths accumulate it the same way and " *
+              "any difference is a real disagreement. This does " *
               "NOT cover ngroups > n_gpt, where a group has no g-points at " *
               "all; that needs more groups than there are g-points and so " *
               "belongs in the unit tests, at a column count where the " *
