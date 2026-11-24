@@ -271,13 +271,18 @@ def git(*args):
     return r.stdout.strip() if r.returncode == 0 else None
 
 
-def other_treatments():
-    """True if the arms differ in anything but RRTMGP and the AMIP manifest."""
+def other_treatment_names():
+    """Submodules the arms differ in besides RRTMGP and the AMIP manifest."""
     rec = json.loads(Path("results/treatment.json").read_text())
     differ = set(rec["arms_differ_in"])
     # The Coupler arm differs in every pass by construction: its manifest is
     # what points each arm at its own package copies.
-    return bool(differ - {"RRTMGP.jl-mod", "ClimaCoupler.jl-mod"})
+    return sorted(differ - {"RRTMGP.jl-mod", "ClimaCoupler.jl-mod"})
+
+
+def other_treatments():
+    """True if the arms differ in anything but RRTMGP and the AMIP manifest."""
+    return bool(other_treatment_names())
 
 
 def digest(path):
@@ -398,9 +403,9 @@ def main():
             "untreated_kernels_compared": len(shared),
         },
         # Two separate claims. A saving is resolved if it is larger than the
-        # untreated kernels moved; the arm total is a different question and the
-        # mod arm also carries the sedimentation fold, so it is not this
-        # treatment's number.
+        # untreated kernels moved; the arm total is a different question,
+        # answerable only where the arms carry nothing else, which
+        # `other_treatment_names` is what decides.
         #
         # Each band is compared against the untreated noise band ONLY. Until
         # 2026-11-05 this also took the max with the shortwave movement, which
@@ -452,8 +457,16 @@ def main():
             "explanation: it rose from below one to many at unchanged blocks per "
             "SM and the longwave time did not move, and a concurrent-launch "
             "build of the same split measured the same saving at a low overlap "
-            "factor. The device total carries the sedimentation "
-            "fold as well and is not this treatment's figure."
+            "factor. "
+            + (
+                "The device total is the whole arm, so it carries "
+                + ", ".join(other_treatment_names())
+                + " as well and is not this treatment's figure."
+                if other_treatments()
+                else "The device total is the whole arm, and on this stack the "
+                "arms differ in nothing but RRTMGP, so it is this treatment's "
+                "figure."
+            )
         ),
     }
     bcon.close()
