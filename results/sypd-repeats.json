@@ -1420,6 +1420,62 @@
         "RRTMGP.jl-mod": "fef9e8fb459e179496292d68f0929d3e34cd96c1"
       },
       "same_gpu": true
+    },
+    {
+      "run_id": "4bcb0c6bc68a",
+      "order": "baseline_first",
+      "order_source": "log mtimes",
+      "ran_second": "mod",
+      "gpus_by_arm": {
+        "baseline": [
+          4
+        ],
+        "mod": [
+          4
+        ]
+      },
+      "baseline": {
+        "gpus": [
+          4
+        ],
+        "sypd": 1.2944228719718613,
+        "wall_s": 730.47546,
+        "step_s": 0.25381356,
+        "n_steps_timed": 2878,
+        "dt_cpl_s": 120.0
+      },
+      "mod": {
+        "gpus": [
+          4
+        ],
+        "sypd": 1.4288060511524445,
+        "wall_s": 661.7722,
+        "step_s": 0.2299417,
+        "n_steps_timed": 2878,
+        "dt_cpl_s": 120.0
+      },
+      "speedup_pct": 9.405,
+      "step_change_pct": -9.405,
+      "treatment": [
+        "ClimaCoupler.jl-mod",
+        "RRTMGP.jl-mod"
+      ],
+      "diff_digest": "207a2c850e1445a4",
+      "reproducible": true,
+      "dirty_trees": [],
+      "stack": {
+        "ClimaAtmos.jl": "51a998b0c219c0274ac5fd9915e36aa8593b2dbb",
+        "ClimaAtmos.jl-mod": "51a998b0c219c0274ac5fd9915e36aa8593b2dbb",
+        "ClimaCore.jl": "46b30906ae7f80e741af586520aa469ea55bf5ca",
+        "ClimaCore.jl-mod": "46b30906ae7f80e741af586520aa469ea55bf5ca",
+        "ClimaCoupler.jl": "5d2af1cdc0506aec1e48c0dcce0c691631a5b1d8",
+        "ClimaCoupler.jl-mod": "b2fdc7a727858e88746b528a67373835da96a9e6",
+        "CloudMicrophysics.jl": "f7e038e26cf64c2ff4b51fdd0c1a8660a63fd69c",
+        "CloudMicrophysics.jl-mod": "f7e038e26cf64c2ff4b51fdd0c1a8660a63fd69c",
+        "RRTMGP.jl": "4699d468fa497c92d2ced7cc411e591282cf80d1",
+        "RRTMGP.jl-mod": "97ed9b5383188ed0af7aec0cbcb52039dad95feb"
+      },
+      "same_gpu": true
     }
   ],
   "note": "One entry per unprofiled AMIP pair, each an independent pair of runs of the same committed code. `speedup_pct` follows results/summary.json: 1 - baseline_sypd/mod_sypd. `spread_points` across pairs of one treatment is this measurement's own repeatability, to be read against the null test's noise floor in results/null-record/.",
@@ -2327,19 +2383,20 @@
       "predicted_if_order_explains_null_pct": 3.267
     },
     "207a2c850e1445a4": {
-      "n_pairs": 1,
+      "n_pairs": 2,
       "treatment": [
         "ClimaCoupler.jl-mod",
         "RRTMGP.jl-mod"
       ],
       "speedups_pct": [
-        8.228
+        8.228,
+        9.405
       ],
-      "mean_pct": 8.228,
+      "mean_pct": 8.816,
       "min_pct": 8.228,
-      "max_pct": 8.228,
-      "spread_points": 0.0,
-      "stacks": 1,
+      "max_pct": 9.405,
+      "spread_points": 1.177,
+      "stacks": 2,
       "orders": [
         "baseline_first"
       ],
@@ -2351,19 +2408,34 @@
           "mod": [
             3
           ]
+        },
+        {
+          "baseline": [
+            4
+          ],
+          "mod": [
+            4
+          ]
         }
       ],
-      "same_gpu_pairs": 1,
+      "same_gpu_pairs": 2,
       "by_order": {
         "baseline_first": {
-          "n": 1,
-          "mean_pct": 8.228
+          "n": 2,
+          "mean_pct": 8.816
         }
       },
-      "margin_over_null_points": 6.359,
+      "arm_spread_pct": {
+        "baseline": 6.79,
+        "mod": 8.178
+      },
+      "widest_arm": "mod",
+      "max_arm_spread_pct": 8.178,
+      "effect_below_arm_spread": false,
+      "margin_over_null_points": 6.947,
       "margin_exceeds_repeat_spread": true,
       "margin_exceeds_floor_spread": true,
-      "predicted_if_order_explains_null_pct": 3.294
+      "predicted_if_order_explains_null_pct": 3.882
     }
   },
   "null_test": {
@@ -2372,19 +2444,20 @@
     "note": "results/null-record/, both arms on main at exp/2026-10-22-null-test-on-main. One pair, so this is a single draw from the wall-clock noise and not an estimate of its width."
   },
   "latest_treatment": {
-    "n_pairs": 1,
+    "n_pairs": 2,
     "treatment": [
       "ClimaCoupler.jl-mod",
       "RRTMGP.jl-mod"
     ],
     "speedups_pct": [
-      8.228
+      8.228,
+      9.405
     ],
-    "mean_pct": 8.228,
+    "mean_pct": 8.816,
     "min_pct": 8.228,
-    "max_pct": 8.228,
-    "spread_points": 0.0,
-    "stacks": 1,
+    "max_pct": 9.405,
+    "spread_points": 1.177,
+    "stacks": 2,
     "orders": [
       "baseline_first"
     ],
@@ -2396,19 +2469,34 @@
         "mod": [
           3
         ]
+      },
+      {
+        "baseline": [
+          4
+        ],
+        "mod": [
+          4
+        ]
       }
     ],
-    "same_gpu_pairs": 1,
+    "same_gpu_pairs": 2,
     "by_order": {
       "baseline_first": {
-        "n": 1,
-        "mean_pct": 8.228
+        "n": 2,
+        "mean_pct": 8.816
       }
     },
-    "margin_over_null_points": 6.359,
+    "arm_spread_pct": {
+      "baseline": 6.79,
+      "mod": 8.178
+    },
+    "widest_arm": "mod",
+    "max_arm_spread_pct": 8.178,
+    "effect_below_arm_spread": false,
+    "margin_over_null_points": 6.947,
     "margin_exceeds_repeat_spread": true,
     "margin_exceeds_floor_spread": true,
-    "predicted_if_order_explains_null_pct": 3.294,
+    "predicted_if_order_explains_null_pct": 3.882,
     "diff_digest": "207a2c850e1445a4"
   },
   "most_repeated_treatment": {
