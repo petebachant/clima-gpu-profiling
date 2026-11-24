@@ -687,7 +687,19 @@ the fix cost nothing.
 
 Both arms' benchmark configs are edited **in the submodules** and must stay
 byte-identical to each other. That is a deliberate deviation from "identical to
-upstream main except the Manifest" and is the only one.
+upstream main except the Manifest", and there are two.
+
+The second is the Couplers' `[compat]` bound on ClimaAtmos. ClimaAtmos bumps its
+minor version days before coupler main widens the bound to accept it -- 0.43.0
+landed 2026-11-20 and main still read `"0.42.17"` on 2026-11-23 -- so the arms
+carry `"0.42.17, 0.43"` or the AMIP environment cannot resolve the dev'd
+ClimaAtmos at all. `update-coupler-to-main.sh` reverted it along with everything
+else until 2026-11-24, and the pull then failed inside `Pkg.develop` with
+`Unsatisfiable requirements detected for package ClimaAtmos`, which names the
+package rather than the bound a `checkout origin/main -- .` had just reverted.
+The script now carries the bound across and retires the deviation by itself once
+main's bound mentions the dev'd minor version. Both arms' bounds are compared
+before anything resolves, for the same reason the benchmark configs are.
 
 **Do not change these by passing an extra `--config_file`.** It does not merge.
 The additional file drops the primary config's coupler keys back to defaults: on
