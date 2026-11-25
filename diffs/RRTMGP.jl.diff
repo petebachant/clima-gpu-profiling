@@ -49,23 +49,34 @@ index 0bed839..1752d61 100644
 +default_ngpt_groups
 +```
 diff --git a/RRTMGP.jl/ext/RRTMGPCUDAExt.jl b/RRTMGP.jl-mod/ext/RRTMGPCUDAExt.jl
-index 44f0b18..d5c52d9 100644
+index 44f0b18..588b004 100644
 --- a/RRTMGP.jl/ext/RRTMGPCUDAExt.jl
 +++ b/RRTMGP.jl-mod/ext/RRTMGPCUDAExt.jl
-@@ -44,9 +44,12 @@ import RRTMGP.RTESolver: lw_noscat_gpt_col!, lw_2stream_gpt_col!
+@@ -44,11 +44,23 @@ import RRTMGP.RTESolver: lw_noscat_gpt_col!, lw_2stream_gpt_col!
  import RRTMGP.RTESolver: sw_noscat_gpt_col!, sw_2stream_gpt_col!
  import RRTMGP.RTESolver: _compute_aero_mask!, _build_cloud_mask!
  import RRTMGP.RTESolver: rte_lw_2stream_solve_both_skies!
 +import RRTMGP.RTE: LWGptGroups, SWGptGroups, n_gpt_groups
++import RRTMGP.RTE: GPT_GROUP_MEMORY_DIVISOR, _gpt_group_byte_bound
  import RRTMGP.RTESolver: lw_2stream_gpt_col_both_skies!
  import RRTMGP.RTESolver: rte_sw_2stream_solve_both_skies!
  import RRTMGP.RTESolver: sw_2stream_gpt_col_both_skies!
 +# the post-optics halves, for the split grouped solves
 +import RRTMGP.RTESolver: lw_2stream_gpt_col_sweeps!, sw_2stream_gpt_col_sweeps!
++import CUDA
  import CUDA: threadIdx, blockIdx, blockDim, @cuda
  
++# The share of this device's memory the default g-point group count may commit.
++# Total rather than free, for the reason given where the fallback is defined.
++# `Int`, because CUDA reports memory as a `UInt64` and the count this bound
++# feeds is a keyword typed `Int`.
++_gpt_group_byte_bound(::ClimaComms.CUDADevice) =
++    fld(Int(CUDA.totalmem(CUDA.device())), GPT_GROUP_MEMORY_DIVISOR)
++
  _max_threads_cuda() = 256
-@@ -67,5 +70,6 @@ include(joinpath("cuda", "rte_shortwave_noscat.jl"))
+ 
+ function _configure_threadblock(max_threads, nitems)
+@@ -67,5 +79,6 @@ include(joinpath("cuda", "rte_shortwave_noscat.jl"))
  include(joinpath("cuda", "gray_atmosphere.jl"))
  include(joinpath("cuda", "rte_shortwave_2stream.jl"))
  include(joinpath("cuda", "rte_longwave_noscat.jl"))
@@ -74,10 +85,10 @@ index 44f0b18..d5c52d9 100644
  end
 diff --git a/RRTMGP.jl-mod/ext/cuda/rte_gpt_groups.jl b/RRTMGP.jl-mod/ext/cuda/rte_gpt_groups.jl
 new file mode 100644
-index 0000000..2f3951e
+index 0000000..b281030
 --- /dev/null
 +++ b/RRTMGP.jl-mod/ext/cuda/rte_gpt_groups.jl
-@@ -0,0 +1,253 @@
+@@ -0,0 +1,254 @@
 +#####
 +##### One grid over `ncol * ngroups` threads, for either band.
 +#####
@@ -94,9 +105,9 @@ index 0000000..2f3951e
 +# The budgets are per kernel because the two halves compose -- a
 +# matched pair landed within a few hundredths of a point of the sum
 +# of its two single-kernel effects at every cap measured -- so a band
-+# whose halves bottom out at different counts takes both.
-+# results/radiation-register-cap.toml has the sweep, and these are
-+# the counts it chose:
++# whose halves bottom out at different counts takes both. The sweep
++# is a profiling run against a coupled model and lives outside this
++# repo; the counts it chose:
 +# lw optics: 156 registers naturally, -11.41% at 96.
 +# lw sweeps: 140 registers naturally, -8.02% at 72.
 +# sw optics: 124 registers naturally, -4.65% at 96.
@@ -135,10 +146,11 @@ index 0000000..2f3951e
 +    return nothing
 +end
 +
-+# The planes recurse rather than iterate: a loop over the tuple indexes it with
-+# a runtime variable, which forces the tuple to a stack slot and spills the
-+# sweeps kernels. Recursion over `Base.tail` unrolls at compile time, because
-+# each call takes a shorter tuple type than the one above it.
++# The planes recurse rather than iterate: a loop indexes the tuple with a
++# runtime variable, which defeats SROA -- a tuple indexed that way has to exist
++# somewhere addressable, so it lands in a stack slot and the sweeps kernels
++# spill. Recursion over `Base.tail` indexes by type instead and unrolls, which
++# is only a fixed depth because a band accumulates two flux planes or three.
 +@inline function _zero_planes!(planes::Tuple, wcol, ilev)
 +    plane = first(planes)
 +    @inbounds plane[wcol, ilev] = zero(eltype(plane))
@@ -1211,7 +1223,7 @@ index 74fafd5..cad5017 100644
              view(cloud_state.cld_r_eff_ice, :, gcol),
              view(cloud_state.cld_path_liq, :, gcol),
 diff --git a/RRTMGP.jl/src/rte/RTE.jl b/RRTMGP.jl-mod/src/rte/RTE.jl
-index 44d5712..ba784a9 100644
+index 44d5712..5aa8a42 100644
 --- a/RRTMGP.jl/src/rte/RTE.jl
 +++ b/RRTMGP.jl-mod/src/rte/RTE.jl
 @@ -12,6 +12,7 @@ using ..BCs
@@ -1222,7 +1234,7 @@ index 44d5712..ba784a9 100644
  
  # Device-dependent default for the workspaces' `state_cache` keyword. On the
  # GPU, a `TransposedStateCache` gives the g-point loop coalesced state reads
-@@ -26,6 +27,92 @@ _default_state_cache(::ClimaComms.AbstractCPUDevice, gp::RRTMGPGridParams) =
+@@ -26,6 +27,96 @@ _default_state_cache(::ClimaComms.AbstractCPUDevice, gp::RRTMGPGridParams) =
  _default_state_cache(::ClimaComms.AbstractDevice, gp::RRTMGPGridParams) =
      TransposedStateCache(gp)
  
@@ -1248,38 +1260,41 @@ index 44d5712..ba784a9 100644
 +# planes in the longwave and three in the shortwave.
 +const TARGET_GPT_GROUP_COLUMNS = 393216
 +
-+# Device bytes one wide column of workspace costs per level at `Float32`, both
-+# bands together: 53 in the longwave and 61 in the shortwave, measured by
-+# building them and reading the free-memory delta, of which the two partial
-+# accumulators are the bulk. A coupled run builds both, so the default prices
-+# both.
-+const GPT_GROUP_BYTES_PER_WIDE_COLUMN_LEVEL = 114
++# What fraction of a device's memory the default will commit to those
++# workspaces. The column target above is a floor on how wide the solve wants to
++# be, not a licence to allocate: `nlev` is in the workspace's size and not in
++# that target, so without a byte bound the same column count commits four times
++# the memory on a 128-level grid as on a 32-level one, and a run can fail to
++# allocate at a default it never chose. A sixteenth is inert at every resolution
++# measured: on an 80 GiB device it first binds above 80 layers at the
++# benchmark's column count.
++const GPT_GROUP_MEMORY_DIVISOR = 16
 +
-+# The most device memory the default will commit to those workspaces. The
-+# column target above is a floor on how wide the solve wants to be, not a
-+# licence to allocate: `nlev` is in the workspace's size and not in that target,
-+# so without this bound the same column count commits four times the memory on
-+# a 128-level grid as on a 32-level one, and a run can fail to allocate at a
-+# default it never chose. This is inert at every resolution measured -- it first
-+# binds above 80 layers at the benchmark's column count -- and a device too
-+# small for it wants an explicit `ngpt_groups` rather than a different bound.
-+const TARGET_GPT_GROUP_BYTES = 4 * 1024^3
++# The bound itself, which is a property of the device. It is a share of TOTAL
++# memory rather than of what is free, because the group count decides the order
++# a column's g-points are summed: pricing against free memory would let that
++# order, and so the fluxes, depend on whatever the host had allocated when the
++# solver was built. The CUDA extension reads the device's figure; this fallback
++# is the fixed bound the default carried before it was derived, and a device
++# smaller than it wants an explicit `ngpt_groups` instead.
++_gpt_group_byte_bound(::ClimaComms.AbstractDevice) = 4 * 1024^3
 +
 +"""
 +    default_ngpt_groups(grid_params::RRTMGPGridParams)
 +
 +How many g-point groups `RRTMGPSolver` widens a two-stream solve to when the
-+caller names none: enough to reach `TARGET_GPT_GROUP_COLUMNS` wide columns, capped at
-+`MAX_NGPT_GROUPS` and at whatever `TARGET_GPT_GROUP_BYTES` affords on this
-+grid's level count and float type.
++caller names none: enough to reach `TARGET_GPT_GROUP_COLUMNS` wide columns, capped
++at `MAX_NGPT_GROUPS` and at what a `GPT_GROUP_MEMORY_DIVISOR`th of the device's
++memory affords on this grid's level count and float type, which
++[`gpt_group_bytes`](@ref) counts.
 +
 +A column count that already fills the device gets one group, and so does a CPU,
 +whose driver solves the whole g-point loop per column and ignores the workspaces.
 +Both gates matter because the count rises as columns fall, so an ungated default
 +would give the smallest runs the widest workspaces. Pass `ngpt_groups` to
-+override in either direction -- a device whose free memory is smaller than
-+`TARGET_GPT_GROUP_BYTES` wants that rather than the default, since nothing here
-+polls the device.
++override in either direction -- a device whose free memory is smaller than its
++share of its own total wants that rather than the default, since the bound is on
++the total.
 +
 +Grouping changes the order in which a column's g-points are summed, and
 +floating-point addition is not associative, so grouped fluxes differ from a
@@ -1291,22 +1306,23 @@ index 44d5712..ba784a9 100644
 +are taken in the serial order, and the solve is then bit-for-bit with the serial
 +one, which is what the tests assert.
 +"""
-+function default_ngpt_groups(grid_params::RRTMGPGridParams)
-+    ClimaComms.device(grid_params) isa ClimaComms.AbstractCPUDevice && return 1
++# `::Int`, and not incidentally: the byte bound comes from the device through a
++# hook, CUDA reports memory as a `UInt64`, and an unsigned count here does not
++# match the `ngpt_groups::Int` keyword this defaults -- which fails at every
++# solver construction, on a GPU only.
++function default_ngpt_groups(grid_params::RRTMGPGridParams)::Int
++    device = ClimaComms.device(grid_params)
++    device isa ClimaComms.AbstractCPUDevice && return 1
 +    (; ncol, nlay) = grid_params
 +    # `cld`, because the column target is a floor: rounding down would undershoot
 +    # the parallelism it names. It can overshoot instead -- by 9.9% at the
 +    # high-resolution benchmark's column count -- which costs memory, and that is
 +    # what the byte bound is for.
 +    wanted = cld(TARGET_GPT_GROUP_COLUMNS, ncol)
-+    # The byte figure is a `Float32` measurement and every widened workspace but
-+    # the mask holds the grid's own float type, so a wider one has to be charged
-+    # for it: unscaled, a `Float64` grid commits about twice the bound it is
-+    # being checked against. `cld`, so the mask's byte is never undercharged.
-+    per_level =
-+        GPT_GROUP_BYTES_PER_WIDE_COLUMN_LEVEL *
-+        cld(sizeof(eltype(grid_params)), sizeof(Float32))
-+    affordable = fld(TARGET_GPT_GROUP_BYTES, ncol * (nlay + 1) * per_level)
++    affordable = fld(
++        _gpt_group_byte_bound(device),
++        gpt_group_bytes(eltype(grid_params), ncol, nlay, 1),
++    )
 +    return clamp(min(wanted, affordable), 1, MAX_NGPT_GROUPS)
 +end
 +
@@ -1315,7 +1331,7 @@ index 44d5712..ba784a9 100644
  """
      NoScatLWRTE(grid_params::RRTMGPGridParams; params, sfc_emis, inc_flux,
                  n_gauss_angles = 1)
-@@ -117,6 +204,7 @@ struct TwoStreamLWRTE{
+@@ -117,6 +208,7 @@ struct TwoStreamLWRTE{
      FXL <: FluxLW,
      FXBND,
      TSC,
@@ -1323,7 +1339,7 @@ index 44d5712..ba784a9 100644
  }
      context::C
      op::OP
-@@ -126,11 +214,25 @@ struct TwoStreamLWRTE{
+@@ -126,11 +218,25 @@ struct TwoStreamLWRTE{
      flux::FXL
      band_flux::FXBND
      state_cache::TSC
@@ -1350,7 +1366,7 @@ index 44d5712..ba784a9 100644
  
  function TwoStreamLWRTE(
      grid_params::RRTMGPGridParams;
-@@ -138,13 +240,22 @@ function TwoStreamLWRTE(
+@@ -138,13 +244,22 @@ function TwoStreamLWRTE(
      sfc_emis,
      inc_flux,
      state_cache = _default_state_cache(grid_params),
@@ -1373,7 +1389,7 @@ index 44d5712..ba784a9 100644
      return TwoStreamLWRTE(
          context,
          op,
-@@ -154,6 +265,7 @@ function TwoStreamLWRTE(
+@@ -154,6 +269,7 @@ function TwoStreamLWRTE(
          flux,
          nothing,
          state_cache,
@@ -1381,7 +1397,7 @@ index 44d5712..ba784a9 100644
      )
  end
  
-@@ -235,6 +347,7 @@ struct TwoStreamSWRTE{
+@@ -235,6 +351,7 @@ struct TwoStreamSWRTE{
      FXS <: FluxSW,
      FXBND,
      TSC,
@@ -1389,7 +1405,7 @@ index 44d5712..ba784a9 100644
  }
      context::C
      op::OP
-@@ -244,11 +357,24 @@ struct TwoStreamSWRTE{
+@@ -244,11 +361,24 @@ struct TwoStreamSWRTE{
      flux::FXS
      band_flux::FXBND
      state_cache::TSC
@@ -1414,7 +1430,7 @@ index 44d5712..ba784a9 100644
  
  function TwoStreamSWRTE(
      grid_params::RRTMGPGridParams;
-@@ -258,7 +384,9 @@ function TwoStreamSWRTE(
+@@ -258,7 +388,9 @@ function TwoStreamSWRTE(
      inc_flux_diffuse,
      sfc_alb_diffuse,
      state_cache = _default_state_cache(grid_params),
@@ -1424,7 +1440,7 @@ index 44d5712..ba784a9 100644
      (; context) = grid_params
      op = TwoStream(grid_params)
      src = SourceSW2Str(grid_params)
-@@ -271,6 +399,12 @@ function TwoStreamSWRTE(
+@@ -271,6 +403,12 @@ function TwoStreamSWRTE(
      )
      fluxb = FluxSW(grid_params)
      flux = FluxSW(grid_params)
@@ -1437,7 +1453,7 @@ index 44d5712..ba784a9 100644
      return TwoStreamSWRTE(
          context,
          op,
-@@ -280,6 +414,7 @@ function TwoStreamSWRTE(
+@@ -280,6 +418,7 @@ function TwoStreamSWRTE(
          flux,
          nothing,
          state_cache,
@@ -1517,10 +1533,10 @@ index 31e416f..db7d9da 100644
              acc_dn[gcol, ilev] = dn[gcol, ilev]
 diff --git a/RRTMGP.jl-mod/src/rte/gpt_groups.jl b/RRTMGP.jl-mod/src/rte/gpt_groups.jl
 new file mode 100644
-index 0000000..1bc969e
+index 0000000..3775189
 --- /dev/null
 +++ b/RRTMGP.jl-mod/src/rte/gpt_groups.jl
-@@ -0,0 +1,161 @@
+@@ -0,0 +1,212 @@
 +#####
 +##### Wide workspaces for a g-point-parallel solve.
 +#####
@@ -1532,6 +1548,50 @@ index 0000000..1bc969e
 +    ngpt_groups >= 1 ||
 +        error("ngpt_groups must be at least 1, got $ngpt_groups")
 +    return nothing
++end
++
++# Planes of the grid's own float type one wide column holds per level, counted
++# from what the constructors below build: three for the optics, three for the
++# longwave source and two for the shortwave's, three flux planes in the longwave
++# and four in the shortwave, and two partial accumulators of two planes each in
++# the longwave and three each in the shortwave.
++const LW_GPT_GROUP_PLANES = 3 + 3 + 3 + 2 * 2
++const SW_GPT_GROUP_PLANES = 3 + 2 + 4 + 2 * 3
++
++"""
++    gpt_group_bytes(FT, ncol, nlay, ngroups)
++
++Device bytes `LWGptGroups` and `SWGptGroups` together commit for `ngroups`
++groups of `ncol` columns on `nlay` layers, which is the quantity
++[`default_ngpt_groups`](@ref) bounds. A coupled run builds both bands, so this
++prices both.
++
++Each band adds a byte of cloud mask per level and, per wide column, a surface
++source and a cloudy tally. The optics and the mask are over layers rather than
++levels and are charged a level each, which keeps the count on the safe side of
++the bound; `test/gpt_group_workspaces.jl` holds it to exactly that.
++"""
++function gpt_group_bytes(::Type{FT}, ncol, nlay, ngroups) where {FT}
++    planes = LW_GPT_GROUP_PLANES + SW_GPT_GROUP_PLANES
++    per_level = planes * sizeof(FT) + 2 * sizeof(Bool)
++    per_column = 2 * (sizeof(FT) + sizeof(Int32))
++    return ncol * ngroups * ((nlay + 1) * per_level + per_column)
++end
++
++# An out-of-memory failure building these names a byte count and nothing about
++# why the solve wanted it. Say what the group count costs and what to pass
++# instead, then rethrow: a run that cannot afford the default wants an explicit
++# `ngpt_groups`, not a quietly narrower solve.
++function _try_gpt_group_alloc(f, grid_params::RRTMGPGridParams, ngroups::Int)
++    try
++        return f()
++    catch
++        (; ncol, nlay) = grid_params
++        bytes = gpt_group_bytes(eltype(grid_params), ncol, nlay, ngroups)
++        hint = "pass `ngpt_groups` (1 solves the g-point loop serially)"
++        @error "cannot allocate the g-point group workspaces" ngroups ncol nlay bytes hint
++        rethrow()
++    end
 +end
 +
 +# What the two bands' workspaces have in common: the widened grid parameters,
@@ -1606,25 +1666,29 @@ index 0000000..1bc969e
 +Adapt.@adapt_structure LWGptGroups
 +
 +function LWGptGroups(grid_params::RRTMGPGridParams, ngroups::Int; params)
-+    # Up and down only: the reduction recomputes net from them, so a third
-+    # plane would be allocated per wide column and never written. The field
-+    # names match `FluxLW` because that is what these accumulate, but the type
-+    # does not, which is the point -- a `FluxLW` would carry the net plane.
-+    (; wide_grid_params, acc_data, acc_clear_data, mask, cloudy) =
-+        _gpt_group_workspaces(grid_params, ngroups, 2)
-+    # `view(d, :, :, k)` is a contiguous block, so the accumulators index as
-+    # cheaply as the plain arrays the ungrouped path uses.
-+    fluxes(d) = (flux_up = view(d, :, :, 1), flux_dn = view(d, :, :, 2))
-+    return LWGptGroups(
-+        ngroups,
-+        TwoStream(wide_grid_params),
-+        SourceLW2Str(wide_grid_params; params),
-+        FluxLW(wide_grid_params),
-+        mask,
-+        fluxes(acc_data),
-+        fluxes(acc_clear_data),
-+        cloudy,
-+    )
++    _check_ngpt_groups(ngroups)
++    _try_gpt_group_alloc(grid_params, ngroups) do
++        # Up and down only: the reduction recomputes net from them, so a third
++        # plane would be allocated per wide column and never written. The field
++        # names match `FluxLW` because that is what these accumulate, but the
++        # type does not, which is the point -- a `FluxLW` would carry the net
++        # plane.
++        (; wide_grid_params, acc_data, acc_clear_data, mask, cloudy) =
++            _gpt_group_workspaces(grid_params, ngroups, 2)
++        # `view(d, :, :, k)` is a contiguous block, so the accumulators index as
++        # cheaply as the plain arrays the ungrouped path uses.
++        fluxes(d) = (flux_up = view(d, :, :, 1), flux_dn = view(d, :, :, 2))
++        LWGptGroups(
++            ngroups,
++            TwoStream(wide_grid_params),
++            SourceLW2Str(wide_grid_params; params),
++            FluxLW(wide_grid_params),
++            mask,
++            fluxes(acc_data),
++            fluxes(acc_clear_data),
++            cloudy,
++        )
++    end
 +end
 +
 +n_gpt_groups(::Nothing) = 1
@@ -1660,25 +1724,28 @@ index 0000000..1bc969e
 +Adapt.@adapt_structure SWGptGroups
 +
 +function SWGptGroups(grid_params::RRTMGPGridParams, ngroups::Int)
-+    # Up, down and direct: the reduction recomputes net from up and down, so a
-+    # net plane would never be written (see `LWGptGroups`).
-+    (; wide_grid_params, acc_data, acc_clear_data, mask, cloudy) =
-+        _gpt_group_workspaces(grid_params, ngroups, 3)
-+    fluxes(d) = (
-+        flux_up = view(d, :, :, 1),
-+        flux_dn = view(d, :, :, 2),
-+        flux_dn_dir = view(d, :, :, 3),
-+    )
-+    return SWGptGroups(
-+        ngroups,
-+        TwoStream(wide_grid_params),
-+        SourceSW2Str(wide_grid_params),
-+        FluxSW(wide_grid_params),
-+        mask,
-+        fluxes(acc_data),
-+        fluxes(acc_clear_data),
-+        cloudy,
-+    )
++    _check_ngpt_groups(ngroups)
++    _try_gpt_group_alloc(grid_params, ngroups) do
++        # Up, down and direct: the reduction recomputes net from up and down, so
++        # a net plane would never be written (see `LWGptGroups`).
++        (; wide_grid_params, acc_data, acc_clear_data, mask, cloudy) =
++            _gpt_group_workspaces(grid_params, ngroups, 3)
++        fluxes(d) = (
++            flux_up = view(d, :, :, 1),
++            flux_dn = view(d, :, :, 2),
++            flux_dn_dir = view(d, :, :, 3),
++        )
++        SWGptGroups(
++            ngroups,
++            TwoStream(wide_grid_params),
++            SourceSW2Str(wide_grid_params),
++            FluxSW(wide_grid_params),
++            mask,
++            fluxes(acc_data),
++            fluxes(acc_clear_data),
++            cloudy,
++        )
++    end
 +end
 +
 +n_gpt_groups(g::SWGptGroups) = g.ngroups
@@ -1923,7 +1990,7 @@ index 7ddeb3b..b75242e 100644
      nlay, ncol = AtmosphericStates.get_dims(as)
      nlev = nlay + 1
 diff --git a/RRTMGP.jl/src/rte/shortwave_2stream.jl b/RRTMGP.jl-mod/src/rte/shortwave_2stream.jl
-index b645322..28980b5 100644
+index b645322..a001ab8 100644
 --- a/RRTMGP.jl/src/rte/shortwave_2stream.jl
 +++ b/RRTMGP.jl-mod/src/rte/shortwave_2stream.jl
 @@ -314,6 +314,7 @@ Equations are after Shonk and Hogan 2008, doi:10.1175/2007JCLI1940.1 (SH08)
@@ -2023,24 +2090,23 @@ index b645322..28980b5 100644
          flux_dn_ilevplus1 = flux_dn_ilev
          ilev -= 1
      end
-@@ -422,8 +423,20 @@ function rte_sw_2stream_solve_both_skies! end
-     ibnd,
+@@ -423,7 +424,19 @@ function rte_sw_2stream_solve_both_skies! end
      n_gpt,
      nlev,
-+    mask_store = as.cloud_state isa CloudState ? as.cloud_state.mask_sw :
-+                 nothing,
-+    first_igpt = 1,
-+    wcol = gcol,
-+    collect_aod = true,
  )
 -    cloudy = _build_cloud_mask!(as.cloud_state, Val(:mask_sw), gcol, igpt)
++    # One column per thread, so the column's own index is the wide one, the
++    # g-point loop runs from the first and this thread collects the aerosol
++    # optical depth. `sw_2stream_gpt_col_sweeps!` is where those come apart.
++    mask_store =
++        as.cloud_state isa CloudState ? as.cloud_state.mask_sw : nothing
 +    cloudy = _build_cloud_mask!(
 +        as.cloud_state,
 +        Val(:mask_sw),
 +        gcol,
 +        igpt,
 +        mask_store,
-+        wcol,
++        gcol,
 +    )
      # Gas and aerosol only: the clear sky, and the half both skies share
      compute_optical_props!(
@@ -2050,8 +2116,8 @@ index b645322..28980b5 100644
          nothing,
          lookup_sw_aero,
 +        nothing,
-+        wcol,
-+        collect_aod,
++        gcol,
++        true,
 +    )
 +    sw_2stream_gpt_col_sweeps!(
 +        igpt,
@@ -2072,8 +2138,8 @@ index b645322..28980b5 100644
 +        n_gpt,
 +        nlev,
 +        mask_store,
-+        first_igpt,
-+        wcol,
++        1,
++        gcol,
      )
 +    return cloudy
 +end
@@ -2177,6 +2243,19 @@ index b645322..28980b5 100644
  )
      nlay, ncol = AtmosphericStates.get_dims(as)
      nlev = nlay + 1
+diff --git a/RRTMGP.jl/test/Project.toml b/RRTMGP.jl-mod/test/Project.toml
+index aee8771..7193753 100644
+--- a/RRTMGP.jl/test/Project.toml
++++ b/RRTMGP.jl-mod/test/Project.toml
+@@ -19,5 +19,8 @@ Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
+ Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
+ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+ 
++[sources]
++RRTMGP = {path = ".."}
++
+ [compat]
+ NCDatasets = "0.12.17, 0.13, 0.14"
 diff --git a/RRTMGP.jl/test/all_sky_with_aerosols_utils.jl b/RRTMGP.jl-mod/test/all_sky_with_aerosols_utils.jl
 index 4c20955..dee2581 100644
 --- a/RRTMGP.jl/test/all_sky_with_aerosols_utils.jl
@@ -2429,3 +2508,99 @@ index 4c20955..dee2581 100644
          )
          RRTMGP.update_fluxes!(slv, UInt32(42))
          lw_a = copy(Array(parent(slv.lws.flux.flux_net)))
+diff --git a/RRTMGP.jl-mod/test/gpt_group_workspaces.jl b/RRTMGP.jl-mod/test/gpt_group_workspaces.jl
+new file mode 100644
+index 0000000..1317abc
+--- /dev/null
++++ b/RRTMGP.jl-mod/test/gpt_group_workspaces.jl
+@@ -0,0 +1,75 @@
++using Test
++import ClimaComms
++@static pkgversion(ClimaComms) >= v"0.6" && ClimaComms.@import_required_backends
++import RRTMGP
++import RRTMGP.RTE:
++    LWGptGroups, SWGptGroups, default_ngpt_groups, gpt_group_bytes
++
++# `default_ngpt_groups` bounds the group count by what the widened workspaces
++# cost, and `gpt_group_bytes` counts that cost from the planes the constructors
++# allocate. A field added to any of the structs those constructors build would
++# make the count silently low, so it is checked against the arrays themselves
++# rather than against a figure measured once.
++
++# Bytes of every distinct array a workspace holds. The views share parents, so
++# each is resolved to the array that owns the memory and counted once.
++function workspace_bytes(x, seen = Base.IdSet{Any}())
++    if x isa AbstractArray
++        root = x
++        while root !== parent(root)
++            root = parent(root)
++        end
++        root in seen && return 0
++        push!(seen, root)
++        return sizeof(root)
++    end
++    isbits(x) && return 0
++    total = 0
++    for name in fieldnames(typeof(x))
++        isdefined(x, name) &&
++            (total += workspace_bytes(getfield(x, name), seen))
++    end
++    return total
++end
++
++# The byte bound is a device property, and CUDA reports memory unsigned, so the
++# count can come back a `UInt64` on a GPU and nowhere else -- where it no longer
++# matches the `ngpt_groups::Int` keyword it is the default for. This runs on
++# whatever device the tests are on, which is the only way to see that.
++@testset "the default group count is an Int" begin
++    context = ClimaComms.context()
++    grid_params = RRTMGP.RRTMGPGridParams(
++        Float32;
++        context,
++        domain_nlay = 80,
++        ncol = 2048,
++        isothermal_boundary_layer = false,
++    )
++    @test default_ngpt_groups(grid_params) isa Int
++end
++
++# The workspaces are built on the CPU whatever the test device is: `sizeof` of a
++# device array is its handle, not the memory the count is about.
++@testset "grouped workspace bytes ($FT)" for FT in (Float32, Float64)
++    context = ClimaComms.context(ClimaComms.CPUSingleThreaded())
++    params = RRTMGP.default_parameters(FT)
++    for ngroups in (1, 2, 5), (domain_nlay, ncol) in ((10, 16), (31, 48))
++        grid_params = RRTMGP.RRTMGPGridParams(
++            FT;
++            context,
++            domain_nlay,
++            ncol,
++            isothermal_boundary_layer = false,
++        )
++        (; nlay) = grid_params
++        built =
++            workspace_bytes(LWGptGroups(grid_params, ngroups; params)) +
++            workspace_bytes(SWGptGroups(grid_params, ngroups))
++        counted = gpt_group_bytes(FT, ncol, nlay, ngroups)
++        # The optics and the mask are over layers and are charged a level each,
++        # which is the whole of the slack: six optics planes and two mask bytes
++        # per wide column. Nothing else may differ, in either direction.
++        slack = ncol * ngroups * (6 * sizeof(FT) + 2 * sizeof(Bool))
++        @test counted - built == slack
++    end
++end
+diff --git a/RRTMGP.jl/test/runtests.jl b/RRTMGP.jl-mod/test/runtests.jl
+index 493919c..5fcc7e0 100644
+--- a/RRTMGP.jl/test/runtests.jl
++++ b/RRTMGP.jl-mod/test/runtests.jl
+@@ -22,6 +22,10 @@ end
+     include("api_contract.jl")
+ end
+ 
++@testset "Grouped g-point workspace sizes" begin
++    include("gpt_group_workspaces.jl")
++end
++
+ @testset "Public API surface" begin
+     include("public_api.jl")
+ end
